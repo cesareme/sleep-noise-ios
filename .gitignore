@@ -1,0 +1,36 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcscmblueprint
+xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+timeline.xctimeline
+playground.xcworkspace
+
+# XcodeGen leaves the project in source control only if you choose to;
+# user-specific scheme state should never be committed.
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Swift Package Manager / local builds
+.build/
+.swiftpm/
+Package.resolved
+
+# Secrets and signing material
+*.mobileprovision
+*.p12
+*.cer
+.env
+*.pem

@@ -1,0 +1,89 @@
+name: SleepNoise
+options:
+  bundleIdPrefix: com.cesareme
+  deploymentTarget:
+    iOS: "17.0"
+  developmentLanguage: en
+  knownRegions:
+    - en
+    - es
+    - Base
+  createIntermediateGroups: true
+  groupSortPosition: top
+attributes:
+  ORGANIZATIONNAME: cesareme
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    CLANG_ENABLE_MODULES: YES
+targets:
+  SleepNoise:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: SleepNoise
+        excludes:
+          - Resources/Info.plist
+          - Resources/SleepNoise.entitlements
+          - Resources/SleepNoise.storekit
+          - Audio/DSP/AtomicBridge.h
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cesareme.sleepnoise
+        PRODUCT_NAME: SleepNoise
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MACCATALYST: NO
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: SleepNoise/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: SleepNoise/Resources/SleepNoise.entitlements
+        SWIFT_OBJC_BRIDGING_HEADER: SleepNoise/Audio/DSP/AtomicBridge.h
+        SWIFT_EMIT_LOC_STRINGS: YES
+        LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+        ENABLE_PREVIEWS: YES
+      configs:
+        Debug:
+          ENABLE_TESTABILITY: YES
+          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+        Release:
+          SWIFT_COMPILATION_MODE: wholemodule
+          SWIFT_OPTIMIZATION_LEVEL: "-O"
+  SleepNoiseTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: SleepNoiseTests
+    dependencies:
+      - target: SleepNoise
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.cesareme.sleepnoise.tests
+        SWIFT_VERSION: "5.9"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/SleepNoise.app/SleepNoise"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+schemes:
+  SleepNoise:
+    build:
+      targets:
+        SleepNoise: all
+        SleepNoiseTests: [test]
+    run:
+      config: Debug
+      storeKitConfiguration: SleepNoise/Resources/SleepNoise.storekit
+    test:
+      config: Debug
+      targets:
+        - name: SleepNoiseTests
+          parallelizable: false
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
