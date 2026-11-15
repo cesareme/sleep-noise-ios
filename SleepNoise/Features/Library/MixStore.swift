@@ -13,10 +13,10 @@ final class MixStore: ObservableObject {
         load()
     }
 
-    func save(name: String, levels: [SoundID: Float], isPro: Bool) -> SaveMixResult {
+    func save(name: String, levels: [SoundID: Float], hasFullAccess: Bool) -> SaveMixResult {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return .emptyName }
-        guard AccessPolicy.canSave(existingCount: mixes.count, isPro: isPro) else {
+        guard AccessPolicy.canSave(existingCount: mixes.count, hasFullAccess: hasFullAccess) else {
             return .needsPro
         }
         let mix = SavedMix(

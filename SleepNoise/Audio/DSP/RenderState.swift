@@ -29,16 +29,26 @@ struct ChannelGenerators {
 
     /// Generators whose gain has settled at zero are skipped: they cost CPU and
     /// battery over an eight-hour night and contribute nothing audible.
+    ///
+    /// `breath` is the current breath value (0 rest … 1 top of the inhale),
+    /// `weight` how much the beds follow it and `depth` the bed modulation at
+    /// full weight. The ocean swell locks onto the breath; the other beds are
+    /// gently amplitude-modulated so rain, fan or plain noise also rise and
+    /// fall when the ocean is off.
     @inline(__always)
-    mutating func mix(_ gains: SoundGains) -> Float {
+    mutating func mix(_ gains: SoundGains, breath: Float, weight: Float, depth: Float) -> Float {
         let threshold: Float = 1e-4
-        var sum: Float = 0
-        if gains.white > threshold { sum += white.next() * gains.white }
-        if gains.pink > threshold { sum += pink.next() * gains.pink }
-        if gains.brown > threshold { sum += brown.next() * gains.brown }
-        if gains.rain > threshold { sum += rain.next() * gains.rain }
-        if gains.fan > threshold { sum += fan.next() * gains.fan }
-        if gains.ocean > threshold { sum += ocean.next() * gains.ocean }
+        var bed: Float = 0
+        if gains.white > threshold { bed += white.next() * gains.white }
+        if gains.pink > threshold { bed += pink.next() * gains.pink }
+        if gains.brown > threshold { bed += brown.next() * gains.brown }
+        if gains.rain > threshold { bed += rain.next() * gains.rain }
+        if gains.fan > threshold { bed += fan.next() * gains.fan }
+        if weight > threshold {
+            bed *= 1 - depth * weight * (1 - breath)
+        }
+        var sum = bed
+        if gains.ocean > threshold { sum += ocean.next(breath: breath, weight: weight) * gains.ocean }
         return sum
     }
 }
@@ -58,11 +68,31 @@ struct RenderState {
     var fadeTo: Float = 0
     var fadeProgress: Float = 1
     var fadeStep: Float = 0
-    var appliedGeneration: UInt32 = 0
+    var appliedEnvelopeGeneration: UInt32 = 0
     var gainCoefficient: Float = 0.002
     var sampleRate: Float = 48_000
     var lastCommand = EngineCommand.silence
 
+    /// Breathing tide. One oscillator shared by both channels so the swell
+    /// stays centred. The phase is a sample count, not an accumulated float,
+    /// so it keeps time with the wall clock the on-screen disc follows.
+    var breathEpoch: UInt32 = 0
+    var breathSample: UInt32 = 0
+    var breathPeriod: UInt32 = 0
+    var breathRate: Float = 0
+    /// Raw curve value and its 250 ms smoothed copy; the smoothed one drives
+    /// the beds so a restart or rate change never steps the sound.
+    var breathValue: Float = 0
+    var breathValueSmoothed: Float = 0
+    var breathValueCoefficient: Float = 0.0001
+    /// Target weight (ramped linearly over the command's dissolve) and the
+    /// 1.5 s smoothed weight actually applied.
+    var breathWeightTarget: Float = 0
+    var breathWeight: Float = 0
+    var breathWeightCoefficient: Float = 0.00001
+    /// Bed modulation depth, smoothed like the weight so a settings change
+    /// (0.4 ⇄ 0.2) never steps the beds.
+    var breathDepth: Float = 0.4
     init(sampleRate: Float = 48_000) {
         let rate = sampleRate > 1 ? sampleRate : 48_000
         left = ChannelGenerators(seedSalt: 0, sampleRate: rate)
@@ -74,25 +104,120 @@ struct RenderState {
         let rate = sampleRate > 1 ? sampleRate : 48_000
         self.sampleRate = rate
         gainCoefficient = 1 - expf(-1 / (rate * 0.02))
+        breathWeightCoefficient = 1 - expf(-1 / (rate * 1.5))
+        breathValueCoefficient = 1 - expf(-1 / (rate * 0.25))
+        // A running breath keeps its place in the cycle across a rate change.
+        if breathPeriod > 0, breathRate > 0 {
+            let fraction = Float(breathSample) / Float(breathPeriod)
+            breathPeriod = UInt32(max(1, (rate / breathRate).rounded()))
+            breathSample = min(breathPeriod - 1, UInt32(fraction * Float(breathPeriod)))
+        }
         left.prepare(sampleRate: rate)
         right.prepare(sampleRate: rate)
+    }
+
+    /// Silence everything so the next Play fades in from nothing. Only called
+    /// while the engine is stopped, so the render thread is not running.
+    mutating func resetForFreshStart() {
+        envelope = 0
+        fadeFrom = 0
+        fadeTo = 0
+        fadeProgress = 1
+        fadeStep = 0
+        breathWeight = 0
+        breathWeightTarget = 0
+        breathValue = 0
+        breathValueSmoothed = 0
     }
 
     /// Stereo frame. Both channels share the envelope and smoothed gains.
     @inline(__always)
     mutating func processStereo(_ command: EngineCommand) -> (left: Float, right: Float) {
-        if command.generation != appliedGeneration {
-            appliedGeneration = command.generation
+        if command.envelopeGeneration != appliedEnvelopeGeneration {
+            appliedEnvelopeGeneration = command.envelopeGeneration
             if command.rampSamples >= 0 {
                 beginFade(to: command.envelopeTarget, samples: command.rampSamples)
             }
         }
         advanceFade()
         smoothed.approach(command.gains, coefficient: gainCoefficient)
+        advanceBreath(command.breath)
 
-        let l = left.mix(smoothed)
-        let r = right.mix(smoothed)
+        let l = left.mix(smoothed, breath: breathValueSmoothed, weight: breathWeight, depth: breathDepth)
+        let r = right.mix(smoothed, breath: breathValueSmoothed, weight: breathWeight, depth: breathDepth)
         return (softClip(l * envelope), softClip(r * envelope))
+    }
+
+    /// One sample of the breath oscillator.
+    ///
+    /// A new epoch restarts the cycle at the top of an inhale. When that
+    /// happens before anything is audible (fresh Play, envelope still at
+    /// zero or fading in from zero) the weight is seeded directly so the sea
+    /// rises with the first inhale instead of dipping after the fade-in.
+    @inline(__always)
+    private mutating func advanceBreath(_ breath: BreathParameters) {
+        if breath.epoch != breathEpoch {
+            breathEpoch = breath.epoch
+            breathSample = 0
+            breathPeriod = 0
+            // Seed while nothing is audible yet, or while the fade-in from
+            // silence is still under way (large IO buffers can deliver the
+            // epoch one buffer after the fade began).
+            let fadingInFromSilence = fadeStep > 0 && fadeFrom == 0 && fadeTo > 0
+            if envelope < 1e-3 || fadingInFromSilence {
+                breathWeightTarget = breath.weight
+                breathWeight = breath.weight
+                breathValue = 0
+                breathValueSmoothed = 0
+            }
+        }
+
+        // Weight: linear ramp toward the command over its dissolve, then smoothed.
+        if breath.dissolveSeconds > 0 {
+            let step = 1 / (breath.dissolveSeconds * sampleRate)
+            if breathWeightTarget < breath.weight {
+                breathWeightTarget = min(breath.weight, breathWeightTarget + step)
+            } else if breathWeightTarget > breath.weight {
+                breathWeightTarget = max(breath.weight, breathWeightTarget - step)
+            }
+        } else {
+            breathWeightTarget = breath.weight
+        }
+        breathWeight += (breathWeightTarget - breathWeight) * breathWeightCoefficient
+        if breathWeight < 1e-4, breathWeightTarget <= 0 {
+            breathWeight = 0
+        }
+        if breath.rate > 0 {
+            breathDepth += (breath.bedDepth - breathDepth) * breathWeightCoefficient
+        }
+
+        // Phase: a sample counter over the period for the current rate.
+        if breath.rate > 0 {
+            if breath.rate != breathRate || breathPeriod == 0 {
+                let period = (sampleRate / breath.rate).rounded()
+                let newPeriod = UInt32(max(1, period))
+                if breathPeriod > 0 {
+                    // Keep the fraction of the cycle across a rate change.
+                    let fraction = Float(breathSample) / Float(breathPeriod)
+                    breathSample = UInt32(fraction * Float(newPeriod))
+                }
+                breathPeriod = newPeriod
+                breathRate = breath.rate
+            }
+            if breathWeight > 0 {
+                let phase = Float(breathSample) / Float(breathPeriod)
+                breathValue = BreathCurve.value(phase: phase, inhale: breath.inhale, exhale: breath.exhale)
+            }
+            breathSample += 1
+            if breathSample >= breathPeriod { breathSample = 0 }
+        } else {
+            breathPeriod = 0
+            breathRate = 0
+        }
+        // Held (not reset) when the rate drops to zero: the weight carries the
+        // beds back to neutral without a step.
+        breathValueSmoothed += (breathValue - breathValueSmoothed) * breathValueCoefficient
+        breathValueSmoothed = flushDenormal(breathValueSmoothed)
     }
 
     /// Mono frame: a power-preserving sum of both channels.

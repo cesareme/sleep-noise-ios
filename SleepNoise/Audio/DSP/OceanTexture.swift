@@ -4,6 +4,10 @@ import Foundation
 /// Ocean: a low rumble under two slow, incommensurate swells, plus a surf layer
 /// of highpassed foam whose level crests just ahead of the rumble and washes out
 /// slowly. The surf band is what makes it read as water instead of thunder.
+///
+/// With the breathing tide (`weight` > 0) the swell is blended toward the
+/// breath value: the wave builds through the inhale, breaks at its top, and the
+/// foam washes out over the exhale.
 struct OceanTexture {
     var rng: XorShift32
     private var rumbleA: Float = 0
@@ -38,13 +42,25 @@ struct OceanTexture {
     }
 
     mutating func next() -> Float {
+        next(breath: 0, weight: 0)
+    }
+
+    mutating func next(breath: Float, weight: Float) -> Float {
         let white = rng.nextBipolar()
 
         phaseA = wrapPhase(phaseA + incrementA)
         phaseB = wrapPhase(phaseB + incrementB)
         let swellA = 0.5 + 0.5 * sinf(phaseA)
         let swellB = 0.5 + 0.5 * sinf(phaseB)
-        let swell = 0.6 * swellA + 0.4 * swellB
+        let naturalSwell = 0.6 * swellA + 0.4 * swellB
+        // Under the breath the trough stays at 0.35 so the rest between
+        // breaths is a hush, not a hole (about 10 dB below the top of the
+        // inhale, the range the natural swell already covers), and a fifth of
+        // the natural, incommensurate swell always rides underneath so the sea
+        // never turns into a metronome.
+        let blend = weight * 0.8
+        let breathSwell = 0.35 + 0.65 * breath
+        let swell = naturalSwell + (breathSwell - naturalSwell) * blend
 
         // Rumble: two one-pole lowpasses, level follows the swell above a floor.
         rumbleA = flushDenormal(rumbleA + rumbleCoefficient * (white - rumbleA))
@@ -55,7 +71,9 @@ struct OceanTexture {
         // Surf: band 700 Hz – 5.5 kHz. The crest leads the rumble so the break is heard
         // before the body of the wave arrives, then the foam washes out over seconds.
         let leading = 0.5 + 0.5 * sinf(phaseA + 0.55)
-        let crest = powf(leading, 3) * (0.5 + 0.5 * swellB)
+        let naturalCrest = powf(leading, 3) * (0.5 + 0.5 * swellB)
+        let breathCrest = breath * breath * breath
+        let crest = naturalCrest + (breathCrest - naturalCrest) * blend
         let coefficient = crest > surfEnvelope ? surfAttack : surfRelease
         surfEnvelope = flushDenormal(surfEnvelope + (crest - surfEnvelope) * coefficient)
 

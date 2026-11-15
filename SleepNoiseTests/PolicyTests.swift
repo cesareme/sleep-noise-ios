@@ -4,31 +4,33 @@ import XCTest
 final class AccessPolicyTests: XCTestCase {
     func testFreeSounds() {
         for sound in [SoundID.white, .pink, .brown, .rain] {
-            XCTAssertTrue(AccessPolicy.soundIsIncluded(sound, isPro: false))
+            XCTAssertTrue(AccessPolicy.soundIsIncluded(sound, hasFullAccess: false))
         }
-        XCTAssertFalse(AccessPolicy.soundIsIncluded(.fan, isPro: false))
-        XCTAssertFalse(AccessPolicy.soundIsIncluded(.ocean, isPro: false))
+        XCTAssertFalse(AccessPolicy.soundIsIncluded(.fan, hasFullAccess: false))
+        XCTAssertFalse(AccessPolicy.soundIsIncluded(.ocean, hasFullAccess: false))
         for sound in SoundID.allCases {
-            XCTAssertTrue(AccessPolicy.soundIsIncluded(sound, isPro: true))
+            XCTAssertTrue(AccessPolicy.soundIsIncluded(sound, hasFullAccess: true))
         }
     }
 
     func testTimerGate() {
-        XCTAssertTrue(AccessPolicy.timerIsIncluded(minutes: 15, isPro: false))
-        XCTAssertTrue(AccessPolicy.timerIsIncluded(minutes: 30, isPro: false))
-        XCTAssertFalse(AccessPolicy.timerIsIncluded(minutes: 60, isPro: false))
-        XCTAssertFalse(AccessPolicy.timerIsIncluded(minutes: 90, isPro: false))
-        XCTAssertFalse(AccessPolicy.timerIsIncluded(minutes: 45, isPro: false))
-        XCTAssertFalse(AccessPolicy.timerIsIncluded(minutes: 0, isPro: true))
-        XCTAssertFalse(AccessPolicy.timerIsIncluded(minutes: 361, isPro: true))
-        XCTAssertTrue(AccessPolicy.timerIsIncluded(minutes: 45, isPro: true))
-        XCTAssertTrue(AccessPolicy.timerIsIncluded(minutes: 360, isPro: true))
+        XCTAssertTrue(AccessPolicy.timerIsIncluded(minutes: 15, hasFullAccess: false))
+        XCTAssertTrue(AccessPolicy.timerIsIncluded(minutes: 30, hasFullAccess: false))
+        XCTAssertTrue(AccessPolicy.timerIsIncluded(minutes: 60, hasFullAccess: false))
+        XCTAssertFalse(AccessPolicy.timerIsIncluded(minutes: 90, hasFullAccess: false))
+        XCTAssertFalse(AccessPolicy.timerIsIncluded(minutes: 45, hasFullAccess: false))
+        XCTAssertFalse(AccessPolicy.breathingIsIncluded(hasFullAccess: false))
+        XCTAssertTrue(AccessPolicy.breathingIsIncluded(hasFullAccess: true))
+        XCTAssertFalse(AccessPolicy.timerIsIncluded(minutes: 0, hasFullAccess: true))
+        XCTAssertFalse(AccessPolicy.timerIsIncluded(minutes: 361, hasFullAccess: true))
+        XCTAssertTrue(AccessPolicy.timerIsIncluded(minutes: 45, hasFullAccess: true))
+        XCTAssertTrue(AccessPolicy.timerIsIncluded(minutes: 360, hasFullAccess: true))
     }
 
     func testSavedMixGate() {
-        XCTAssertTrue(AccessPolicy.canSave(existingCount: 0, isPro: false))
-        XCTAssertFalse(AccessPolicy.canSave(existingCount: 1, isPro: false))
-        XCTAssertTrue(AccessPolicy.canSave(existingCount: 40, isPro: true))
+        XCTAssertTrue(AccessPolicy.canSave(existingCount: 0, hasFullAccess: false))
+        XCTAssertFalse(AccessPolicy.canSave(existingCount: 1, hasFullAccess: false))
+        XCTAssertTrue(AccessPolicy.canSave(existingCount: 40, hasFullAccess: true))
     }
 }
 
@@ -51,7 +53,7 @@ final class MixStoreTests: XCTestCase {
     func testFreeTierKeepsASingleMixAndProDoesNot() throws {
         let defaults = try makeDefaults()
         let store = MixStore(defaults: defaults)
-        let first = store.save(name: "  Night  ", levels: [.pink: 0.4, .fan: 1.5], isPro: false)
+        let first = store.save(name: "  Night  ", levels: [.pink: 0.4, .fan: 1.5], hasFullAccess: false)
         guard case .saved(let mix) = first else {
             return XCTFail("Expected the first mix to save")
         }
@@ -59,10 +61,10 @@ final class MixStoreTests: XCTestCase {
         XCTAssertEqual(mix.value(for: .pink), 0.4, accuracy: 0.000_1)
         XCTAssertEqual(mix.value(for: .fan), 1, accuracy: 0.000_1)
 
-        XCTAssertEqual(store.save(name: "Second", levels: [.rain: 0.2], isPro: false), .needsPro)
+        XCTAssertEqual(store.save(name: "Second", levels: [.rain: 0.2], hasFullAccess: false), .needsPro)
         XCTAssertEqual(store.mixes.count, 1)
 
-        guard case .saved = store.save(name: "Second", levels: [.brown: -3], isPro: true) else {
+        guard case .saved = store.save(name: "Second", levels: [.brown: -3], hasFullAccess: true) else {
             return XCTFail("Pro should save another mix")
         }
         XCTAssertEqual(store.mixes[0].value(for: .brown), 0, accuracy: 0.000_1)
@@ -75,7 +77,7 @@ final class MixStoreTests: XCTestCase {
         XCTAssertTrue(reloaded.mixes.isEmpty)
 
         let fresh = MixStore(defaults: defaults)
-        guard case .saved = fresh.save(name: "Again", levels: [.white: 0.2], isPro: false) else {
+        guard case .saved = fresh.save(name: "Again", levels: [.white: 0.2], hasFullAccess: false) else {
             return XCTFail("Deleting the free mix should open the slot")
         }
         XCTAssertEqual(fresh.mixes.count, 1)
@@ -83,7 +85,7 @@ final class MixStoreTests: XCTestCase {
 
     func testEmptyNameIsRejected() throws {
         let store = MixStore(defaults: try makeDefaults())
-        XCTAssertEqual(store.save(name: "   ", levels: [.pink: 1], isPro: true), .emptyName)
+        XCTAssertEqual(store.save(name: "   ", levels: [.pink: 1], hasFullAccess: true), .emptyName)
         XCTAssertTrue(store.mixes.isEmpty)
     }
 

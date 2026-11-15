@@ -10,12 +10,12 @@
       "internalID" : "SLEEPNOISEPRO",
       "localizations" : [
         {
-          "description" : "Unlock fan and ocean textures, unlimited saved mixes, and custom sleep timers.",
+          "description" : "Breathing tide, fan and ocean, timers past 60 minutes and custom, unlimited saved mixes.",
           "displayName" : "SleepNoise Pro",
           "locale" : "en_US"
         },
         {
-          "description" : "Desbloquea las texturas de ventilador y océano, mezclas ilimitadas y temporizadores personalizados.",
+          "description" : "Marea respiratoria, ventilador y océano, temporizadores de más de 60 minutos y a medida, mezclas ilimitadas.",
           "displayName" : "SleepNoise Pro",
           "locale" : "es_ES"
         }

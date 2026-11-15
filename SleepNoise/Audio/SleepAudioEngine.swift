@@ -14,6 +14,12 @@ final class SleepAudioEngine {
     private let state: UnsafeMutablePointer<RenderState>
     private var sampleRate: Double = 48_000
     private var lastGains = SoundGains.zero
+    private var lastBreath = BreathParameters.off
+    /// Last envelope request. Carried unchanged by gain and breathing
+    /// publishes so they never cancel or restart a fade.
+    private var envelopeTarget: Float = 0
+    private var envelopeRamp: Int32 = -1
+    private var envelopeGeneration: UInt32 = 0
     private var stopToken = 0
     private var wantsRunning = false
     private var configurationObserver: NSObjectProtocol?
@@ -52,15 +58,16 @@ final class SleepAudioEngine {
         if sourceNode == nil || abs(rate - sampleRate) > 0.5 {
             try buildGraph(sampleRate: rate)
         }
+        if !engine.isRunning {
+            // The render thread is idle, so this is safe. After an interruption
+            // the system stopped the engine before our fade-out could render:
+            // without this the envelope is still 1 and the fade-in is a no-op.
+            state.pointee.resetForFreshStart()
+        }
 
         lastGains = gains
         let ramp = Int32(max(1, sampleRate * max(0.03, seconds)))
-        mailbox.publish(EngineCommand(
-            gains: gains,
-            envelopeTarget: 1,
-            rampSamples: ramp,
-            generation: 0
-        ))
+        publishEnvelope(target: 1, ramp: ramp)
         if !engine.isRunning {
             do {
                 try engine.start()
@@ -73,21 +80,37 @@ final class SleepAudioEngine {
 
     func updateGains(_ gains: SoundGains) {
         lastGains = gains
-        mailbox.publish(EngineCommand(
-            gains: gains,
-            envelopeTarget: 0,
-            rampSamples: -1,
-            generation: 0
-        ))
+        publishCurrent()
+    }
+
+    /// Breathing tide. Takes effect at once; the render state smooths the weight.
+    func setBreathing(_ parameters: BreathParameters) {
+        lastBreath = parameters
+        publishCurrent()
     }
 
     func fadeOut(over seconds: TimeInterval) {
         let samples = Int32(max(1, seconds * sampleRate))
+        publishEnvelope(target: 0, ramp: samples)
+    }
+
+    /// New envelope request: bumps the envelope generation so the render
+    /// state starts the fade even if a later publish overwrites this command.
+    private func publishEnvelope(target: Float, ramp: Int32) {
+        envelopeTarget = target
+        envelopeRamp = ramp
+        envelopeGeneration &+= 1
+        publishCurrent()
+    }
+
+    private func publishCurrent() {
         mailbox.publish(EngineCommand(
             gains: lastGains,
-            envelopeTarget: 0,
-            rampSamples: samples,
-            generation: 0
+            envelopeTarget: envelopeTarget,
+            rampSamples: envelopeRamp,
+            generation: 0,
+            envelopeGeneration: envelopeGeneration,
+            breath: lastBreath
         ))
     }
 
@@ -101,6 +124,7 @@ final class SleepAudioEngine {
         DispatchQueue.main.asyncAfter(deadline: .now() + seconds + 0.02) { [weak self] in
             guard let self, self.stopToken == token else { return }
             self.engine.pause()
+            self.lastBreath = .off
             AudioSessionConfigurator.deactivate()
         }
     }
@@ -116,13 +140,13 @@ final class SleepAudioEngine {
         }
         lastGains = gains
         try buildGraph(sampleRate: rate)
-        let ramp = Int32(max(1, sampleRate * 0.03))
-        mailbox.publish(EngineCommand(
-            gains: gains,
-            envelopeTarget: 1,
-            rampSamples: ramp,
-            generation: 0
-        ))
+        if envelopeTarget > 0 {
+            let ramp = Int32(max(1, sampleRate * 0.03))
+            publishEnvelope(target: 1, ramp: ramp)
+        } else {
+            // A sleep-timer fade-out is in progress: keep it, just refresh the rest.
+            publishCurrent()
+        }
         try restartIfWanted()
     }
 
@@ -131,6 +155,7 @@ final class SleepAudioEngine {
     func invalidateGraph() {
         stopToken += 1
         wantsRunning = false
+        lastBreath = .off
         engine.stop()
         if let sourceNode {
             engine.detach(sourceNode)

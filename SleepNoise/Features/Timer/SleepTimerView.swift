@@ -2,7 +2,7 @@ import SwiftUI
 
 struct SleepTimerView: View {
     @ObservedObject var timer: SleepTimerController
-    var isPro: Bool
+    var hasFullAccess: Bool
     var onSelect: (Int?) -> Void
     var onLocked: () -> Void
 
@@ -58,7 +58,7 @@ struct SleepTimerView: View {
     }
 
     private func presetButton(title: String, minutes: Int?) -> some View {
-        let locked = minutes.map { !AccessPolicy.timerIsIncluded(minutes: $0, isPro: isPro) } ?? false
+        let locked = minutes.map { !AccessPolicy.timerIsIncluded(minutes: $0, hasFullAccess: hasFullAccess) } ?? false
         let selected = timer.selectedMinutes == minutes
         return Button {
             if locked {
@@ -95,13 +95,13 @@ struct SleepTimerView: View {
                     .font(.headline)
                     .foregroundStyle(Palette.text)
                 Spacer()
-                if !isPro {
+                if !hasFullAccess {
                     Image(systemName: "lock.fill")
                         .font(.caption)
                         .foregroundStyle(Palette.amber)
                 }
             }
-            if isPro {
+            if hasFullAccess {
                 Stepper(value: $customMinutes, in: 5...AccessPolicy.maxTimerMinutes, step: 5) {
                     Text(TimeFormat.minutes(customMinutes))
                         .foregroundStyle(Palette.text)

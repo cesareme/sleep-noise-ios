@@ -512,13 +512,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Longer and custom timers are part of Pro."
+            "value": "Timers past 60 minutes and custom lengths are part of Pro."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Los temporizadores largos y personalizados son parte de Pro."
+            "value": "Los temporizadores de más de 60 minutos y a medida son parte de Pro."
           }
         }
       }
@@ -674,13 +674,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Everything you need to stay under, generated on this device."
+            "value": "Everything for the night, generated on this device."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Todo lo que necesitas para quedarte dormido, generado en este dispositivo."
+            "value": "Todo para la noche, generado en este dispositivo."
           }
         }
       }
@@ -764,13 +764,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Any length timer"
+            "value": "Timers past 60 minutes"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Temporizador de cualquier duración"
+            "value": "Más de 60 minutos de temporizador"
           }
         }
       }
@@ -782,13 +782,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "60, 90, or a custom wind-down."
+            "value": "90 minutes, custom, up to six hours."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "60, 90 o un tiempo a tu medida."
+            "value": "90 minutos, a medida, hasta seis horas."
           }
         }
       }
@@ -1095,6 +1095,746 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld por ciento"
+          }
+        }
+      }
+    },
+    "breath.allNight": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All night (subtle)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toda la noche (sutil)"
+          }
+        }
+      }
+    },
+    "breath.dissolve": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Then the waves drift back to their own rhythm. The guide ends on its own."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Después las olas vuelven a su propio ritmo. La guía termina sola."
+          }
+        }
+      }
+    },
+    "breath.duration": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guide for"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guiar durante"
+          }
+        }
+      }
+    },
+    "breath.rate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breaths per minute"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respiraciones por minuto"
+          }
+        }
+      }
+    },
+    "breath.rate.format": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld per minute"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld por minuto"
+          }
+        }
+      }
+    },
+    "breath.settings.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens breathing settings"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre los ajustes de respiración"
+          }
+        }
+      }
+    },
+    "breath.state.guiding": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breathing with you"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respirando contigo"
+          }
+        }
+      }
+    },
+    "breath.subtitle.allNightFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld breaths/min · all night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld resp/min · toda la noche"
+          }
+        }
+      }
+    },
+    "breath.subtitle.format": {
+      "comment": "Breathing rate and guide length.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld breaths/min · %lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld resp/min · %lld min"
+          }
+        }
+      }
+    },
+    "breath.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breathing tide"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marea respiratoria"
+          }
+        }
+      }
+    },
+    "paywall.benefit.breath": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breathing tide"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marea respiratoria"
+          }
+        }
+      }
+    },
+    "paywall.trial.activeFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Last day. Afterwards white, pink, brown, rain and a 60-minute timer stay free, and the mixes you saved are kept; saving more needs Pro."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld days left. Afterwards white, pink, brown, rain and a 60-minute timer stay free, and the mixes you saved are kept; saving more needs Pro."
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Último día. Después seguirán gratis blanco, rosa, marrón, lluvia y el temporizador de 60 minutos, y las mezclas que guardaste se conservan; guardar más necesita Pro."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Quedan %lld días. Después seguirán gratis blanco, rosa, marrón, lluvia y el temporizador de 60 minutos, y las mezclas que guardaste se conservan; guardar más necesita Pro."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "breath.subtitle.off": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waves follow your slow breath"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las olas siguen tu respiración lenta"
+          }
+        }
+      }
+    },
+    "breath.state.dissolving": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letting the waves go"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soltando las olas"
+          }
+        }
+      }
+    },
+    "breath.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breathe in as the wave builds, out as it washes away. No need to watch the screen."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inhala mientras la ola sube, exhala mientras se retira. No hace falta mirar la pantalla."
+          }
+        }
+      }
+    },
+    "breath.comfort": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If it feels like too little air, pick a faster pace or breathe at your own rhythm."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si te falta el aire, elige un ritmo más rápido o respira a tu ritmo."
+          }
+        }
+      }
+    },
+    "breath.oceanRaised": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocean raised so you can hear the tide."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Océano activado para que oigas la marea."
+          }
+        }
+      }
+    },
+    "mixes.stripped": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Pro sounds in this mix are muted. Tap to see Pro."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los sonidos Pro de esta mezcla están en silencio. Toca para ver Pro."
+          }
+        }
+      }
+    },
+    "trial.chip.daysFormat": {
+      "comment": "Header chip during the trial.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Trial · last day"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Trial · %lld days"
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Prueba · último día"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Prueba · %lld días"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "trial.intro.detailFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your %lld days start the first time you press Play. Afterwards white, pink, brown, rain and a 60-minute timer stay free, and the mixes you saved are kept; saving more needs Pro."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus %lld días empiezan la primera vez que pulses Reproducir. Después seguirán gratis blanco, rosa, marrón, lluvia y el temporizador de 60 minutos, y las mezclas que guardaste se conservan; guardar más necesita Pro."
+          }
+        }
+      }
+    },
+    "trial.intro.more": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is Pro?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Qué es Pro?"
+          }
+        }
+      }
+    },
+    "trial.ended.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trial over. Free stays free."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se acabó la prueba. Lo gratis sigue."
+          }
+        }
+      }
+    },
+    "trial.ended.detailFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocean, fan, the breathing tide and long timers are Pro: %@, paid once. Your saved mixes are kept and come back whole."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Océano, ventilador, marea respiratoria y temporizadores largos son Pro: %@, pagado una sola vez. Tus mezclas guardadas se conservan y vuelven enteras."
+          }
+        }
+      }
+    },
+    "trial.ended.more": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See Pro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver Pro"
+          }
+        }
+      }
+    },
+    "trial.gotIt": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Got it"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entendido"
+          }
+        }
+      }
+    },
+    "paywall.trial.notStartedFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your %lld days start at the first Play. Afterwards white, pink, brown, rain and a 60-minute timer stay free, and the mixes you saved are kept; saving more needs Pro."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus %lld días empiezan al primer Reproducir. Después seguirán gratis blanco, rosa, marrón, lluvia y el temporizador de 60 minutos, y las mezclas que guardaste se conservan; guardar más necesita Pro."
+          }
+        }
+      }
+    },
+    "paywall.trial.endedTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trial over. Free stays free."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se acabó la prueba. Lo gratis sigue."
+          }
+        }
+      }
+    },
+    "paywall.trial.endedDetail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "White, pink, brown, rain and the 60-minute timer stay free. Your saved mixes are kept and come back whole with Pro."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blanco, rosa, marrón, lluvia y el temporizador de 60 minutos siguen gratis. Tus mezclas guardadas se conservan y vuelven enteras con Pro."
+          }
+        }
+      }
+    },
+    "paywall.keepFormat": {
+      "comment": "Purchase button during the trial. Argument is the localized price.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep everything — %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quédate con todo — %@"
+          }
+        }
+      }
+    },
+    "paywall.benefit.breath.detail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The waves pace a slow breath, then let go."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El oleaje marca una respiración lenta y luego suelta."
+          }
+        }
+      }
+    },
+    "trial.ended.detailNoPrice": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocean, fan, the breathing tide and long timers are Pro, a single payment with no subscription. Your saved mixes are kept and come back whole."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Océano, ventilador, marea respiratoria y temporizadores largos son Pro, un único pago sin suscripción. Tus mezclas guardadas se conservan y vuelven enteras."
+          }
+        }
+      }
+    },
+    "trial.chip.notStartedFormat": {
+      "comment": "Header chip before the first Play. Argument is the trial length in days.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld-day trial"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prueba de %lld días"
+          }
+        }
+      }
+    },
+    "trial.chip.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens Pro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre Pro"
+          }
+        }
+      }
+    },
+    "trial.intro.titleFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days of everything. No card."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld días con todo. Sin tarjeta."
+          }
+        }
+      }
+    },
+    "trial.intro.runningFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Last day of your trial. Afterwards white, pink, brown, rain and a 60-minute timer stay free, and the mixes you saved are kept; saving more needs Pro."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld days of trial left. Afterwards white, pink, brown, rain and a 60-minute timer stay free, and the mixes you saved are kept; saving more needs Pro."
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Último día de prueba. Después seguirán gratis blanco, rosa, marrón, lluvia y el temporizador de 60 minutos, y las mezclas que guardaste se conservan; guardar más necesita Pro."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Quedan %lld días de prueba. Después seguirán gratis blanco, rosa, marrón, lluvia y el temporizador de 60 minutos, y las mezclas que guardaste se conservan; guardar más necesita Pro."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "trial.price.onceFormat": {
+      "comment": "Argument is the localized price.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro is %@, paid once."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro cuesta %@, pagado una sola vez."
+          }
+        }
+      }
+    },
+    "trial.price.onceNoPrice": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro is a single payment, no subscription."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro es un único pago, sin suscripción."
+          }
+        }
+      }
+    },
+    "paywall.trial.titleFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days of everything, no card"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld días con todo, sin tarjeta"
+          }
+        }
+      }
+    },
+    "breath.allNight.note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stays with the waves all night, more subtly. Ends with the timer or Pause."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acompaña las olas toda la noche, más sutil. Termina con el temporizador o al pausar."
           }
         }
       }

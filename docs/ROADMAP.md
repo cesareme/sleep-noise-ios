@@ -28,7 +28,7 @@ Do these before submitting 1.0. The implementation in this repo does not replace
 ### Identity and binary
 
 - [ ] App ID `com.cesareme.sleepnoise` with In-App Purchase enabled.
-- [ ] Non-consumable `com.cesareme.sleepnoise.pro` created in App Store Connect, priced, and localized in English and Spanish. The display name and description should match the paywall (fan, ocean, unlimited mixes, custom timer). No free trial, no subscription.
+- [ ] Non-consumable `com.cesareme.sleepnoise.pro` created in App Store Connect, priced, and localized in English and Spanish. The display name and description should match the paywall (breathing tide, fan and ocean, unlimited mixes, timers past 60 minutes and custom). No StoreKit introductory offer and no subscription; the 7-day full-access period is a local flag disclosed on first launch, never call it a free trial in the IAP description.
 - [ ] A screenshot of the paywall uploaded for the in-app purchase review.
 - [ ] Version and build numbers match `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`.
 - [ ] Archive with a distribution certificate. Confirm `PrivacyInfo.xcprivacy` is inside the bundle.
@@ -53,6 +53,8 @@ Do these before submitting 1.0. The implementation in this repo does not replace
 
 - [ ] Tell App Review that background audio is the product: a person presses Play and the noise continues with the screen locked. The app does not start audio by itself and does not play silence to stay resident.
 - [ ] Point at the Restore purchases button and the local `.storekit` file if they ask how to test Pro. Give a sandbox account only if they are not using StoreKit Testing.
+- [ ] Explain the trial: fresh installs get 7 days of everything, locally, with no transaction; the first-launch card states the duration, what stays free and the price. The header chip opens the paywall, where Pro can be bought at any time. To see the free tier, press Play once, stop, set the device date forward 8 days and bring the app back to the foreground while nothing is playing (a reinstall starts a new trial). There is no hidden switch.
+- [ ] Breathing tide is a sound feature, not a health feature: it paces the swell of the ocean to a slow breath. No HealthKit, no claims.
 - [ ] Mention that the Ring/Silent switch does not mute playback, because the session category is `.playback`.
 
 ### Guideline 4.3 (spam and copycats)
@@ -62,7 +64,7 @@ Apple rejects noise and sleep apps that look like a template with the art swappe
 - The beds are original procedural DSP (Kellet pink, leaky-integrator brown, filtered noise plus LFOs). There are no looped recordings and no asset packs.
 - The UI, copy, and icon are original. Don’t reskin this target into a second listing (“Baby Noise”, “Focus Noise”) with the same binary.
 - Metadata names what the app does and doesn’t repeat a keyword block across languages.
-- One non-consumable, with Restore, and a free tier that is usable without paying (white, pink, brown, rain, 30 minutes, one mix). Don’t lock the entire mixer behind the paywall.
+- One non-consumable, with Restore, and a free tier that is usable without paying (white, pink, brown, rain, up to 60 minutes, one mix). Don’t lock the entire mixer behind the paywall.
 - No private APIs, no repackaged web view, no “minimal experience” that is only a play button and a color.
 
 If a 4.3 rejection arrives, reply with the DSP location (`SleepNoise/Audio/DSP`), the entitlement split, and the fact that audio is generated at runtime. Don’t ship a trivial palette change and resubmit the same product.
