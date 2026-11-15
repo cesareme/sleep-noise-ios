@@ -152,11 +152,11 @@ struct MixerView: View {
 
     private var bottomBar: some View {
         HStack(spacing: 16) {
-            barButton(
-                title: timerTitle,
-                symbol: "timer",
-                action: { showTimer = true }
-            )
+            Button {
+                showTimer = true
+            } label: {
+                TimerButtonLabel(timer: model.timer)
+            }
             .accessibilityIdentifier("openTimer")
 
             Button {
@@ -198,16 +198,6 @@ struct MixerView: View {
         }
     }
 
-    private var timerTitle: String {
-        if let remaining = model.timer.remaining {
-            return TimeFormat.clock(remaining)
-        }
-        if let minutes = model.timer.selectedMinutes {
-            return TimeFormat.minutes(minutes)
-        }
-        return String(localized: "control.timer")
-    }
-
     private func displayedLevel(_ sound: SoundID) -> Float {
         guard AccessPolicy.soundIsIncluded(sound, isPro: purchases.isPro) else { return 0 }
         return model.levels[sound] ?? 0
@@ -220,5 +210,35 @@ struct MixerView: View {
         }
         draftName = model.suggestedMixName()
         showSave = true
+    }
+}
+
+/// Observes the timer directly. `MixerModel` does not republish its child's
+/// `objectWillChange`, so a label read through the model would never tick.
+private struct TimerButtonLabel: View {
+    @ObservedObject var timer: SleepTimerController
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Image(systemName: "timer")
+                .font(.body.weight(.semibold))
+                .symbolEffect(.pulse, options: .repeating, isActive: timer.isFading)
+            Text(title)
+                .font(.caption.weight(.medium).monospacedDigit())
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .foregroundStyle(timer.remaining != nil ? Palette.amber : Palette.mist)
+        .frame(maxWidth: .infinity, minHeight: 64)
+    }
+
+    private var title: String {
+        if let remaining = timer.remaining {
+            return TimeFormat.clock(remaining)
+        }
+        if let minutes = timer.selectedMinutes {
+            return TimeFormat.minutes(minutes)
+        }
+        return String(localized: "control.timer")
     }
 }

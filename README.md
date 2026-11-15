@@ -41,7 +41,7 @@ xcrun simctl list devices available
 xcodebuild test \
   -project SleepNoise.xcodeproj \
   -scheme SleepNoise \
-  -destination 'platform=iOS Simulator,name=iPhone 16'
+  -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
 Use a simulator name that exists on your Mac. The tests cover bounded, finite generator output, pink and brown spectral tilt, the smoothstep fade, the render mix, the parameter mailbox, the free/Pro gates, and saved-mix persistence.
@@ -74,7 +74,7 @@ SleepNoiseTests              DSP, fade, policy, and persistence tests
 docs/ROADMAP.md              v1.1, v1.2, and the App Store checklist
 ```
 
-The render callback copies a value-type `RenderState` once per buffer and reads gains through a seqlock (`AtomicBridge.c`). It does not allocate, take a lock, or touch reference-counted objects. Pink noise is Paul Kellet’s economy filter. Brown noise is a leaky integrator. Rain, fan, and ocean are filtered noise with LFOs (rain also fires short droplet envelopes).
+The render callback copies a value-type `RenderState` once per buffer and reads gains through a seqlock (`AtomicBridge.c`, with explicit fences on both sides). It does not allocate, take a lock, or touch reference-counted objects. Left and right channels run independent noise generators with shared LFO phases, so the beds are decorrelated in stereo while swells stay centred. Pink noise is Paul Kellet’s economy filter. Brown noise is a leaky integrator. Rain is a hiss bed plus five overlapping resonant droplet voices with Poisson arrivals; the fan is a drifting resonant whoosh with a quiet motor hum; the ocean is a rumble under two incommensurate swells plus a surf band whose crest leads the wave.
 
 Saved mixes and the last slider positions are `Codable` values in `UserDefaults`. Strings live in `Localizable.xcstrings` (English and Spanish).
 
@@ -82,6 +82,8 @@ Saved mixes and the last slider positions are `Codable` values in `UserDefaults`
 
 The privacy manifest declares no tracking and no collected data. `UserDefaults` is listed under reason `CA92.1` because the app stores mixes on device. The App Store nutrition label should be **Data Not Collected**.
 
-## What has not been verified
+## Verification status
 
-This tree was written on a machine without Xcode or the iOS SDK. It has not been compiled, the unit tests have not been executed, and the audio has not been heard. Build and run the tests on a Mac before you treat the app as shippable. See `docs/ROADMAP.md` for the launch checklist.
+Built and tested on a Mac with Xcode 26.6 (iOS 26 SDK) against the iPhone 17 simulator: the project compiles with no warnings, all unit tests pass, and playback, the sleep timer, saved mixes, the paywall and the Spanish localization were exercised in the simulator. The audio has been analysed offline (level, spectrum, modulation, stereo correlation) but not yet heard on a device.
+
+Still to verify on hardware: background playback with the screen locked, route changes (pairing AirPods mid-session), phone-call interruptions, Now Playing controls, and the StoreKit purchase and restore flow, which needs a Run from Xcode so the `.storekit` configuration is loaded. See `docs/REVIEW-2026-11-15.md` for the review findings and `docs/ROADMAP.md` for the launch checklist.

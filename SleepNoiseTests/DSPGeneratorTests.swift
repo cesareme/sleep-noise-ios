@@ -75,17 +75,24 @@ final class DSPGeneratorTests: XCTestCase {
             fanSamples.append(fanSample)
             oceanSamples.append(oceanSample)
         }
-        XCTAssertGreaterThan(rootMeanSquare(rainSamples), 0.04)
-        XCTAssertGreaterThan(rootMeanSquare(fanSamples), 0.04)
-        XCTAssertGreaterThan(rootMeanSquare(oceanSamples), 0.02)
+        // Beds sit near -15 dBFS so a single sound is neither faint nor hot.
+        for samples in [rainSamples, fanSamples, oceanSamples] {
+            let rms = rootMeanSquare(samples)
+            XCTAssertGreaterThan(rms, 0.09)
+            XCTAssertLessThan(rms, 0.26)
+            XCTAssertLessThan(samples.map { abs($0) }.max() ?? 1, 0.95, "a texture should not touch the hard clip")
+        }
 
         let rainRate = zeroCrossingRate(rainSamples)
         let fanRate = zeroCrossingRate(fanSamples)
         let oceanRate = zeroCrossingRate(oceanSamples)
-        XCTAssertGreaterThan(rainRate, 0.15)
+        // Rain is hiss plus bright droplets; the fan is a low whoosh; the ocean sits
+        // between them because its surf band carries foam above the rumble.
+        XCTAssertGreaterThan(rainRate, 0.3)
         XCTAssertLessThan(fanRate, 0.1)
-        XCTAssertLessThan(oceanRate, 0.05)
-        XCTAssertGreaterThan(rainRate, fanRate)
+        XCTAssertLessThan(oceanRate, 0.3)
+        XCTAssertGreaterThan(rainRate, oceanRate)
+        XCTAssertGreaterThan(oceanRate, fanRate)
     }
 
     func testOceanSwellsMoreThanTheFan() {
@@ -105,12 +112,16 @@ final class DSPGeneratorTests: XCTestCase {
         let fanRatio = windowRatio(fanSamples, sampleRate: sampleRate)
         let oceanRatio = windowRatio(oceanSamples, sampleRate: sampleRate)
         XCTAssertLessThan(fanRatio, 1.5)
-        XCTAssertGreaterThan(oceanRatio, 3)
+        XCTAssertGreaterThan(oceanRatio, 2.5)
         XCTAssertGreaterThan(oceanRatio, fanRatio)
     }
 
     func testSoftClipStaysInRange() {
         XCTAssertEqual(softClip(0), 0, accuracy: 0.000_001)
+        XCTAssertEqual(softClip(0.5), 0.5, accuracy: 0.000_001, "linear below the knee")
+        XCTAssertLessThan(softClip(3), 1, "a stacked mix must compress, never hard-clip")
+        XCTAssertLessThanOrEqual(softClip(50), 1)
+        XCTAssertGreaterThan(softClip(3), softClip(1.5))
         XCTAssertEqual(softClip(0.5), -softClip(-0.5), accuracy: 0.000_001)
         var previous: Float = -2
         var input: Float = -2
@@ -241,6 +252,94 @@ final class ParameterMailboxTests: XCTestCase {
         XCTAssertEqual(latest.gains.ocean, 0.25, accuracy: 0.000_1)
         XCTAssertEqual(latest.rampSamples, -1)
         XCTAssertEqual(latest.generation, 21)
+    }
+}
+
+final class StereoRenderTests: XCTestCase {
+    func testChannelsAreDecorrelatedButLevelMatched() {
+        var state = RenderState(sampleRate: 48_000)
+        let command = EngineCommand(
+            gains: SoundGains(white: 0.5, pink: 0.5, brown: 0.5, rain: 0.5, fan: 0.5, ocean: 0.5),
+            envelopeTarget: 1,
+            rampSamples: 1,
+            generation: 1
+        )
+        let count = 48_000
+        var sxy = 0.0, sxx = 0.0, syy = 0.0
+        for _ in 0..<count {
+            let frame = state.processStereo(command)
+            assertUnit(frame.left)
+            assertUnit(frame.right)
+            sxy += Double(frame.left * frame.right)
+            sxx += Double(frame.left * frame.left)
+            syy += Double(frame.right * frame.right)
+        }
+        let correlation = sxy / sqrt(sxx * syy)
+        XCTAssertLessThan(abs(correlation), 0.1, "left and right should carry independent noise")
+        let levelRatio = sqrt(sxx / syy)
+        XCTAssertEqual(levelRatio, 1, accuracy: 0.15, "but at the same loudness")
+    }
+
+    func testSilentGainsProduceSilence() {
+        var state = RenderState(sampleRate: 48_000)
+        let command = EngineCommand(gains: .zero, envelopeTarget: 1, rampSamples: 1, generation: 1)
+        for _ in 0..<4_000 {
+            let frame = state.processStereo(command)
+            XCTAssertEqual(frame.left, 0)
+            XCTAssertEqual(frame.right, 0)
+        }
+    }
+}
+
+extension ParameterMailboxTests {
+    /// A writer thread publishes commands whose every field encodes the same
+    /// counter. A reader thread must never observe a mixture of two commands.
+    func testConcurrentReadsNeverTear() {
+        // The initial command must itself satisfy the consistency predicate below,
+        // otherwise reads made before the writer's first publish look torn.
+        let mailbox = ParameterMailbox(initial: EngineCommand(gains: .zero, envelopeTarget: 0, rampSamples: 0, generation: 0))
+        let iterations = 200_000
+        let done = expectation(description: "writer finished")
+        var torn = 0
+        var reads = 0
+
+        let writer = Thread {
+            for index in 0..<iterations {
+                let value = Float(index % 1_000) / 1_000
+                var gains = SoundGains.zero
+                gains.white = value
+                gains.pink = value
+                gains.brown = value
+                gains.rain = value
+                gains.fan = value
+                gains.ocean = value
+                mailbox.publish(EngineCommand(
+                    gains: gains,
+                    envelopeTarget: value,
+                    rampSamples: Int32(index % 1_000),
+                    generation: 0
+                ))
+            }
+            done.fulfill()
+        }
+        writer.qualityOfService = .userInteractive
+        writer.start()
+
+        var last = EngineCommand.silence
+        let deadline = Date().addingTimeInterval(3)
+        while Date() < deadline {
+            let command = mailbox.load(fallback: last)
+            last = command
+            reads += 1
+            let g = command.gains
+            let consistent = g.white == g.pink && g.pink == g.brown && g.brown == g.rain
+                && g.rain == g.fan && g.fan == g.ocean && g.ocean == command.envelopeTarget
+                && Int32((g.white * 1_000).rounded()) == command.rampSamples
+            if !consistent { torn += 1 }
+        }
+        wait(for: [done], timeout: 10)
+        XCTAssertEqual(torn, 0, "seqlock let \(torn) of \(reads) reads through torn")
+        XCTAssertGreaterThan(reads, 1_000)
     }
 }
 

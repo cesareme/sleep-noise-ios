@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 /// Hard bound used by every generator. NaNs become silence so a bad
@@ -10,12 +11,22 @@ func clipUnit(_ x: Float) -> Float {
     return x
 }
 
-/// Smooth saturation. Slope is 1 at zero, so quiet mixes stay linear,
-/// and a stack of layers compresses instead of hard-clipping.
+/// Bounded saturation with a linear knee.
+///
+/// Below `knee` the signal passes untouched, so a single bed keeps its
+/// character. Above it a tanh segment compresses towards, and never
+/// reaches, full scale, so stacking every layer at full volume cannot
+/// hard-clip. The curve is continuous with slope 1 at the knee.
 @inline(__always)
 func softClip(_ x: Float) -> Float {
-    let limited = x / (1 + abs(x) * 0.25)
-    return clipUnit(limited)
+    let knee: Float = 0.6
+    let magnitude = abs(x)
+    if magnitude <= knee {
+        return clipUnit(x)
+    }
+    let headroom = 1 - knee
+    let shaped = knee + headroom * tanhf((magnitude - knee) / headroom)
+    return clipUnit(x < 0 ? -shaped : shaped)
 }
 
 @inline(__always)

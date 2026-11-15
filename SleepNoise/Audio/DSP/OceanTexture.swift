@@ -1,12 +1,21 @@
 import Darwin
 import Foundation
 
-/// Ocean: lowpassed noise under two slow, incommensurate swells.
+/// Ocean: a low rumble under two slow, incommensurate swells, plus a surf layer
+/// of highpassed foam whose level crests just ahead of the rumble and washes out
+/// slowly. The surf band is what makes it read as water instead of thunder.
 struct OceanTexture {
     var rng: XorShift32
-    private var lowpassA: Float = 0
-    private var lowpassB: Float = 0
-    private var coefficient: Float = 0.02
+    private var rumbleA: Float = 0
+    private var rumbleB: Float = 0
+    private var rumbleCoefficient: Float = 0.02
+    private var surfHighpassState: Float = 0
+    private var surfHighpassCoefficient: Float = 0.1
+    private var surfLowpass: Float = 0
+    private var surfLowpassCoefficient: Float = 0.5
+    private var surfEnvelope: Float = 0
+    private var surfAttack: Float = 0.001
+    private var surfRelease: Float = 0.0001
     private var phaseA: Float = 0
     private var phaseB: Float = 2
     private var incrementA: Float = 0
@@ -19,34 +28,43 @@ struct OceanTexture {
 
     mutating func prepare(sampleRate: Float) {
         let rate = sampleRate > 1 ? sampleRate : 48_000
-        coefficient = OnePole.coefficient(sampleRate: rate, hertz: 180)
-        incrementA = (2 * Float.pi * 0.07) / rate
-        incrementB = (2 * Float.pi * 0.11) / rate
+        rumbleCoefficient = OnePole.coefficient(sampleRate: rate, hertz: 160)
+        surfHighpassCoefficient = OnePole.coefficient(sampleRate: rate, hertz: 700)
+        surfLowpassCoefficient = OnePole.coefficient(sampleRate: rate, hertz: 5_500)
+        surfAttack = 1 - expf(-1 / (rate * 0.35))
+        surfRelease = 1 - expf(-1 / (rate * 2.2))
+        incrementA = (2 * Float.pi * 0.075) / rate
+        incrementB = (2 * Float.pi * 0.047) / rate
     }
 
     mutating func next() -> Float {
         let white = rng.nextBipolar()
-        lowpassA = flushDenormal(lowpassA + coefficient * (white - lowpassA))
-        lowpassB = flushDenormal(lowpassB + coefficient * (lowpassA - lowpassB))
 
-        phaseA += incrementA
-        phaseB += incrementB
-        if phaseA > 2 * Float.pi { phaseA -= 2 * Float.pi }
-        if phaseB > 2 * Float.pi { phaseB -= 2 * Float.pi }
-
+        phaseA = wrapPhase(phaseA + incrementA)
+        phaseB = wrapPhase(phaseB + incrementB)
         let swellA = 0.5 + 0.5 * sinf(phaseA)
         let swellB = 0.5 + 0.5 * sinf(phaseB)
-        let crest = powf(swellA, 1.6) * (0.45 + 0.55 * swellB)
-        let level = 0.08 + 0.92 * crest
-        return clipUnit(lowpassB * level * 5.5)
-    }
-}
+        let swell = 0.6 * swellA + 0.4 * swellB
 
-enum OnePole {
-    /// One-pole smoothing coefficient for a cutoff in hertz.
-    static func coefficient(sampleRate: Float, hertz: Float) -> Float {
-        let rate = sampleRate > 1 ? sampleRate : 48_000
-        let hz = max(1, hertz)
-        return 1 - expf((-2 * Float.pi * hz) / rate)
+        // Rumble: two one-pole lowpasses, level follows the swell above a floor.
+        rumbleA = flushDenormal(rumbleA + rumbleCoefficient * (white - rumbleA))
+        rumbleB = flushDenormal(rumbleB + rumbleCoefficient * (rumbleA - rumbleB))
+        let rumbleLevel = 0.22 + 0.78 * swell * swell
+        let rumble = rumbleB * rumbleLevel * 4.6
+
+        // Surf: band 700 Hz – 5.5 kHz. The crest leads the rumble so the break is heard
+        // before the body of the wave arrives, then the foam washes out over seconds.
+        let leading = 0.5 + 0.5 * sinf(phaseA + 0.55)
+        let crest = powf(leading, 3) * (0.5 + 0.5 * swellB)
+        let coefficient = crest > surfEnvelope ? surfAttack : surfRelease
+        surfEnvelope = flushDenormal(surfEnvelope + (crest - surfEnvelope) * coefficient)
+
+        let surfNoise = rng.nextBipolar()
+        surfHighpassState = flushDenormal(surfHighpassState + surfHighpassCoefficient * (surfNoise - surfHighpassState))
+        let highpassed = surfNoise - surfHighpassState
+        surfLowpass = flushDenormal(surfLowpass + surfLowpassCoefficient * (highpassed - surfLowpass))
+        let surf = surfLowpass * (0.04 + 0.96 * surfEnvelope) * 0.55
+
+        return clipUnit(rumble + surf)
     }
 }

@@ -3,9 +3,9 @@ import Foundation
 /// Single-producer seqlock.
 ///
 /// The main thread is the only writer. It marks the sequence odd, copies one
-/// command, then marks the sequence even with a release store. The render
-/// thread copies the command and retries by falling back to the previous
-/// command if the sequence moved. It never spins and never takes a lock.
+/// command, then marks the sequence even. The render thread copies the command
+/// and, if the sequence moved or was odd, keeps the previous command instead.
+/// It never spins and never takes a lock. The fences live in `AtomicBridge.c`.
 final class ParameterMailbox: @unchecked Sendable {
     let storage: UnsafeMutablePointer<EngineCommand>
     let sequence: UnsafeMutablePointer<UInt32>
@@ -32,10 +32,10 @@ final class ParameterMailbox: @unchecked Sendable {
         var copy = command
         copy.generation = generation
         sequenceValue &+= 1
-        sn_store_u32_release(sequence, sequenceValue)
+        sn_seqlock_begin_write(sequence, sequenceValue)
         storage.pointee = copy
         sequenceValue &+= 1
-        sn_store_u32_release(sequence, sequenceValue)
+        sn_seqlock_end_write(sequence, sequenceValue)
     }
 
     func load(fallback: EngineCommand) -> EngineCommand {
@@ -53,12 +53,12 @@ func readEngineCommand(
     sequence: UnsafeMutablePointer<UInt32>,
     fallback: EngineCommand
 ) -> EngineCommand {
-    let start = sn_load_u32_acquire(sequence)
+    let start = sn_seqlock_read_begin(sequence)
     if (start & 1) == 1 {
         return fallback
     }
     let candidate = command.pointee
-    let end = sn_load_u32_acquire(sequence)
+    let end = sn_seqlock_read_end(sequence)
     if start != end {
         return fallback
     }
