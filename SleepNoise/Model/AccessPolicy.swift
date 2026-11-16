@@ -2,7 +2,8 @@ import Foundation
 
 /// Free tier: white, pink, brown, rain, a 15, 30 or 60 minute timer, and one
 /// saved mix. Full access (purchased Pro, or the local seven-day trial) unlocks
-/// fan, ocean, the breathing tide, any timer up to six hours, and unlimited mixes.
+/// fan, ocean, thunder, campfire, brook, wind, cabin, the breathing tide, any
+/// timer up to six hours, and unlimited mixes.
 ///
 /// `hasFullAccess` is `PurchaseManager.hasFullAccess`: purchased OR trial active.
 enum AccessPolicy {
@@ -17,7 +18,7 @@ enum AccessPolicy {
         switch sound {
         case .white, .pink, .brown, .rain:
             return true
-        case .fan, .ocean:
+        case .fan, .ocean, .thunder, .campfire, .stream, .wind, .cabin:
             return false
         }
     }

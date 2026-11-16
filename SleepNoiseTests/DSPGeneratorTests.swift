@@ -219,7 +219,7 @@ final class FadeCurveTests: XCTestCase {
     func testMixedOutputStaysInsideTheUnitInterval() {
         var state = RenderState(sampleRate: 48_000)
         let command = EngineCommand(
-            gains: SoundGains(white: 1, pink: 1, brown: 1, rain: 1, fan: 1, ocean: 1),
+            gains: .uniform(1),
             envelopeTarget: 1,
             rampSamples: 1,
             generation: 1,
@@ -295,6 +295,111 @@ final class StereoRenderTests: XCTestCase {
     }
 }
 
+final class NewTextureTests: XCTestCase {
+    func testNewTexturesStayFiniteAtSeveralSampleRates() {
+        let rates: [Float] = [22_050, 44_100, 48_000, 96_000]
+        var levels: [String: [Float]] = [:]
+        for rate in rates {
+            let rendered = render(sampleRate: rate, seconds: 2)
+            for (name, samples) in rendered {
+                if let bad = samples.first(where: { $0.isNaN || $0.isInfinite || $0 < -1 || $0 > 1 }) {
+                    return XCTFail("\(name) at \(rate) left the unit interval: \(bad)")
+                }
+                let rms = rootMeanSquare(samples)
+                XCTAssertGreaterThan(rms, 0.02, "\(name) at \(rate) is silent")
+                XCTAssertLessThan(rms, 0.45, "\(name) at \(rate) is too hot")
+                levels[name, default: []].append(rms)
+            }
+        }
+        for (name, rmsValues) in levels {
+            guard let low = rmsValues.min(), let high = rmsValues.max(), low > 0 else {
+                return XCTFail(name)
+            }
+            XCTAssertLessThan(high / low, 2.5, "\(name) loudness should stay in the same range across sample rates")
+        }
+    }
+
+    func testNewTexturesAreNotCopiesOfEachOther() {
+        let rendered = render(sampleRate: 48_000, seconds: 3)
+        let names = ["thunder", "campfire", "stream", "wind", "cabin"]
+        for left in names {
+            for right in names where right > left {
+                let correlation = correlationOf(rendered[left] ?? [], rendered[right] ?? [])
+                XCTAssertLessThan(abs(correlation), 0.85, "\(left) and \(right) should not be the same signal")
+            }
+        }
+    }
+
+    func testRenderMixOfNewTexturesStaysInsideTheUnitInterval() {
+        for rate in [Float(44_100), 48_000] {
+            var state = RenderState(sampleRate: rate)
+            var gains = SoundGains.zero
+            gains.thunder = 0.8
+            gains.campfire = 0.8
+            gains.stream = 0.8
+            gains.wind = 0.8
+            gains.cabin = 0.8
+            let command = EngineCommand(
+                gains: gains,
+                envelopeTarget: 1,
+                rampSamples: 1,
+                generation: 1,
+                envelopeGeneration: 1
+            )
+            var peak: Float = 0
+            for _ in 0..<Int(rate / 4) {
+                let frame = state.processStereo(command)
+                if frame.left.isNaN || frame.right.isNaN || abs(frame.left) > 1 || abs(frame.right) > 1 {
+                    return XCTFail("mix at \(rate) left the unit interval")
+                }
+                peak = max(peak, abs(frame.left), abs(frame.right))
+            }
+            XCTAssertGreaterThan(peak, 0.05)
+        }
+    }
+
+    private func render(sampleRate: Float, seconds: Int) -> [String: [Float]] {
+        var thunder = ThunderTexture(seed: 0x7F4A7C15, sampleRate: sampleRate)
+        var campfire = CampfireTexture(seed: 0x2D8E4B61, sampleRate: sampleRate)
+        var stream = StreamTexture(seed: 0xB17C90E3, sampleRate: sampleRate)
+        var wind = WindTexture(seed: 0x4C0A6F29, sampleRate: sampleRate)
+        var cabin = CabinTexture(seed: 0xE35B18D7, sampleRate: sampleRate)
+        let count = Int(sampleRate) * seconds
+        var output: [String: [Float]] = [
+            "thunder": [], "campfire": [], "stream": [], "wind": [], "cabin": []
+        ]
+        output["thunder"]?.reserveCapacity(count)
+        output["campfire"]?.reserveCapacity(count)
+        output["stream"]?.reserveCapacity(count)
+        output["wind"]?.reserveCapacity(count)
+        output["cabin"]?.reserveCapacity(count)
+        for _ in 0..<count {
+            output["thunder"]?.append(thunder.next())
+            output["campfire"]?.append(campfire.next())
+            output["stream"]?.append(stream.next())
+            output["wind"]?.append(wind.next())
+            output["cabin"]?.append(cabin.next())
+        }
+        return output
+    }
+
+    private func correlationOf(_ left: [Float], _ right: [Float]) -> Float {
+        let count = min(left.count, right.count)
+        guard count > 1 else { return 0 }
+        var sxy: Float = 0
+        var sxx: Float = 0
+        var syy: Float = 0
+        for index in 0..<count {
+            sxy += left[index] * right[index]
+            sxx += left[index] * left[index]
+            syy += right[index] * right[index]
+        }
+        let denom = sqrt(sxx * syy)
+        if denom < 1e-6 { return 0 }
+        return sxy / denom
+    }
+}
+
 extension ParameterMailboxTests {
     /// A writer thread publishes commands whose every field encodes the same
     /// counter. A reader thread must never observe a mixture of two commands.
@@ -312,13 +417,7 @@ extension ParameterMailboxTests {
         let writer = Thread {
             for index in 0..<iterations {
                 let value = Float(index % 1_000) / 1_000
-                var gains = SoundGains.zero
-                gains.white = value
-                gains.pink = value
-                gains.brown = value
-                gains.rain = value
-                gains.fan = value
-                gains.ocean = value
+                let gains = SoundGains.uniform(value)
                 var breath = BreathParameters.off
                 breath.rate = value
                 breath.inhale = value
@@ -345,8 +444,8 @@ extension ParameterMailboxTests {
             last = command
             reads += 1
             let g = command.gains
-            let consistent = g.white == g.pink && g.pink == g.brown && g.brown == g.rain
-                && g.rain == g.fan && g.fan == g.ocean && g.ocean == command.envelopeTarget
+            let gainsMatch = SoundID.allCases.allSatisfy { g.value(for: $0) == g.white }
+            let consistent = gainsMatch && g.white == command.envelopeTarget
                 && Int32((g.white * 1_000).rounded()) == command.rampSamples
                 && command.breath.rate == g.white && command.breath.inhale == g.white
                 && command.breath.weight == g.white

@@ -692,13 +692,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fan and ocean"
+            "value": "More sounds"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ventilador y océano"
+            "value": "Más sonidos"
           }
         }
       }
@@ -710,13 +710,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Two more beds beside rain."
+            "value": "Fan, ocean, thunder, campfire, brook, wind and cabin."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dos fondos más, además de la lluvia."
+            "value": "Ventilador, océano, trueno, hoguera, arroyo, viento y cabina."
           }
         }
       }
@@ -1529,13 +1529,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ocean, fan, the breathing tide and long timers are Pro: %@, paid once. Your saved mixes are kept and come back whole."
+            "value": "Fan, ocean, thunder, campfire, brook, wind, cabin, the breathing tide and long timers are Pro: %@, paid once. Your saved mixes are kept and come back whole."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Océano, ventilador, marea respiratoria y temporizadores largos son Pro: %@, pagado una sola vez. Tus mezclas guardadas se conservan y vuelven enteras."
+            "value": "Ventilador, océano, trueno, hoguera, arroyo, viento, cabina, la marea respiratoria y los temporizadores largos son Pro: %@, pagado una sola vez. Tus mezclas guardadas se conservan y vuelven enteras."
           }
         }
       }
@@ -1666,13 +1666,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ocean, fan, the breathing tide and long timers are Pro, a single payment with no subscription. Your saved mixes are kept and come back whole."
+            "value": "Fan, ocean, thunder, campfire, brook, wind, cabin, the breathing tide and long timers are Pro, a single payment with no subscription. Your saved mixes are kept and come back whole."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Océano, ventilador, marea respiratoria y temporizadores largos son Pro, un único pago sin suscripción. Tus mezclas guardadas se conservan y vuelven enteras."
+            "value": "Ventilador, océano, trueno, hoguera, arroyo, viento, cabina, la marea respiratoria y los temporizadores largos son Pro, un único pago sin suscripción. Tus mezclas guardadas se conservan y vuelven enteras."
           }
         }
       }
@@ -1835,6 +1835,186 @@
           "stringUnit": {
             "state": "translated",
             "value": "Acompaña las olas toda la noche, más sutil. Termina con el temporizador o al pausar."
+          }
+        }
+      }
+    },
+    "sound.thunder": {
+      "comment": "Sound name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thunder"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trueno"
+          }
+        }
+      }
+    },
+    "sound.thunder.detail": {
+      "comment": "Sound detail",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Distant rumbles on rain"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Truenos lejanos sobre la lluvia"
+          }
+        }
+      }
+    },
+    "sound.campfire": {
+      "comment": "Sound name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Campfire"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoguera"
+          }
+        }
+      }
+    },
+    "sound.campfire.detail": {
+      "comment": "Sound detail",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soft cracks and a low flame"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crepitar suave y una llama baja"
+          }
+        }
+      }
+    },
+    "sound.stream": {
+      "comment": "Sound name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brook"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arroyo"
+          }
+        }
+      }
+    },
+    "sound.stream.detail": {
+      "comment": "Sound detail",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Water over stones"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agua entre piedras"
+          }
+        }
+      }
+    },
+    "sound.wind": {
+      "comment": "Sound name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wind"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viento"
+          }
+        }
+      }
+    },
+    "sound.wind.detail": {
+      "comment": "Sound detail",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slow gusts"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ráfagas lentas"
+          }
+        }
+      }
+    },
+    "sound.cabin": {
+      "comment": "Sound name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cabin"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cabina"
+          }
+        }
+      }
+    },
+    "sound.cabin.detail": {
+      "comment": "Sound detail",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Airplane and train hum"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zumbido de avión y tren"
           }
         }
       }

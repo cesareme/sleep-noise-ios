@@ -7,6 +7,11 @@ enum SoundID: String, Codable, CaseIterable, Identifiable {
     case rain
     case fan
     case ocean
+    case thunder
+    case campfire
+    case stream
+    case wind
+    case cabin
 
     var id: String { rawValue }
 
@@ -18,6 +23,11 @@ enum SoundID: String, Codable, CaseIterable, Identifiable {
         case .rain: return "sound.rain"
         case .fan: return "sound.fan"
         case .ocean: return "sound.ocean"
+        case .thunder: return "sound.thunder"
+        case .campfire: return "sound.campfire"
+        case .stream: return "sound.stream"
+        case .wind: return "sound.wind"
+        case .cabin: return "sound.cabin"
         }
     }
 
@@ -29,6 +39,11 @@ enum SoundID: String, Codable, CaseIterable, Identifiable {
         case .rain: return "sound.rain.detail"
         case .fan: return "sound.fan.detail"
         case .ocean: return "sound.ocean.detail"
+        case .thunder: return "sound.thunder.detail"
+        case .campfire: return "sound.campfire.detail"
+        case .stream: return "sound.stream.detail"
+        case .wind: return "sound.wind.detail"
+        case .cabin: return "sound.cabin.detail"
         }
     }
 
@@ -40,6 +55,11 @@ enum SoundID: String, Codable, CaseIterable, Identifiable {
         case .rain: return "cloud.rain.fill"
         case .fan: return "fan.fill"
         case .ocean: return "water.waves"
+        case .thunder: return "cloud.bolt.fill"
+        case .campfire: return "flame.fill"
+        case .stream: return "drop.fill"
+        case .wind: return "wind"
+        case .cabin: return "airplane"
         }
     }
 

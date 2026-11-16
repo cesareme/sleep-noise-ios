@@ -8,6 +8,9 @@ final class AccessPolicyTests: XCTestCase {
         }
         XCTAssertFalse(AccessPolicy.soundIsIncluded(.fan, hasFullAccess: false))
         XCTAssertFalse(AccessPolicy.soundIsIncluded(.ocean, hasFullAccess: false))
+        for sound in [SoundID.thunder, .campfire, .stream, .wind, .cabin] {
+            XCTAssertFalse(AccessPolicy.soundIsIncluded(sound, hasFullAccess: false))
+        }
         for sound in SoundID.allCases {
             XCTAssertTrue(AccessPolicy.soundIsIncluded(sound, hasFullAccess: true))
         }
