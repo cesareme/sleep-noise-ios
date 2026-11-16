@@ -1,0 +1,8 @@
+# Floor for the number of tests that scripts/verify.sh must see run.
+#
+# One number. Lines starting with # and blank lines are ignored. The gate fails
+# when fewer tests run, so a test cannot disappear without anyone noticing.
+#
+# The number only goes up. The integrator raises it to the new total when a
+# package that adds tests is merged. Nobody lowers it to make a PR pass.
+49
