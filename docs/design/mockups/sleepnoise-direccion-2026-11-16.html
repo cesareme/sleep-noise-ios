@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SleepNoise · Dirección de diseño · maqueta 2026-11-16</title>
+<style>
+/* ———— Tokens (03-DIRECCION §3 / tokens.md) ———— */
+:root{
+  --negro:#000000; --hoja:#1C1C1E; --grafito:#1E1D1B;
+  --trazo:#2A2A2E; --trazo-hoja:#38383B;
+  --texto:#E8E4DC; --texto2:#9C9A96; --texto3:#6E6C68; --texto-noche:#A2A09A;
+  --indice:#F0C020; --indice-noche:#BA941C;
+  --papel:#F3F0E9; --tinta:#1E1C19; --tinta2:#5F5A53; --tinta3:#9C958A; --ocre:#8A6508;
+  --trazo-papel:#D8D3C9; --pulsado-papel:#E9E5DC;
+  --ui:-apple-system,BlinkMacSystemFont,'SF Pro','SF Pro Text','SF Pro Display','Helvetica Neue',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#0A0A0A;color:var(--texto);font-family:var(--ui);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+body{padding:48px 48px 96px}
+header.doc{max-width:860px;margin-bottom:48px}
+header.doc h1{font-size:28px;line-height:34px;font-weight:500;letter-spacing:-.005em}
+header.doc p{font-size:15px;line-height:22px;color:var(--texto2);margin-top:10px}
+header.doc .sc{font-size:13px;line-height:18px;font-weight:500;color:var(--texto2);margin-top:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,393px);gap:72px 72px;justify-content:start}
+figure{margin:0}
+figure.wide{grid-column:span 2}
+figcaption{margin-top:16px;font-size:13px;line-height:18px;color:var(--texto2);max-width:393px}
+figcaption b{color:var(--texto);font-weight:600}
+figure.wide figcaption{max-width:852px}
+
+/* ———— Escala tipográfica (03 §3.4) ———— */
+.t1{font-size:72px;line-height:80px;font-weight:400;letter-spacing:-.01em}
+.t1s{font-size:56px;line-height:64px;font-weight:400;letter-spacing:-.01em}
+.t2{font-size:28px;line-height:34px;font-weight:500}
+.t3{font-size:22px;line-height:28px;font-weight:600}
+.t4{font-size:20px;line-height:25px;font-weight:500}
+.t5{font-size:17px;line-height:22px;font-weight:600}
+.t6{font-size:17px;line-height:22px;font-weight:400}
+.t7{font-size:15px;line-height:20px;font-weight:400;color:var(--txt2)}
+.t8{font-size:13px;line-height:18px;font-weight:400;color:var(--txt2)}
+.t9{font-size:13px;line-height:18px;font-weight:500;color:var(--txt2)}
+.sc{font-variant:all-small-caps;letter-spacing:.02em}
+.c2{color:var(--txt2)} .c1{color:var(--txt)} .c3{color:var(--txt3)}
+
+/* ———— Marco iPhone 393×852 ———— */
+.phone{position:relative;width:393px;height:852px;background:var(--bg);color:var(--txt);overflow:hidden;border-radius:55px;box-shadow:0 0 0 9px #161616,0 0 0 10px #262626;font-size:17px;line-height:22px;
+  --txt:var(--texto);--txt2:var(--texto2);--txt3:var(--texto3);--bg:var(--negro);--hl:var(--trazo);--acc:var(--indice);--disc:var(--grafito)}
+.phone.noche{--txt:var(--texto-noche);--txt2:var(--texto-noche);--acc:var(--indice-noche)}
+.phone.noche .t6,.phone.noche .t7,.phone.noche .t8{font-weight:500}
+.phone.noche .t3{font-weight:500}
+.phone.paper{--txt:var(--tinta);--txt2:var(--tinta2);--txt3:var(--tinta3);--bg:var(--papel);--hl:var(--trazo-papel);--acc:var(--ocre);--disc:var(--pulsado-papel)}
+.island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:126px;height:37px;background:#000;border-radius:20px}
+.status{position:absolute;top:16px;left:0;right:0;height:22px;font-size:17px;font-weight:600;color:var(--txt)}
+.status .t{position:absolute;left:46px;top:0}
+.status .r{position:absolute;right:30px;top:4px;display:flex;gap:7px;align-items:center}
+.sig{display:block;width:18px;height:12px;background:
+  linear-gradient(currentColor,currentColor) 0 100%/3px 4px no-repeat,
+  linear-gradient(currentColor,currentColor) 5px 100%/3px 6px no-repeat,
+  linear-gradient(currentColor,currentColor) 10px 100%/3px 9px no-repeat,
+  linear-gradient(currentColor,currentColor) 15px 100%/3px 12px no-repeat}
+.bat{display:block;width:27px;height:13px;border:1px solid currentColor;border-radius:4px;position:relative;opacity:1}
+.bat::before{content:"";position:absolute;inset:1px;background:currentColor;border-radius:2px}
+.bat{border-color:color-mix(in srgb,currentColor 40%,transparent)}
+.home{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:139px;height:5px;border-radius:3px;background:var(--txt);opacity:.9}
+.pad{padding:0 20px}
+.hair{height:.5px;background:var(--hl)}
+
+/* ———— Cabecera editorial de la página (05 §2.0): renglones fijos, vacíos cuando no hay contenido ———— */
+.hdr{height:18px}                                   /* 64-82   versalita paso 9 */
+.name{height:34px;margin-top:18px}                  /* 100-134 paso 2 */
+.st{height:20px;margin-top:10px;display:flex;justify-content:space-between;align-items:baseline} /* 144-164 paso 7 */
+.l2{height:20px}                                    /* 164-184 línea 2 (TextAction 17 Regular texto2 o vacía) */
+.l2 .t6{line-height:20px}
+.note{height:60px;margin-top:12px}                  /* 196-256 nota de una vez · paso 7 · 3 líneas · todo el bloque es un botón */
+.sp32{height:32px} .sp80{height:80px}
+
+/* Filas editoriales (03 §4.7): 56 lista · 72 con subtítulo · 92 receta a dos líneas · hairline de margen a margen */
+.r56,.r72,.r92{position:relative;display:flex;justify-content:space-between;align-items:center}
+.r56{height:56px}
+.r72{height:72px;align-items:flex-start;padding-top:12px}
+.r92{height:92px;align-items:flex-start;padding-top:12px}
+.r72 .t7,.r92 .t7{margin-top:2px}                    /* subtítulo / receta en y+36 */
+.r56::after,.r72::after,.r92::after{content:"";position:absolute;left:0;right:0;bottom:0;height:.5px;background:var(--hl)}
+.ht::after{top:0;bottom:auto}                        /* página: la hairline va encima de la fila (552, 640, 712); ninguna en 768 */
+.r72 .tg{margin-top:-4.5px}                          /* toggle 51×31 centrado en el renglón del nombre */
+.right{display:flex;align-items:center;gap:8px}
+.chev{color:var(--txt3);font-size:17px;line-height:22px}
+
+/* Fila-control (03 §4.2, 05 §2.0): 80 de paso = 56 táctiles + 24 de canal · nombre · subtítulo en un renglón · línea a y0+44 */
+.layer{position:relative;height:80px}
+.layer .n{position:absolute;left:0;top:12px;font-size:17px;line-height:22px;font-weight:600;color:var(--txt);white-space:nowrap}
+.layer .n .s{font-size:15px;font-weight:400;color:var(--txt2)}
+.layer .v{position:absolute;right:0;top:14px;font-size:13px;line-height:18px;font-weight:500;color:var(--txt2)}
+.layer .lv{position:absolute;left:0;right:0;top:44px;height:1px;background:var(--txt3)}
+.layer .lv i{position:absolute;left:0;top:-.5px;height:2px;background:var(--txt)}
+.layer.pro .n{color:var(--txt2)}
+.layer.drag .track{position:absolute;left:0;right:0;top:6px;height:44px;background:var(--grafito)}
+.layer.drag .lv i{height:3px;top:-1px;background:var(--acc)}
+.layer.drag .v{font-size:17px;line-height:22px;top:12px;color:var(--txt)}
+.phone.noche .layer .n .s,.phone.noche .layer .v{font-weight:500}
+
+/* Horizonte (03 §4.1, 05 §2.0): banda de 24 en 272-296, línea en 284 (852 × ⅓) */
+.hz{position:relative;height:24px;margin-top:16px}
+.hz i{position:absolute;left:0;right:0;top:11.75px;height:.5px;background:var(--hl)}
+.hz.on i{top:11px;height:2px;background:var(--acc);opacity:.85}
+.hz.fade i{top:11.25px;height:1.5px;background:var(--acc);opacity:.6}
+/* Línea de agua (03 §4.3, 05 §2.3): banda de 120 (176-296) entre dos marcas hairline texto3; recorrido 184 ↔ 284; dibujada a media banda (236) */
+.tide{position:relative;height:120px}
+.tide .mk{position:absolute;left:0;right:0;height:.5px;background:var(--txt3)}
+.tide .wl{position:absolute;left:0;right:0;height:2px;background:var(--acc)}
+
+/* Toggle del sistema con tinte índice (03 §4.12) */
+.tg{width:51px;height:31px;border-radius:15.5px;background:rgba(120,120,128,.32);position:relative;flex:none}
+.tg::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.3)}
+.tg.on{background:var(--acc)} .tg.on::after{left:22px}
+.phone.paper .tg{background:#E9E9EA}
+
+/* Disco (03 §4.4) y barra (03 §4.11) */
+.bar{position:absolute;left:0;right:0;bottom:0;height:83px;background:var(--bg)}
+.bar::before{content:"";position:absolute;left:0;right:0;top:0;height:.5px;background:var(--hl)}
+.bar .l,.bar .r{position:absolute;top:13.5px;font-size:17px;line-height:22px;font-weight:500;color:var(--txt)}
+.bar .l{left:20px}.bar .r{right:20px}
+.bar .disc{position:absolute;left:50%;top:2.5px;transform:translateX(-50%)}
+.disc{width:44px;height:44px;border-radius:50%;background:var(--disc);box-shadow:inset 0 1px 1px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;color:var(--txt)}
+.phone.paper .disc{box-shadow:inset 0 1px 1px rgba(30,28,25,.2)}
+svg.g{display:block;fill:currentColor}
+
+/* Hojas (03 §4.10): Pro, Marea y Temporizador en hoja; Capas en negro (05 §2.7, decisión E2 §9.4) */
+.behind{position:absolute;inset:0;opacity:.35}
+.sheet{position:absolute;left:0;right:0;top:54px;bottom:0;background:var(--hoja);border-radius:38px 38px 0 0;--hl:var(--trazo-hoja);--bg:var(--hoja)}
+.sheet.negro{background:var(--negro);--hl:var(--trazo);--bg:var(--negro)}
+.sheet.medium{top:432px}                             /* detent .medium ≈ 420 (07 §2.1) */
+.sheet .grab{width:36px;height:5px;border-radius:3px;background:#5A5A5E;margin:5px auto 0}
+.sheet h2{font-size:22px;line-height:28px;font-weight:600;padding:14px 20px 0}  /* cabecera paso 3 en y 24 */
+.sheet .hair{background:var(--hl)}
+.sheet .bar{background:var(--bg)}
+.sheet .bar::before{background:var(--hl)}
+.chk{color:var(--txt);display:block}
+.cab{height:28px;padding-top:5px}                    /* cabecera de sección 28 (08 §2.1, §2.3) */
+.rl{height:36px;display:flex;align-items:center}     /* renglón de la lista "con pro" (08 §2.3): sin hairlines */
+
+/* Acción primaria (03 §4.6): palabra entre dos hairlines de 64 */
+.act{height:64px;display:flex;align-items:center;justify-content:center;font-size:17px;line-height:22px;font-weight:600;color:var(--txt);position:relative}
+.act::before,.act::after{content:"";position:absolute;left:0;right:0;height:.5px;background:var(--hl)}
+.act::before{top:0}.act::after{bottom:0}
+.act.buy::before,.act.buy::after{height:1.5px;background:var(--indice)}  /* Comprar con precio: 1,5 pt índice (08 §2.3; 03 §3.1 ≥ 1,5) */
+.act2{height:44px;display:flex;align-items:center;justify-content:center;font-size:17px;line-height:22px;color:var(--txt2)}
+
+/* Noche / Madrugada (07 §2.2-2.3): botón de 64 a todo el ancho en y 754-818 */
+.nightbtn{position:absolute;left:0;right:0;bottom:34px;height:64px;display:flex;align-items:center;justify-content:center;font-size:20px;line-height:25px;font-weight:500;color:var(--txt)}
+
+/* Bloqueo / Live Activity (09 §2.19): 160 de alto, fondo negro, esquinas del sistema, sin borde propio */
+.di{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:238px;height:37px;background:#000;border-radius:20px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;color:var(--texto)}
+.la{position:absolute;left:14px;right:14px;top:290px;height:160px;background:#000;border-radius:24px;color:var(--texto)}
+.la .nm{position:absolute;left:20px;top:16px;font-size:17px;line-height:22px;font-weight:600}
+.la .tm{position:absolute;right:20px;top:12px;font-size:28px;line-height:34px;font-weight:500}
+.la .vs{position:absolute;left:20px;top:40px;font-size:15px;line-height:20px;font-weight:500}
+.la .hzl{position:absolute;left:20px;right:20px;top:71px;height:2px;background:var(--texto)}
+.la .b1{position:absolute;left:20px;width:260px;top:88px;height:64px;display:flex;align-items:center;justify-content:center;font-size:20px;line-height:25px;font-weight:500}
+.la .b2{position:absolute;right:20px;width:64px;top:88px;height:64px;display:flex;align-items:center;justify-content:center}
+
+/* StandBy 852×393 (09 §2.21): la presentación de bloqueo escalada ×2 (786×320), centrada */
+.standby{position:relative;width:852px;height:393px;background:#000;border-radius:48px;overflow:hidden;box-shadow:0 0 0 9px #161616,0 0 0 10px #262626;color:var(--texto)}
+.standby .sbv{position:absolute;left:33px;top:36.5px;width:786px;height:320px}
+.standby .red{position:absolute;inset:0;background:#FF0000;mix-blend-mode:multiply;pointer-events:none}
+
+/* Pantalla de inicio / widget (09 §2.22) */
+.phone.homescr{--bg:#101012;background:#101012}
+.widget{position:absolute;width:158px;height:158px;background:#000;border-radius:22px;color:var(--texto)}
+.widget .nm{position:absolute;left:16px;top:16px;font-size:17px;line-height:22px;font-weight:600}
+.widget .st2{position:absolute;left:16px;top:44px;font-size:15px;line-height:20px;font-weight:500}
+.widget .hzw{position:absolute;left:16px;right:16px;top:87px;height:2px;background:var(--texto)}
+.widget .wb{position:absolute;left:96px;top:96px;width:44px;height:44px;display:flex;align-items:center;justify-content:center}
+.icon{position:absolute;width:60px;height:60px;border-radius:14px;background:#1C1C1E}
+
+/* Leyenda */
+.legend{margin-top:96px;max-width:980px}
+.legend h2{font-size:22px;line-height:28px;font-weight:600;margin-bottom:16px}
+.legend h3{font-size:13px;line-height:18px;font-weight:500;color:var(--texto2);margin:32px 0 8px}
+.sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px 24px}
+.sw div{display:flex;align-items:center;gap:10px;font-size:13px;line-height:18px;color:var(--texto2)}
+.sw i{display:inline-block;width:24px;height:24px;border:.5px solid #333;flex:none}
+.sw b{color:var(--texto);font-weight:500}
+table{border-collapse:collapse;font-size:13px;line-height:18px;color:var(--texto2)}
+td,th{text-align:left;padding:6px 24px 6px 0;border-bottom:.5px solid var(--trazo);vertical-align:top}
+th{color:var(--texto);font-weight:500}
+</style>
+</head>
+<body>
+
+<header class="doc">
+  <h1>SleepNoise · Dirección de diseño · maqueta de estados</h1>
+  <p>Grafito sin Red Graphite: la página, la fila-control, la palabra de estado, la prueba y el paywall de Grafito; el Índice de Dial (#F0C020, solo donde el sonido o el dedo están vivos), el Disco, el Horizonte quieto a un tercio (y = 284), las hojas en <code>hoja</code> (Capas en <code>negro</code>), el botón como palabra entre dos hairlines. SF Pro única, versalitas reales, cifras tabulares, hairlines de 0,5 pt, radio 0 en lo propio, cero iconos en principal y mezclador. 393 × 852, tamaño Large, español. Cotas de 05, 07, 08 y 09.</p>
+  <p class="sc">documento 03 · 16 de noviembre de 2026 · maqueta estática, sin JS · revisada por el jurado de maqueta</p>
+</header>
+
+<div class="grid">
+
+<!-- 1 · Principal en reposo (05 §2.1) -->
+<figure>
+<div class="phone">
+  <div class="island"></div>
+  <div class="status"><span class="t">23:12</span><span class="r"><i class="sig"></i><i class="bat"></i></span></div>
+  <div class="pad" style="padding-top:64px">
+    <div class="t9 sc hdr">prueba · quedan 5 noches</div>
+    <div class="t2 name">Esta noche</div>
+    <div class="st"><span class="t7">En silencio</span></div>
+    <div class="l2"></div>
+    <div class="note"></div>
+    <div class="hz"><i></i></div>
+    <div class="layer" style="margin-top:16px"><div class="n">Lluvia<span class="s"> · fina, constante</span></div><div class="v">30</div><div class="lv"><i style="width:30%"></i></div></div>
+    <div class="layer"><div class="n">Rosa<span class="s"> · suave y equilibrado</span></div><div class="v">50</div><div class="lv"><i style="width:50%"></i></div></div>
+    <div class="sp80"></div>
+    <div class="r56 ht"><span class="t5">Todas las capas</span></div>
+    <div class="sp32"></div>
+    <div class="r72 ht"><div><div class="t5">Marea respiratoria</div></div><div class="tg"></div></div>
+    <div class="r56 ht"><span class="t5">Temporizador</span><span class="t7">Hasta dormirme · 45 min</span></div>
+  </div>
+  <div class="bar"><span class="l">Mezclas</span><span class="disc"><svg class="g" width="22" height="24" viewBox="0 0 22 24"><path d="M3 2.4v19.2L20 12z"/></svg></span><span class="r">Noche</span></div>
+  <div class="home"></div>
+</div>
+<figcaption><b>1 · Principal, en reposo.</b> Sin título de app. Versalita de prueba (64), "Esta noche" a 28 (100), estado en paso 7 (144), línea 2 y nota vacías, el Horizonte como hairline <code>trazo</code> a un tercio (y = 284): el silencio dibujado. Cero color. Dos filas-control de 80 (312, 392), camas primero, nombre · subtítulo en un renglón y la línea de nivel a y0+44; el tercer renglón vacío. Tres hairlines (552, 640, 712); ninguna bajo el Horizonte ni sobre la barra. "Todas las capas" sin número ni chevrón; Marea sin subtítulo (el toggle lo dice); Temporizador enseña el ajuste, nunca la cuenta. Barra: Mezclas · Disco · Noche.</figcaption>
+</figure>
+
+<!-- 2 · Principal sonando (05 §2.2) -->
+<figure>
+<div class="phone">
+  <div class="island"></div>
+  <div class="status"><span class="t">23:14</span><span class="r"><i class="sig"></i><i class="bat"></i></span></div>
+  <div class="pad" style="padding-top:64px">
+    <div class="t9 sc hdr">prueba · quedan 5 noches</div>
+    <div class="t2 name">Esta noche</div>
+    <div class="st"><span class="t7">Sonando · se funde a las 0:42</span></div>
+    <div class="l2"></div>
+    <div class="note"></div>
+    <div class="hz on"><i></i></div>
+    <div class="layer" style="margin-top:16px"><div class="n">Lluvia<span class="s"> · fina, constante</span></div><div class="v">30</div><div class="lv"><i style="width:30%"></i></div></div>
+    <div class="layer"><div class="n">Rosa<span class="s"> · suave y equilibrado</span></div><div class="v">50</div><div class="lv"><i style="width:50%"></i></div></div>
+    <div class="sp80"></div>
+    <div class="r56 ht"><span class="t5">Todas las capas</span></div>
+    <div class="sp32"></div>
+    <div class="r72 ht"><div><div class="t5">Marea respiratoria</div></div><div class="tg"></div></div>
+    <div class="r56 ht"><span class="t5">Temporizador</span><span class="t7">Hasta dormirme · 45 min</span></div>
+  </div>
+  <div class="bar"><span class="l">Mezclas</span><span class="disc"><svg class="g" width="20" height="24" viewBox="0 0 20 24"><rect x="2" y="2" width="5.5" height="20" rx="1"/><rect x="12.5" y="2" width="5.5" height="20" rx="1"/></svg></span><span class="r">Noche</span></div>
+  <div class="home"></div>
+</div>
+<figcaption><b>2 · Principal, sonando.</b> El Horizonte nace de la hairline hasta <code>índice</code> con la ganancia real (800 ms); aquí a 2 pt (grosor 1,5 → 3 y opacidad 0,6 → 1,0 por RMS maestro; no escribe, no corre). Es el único color de la pantalla. El estado dice lo que pasa y cuándo termina, con la hora corta del sistema ("0:42"). La fila Temporizador no cambia: la cuenta no está en la página. El Disco pasa a pausa; nunca lleva color. Ninguna posición cambia respecto a 1.</figcaption>
+</figure>
+
+<!-- 3 · Principal con Marea (05 §2.3) -->
+<figure>
+<div class="phone">
+  <div class="island"></div>
+  <div class="status"><span class="t">23:14</span><span class="r"><i class="sig"></i><i class="bat"></i></span></div>
+  <div class="pad" style="padding-top:64px">
+    <div class="t9 sc hdr">prueba · quedan 5 noches</div>
+    <div class="t2 name">Mar lento</div>
+    <div class="st"><span class="t7">Sonando · se funde a las 0:42</span><span class="t7">inhala</span></div>
+    <div class="tide" style="margin-top:12px"><div class="mk" style="top:0"></div><div class="mk" style="bottom:0"></div><div class="wl" style="top:59px"></div></div>
+    <div class="layer" style="margin-top:16px"><div class="n">Océano<span class="s"> · oleaje lento</span></div><div class="v">50</div><div class="lv"><i style="width:50%"></i></div></div>
+    <div class="layer"><div class="n">Marrón<span class="s"> · retumbo grave</span></div><div class="v">15</div><div class="lv"><i style="width:15%"></i></div></div>
+    <div class="sp80"></div>
+    <div class="r56 ht"><span class="t5">Todas las capas</span></div>
+    <div class="sp32"></div>
+    <div class="r72 ht"><div><div class="t5">Marea respiratoria</div><div class="t7"><span class="t9 sc">guiando · 6 por minuto</span>&nbsp; se retira a las 23:27</div></div><div class="tg on"></div></div>
+    <div class="r56 ht"><span class="t5">Temporizador</span><span class="t7">Hasta dormirme · 45 min</span></div>
+  </div>
+  <div class="bar"><span class="l">Mezclas</span><span class="disc"><svg class="g" width="20" height="24" viewBox="0 0 20 24"><rect x="2" y="2" width="5.5" height="20" rx="1"/><rect x="12.5" y="2" width="5.5" height="20" rx="1"/></svg></span><span class="r">Noche</span></div>
+  <div class="home"></div>
+</div>
+<figcaption><b>3 · Principal, con Marea guiando.</b> La banda crece hacia arriba a 120 pt (176-296) y la línea <em>es</em> la línea de agua (2 pt <code>índice</code>, recorrido 184 ↔ 284, dibujada a media banda) entre dos marcas hairline <code>texto3</code>; la bajamar es el Horizonte. "inhala" en paso 7 a x 373, en el renglón del estado, las tres primeras respiraciones. En la fila: versalita "guiando · 6 por minuto" y, en paso 7, "se retira a las 23:27" (la hora nunca en versalitas). Nada bajo el Horizonte se ha movido. El toggle es el único control del sistema con el acento.</figcaption>
+</figure>
+
+<!-- 4 · En pausa por auriculares (05 §2.4) -->
+<figure>
+<div class="phone">
+  <div class="island"></div>
+  <div class="status"><span class="t">0:12</span><span class="r"><i class="sig"></i><i class="bat"></i></span></div>
+  <div class="pad" style="padding-top:64px">
+    <div class="t9 sc hdr">prueba · quedan 5 noches</div>
+    <div class="t2 name">Esta noche</div>
+    <div class="st"><span class="t7">En pausa · auriculares</span></div>
+    <div class="l2"><span class="t6 c2">Seguir por el altavoz</span></div>
+    <div class="note"></div>
+    <div class="hz"><i></i></div>
+    <div class="layer" style="margin-top:16px"><div class="n">Lluvia<span class="s"> · fina, constante</span></div><div class="v">30</div><div class="lv"><i style="width:30%"></i></div></div>
+    <div class="layer"><div class="n">Rosa<span class="s"> · suave y equilibrado</span></div><div class="v">50</div><div class="lv"><i style="width:50%"></i></div></div>
+    <div class="sp80"></div>
+    <div class="r56 ht"><span class="t5">Todas las capas</span></div>
+    <div class="sp32"></div>
+    <div class="r72 ht"><div><div class="t5">Marea respiratoria</div></div><div class="tg"></div></div>
+    <div class="r56 ht"><span class="t5">Temporizador</span><span class="t7">Hasta dormirme · 45 min</span></div>
+  </div>
+  <div class="bar"><span class="l">Mezclas</span><span class="disc"><svg class="g" width="22" height="24" viewBox="0 0 22 24"><path d="M3 2.4v19.2L20 12z"/></svg></span><span class="r">Noche</span></div>
+  <div class="home"></div>
+</div>
+<figcaption><b>4 · Principal, en pausa por auriculares.</b> El Horizonte vuelve a hairline en 1,5 s: sin sonido, sin color. El estado dice la causa, "En pausa · auriculares" (144); la línea 2 ofrece la acción, "Seguir por el altavoz" (164; <code>TextAction</code> 17 Regular <code>texto2</code>, objetivo de 44), que nunca reanuda por encima de 40. Las filas no cambian: el nivel guardado es el nivel. El Disco vuelve a play. Nada rojo, nada modal.</figcaption>
+</figure>
+
+<!-- 5 · Fundiendo (05 §2.4) -->
+<figure>
+<div class="phone">
+  <div class="island"></div>
+  <div class="status"><span class="t">0:34</span><span class="r"><i class="sig"></i><i class="bat"></i></span></div>
+  <div class="pad" style="padding-top:64px">
+    <div class="t9 sc hdr">prueba · quedan 5 noches</div>
+    <div class="t2 name">Esta noche</div>
+    <div class="st"><span class="t7">Fundiendo · 8 min</span></div>
+    <div class="l2"></div>
+    <div class="note"></div>
+    <div class="hz fade"><i></i></div>
+    <div class="layer" style="margin-top:16px"><div class="n">Lluvia<span class="s"> · fina, constante</span></div><div class="v">30</div><div class="lv"><i style="width:30%"></i></div></div>
+    <div class="layer"><div class="n">Rosa<span class="s"> · suave y equilibrado</span></div><div class="v">50</div><div class="lv"><i style="width:50%"></i></div></div>
+    <div class="sp80"></div>
+    <div class="r56 ht"><span class="t5">Todas las capas</span></div>
+    <div class="sp32"></div>
+    <div class="r72 ht"><div><div class="t5">Marea respiratoria</div></div><div class="tg"></div></div>
+    <div class="r56 ht"><span class="t5">Temporizador</span><span class="t7">Hasta dormirme · 45 min</span></div>
+  </div>
+  <div class="bar"><span class="l">Mezclas</span><span class="disc"><svg class="g" width="20" height="24" viewBox="0 0 20 24"><rect x="2" y="2" width="5.5" height="20" rx="1"/><rect x="12.5" y="2" width="5.5" height="20" rx="1"/></svg></span><span class="r">Noche</span></div>
+  <div class="home"></div>
+</div>
+<figcaption><b>5 · Principal, fundiendo.</b> El estado es una palabra, "Fundiendo · 8 min", no una línea en <code>trazo</code> (1,47:1, invisible). El Horizonte adelgaza y pierde luz con la ganancia real (aquí 1,5 pt al 60 %, el mínimo que admite <code>índice</code>) y el color se va con el último 10 % hasta ser hairline. Los niveles de las capas no cambian: lo que baja es el maestro. La fila Temporizador sigue diciendo el ajuste. El glifo de pausa lleva <code>.pulse</code>, el único symbolEffect de la app.</figcaption>
+</figure>
+
+<!-- 6 · Noche 1 (05 §2.11, 08 §2.4-2.5) -->
+<figure>
+<div class="phone">
+  <div class="island"></div>
+  <div class="status"><span class="t">22:48</span><span class="r"><i class="sig"></i><i class="bat"></i></span></div>
+  <div class="pad" style="padding-top:64px">
+    <div class="t9 sc hdr">prueba · 7 noches · sin tarjeta</div>
+    <div class="t2 name">Esta noche</div>
+    <div class="st"><span class="t7">En silencio</span></div>
+    <div class="l2"></div>
+    <p class="t7 note">Siete noches con todo. Sin tarjeta. Después siguen gratis blanco, rosa, marrón, lluvia y 60 minutos. Pro: un solo pago.</p>
+    <div class="hz"><i></i></div>
+    <div class="layer" style="margin-top:16px"><div class="n">Lluvia<span class="s"> · fina, constante</span></div><div class="v">30</div><div class="lv"><i style="width:30%"></i></div></div>
+    <div class="layer"><div class="n">Rosa<span class="s"> · suave y equilibrado</span></div><div class="v">50</div><div class="lv"><i style="width:50%"></i></div></div>
+    <div class="sp80"></div>
+    <div class="r56 ht"><span class="t5">Todas las capas</span></div>
+    <div class="sp32"></div>
+    <div class="r72 ht"><div><div class="t5">Marea respiratoria</div></div><div class="tg"></div></div>
+    <div class="r56 ht"><span class="t5">Temporizador</span><span class="t7">Hasta dormirme · 45 min</span></div>
+  </div>
+  <div class="bar"><span class="l">Mezclas</span><span class="disc"><svg class="g" width="22" height="24" viewBox="0 0 22 24"><path d="M3 2.4v19.2L20 12z"/></svg></span><span class="r">Noche</span></div>
+  <div class="home"></div>
+</div>
+<figcaption><b>6 · Noche 1, primer uso.</b> No hay onboarding: "Esta noche" cargada (lluvia 30 · rosa 50, camas primero), Play suena en menos de un segundo. La prueba es texto: versalita "prueba · 7 noches · sin tarjeta" y la nota de una vez en paso 7 (196-256, tres líneas, ≤ 135 caracteres), que es un botón entero: se funde al tocarla, al primer Play o en la segunda apertura; "Entendido" es su acción de VoiceOver. Ninguna hoja, ningún permiso, ninguna notificación. El Horizonte sigue en su tercio: nada se mueve esa noche.</figcaption>
+</figure>
+
+<!-- 7 · Día 8 (05 §2.11, 08 §2.4) -->
+<figure>
+<div class="phone">
+  <div class="island"></div>
+  <div class="status"><span class="t">23:05</span><span class="r"><i class="sig"></i><i class="bat"></i></span></div>
+  <div class="pad" style="padding-top:64px">
+    <div class="t9 sc hdr">gratis · blanco, rosa, marrón, lluvia y 60 min</div>
+    <div class="t2 name">Mar lento · sin Océano</div>
+    <div class="st"><span class="t7">En silencio</span></div>
+    <div class="l2"></div>
+    <p class="t7 note">La prueba terminó. Tus mezclas siguen aquí; las capas Pro, la Marea y el temporizador largo esperan a Pro.</p>
+    <div class="hz"><i></i></div>
+    <div class="layer pro" style="margin-top:16px"><div class="n">Océano<span class="s"> · oleaje lento</span></div><div class="v sc">pro · 50</div><div class="lv"></div></div>
+    <div class="layer"><div class="n">Marrón<span class="s"> · retumbo grave</span></div><div class="v">15</div><div class="lv"><i style="width:15%"></i></div></div>
+    <div class="sp80"></div>
+    <div class="r56 ht"><span class="t5">Todas las capas</span></div>
+    <div class="sp32"></div>
+    <div class="r72 ht"><div><div class="t5">Marea respiratoria</div><div class="t7"><span class="t9 sc">pro</span></div></div><div class="tg"></div></div>
+    <div class="r56 ht"><span class="t5">Temporizador</span><span class="t7">Hasta dormirme · 60 min</span></div>
+  </div>
+  <div class="bar"><span class="l">Mezclas</span><span class="disc"><svg class="g" width="22" height="24" viewBox="0 0 22 24"><path d="M3 2.4v19.2L20 12z"/></svg></span><span class="r">Noche</span></div>
+  <div class="home"></div>
+</div>
+<figcaption><b>7 · Día 8, la prueba terminó.</b> La cabecera dice qué sigue gratis (siete sesiones; después, vacía para siempre); nada sube. El título es honesto, "Mar lento · sin Océano". Océano conserva su nivel ("pro · 50", nombre <code>texto2</code>, pista <code>texto3</code>): nada se borra; tocar la fila lo hace sonar 30 s. Marea con "pro"; el temporizador acotado a 60. La nota de una vez, solo en silencio. Sin candados, sin cuenta atrás, sin reproche: Marrón a 15 sigue ahí.</figcaption>
+</figure>
+
+<!-- 8 · Página nocturna (05 §2.10) -->
+<figure>
+<div class="phone noche">
+  <div class="island"></div>
+  <div class="status"><span class="t">2:14</span><span class="r"><i class="sig"></i><i class="bat"></i></span></div>
+  <div class="pad" style="padding-top:64px">
+    <div class="t9 sc hdr">prueba · quedan 5 noches</div>
+    <div class="t2 name">Esta noche</div>
+    <div class="st"><span class="t7">Sonando · se funde a las 3:42</span></div>
+    <div class="l2"></div>
+    <div class="note"></div>
+    <div class="hz on"><i style="background:var(--txt);opacity:1"></i></div>
+    <div class="layer" style="margin-top:16px"><div class="n">Lluvia<span class="s"> · fina, constante</span></div><div class="v">30</div><div class="lv"><i style="width:30%"></i></div></div>
+    <div class="layer"><div class="n">Rosa<span class="s"> · suave y equilibrado</span></div><div class="v">50</div><div class="lv"><i style="width:50%"></i></div></div>
+    <div class="sp80"></div>
+    <div class="r56 ht"><span class="t5">Todas las capas</span></div>
+    <div class="sp32"></div>
+    <div class="r72 ht"><div><div class="t5">Marea respiratoria</div></div><div class="tg"></div></div>
+    <div class="r56 ht"><span class="t5">Temporizador</span><span class="t7">Hasta dormirme · 45 min</span></div>
+  </div>
+  <div class="bar"><span class="l">Mezclas</span><span class="disc"><svg class="g" width="20" height="24" viewBox="0 0 20 24"><rect x="2" y="2" width="5.5" height="20" rx="1"/><rect x="12.5" y="2" width="5.5" height="20" rx="1"/></svg></span><span class="r">Noche</span></div>
+  <div class="home"></div>
+</div>
+<figcaption><b>8 · Página nocturna (vuelta de Noche, 22:00-07:00).</b> La misma página con una sola tinta, <code>texto-noche</code> (8,03:1), para bajar la lluvia sin encenderse la cara. Pesos ≥ Medium; hairlines en <code>trazo</code>; pistas en <code>texto3</code>; el Horizonte sonando en <code>texto-noche</code> a 2 pt, solo grosor por RMS, opacidad fija; <code>índice-noche</code> solo aparecería bajo el dedo (también en el toggle). La cabecera es texto, no botón. Vuelve a Descenso al tocar el nombre o a las 07:00. La barra de estado es del sistema.</figcaption>
+</figure>
+
+<!-- 9 · Hoja Capas (05 §2.7) -->
+<figure>
+<div class="phone">
+  <div class="island"></div>
+  <div class="behind">
+    <div class="status"><span class="t">23:15</span></div>
+    <div class="pad" style="padding-top:64px"><div class="t9 sc hdr">prueba · quedan 5 noches</div><div class="t2 name">Esta noche</div></div>
+  </div>
+  <div class="sheet negro">
+    <div class="grab"></div>
+    <h2>Capas</h2>
+    <div class="pad">
+      <div class="hair" style="margin-top:12px"></div>
+      <div class="t9 sc" style="margin-top:16px">colores</div>
+      <div class="layer" style="margin-top:6px"><div class="n">Blanco<span class="s"> · siseo parejo</span></div><div class="lv"></div></div>
+      <div class="layer"><div class="n">Rosa<span class="s"> · suave y equilibrado</span></div><div class="v">50</div><div class="lv"><i style="width:50%"></i></div></div>
+      <div class="layer"><div class="n">Marrón<span class="s"> · retumbo grave</span></div><div class="lv"></div></div>
+      <div class="t9 sc" style="margin-top:32px">camas</div>
+      <div class="layer drag" style="margin-top:6px"><div class="track"></div><div class="n">Lluvia<span class="s"> · fina, constante</span></div><div class="v">38</div><div class="lv"><i style="width:38%"></i></div></div>
+      <div class="layer"><div class="n">Ventilador<span class="s"> · lejano, constante</span></div><div class="lv"></div></div>
+      <div class="layer"><div class="n">Océano<span class="s"> · oleaje lento</span></div><div class="lv"></div></div>
+      <p class="t7" style="margin-top:16px">Se mezclan en tu iPhone mientras suenan. Nada se repite.</p>
+    </div>
+    <div class="bar"><span class="l">Mezclas</span><span class="disc"><svg class="g" width="20" height="24" viewBox="0 0 20 24"><rect x="2" y="2" width="5.5" height="20" rx="1"/><rect x="12.5" y="2" width="5.5" height="20" rx="1"/></svg></span><span class="r">Noche</span></div>
+  </div>
+  <div class="home"></div>
+</div>
+<figcaption><b>9 · Hoja Capas (seis capas, en prueba).</b> Hoja <code>.large</code> sobre <code>negro</code> (05 §2.7: una hoja gris que hace lo mismo que la página encendería toda la pantalla); indicador real, sin botón Cerrar; una sola hairline <code>trazo</code>, bajo "Capas". Secciones "colores" / "camas" separadas por 32 de aire y la versalita; seis filas-control de 80 de paso sin hairlines. Lluvia bajo el dedo: línea 3 pt <code>índice</code>, pista <code>grafito</code> de 44 (y0+6..50) mientras dura el gesto, valor a 17 en su sitio. Lo que está a cero solo enseña la pista <code>texto3</code>. Nota en paso 7. El Disco sigue en la barra: nada bloquea el sonido.</figcaption>
+</figure>
+
+<!-- 10 · Hoja Marea (06; aquí solo 03 §4.3) -->
+<figure>
+<div class="phone">
+  <div class="island"></div>
+  <div class="behind">
+    <div class="status"><span class="t">23:16</span></div>
+    <div class="pad" style="padding-top:64px"><div class="t9 sc hdr">prueba · quedan 5 noches</div><div class="t2 name">Mar lento</div></div>
+  </div>
+  <div class="sheet">
+    <div class="grab"></div>
+    <h2>Marea respiratoria</h2>
+    <div class="pad">
+      <div class="hair" style="margin-top:12px"></div>
+      <p class="t7" style="margin-top:16px">Inhala mientras la ola sube, exhala mientras se retira. No hace falta mirar la pantalla.</p>
+      <div class="tide" style="margin-top:24px"><div class="mk" style="top:0"></div><div class="mk" style="bottom:0"></div><div class="wl" style="top:59px;background:var(--txt)"></div><span class="t7" style="position:absolute;right:0;top:12px">inhala</span></div>
+      <div style="display:flex;gap:6px;align-items:baseline;margin-top:12px"><span class="t9 sc">guiando · 6 por minuto</span><span class="t7">se retira a las 23:27</span></div>
+      <div class="hair" style="margin-top:24px"></div>
+      <div class="r56"><span class="t5">Marea</span><div class="tg on"></div></div>
+      <div class="r56"><span class="t5">Ritmo</span><span class="t6">Tranquilo · 6</span></div>
+      <div class="r56"><span class="t5">Se retira a los</span><span class="t6">15 min</span></div>
+      <div class="r56"><span class="t5">Más ajustes</span></div>
+      <p class="t8" style="margin-top:24px">Respirar a unas 6 veces por minuto se asocia en estudios a mayor variabilidad cardiaca. <span class="c1">Qué sabemos y qué no</span></p>
+    </div>
+  </div>
+  <div class="home"></div>
+</div>
+<figcaption><b>10 · Hoja Marea respiratoria (guiando).</b> La línea de agua como héroe y control: 2 pt <code>texto</code> en la hoja (03 §4.3); arrastrarla cambia el ritmo (4-8 por minuto, aplicado al siguiente ciclo). Nunca un círculo. Ritmo con nombre humano ("Tranquilo · 6"), "Se retira a los" 5-30, Háptica bajo "Más ajustes"; la evidencia a un toque como botón de texto. Sin chevrones: las filas presentan hojas, no empujan. Toggle con tinte <code>índice</code>: el único control del sistema con acento. Las cotas de esta hoja son de 06 y no se han juzgado aquí.</figcaption>
+</figure>
+
+<!-- 11 · Hoja Temporizador (07 §2.1.2) -->
+<figure>
+<div class="phone">
+  <div class="island"></div>
+  <div class="behind">
+    <div class="status"><span class="t">23:16</span><span class="r"><i class="sig"></i><i class="bat"></i></span></div>
+    <div class="pad" style="padding-top:64px">
+      <div class="t9 sc hdr">prueba · quedan 5 noches</div>
+      <div class="t2 name">Esta noche</div>
+      <div class="st"><span class="t7">Sonando · se funde a las 0:42</span></div>
+      <div class="l2"></div><div class="note"></div>
+      <div class="hz on"><i></i></div>
+      <div class="layer" style="margin-top:16px"><div class="n">Lluvia<span class="s"> · fina, constante</span></div><div class="v">30</div><div class="lv"><i style="width:30%"></i></div></div>
+    </div>
+  </div>
+  <div class="sheet medium">
+    <div class="grab"></div>
+    <h2>Temporizador</h2>
+    <div class="pad">
+      <div class="hair" style="margin-top:12px"></div>
+      <div class="t1s" style="margin-top:16px">38 min</div>
+      <div class="t7">Se funde a las 0:42</div>
+      <div class="act" style="margin-top:12px">+15 min</div>
+      <div class="r72"><div><div class="t5">Hasta dormirme</div><div class="t7">se funde en los últimos 10 min</div></div><span class="right"><span class="t9">45 min</span><svg class="chk" width="16" height="14" viewBox="0 0 16 14"><path d="M1.5 7.5l4.5 4.5 8.5-10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+      <div class="r72"><div><div class="t5">Escudo nocturno</div><div class="t7">toda la noche · baja un poco cada hora</div></div><span class="t9">hasta las 07:00</span></div>
+      <div class="r72"><div><div class="t5">Siesta</div><div class="t7">se funde en los últimos 2 min</div></div><span class="t9">20 min</span></div>
+      <div class="r56"><span class="t5 c2">Apagado</span></div>
+      <div class="r56"><span class="t5">Duración</span><span class="t9">45 min</span></div>
+      <p class="t8" style="margin-top:12px">El sonido se funde; tu alarma no se toca.</p>
+    </div>
+  </div>
+  <div class="home"></div>
+</div>
+<figcaption><b>11 · Hoja Temporizador (sonando, detent <code>.medium</code>).</b> La cifra lleva solo el número, "38 min", en Display Regular 56/64 tabular (cambio seco por minuto); la palabra va debajo en paso 7, "Se funde a las 0:42". "+15 min" es la única <code>HairlineAction</code> de la hoja: 64 entre dos hairlines <code>trazo-hoja</code>, la misma etiqueta en los tres modos. Debajo, la lista: "Hasta dormirme · 45 min ✓" (se funde en los últimos 10 min), "Escudo nocturno · hasta las 07:00" (sin "pro": en prueba), "Siesta · 20 min", "Apagado" en <code>texto2</code>, el hueco de control "Duración · 45 min" siempre presente, y el pie. La selección es la marca del sistema, no color. En <code>.medium</code> se ven el bloque y las dos primeras filas; el resto desplaza.</figcaption>
+</figure>
+
+<!-- 12 · Noche (07 §2.2) -->
+<figure>
+<div class="phone noche">
+  <div class="island"></div>
+  <div style="position:absolute;left:20px;right:20px;top:283px;height:2px;background:var(--txt)"></div>
+  <div style="position:absolute;left:0;right:0;top:340px;text-align:center" class="t1">03:07</div>
+  <div style="position:absolute;left:0;right:0;top:436px;text-align:center" class="t3">Se funde a las 03:42</div>
+  <div class="nightbtn">+15 min</div>
+  <div class="home" style="opacity:.35"></div>
+</div>
+<figcaption><b>12 · Noche.</b> Negro real, barra de estado oculta, una tinta <code>texto-noche</code>. El Horizonte estático a 2 pt a un tercio (283-285): continuo = suena, ausente = pausa; nunca escribe. Reloj 72/80 en y 340 a 1 Hz con cambio seco, sin "am/pm"; estado en palabras a 22 Medium en y 436; "+15 min" a 20 Medium en un botón de 64 a todo el ancho en y 754-818 que nunca cambia de sitio. Toda la pantalla es el botón: toque = pausa, arrastre vertical = volumen, pulsación larga = volver. Ningún índice sin dedo.</figcaption>
+</figure>
+
+<!-- 13 · Madrugada (07 §2.3) -->
+<figure>
+<div class="phone noche">
+  <div class="island"></div>
+  <div class="tide" style="position:absolute;left:20px;right:20px;top:224px"><div class="wl" style="top:59.25px;height:1.5px;background:var(--txt)"></div></div>
+  <div style="position:absolute;left:0;right:0;top:396px;text-align:center" class="t1">14 min</div>
+  <div class="nightbtn">Parar</div>
+  <div class="home" style="opacity:.35"></div>
+</div>
+<figcaption><b>13 · Madrugada.</b> Veinte minutos de la última mezcla al 60 % con la Marea para todos, también sin Pro. Sin hora a propósito (opt-in en Ajustes). La línea de agua a 1,5 pt <code>texto-noche</code> en una banda de 120 (224-344) que existe como geometría y no se dibuja: sin marcas de pleamar ni bajamar. "14 min" en el mismo paso 1 de Noche (72/80, y 396), bajando por minuto; "Parar" en el mismo sitio que "+15 min". Toque = pausa / reanuda. Al terminar, nada: ni háptico, ni pantalla, ni notificación.</figcaption>
+</figure>
+
+<!-- 14 · Mezclas (08 §2.1) -->
+<figure>
+<div class="phone">
+  <div class="island"></div>
+  <div class="status"><span class="t">23:17</span><span class="r"><i class="sig"></i><i class="bat"></i></span></div>
+  <div class="pad" style="padding-top:59px">
+    <div style="height:44px;display:flex;align-items:center" class="t6"><svg width="12" height="20" viewBox="0 0 12 20"><path d="M10 2 L2 10 L10 18" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
+    <div class="t3" style="margin-top:9px">Mezclas</div>
+    <div class="hair" style="margin-top:8px"></div>
+    <div class="t9 sc cab" style="margin-top:16px">tuyas</div>
+    <div class="r72"><div><div class="t5">Hotel</div><div class="t7">lluvia 45 · marrón 30 · 60 min</div></div><span class="t9 sc" style="margin-top:2px">sonando</span></div>
+    <div class="r92"><div><div class="t5">Ventilador y lluvia</div><div class="t7">lluvia 50 · ventilador 30 · marrón 20 · 60 min<br>· ventilador es Pro</div></div></div>
+    <div class="t9 sc cab" style="margin-top:32px">de la casa</div>
+    <div class="r72"><div><div class="t5">Lluvia fina</div><div class="t7">lluvia 55 · rosa 20</div></div></div>
+    <div class="r72"><div><div class="t5">Cama rosa</div><div class="t7">rosa 60</div></div></div>
+    <div class="r92"><div><div class="t5">Mar lento</div><div class="t7">océano 50 · marrón 15 · Marea 15 min<br>· océano y Marea son Pro</div></div></div>
+    <div class="r56" style="margin-top:32px"><span class="t6 c2">Ajustes</span></div>
+  </div>
+  <div class="bar"><span class="disc"><svg class="g" width="20" height="24" viewBox="0 0 20 24"><rect x="2" y="2" width="5.5" height="20" rx="1"/><rect x="12.5" y="2" width="5.5" height="20" rx="1"/></svg></span><span class="r">Noche</span></div>
+  <div class="home"></div>
+</div>
+<figcaption><b>14 · Mezclas (pantalla empujada, usuario gratuito tras la prueba).</b> Solo el atrás del sistema; título a la izquierda, nunca centrado; hairline bajo el título. "tuyas" / "de la casa": filas de 72 (92 con receta a dos líneas) con nombre a 17 Semibold y receta en paso 7; "sonando" como versalita a la derecha de la cargada; la parte Pro como frase al final ("· ventilador es Pro"), nunca candado ni tachadura. Las de la casa describen y no prometen. "Ajustes" es la última fila, en <code>texto2</code>, a 32 de aire: es salida, no mezcla. La barra permanece con el hueco izquierdo vacío: Disco · Noche. Toque = carga con fundido cruzado de 1,5 s; deslizar = Renombrar / Eliminar del sistema.</figcaption>
+</figure>
+
+<!-- 15 · Hoja Pro (08 §2.3) -->
+<figure>
+<div class="phone">
+  <div class="island"></div>
+  <div class="behind">
+    <div class="status"><span class="t">23:18</span></div>
+    <div class="pad" style="padding-top:64px"><div class="t9 sc hdr">prueba · quedan 5 noches</div><div class="t2 name">Esta noche</div></div>
+  </div>
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="pad" style="padding-top:14px">
+      <div class="t9 sc">sleepnoise pro</div>
+      <div class="t1s" style="margin-top:6px">29,99 €</div>
+      <div class="t8" style="margin-top:4px;height:36px">Prueba · quedan 5 noches con todo.</div>
+      <div class="t2" style="margin-top:12px">Un solo pago. Para siempre, en todos tus iPhone.</div>
+      <div class="hair" style="margin-top:24px"></div>
+      <div class="t9 sc cab" style="margin-top:8px">con pro</div>
+      <div class="rl t5">Ventilador y océano</div>
+      <div class="rl t5">Marea respiratoria</div>
+      <div class="rl t5">Temporizador sin límite y Escudo</div>
+      <div class="rl t5">Mezclas sin límite</div>
+      <div class="rl t5">En familia</div>
+      <div class="hair" style="margin-top:16px"></div>
+      <div class="t9 sc cab" style="margin-top:8px">gratis siempre</div>
+      <p class="t6 c2">Blanco, rosa, marrón, lluvia, 60 minutos y tres mezclas.</p>
+    </div>
+    <div style="position:absolute;left:0;right:0;bottom:0;height:144px">
+      <div class="act buy">Comprar · 29,99 €</div>
+      <div class="act2">Restaurar compra</div>
+      <p class="t8" style="margin-top:4px;text-align:center">Sin suscripción. Sin cuenta. Nada sale de tu iPhone.</p>
+    </div>
+  </div>
+  <div class="home"></div>
+</div>
+<figcaption><b>15 · Hoja SleepNoise Pro (en prueba, precio cargado).</b> El precio a 56 antes que nada ("—" en <code>texto3</code> hasta que StoreKit responde); debajo, la línea de contexto (dos líneas reservadas, aquí "Prueba · quedan 5 noches con todo."); titular a 28 Medium. "Con Pro" como renglones de 36 a 17 Semibold sin iconos ni hairlines entre ellos (una hairline solo entre bloques); "Gratis siempre" dicho entero en paso 6. El pie fijo: "Comprar · 29,99 €", palabra entre dos hairlines de 64 de 1,5 pt <code>índice</code>, el único borde de acento de la app, solo con precio; Restaurar a la vista; pie centrado. Sin tachaduras, sin cuenta atrás, sin sellos. Fallo sin rojo: "No se ha podido completar. Nada ha cambiado aquí."</figcaption>
+</figure>
+
+<!-- 16 · Live Activity de bloqueo (09 §2.19-2.20) -->
+<figure>
+<div class="phone">
+  <div class="di"><svg class="g" width="14" height="16" viewBox="0 0 20 24"><rect x="2" y="2" width="5.5" height="20" rx="1"/><rect x="12.5" y="2" width="5.5" height="20" rx="1"/></svg><span style="font-size:15px;font-weight:500">38 min</span></div>
+  <div style="position:absolute;top:100px;left:0;right:0;text-align:center;font-size:20px;line-height:24px;font-weight:500;color:var(--texto)">domingo, 16 de noviembre</div>
+  <div style="position:absolute;top:126px;left:0;right:0;text-align:center;font-size:88px;line-height:96px;font-weight:500;letter-spacing:-.01em;color:var(--texto)">23:19</div>
+  <div class="la">
+    <div class="nm">Esta noche</div>
+    <div class="tm">38 min</div>
+    <div class="vs sc">sonando · hasta dormirme</div>
+    <div class="hzl"></div>
+    <div class="b1">+15 min</div>
+    <div class="b2"><svg class="g" width="24" height="28" viewBox="0 0 20 24"><rect x="2" y="2" width="5.5" height="20" rx="1"/><rect x="12.5" y="2" width="5.5" height="20" rx="1"/></svg></div>
+  </div>
+  <div class="home"></div>
+</div>
+<figcaption><b>16 · Live Activity en el bloqueo (393 × 160).</b> Una tinta, <code>texto</code>; sin acento, sin borde propio; estado por forma: el Horizonte estático a 2 pt en y 72, continuo = suena, ausente = pausa; <code>pause.fill</code> / <code>play.fill</code> a 28. Nombre 17 Semibold, versalita de estado 15 Medium, tiempo 28 Medium tabular. Dos botones de 64 en posiciones fijas que nunca cambian de significado: izquierda = tiempo ("+15 min", 260 × 64), derecha = sonido (glifo, 64 × 64), 28 de canal entre ambos, sin líneas. Compacta en la Isla: glifo 16 + "38 min". Actualizaciones solo por hito.</figcaption>
+</figure>
+
+<!-- 17 · StandBy rojo (09 §2.21) -->
+<figure class="wide">
+<div class="standby">
+  <div class="sbv">
+    <div style="position:absolute;left:40px;top:16px;font-size:96px;line-height:96px;font-weight:400;letter-spacing:-.01em">38 min</div>
+    <div class="sc" style="position:absolute;left:40px;top:120px;font-size:22px;line-height:24px;font-weight:500">sonando · hasta dormirme</div>
+    <div style="position:absolute;left:40px;right:42px;top:158.5px;height:3px;background:var(--texto)"></div>
+    <div style="position:absolute;left:40px;width:520px;top:176px;height:128px;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:28px;font-weight:500">+15 min</div>
+    <div style="position:absolute;left:616px;width:128px;top:176px;height:128px;display:flex;align-items:center;justify-content:center"><svg class="g" width="48" height="56" viewBox="0 0 20 24"><rect x="2" y="2" width="5.5" height="20" rx="1"/><rect x="12.5" y="2" width="5.5" height="20" rx="1"/></svg></div>
+  </div>
+  <div class="red"></div>
+</div>
+<figcaption><b>17 · StandBy nocturno, diseñado en rojo primero.</b> La presentación de bloqueo escalada ×2 (786 × 320, centrada) bajo el filtro rojo (multiplicación: sobrevive el canal R). Tiempo 96 Display Regular, versalita 22 Medium, Horizonte 3 pt en y 160 (visto), los dos botones de 128 en su sitio (izquierda "+15 min" a 22 Medium, derecha el glifo de 56); sin nombre de mezcla: a un metro se lee una cosa y se reconoce otra. Todo <code>texto</code> (4,43 / 4,30:1 bajo rojo A / B); ningún acento; nada se anima.</figcaption>
+</figure>
+
+<!-- 18 · Widget pequeño (09 §2.22) -->
+<figure>
+<div class="phone homescr">
+  <div class="island"></div>
+  <div class="status"><span class="t">23:19</span><span class="r"><i class="sig"></i><i class="bat"></i></span></div>
+  <div class="widget" style="left:27px;top:83px">
+    <div class="nm">Esta noche</div>
+    <div class="st2">Hasta las 0:25</div>
+    <div class="hzw"></div>
+    <div class="wb"><svg class="g" width="24" height="28" viewBox="0 0 20 24"><rect x="2" y="2" width="5.5" height="20" rx="1"/><rect x="12.5" y="2" width="5.5" height="20" rx="1"/></svg></div>
+  </div>
+  <div class="widget" style="left:208px;top:83px">
+    <div class="nm">Esta noche</div>
+    <div class="st2">Dormir</div>
+    <div class="wb"><svg class="g" width="26" height="28" viewBox="0 0 22 24"><path d="M3 2.4v19.2L20 12z"/></svg></div>
+  </div>
+  <div class="icon" style="left:27px;top:283px"></div><div class="icon" style="left:125px;top:283px"></div><div class="icon" style="left:223px;top:283px"></div><div class="icon" style="left:321px;top:283px"></div>
+  <div class="icon" style="left:27px;top:379px"></div><div class="icon" style="left:125px;top:379px"></div><div class="icon" style="left:223px;top:379px"></div><div class="icon" style="left:321px;top:379px"></div>
+  <div style="position:absolute;left:0;right:0;bottom:34px;height:96px;margin:0 14px;border-radius:32px;background:rgba(28,28,30,.8)"></div>
+  <div class="home"></div>
+</div>
+<figcaption><b>18 · Widget pequeño, dos estados (158 × 158).</b> Sonando: nombre de la mezcla a 17 Semibold, línea de estado a 15 Medium en caja normal ("Hasta las 0:25": fuera de la actividad el tiempo se dice como hora de fin, nunca como minutos), Horizonte 2 pt en y 88 y <code>pause.fill</code> a 28 en una caja de 44 que no se dibuja. Sin sonido: el widget ofrece siempre un verbo, "Dormir", sin Horizonte y con <code>play.fill</code>: carga y reproduce. Todo el widget es un solo botón. Sin <code>texto2</code>, sin acento, fondo removible para StandBy. Radio del sistema, el único permitido.</figcaption>
+</figure>
+
+<!-- 19 · Principal en papel (05 §2.14) -->
+<figure>
+<div class="phone paper">
+  <div class="island"></div>
+  <div class="status"><span class="t">9:41</span><span class="r"><i class="sig"></i><i class="bat"></i></span></div>
+  <div class="pad" style="padding-top:64px">
+    <div class="t9 sc hdr">prueba · quedan 5 noches</div>
+    <div class="t2 name">Esta noche</div>
+    <div class="st"><span class="t7">Sonando · se funde a las 10:26</span></div>
+    <div class="l2"></div>
+    <div class="note"></div>
+    <div class="hz on"><i style="opacity:1"></i></div>
+    <div class="layer" style="margin-top:16px"><div class="n">Lluvia<span class="s"> · fina, constante</span></div><div class="v">30</div><div class="lv"><i style="width:30%"></i></div></div>
+    <div class="layer"><div class="n">Rosa<span class="s"> · suave y equilibrado</span></div><div class="v">50</div><div class="lv"><i style="width:50%"></i></div></div>
+    <div class="sp80"></div>
+    <div class="r56 ht"><span class="t5">Todas las capas</span></div>
+    <div class="sp32"></div>
+    <div class="r72 ht"><div><div class="t5">Marea respiratoria</div></div><div class="tg"></div></div>
+    <div class="r56 ht"><span class="t5">Temporizador</span><span class="t7">Hasta dormirme · 45 min</span></div>
+  </div>
+  <div class="bar"><span class="l">Mezclas</span><span class="disc"><svg class="g" width="20" height="24" viewBox="0 0 20 24"><rect x="2" y="2" width="5.5" height="20" rx="1"/><rect x="12.5" y="2" width="5.5" height="20" rx="1"/></svg></span><span class="r">Noche</span></div>
+  <div class="home"></div>
+</div>
+<figcaption><b>19 · Principal en papel (apariencia clara del sistema, 03 §3.3).</b> Mismos componentes y cotas, otro juego de tokens: <code>papel</code> #F3F0E9, <code>tinta</code> / <code>tinta2</code>, pistas en <code>tinta3</code>, hairlines <code>trazo-papel</code>, Disco en <code>pulsado-papel</code> con sombra interior <code>tinta</code> al 20 %. El Índice de día es <code>ocre</code> #8A6508 (4,68:1): el amarillo sobre papel daría 1,5:1. En reposo el Horizonte sería 1 pt <code>tinta3</code> (05 §2.14). Sin selector propio; Noche, Madrugada y la página nocturna siguen siempre negras.</figcaption>
+</figure>
+
+</div>
+
+<!-- ———— Leyenda ———— -->
+<section class="legend">
+  <h2>Leyenda · tokens usados</h2>
+  <h3>Color nocturno (03 §3.1)</h3>
+  <div class="sw">
+    <div><i style="background:#000000"></i><span><b>negro</b> #000000 · fondo de principal, Noche, Madrugada, Mezclas, Capas</span></div>
+    <div><i style="background:#1C1C1E"></i><span><b>hoja</b> #1C1C1E · hojas Marea, Temporizador, Pro</span></div>
+    <div><i style="background:#1E1D1B"></i><span><b>grafito</b> #1E1D1B · cuerpo del Disco y pista bajo el dedo</span></div>
+    <div><i style="background:#2A2A2E"></i><span><b>trazo</b> #2A2A2E · hairline 0,5 pt sobre negro</span></div>
+    <div><i style="background:#38383B"></i><span><b>trazo-hoja</b> #38383B · hairline sobre hoja</span></div>
+    <div><i style="background:#E8E4DC"></i><span><b>texto</b> #E8E4DC · 16,56:1 · única tinta fuera de la app</span></div>
+    <div><i style="background:#9C9A96"></i><span><b>texto2</b> #9C9A96 · 7,48:1 · secundario, estado, versalitas</span></div>
+    <div><i style="background:#6E6C68"></i><span><b>texto3</b> #6E6C68 · 4,01:1 · pistas vacías, marcas, "—" del precio</span></div>
+    <div><i style="background:#A2A09A"></i><span><b>texto-noche</b> #A2A09A · 8,03:1 · única tinta en Noche, Madrugada y página nocturna</span></div>
+    <div><i style="background:#F0C020"></i><span><b>índice</b> #F0C020 · 12,27:1 · Horizonte sonando, línea de agua, nivel bajo el dedo, toggle, hairlines de Comprar</span></div>
+    <div><i style="background:#BA941C"></i><span><b>índice-noche</b> #BA941C · 7,34:1 · solo bajo el dedo de noche y el toggle de la página nocturna (no aparece en ningún marco)</span></div>
+  </div>
+  <h3>Papel (03 §3.3)</h3>
+  <div class="sw">
+    <div><i style="background:#F3F0E9"></i><span><b>papel</b> #F3F0E9</span></div>
+    <div><i style="background:#1E1C19"></i><span><b>tinta</b> #1E1C19 · 14,94:1</span></div>
+    <div><i style="background:#5F5A53"></i><span><b>tinta2</b> #5F5A53 · 6,00:1</span></div>
+    <div><i style="background:#9C958A"></i><span><b>tinta3</b> #9C958A · solo pistas (y el Horizonte en reposo, 1 pt)</span></div>
+    <div><i style="background:#8A6508"></i><span><b>ocre</b> #8A6508 · 4,68:1 · el índice de día</span></div>
+    <div><i style="background:#D8D3C9"></i><span><b>trazo-papel</b> #D8D3C9</span></div>
+    <div><i style="background:#E9E5DC"></i><span><b>pulsado-papel</b> #E9E5DC · Disco</span></div>
+  </div>
+  <h3>Tipografía (03 §3.4) · SF Pro única · versalitas reales · cifras tabulares</h3>
+  <table>
+    <tr><th>Paso</th><th>Estilo</th><th>Dónde en esta maqueta</th></tr>
+    <tr><td>1 · Cifra</td><td>Display Regular 72/80 · 56/64 · tracking −1 %</td><td>Reloj de Noche · "14 min" de Madrugada · "38 min" de la hoja Temporizador · "29,99 €"</td></tr>
+    <tr><td>2 · Nombre</td><td>Display Medium 28/34</td><td>Nombre de la mezcla · titular del paywall</td></tr>
+    <tr><td>3 · Cabecera</td><td>Semibold 22/28 (Medium en Noche)</td><td>"Capas", "Marea respiratoria", "Temporizador", "Mezclas" · "Se funde a las 03:42"</td></tr>
+    <tr><td>4 · Acción nocturna</td><td>Medium 20/25</td><td>"+15 min", "Parar" · "+15 min" de la Live Activity</td></tr>
+    <tr><td>5 · Fila</td><td>Semibold 17/22</td><td>Nombre de capa, de ajuste, de mezcla · "+15 min" de la hoja · renglones "con pro" · "Comprar · 29,99 €"</td></tr>
+    <tr><td>6 · Cuerpo</td><td>Regular 17/22 (Medium de noche)</td><td>"Gratis siempre", "Seguir por el altavoz", "Restaurar compra", "Ajustes"</td></tr>
+    <tr><td>7 · Secundario</td><td>Regular 15/20 (Medium de noche)</td><td>Subtítulo de capa, línea de estado, receta, nota de una vez, nota de Capas, "inhala", "se retira a las 23:27", "Se funde a las 0:42" bajo la cifra</td></tr>
+    <tr><td>8 · Nota</td><td>Regular 13/18</td><td>"El sonido se funde…", "Sin suscripción…", "Prueba · quedan 5 noches con todo."</td></tr>
+    <tr><td>9 · Dato</td><td>Medium tabular 13/18 · versalitas tracking +2 %</td><td>"30", "pro · 50", "45 min", "prueba · quedan 5 noches", "guiando · 6 por minuto", "colores" / "camas", "tuyas" / "de la casa", "sonando"</td></tr>
+  </table>
+  <h3>Espaciado, hairline, radios, relieve (03 §3.5)</h3>
+  <table>
+    <tr><td>Retícula</td><td>4 pt · margen 20 · grupos 32 · aire interno 16</td></tr>
+    <tr><td>Página</td><td>cabecera 64 · nombre 100 · estado 144 · línea 2 164 · nota 196-256 · Horizonte 272-296 (línea en 284, un tercio de 852) · filas 312 / 392 / 472 · hairlines 552, 640, 712 · barra 769</td></tr>
+    <tr><td>Marea</td><td>banda de 120 (176-296) hacia arriba, marcas <code>texto3</code> en 176 y 296, recorrido 184 ↔ 284; en Madrugada la banda (224-344) no se dibuja</td></tr>
+    <tr><td>Filas</td><td>56 lista · 72 con subtítulo · 92 receta a dos líneas · 80 de capa (56 táctiles + 24 de canal, línea a y0+44) · 36 en la lista del paywall · 28 cabecera de sección</td></tr>
+    <tr><td>Hairline</td><td>0,5 pt, de margen a margen, único separador; ninguna entre filas-control; 1,5 pt <code>índice</code> solo en "Comprar" con precio</td></tr>
+    <tr><td>Radios</td><td>0 en todo lo propio; solo del sistema (hojas 38, Live Activity 24, widget 22, toggle) y el círculo del Disco (44)</td></tr>
+    <tr><td>Relieve</td><td>Disco: <code>grafito</code> + sombra interior 1 pt negro 60 %; pista <code>grafito</code> de 44 bajo el dedo. Nada más</td></tr>
+    <tr><td>Objetivos</td><td>≥ 44; 64 en Disco, "+15 min", "Parar", "Comprar" y botones de Live Activity; pantalla completa en Noche y Madrugada; 158 × 158 en el widget pequeño</td></tr>
+    <tr><td>Reglas de color</td><td>Color = sonido o dedo · un índice por pantalla · de noche una tinta · fuera de la app una tinta y estado por forma · negro + tres grises + un acento</td></tr>
+  </table>
+</section>
+
+<!-- nota para E2 ·  Ideas de la maqueta anterior que las specs no recogen y que el jurado deja anotadas, sin aplicarlas:
+  1. La maqueta dibujaba "Entendido" como TextAction visible bajo la nota de una vez (08 §2.4 también lo dibuja, en 216-260). 05 §2.0/§9.16 no lo deja caber sin mover el Horizonte; aquí manda 05. Si el dueño elige el botón visible, la nota baja a 2 líneas (164-204) o el Horizonte cede 16 pt solo esa noche.
+  2. "Seguir por el altavoz" iba en `texto` (17 Regular): como única acción de la página en pausa, la línea 2 en `texto2` (05 §2.1) se lee menos a las 0:12. Pregunta para 05 §2.4.
+  3. La hoja Temporizador se dibujaba en `.large` con las cinco filas y el pie a la vista; 07 §2.1 la fija en `.medium`. En `.medium` el pie ("tu alarma no se toca") queda bajo el pliegue mientras suena.
+  4. El widget pequeño llevaba la versalita "sonando · 38 min" (dato en versalitas y minutos restantes estáticos): 09 §2.22 lo corrige a "Hasta las 0:25" en caja normal. Se anota solo porque la versalita igualaba el widget a la Live Activity.
+  5. La cabecera de la página iba en 76 y el nombre en 104 (08 §2.4); 05 §2.0 los pone en 64 y 100. Hay 12 / 4 pt de diferencia entre dos specs finales: una de las dos debe ceder antes de E8.
+  6. El nombre de la mezcla era "Rosa y lluvia" (08 §2.5, 09 §2.19 y 03 §5 #16 lo usan) y 03 §1.3 / 05 fijan "Esta noche" (05 §9.15, abierta). La maqueta sigue a 03; los frames 16 y 18 lo heredan.
+-->
+
+</body>
+</html>
