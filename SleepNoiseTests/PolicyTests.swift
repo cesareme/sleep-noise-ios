@@ -8,7 +8,7 @@ final class AccessPolicyTests: XCTestCase {
         }
         XCTAssertFalse(AccessPolicy.soundIsIncluded(.fan, hasFullAccess: false))
         XCTAssertFalse(AccessPolicy.soundIsIncluded(.ocean, hasFullAccess: false))
-        for sound in [SoundID.thunder, .campfire, .stream, .wind, .cabin] {
+        for sound in [SoundID.thunder, .campfire, .brook, .wind, .cabin] {
             XCTAssertFalse(AccessPolicy.soundIsIncluded(sound, hasFullAccess: false))
         }
         for sound in SoundID.allCases {
@@ -31,7 +31,7 @@ final class AccessPolicyTests: XCTestCase {
     }
 
     func testPresetTiersFollowTheSoundsInsideThem() {
-        let free: [SoundPreset] = [.deepSleep, .focus, .steadyRain]
+        let free: [SoundPreset] = [.steadyRain]
         for preset in free {
             XCTAssertFalse(preset.requiresFullAccess, preset.rawValue)
             guard case .levels(let levels) = PresetLibrary.apply(preset, hasFullAccess: false) else {
@@ -45,7 +45,7 @@ final class AccessPolicyTests: XCTestCase {
             }
         }
 
-        let pro: [SoundPreset] = [.baby, .storm, .cabin, .campfire, .brook, .nightWind, .shore]
+        let pro: [SoundPreset] = [.storm, .cabin, .campfire, .brook, .nightWind, .shore]
         for preset in pro {
             XCTAssertTrue(preset.requiresFullAccess, preset.rawValue)
             XCTAssertEqual(PresetLibrary.apply(preset, hasFullAccess: false), .needsPro)
@@ -55,6 +55,15 @@ final class AccessPolicyTests: XCTestCase {
         }
 
         XCTAssertEqual(SoundPreset.allCases.count, free.count + pro.count)
+    }
+
+    /// Saved mixes, the last levels and Shortcuts store these raw values.
+    /// Renaming a case makes that data fail to decode and it is lost.
+    func testSoundRawValuesAreFrozen() {
+        XCTAssertEqual(
+            SoundID.allCases.map(\.rawValue),
+            ["white", "pink", "brown", "rain", "fan", "ocean", "thunder", "campfire", "brook", "wind", "cabin"]
+        )
     }
 
     func testSavedMixGate() {
@@ -147,12 +156,18 @@ final class NightAndShortcutTests: XCTestCase {
         purchases.refreshAccess(now: day0.addingTimeInterval(8 * 86_400), canDowngrade: true)
     }
 
-    private func makeFreeTierModel() throws -> MixerModel {
-        let defaults = try makeDefaults()
+    private func makeFreeTierModel(defaults: UserDefaults? = nil) throws -> MixerModel {
+        let defaults = try defaults ?? makeDefaults()
         let purchases = PurchaseManager(defaults: defaults, now: day0)
         expire(purchases)
         XCTAssertFalse(purchases.hasFullAccess)
         return MixerModel(purchases: purchases, defaults: defaults)
+    }
+
+    /// A timer length the free tier does not include, or nil when every
+    /// length is free and there is nothing to refuse.
+    private var lengthThatNeedsPro: Int? {
+        AccessPolicy.timerIsIncluded(minutes: 45, hasFullAccess: false) ? nil : 45
     }
 
     func testNightEntryPlan() {
@@ -182,7 +197,9 @@ final class NightAndShortcutTests: XCTestCase {
 
         XCTAssertEqual(model.playSound(.thunder), .needsPro)
         XCTAssertEqual(model.playPreset(.storm), .needsPro)
-        XCTAssertEqual(model.startTimer(minutes: 45), .needsPro)
+        if let minutes = lengthThatNeedsPro {
+            XCTAssertEqual(model.startTimer(minutes: minutes), .needsPro)
+        }
         XCTAssertEqual(model.startTimer(minutes: 0), .outOfRange)
         XCTAssertEqual(model.startTimer(minutes: AccessPolicy.maxTimerMinutes + 1), .outOfRange)
 
@@ -191,6 +208,79 @@ final class NightAndShortcutTests: XCTestCase {
         XCTAssertEqual(model.levels, before)
         XCTAssertNil(model.activePreset)
         XCTAssertNil(model.timer.selectedMinutes)
+    }
+
+    func testShortcutsReadTheTrialClockBeforeDeciding() throws {
+        // The trial ran out while the app was suspended and nothing has
+        // looked at the clock since: access still reads as full.
+        let defaults = try makeDefaults()
+        let purchases = PurchaseManager(defaults: defaults, now: day0)
+        purchases.startTrialIfNeeded(now: day0)
+        XCTAssertTrue(purchases.hasFullAccess)
+        let model = MixerModel(purchases: purchases, defaults: defaults)
+
+        XCTAssertEqual(model.playSound(.thunder), .needsPro)
+        XCTAssertFalse(purchases.hasFullAccess)
+        XCTAssertFalse(model.isPlaying)
+
+        for entry in ["preset", "timer"] {
+            let stale = try makeDefaults()
+            let clock = PurchaseManager(defaults: stale, now: day0)
+            clock.startTrialIfNeeded(now: day0)
+            let other = MixerModel(purchases: clock, defaults: stale)
+            if entry == "preset" {
+                XCTAssertEqual(other.playPreset(.storm), .needsPro)
+            } else {
+                for sound in SoundID.allCases {
+                    other.levels[sound] = 0
+                }
+                XCTAssertEqual(other.startTimer(minutes: 30), .nothingToPlay)
+            }
+            XCTAssertFalse(clock.hasFullAccess, entry)
+            XCTAssertFalse(other.isPlaying, entry)
+        }
+    }
+
+    func testTheTimerShortcutDoesNotStartASilentNight() throws {
+        let defaults = try makeDefaults()
+        let model = try makeFreeTierModel(defaults: defaults)
+        for sound in SoundID.allCases {
+            model.levels[sound] = 0
+        }
+        XCTAssertEqual(model.startTimer(minutes: 30), .nothingToPlay)
+        XCTAssertEqual(model.startTimer(minutes: nil), .nothingToPlay)
+        XCTAssertFalse(model.isPlaying)
+        XCTAssertNil(model.timer.selectedMinutes)
+        XCTAssertNil(defaults.object(forKey: timerKey))
+
+        // Pro layers that are muted without access do not count as sound.
+        model.levels[.ocean] = 0.65
+        XCTAssertEqual(model.startTimer(minutes: 30), .nothingToPlay)
+    }
+
+    func testTheTimerShortcutWithoutALengthKeepsTheStoredChoice() throws {
+        let defaults = try makeDefaults()
+        let model = try makeFreeTierModel(defaults: defaults)
+
+        // Nothing chosen: the fallback runs tonight and is not stored.
+        XCTAssertEqual(model.timerMinutes(requested: nil), MixerModel.fallbackTimerMinutes)
+        XCTAssertNil(model.armTimer(minutes: nil))
+        XCTAssertEqual(model.timer.selectedMinutes, MixerModel.fallbackTimerMinutes)
+        XCTAssertNil(defaults.object(forKey: timerKey))
+
+        // A length chosen in the app is the one that runs, and it stays.
+        model.selectTimer(minutes: 30)
+        XCTAssertEqual(defaults.object(forKey: timerKey) as? Int, 30)
+        XCTAssertEqual(model.timerMinutes(requested: nil), 30)
+        XCTAssertNil(model.armTimer(minutes: nil))
+        XCTAssertEqual(model.timer.selectedMinutes, 30)
+        XCTAssertEqual(defaults.object(forKey: timerKey) as? Int, 30)
+
+        // Only a length written into the Shortcut replaces it.
+        XCTAssertNil(model.armTimer(minutes: 15))
+        XCTAssertEqual(model.timer.selectedMinutes, 15)
+        XCTAssertEqual(defaults.object(forKey: timerKey) as? Int, 15)
+        XCTAssertFalse(model.isPlaying)
     }
 
     func testStopWithNothingPlayingSaysSoAndStaysInTheBackground() throws {
@@ -206,29 +296,22 @@ final class NightAndShortcutTests: XCTestCase {
             XCTAssertTrue(sound.contains(free.localizedName), "\(sound) should name \(free.rawValue)")
         }
 
+        // The reply reads the gate, not a list of its own.
         let timer = IntentReply.timerNeedsPro(minutes: 45)
         XCTAssertTrue(timer.contains("45"))
-        for minutes in AccessPolicy.freeTimerMinutes {
+        for minutes in [15, 30, 60] where AccessPolicy.timerIsIncluded(minutes: minutes, hasFullAccess: false) {
             XCTAssertTrue(timer.contains(String(minutes)), "\(timer) should name \(minutes)")
         }
 
         XCTAssertTrue(IntentReply.timerOutOfRange().contains(String(AccessPolicy.maxTimerMinutes)))
-        XCTAssertTrue(IntentReply.presetNeedsPro(.storm).contains(SoundPreset.storm.localizedName))
     }
 
-    func testEverySoundAndPresetCanBeAskedFor() {
+    func testEverySoundCanBeAskedFor() {
         let sounds = IntentSound.caseDisplayRepresentations.keys
         XCTAssertEqual(Set(sounds.map(\.soundID)), Set(SoundID.allCases))
         XCTAssertEqual(sounds.count, SoundID.allCases.count)
         for sound in sounds {
             XCTAssertEqual(sound.rawValue, sound.soundID.rawValue)
-        }
-
-        let presets = IntentPreset.caseDisplayRepresentations.keys
-        XCTAssertEqual(Set(presets.map(\.preset)), Set(SoundPreset.allCases))
-        XCTAssertEqual(presets.count, SoundPreset.allCases.count)
-        for preset in presets {
-            XCTAssertEqual(preset.rawValue, preset.preset.rawValue)
         }
     }
 

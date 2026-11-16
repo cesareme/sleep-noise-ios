@@ -710,13 +710,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fan, ocean, thunder, campfire, brook, wind and cabin."
+            "value": "Fan, ocean, thunder, campfire, brook and cabin."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ventilador, océano, trueno, hoguera, arroyo, viento y cabina."
+            "value": "Ventilador, océano, trueno, hoguera, arroyo y cabina."
           }
         }
       }
@@ -1529,13 +1529,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fan, ocean, thunder, campfire, brook, wind, cabin, the breathing tide and long timers are Pro: %@, paid once. Your saved mixes are kept and come back whole."
+            "value": "Fan, ocean, thunder, campfire, brook, cabin, the breathing tide and long timers are Pro: %@, paid once. Your saved mixes are kept and come back whole."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ventilador, océano, trueno, hoguera, arroyo, viento, cabina, la marea respiratoria y los temporizadores largos son Pro: %@, pagado una sola vez. Tus mezclas guardadas se conservan y vuelven enteras."
+            "value": "Ventilador, océano, trueno, hoguera, arroyo, cabina, la marea respiratoria y los temporizadores largos son Pro: %@, pagado una sola vez. Tus mezclas guardadas se conservan y vuelven enteras."
           }
         }
       }
@@ -1666,13 +1666,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fan, ocean, thunder, campfire, brook, wind, cabin, the breathing tide and long timers are Pro, a single payment with no subscription. Your saved mixes are kept and come back whole."
+            "value": "Fan, ocean, thunder, campfire, brook, cabin, the breathing tide and long timers are Pro, a single payment with no subscription. Your saved mixes are kept and come back whole."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ventilador, océano, trueno, hoguera, arroyo, viento, cabina, la marea respiratoria y los temporizadores largos son Pro, un único pago sin suscripción. Tus mezclas guardadas se conservan y vuelven enteras."
+            "value": "Ventilador, océano, trueno, hoguera, arroyo, cabina, la marea respiratoria y los temporizadores largos son Pro, un único pago sin suscripción. Tus mezclas guardadas se conservan y vuelven enteras."
           }
         }
       }
@@ -1911,7 +1911,7 @@
         }
       }
     },
-    "sound.stream": {
+    "sound.brook": {
       "comment": "Sound name",
       "extractionState": "manual",
       "localizations": {
@@ -1929,7 +1929,7 @@
         }
       }
     },
-    "sound.stream.detail": {
+    "sound.brook.detail": {
       "comment": "Sound detail",
       "extractionState": "manual",
       "localizations": {
@@ -2019,42 +2019,6 @@
         }
       }
     },
-    "preset.deepSleep": {
-      "comment": "Preset name",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Deep sleep"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sueño profundo"
-          }
-        }
-      }
-    },
-    "preset.focus": {
-      "comment": "Preset name",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Focus"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Concentración"
-          }
-        }
-      }
-    },
     "preset.steadyRain": {
       "comment": "Preset name",
       "extractionState": "manual",
@@ -2069,24 +2033,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lluvia constante"
-          }
-        }
-      }
-    },
-    "preset.baby": {
-      "comment": "Preset name",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Baby"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bebé"
           }
         }
       }
@@ -2235,42 +2181,6 @@
         }
       }
     },
-    "intent.playPreset.title": {
-      "comment": "Shortcut title",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Play a preset"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reproducir un preajuste"
-          }
-        }
-      }
-    },
-    "intent.playPreset.description": {
-      "comment": "Shortcut description",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Plays a ready-made mix."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reproduce una mezcla preparada."
-          }
-        }
-      }
-    },
     "intent.timer.title": {
       "comment": "Shortcut title",
       "extractionState": "manual",
@@ -2361,24 +2271,6 @@
         }
       }
     },
-    "intent.param.preset": {
-      "comment": "Shortcut parameter",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Preset"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Preajuste"
-          }
-        }
-      }
-    },
     "intent.param.minutes": {
       "comment": "Shortcut parameter",
       "extractionState": "manual",
@@ -2415,44 +2307,8 @@
         }
       }
     },
-    "intent.preset.type": {
-      "comment": "Shortcut type name",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Preset"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Preajuste"
-          }
-        }
-      }
-    },
     "intent.playedSoundFormat": {
       "comment": "Siri dialog. %@ is the sound name.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Playing %@."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reproduciendo %@."
-          }
-        }
-      }
-    },
-    "intent.playedPresetFormat": {
-      "comment": "Siri dialog. %@ is the preset name.",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -2501,24 +2357,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ forma parte de Pro. Sonidos gratuitos: %2$@."
-          }
-        }
-      }
-    },
-    "intent.presetNeedsProFormat": {
-      "comment": "Siri dialog when a preset needs Pro. %@ is the preset name.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ uses sounds that are part of Pro."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ lleva sonidos que forman parte de Pro."
           }
         }
       }
@@ -2573,6 +2411,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "No sonaba nada."
+          }
+        }
+      }
+    },
+    "intent.nothingToPlay": {
+      "comment": "Siri dialog when asked to start the sleep timer while every sound is at zero",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raise a sound first."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sube antes un sonido."
           }
         }
       }
@@ -2649,24 +2505,6 @@
         }
       }
     },
-    "shortcut.playPreset": {
-      "comment": "Shortcuts tile",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Play preset"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reproducir preajuste"
-          }
-        }
-      }
-    },
     "shortcut.timer": {
       "comment": "Shortcuts tile",
       "extractionState": "manual",
@@ -2717,24 +2555,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Reproduce ${sound}"
-          }
-        }
-      }
-    },
-    "Play ${preset}": {
-      "comment": "Shortcut parameter summary",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Play ${preset}"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reproduce ${preset}"
           }
         }
       }

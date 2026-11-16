@@ -25,30 +25,6 @@
         }
       }
     },
-    "Play ${preset} in ${applicationName}": {
-      "comment": "App Shortcut phrases",
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "en": {
-          "stringSet": {
-            "state": "translated",
-            "values": [
-              "Play ${preset} in ${applicationName}",
-              "Start ${preset} with ${applicationName}"
-            ]
-          }
-        },
-        "es": {
-          "stringSet": {
-            "state": "translated",
-            "values": [
-              "Reproduce ${preset} en ${applicationName}",
-              "Pon ${preset} en ${applicationName}"
-            ]
-          }
-        }
-      }
-    },
     "Start sleep timer in ${applicationName}": {
       "comment": "App Shortcut phrases",
       "extractionState": "extracted_with_value",

@@ -4,7 +4,7 @@ import Foundation
 /// Brook: mid-band water moving over stones, a softer low gurgle, and a few
 /// bubble voices pitched well below raindrops. A slow level drift keeps it
 /// from sitting as a static hiss.
-struct StreamTexture {
+struct BrookTexture {
     /// Output trim. At unity the brook read about 7 dB(A) under rain at the
     /// same slider position.
     static let outputGain: Float = 2

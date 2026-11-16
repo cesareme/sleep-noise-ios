@@ -18,7 +18,7 @@ enum AccessPolicy {
         switch sound {
         case .white, .pink, .brown, .rain:
             return true
-        case .fan, .ocean, .thunder, .campfire, .stream, .wind, .cabin:
+        case .fan, .ocean, .thunder, .campfire, .brook, .wind, .cabin:
             return false
         }
     }

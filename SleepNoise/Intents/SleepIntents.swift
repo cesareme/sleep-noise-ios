@@ -13,7 +13,7 @@ enum IntentBridge {
 }
 
 enum IntentSound: String, AppEnum {
-    case white, pink, brown, rain, fan, ocean, thunder, campfire, stream, wind, cabin
+    case white, pink, brown, rain, fan, ocean, thunder, campfire, brook, wind, cabin
 
     static var typeDisplayRepresentation = TypeDisplayRepresentation(name: LocalizedStringResource("intent.sound.type"))
 
@@ -26,7 +26,7 @@ enum IntentSound: String, AppEnum {
         .ocean: DisplayRepresentation(title: LocalizedStringResource("sound.ocean")),
         .thunder: DisplayRepresentation(title: LocalizedStringResource("sound.thunder")),
         .campfire: DisplayRepresentation(title: LocalizedStringResource("sound.campfire")),
-        .stream: DisplayRepresentation(title: LocalizedStringResource("sound.stream")),
+        .brook: DisplayRepresentation(title: LocalizedStringResource("sound.brook")),
         .wind: DisplayRepresentation(title: LocalizedStringResource("sound.wind")),
         .cabin: DisplayRepresentation(title: LocalizedStringResource("sound.cabin"))
     ]
@@ -36,38 +36,11 @@ enum IntentSound: String, AppEnum {
     }
 }
 
-enum IntentPreset: String, AppEnum {
-    case deepSleep, focus, steadyRain, baby, storm, cabin, campfire, brook, nightWind, shore
-
-    static var typeDisplayRepresentation = TypeDisplayRepresentation(name: LocalizedStringResource("intent.preset.type"))
-
-    static var caseDisplayRepresentations: [IntentPreset: DisplayRepresentation] = [
-        .deepSleep: DisplayRepresentation(title: LocalizedStringResource("preset.deepSleep")),
-        .focus: DisplayRepresentation(title: LocalizedStringResource("preset.focus")),
-        .steadyRain: DisplayRepresentation(title: LocalizedStringResource("preset.steadyRain")),
-        .baby: DisplayRepresentation(title: LocalizedStringResource("preset.baby")),
-        .storm: DisplayRepresentation(title: LocalizedStringResource("preset.storm")),
-        .cabin: DisplayRepresentation(title: LocalizedStringResource("preset.cabin")),
-        .campfire: DisplayRepresentation(title: LocalizedStringResource("preset.campfire")),
-        .brook: DisplayRepresentation(title: LocalizedStringResource("preset.brook")),
-        .nightWind: DisplayRepresentation(title: LocalizedStringResource("preset.nightWind")),
-        .shore: DisplayRepresentation(title: LocalizedStringResource("preset.shore"))
-    ]
-
-    var preset: SoundPreset {
-        SoundPreset(rawValue: rawValue) ?? .deepSleep
-    }
-}
-
 /// What Siri says back. A request that needs Pro is answered in words that
 /// name what is free; a Shortcut never raises the paywall.
 enum IntentReply {
     static func playing(_ sound: SoundID) -> String {
         String(format: String(localized: "intent.playedSoundFormat"), sound.localizedName)
-    }
-
-    static func playing(_ preset: SoundPreset) -> String {
-        String(format: String(localized: "intent.playedPresetFormat"), preset.localizedName)
     }
 
     static func soundNeedsPro(_ sound: SoundID) -> String {
@@ -81,16 +54,16 @@ enum IntentReply {
         )
     }
 
-    static func presetNeedsPro(_ preset: SoundPreset) -> String {
-        String(format: String(localized: "intent.presetNeedsProFormat"), preset.localizedName)
-    }
-
     static func timerStarted(minutes: Int) -> String {
         String(format: String(localized: "intent.timerStartedFormat"), Int64(minutes))
     }
 
+    /// The free lengths come from the gate itself, so the reply cannot drift
+    /// from `AccessPolicy` and does not depend on how the gate is stored.
     static func timerNeedsPro(minutes: Int) -> String {
-        let free = AccessPolicy.freeTimerMinutes.sorted().map { String($0) }
+        let free = (1...AccessPolicy.maxTimerMinutes)
+            .filter { AccessPolicy.timerIsIncluded(minutes: $0, hasFullAccess: false) }
+            .map { String($0) }
         return String(
             format: String(localized: "intent.timerNeedsProFormat"),
             Int64(minutes),
@@ -126,41 +99,16 @@ struct PlaySoundIntent: AppIntent {
             return .result(dialog: IntentDialog(stringLiteral: IntentReply.playing(id)))
         case .needsPro:
             return .result(dialog: IntentDialog(stringLiteral: IntentReply.soundNeedsPro(id)))
-        case .failed, .stopped, .nothingPlaying, .outOfRange:
+        case .failed, .stopped, .nothingPlaying, .nothingToPlay, .outOfRange:
             return .result(dialog: IntentDialog(LocalizedStringResource("intent.failed")))
         }
     }
 }
 
-struct PlayPresetIntent: AppIntent {
-    static var title: LocalizedStringResource = "intent.playPreset.title"
-    static var description = IntentDescription(LocalizedStringResource("intent.playPreset.description"))
-    static var openAppWhenRun = true
-
-    @Parameter(title: LocalizedStringResource("intent.param.preset"))
-    var preset: IntentPreset
-
-    static var parameterSummary: some ParameterSummary {
-        Summary("Play \(\.$preset)")
-    }
-
-    @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
-        guard let mixer = IntentBridge.mixer else {
-            return .result(dialog: IntentDialog(LocalizedStringResource("intent.unavailable")))
-        }
-        let chosen = preset.preset
-        switch mixer.playPreset(chosen) {
-        case .started:
-            return .result(dialog: IntentDialog(stringLiteral: IntentReply.playing(chosen)))
-        case .needsPro:
-            return .result(dialog: IntentDialog(stringLiteral: IntentReply.presetNeedsPro(chosen)))
-        case .failed, .stopped, .nothingPlaying, .outOfRange:
-            return .result(dialog: IntentDialog(LocalizedStringResource("intent.failed")))
-        }
-    }
-}
-
+/// With no length given (the spoken phrase gives none) the timer the person
+/// already chose in the app is used, and 60 minutes when there is none; that
+/// fallback is for tonight only and is not stored. Only a length written into
+/// the Shortcut replaces the stored choice.
 struct StartSleepTimerIntent: AppIntent {
     static var title: LocalizedStringResource = "intent.timer.title"
     static var description = IntentDescription(LocalizedStringResource("intent.timer.description"))
@@ -168,10 +116,9 @@ struct StartSleepTimerIntent: AppIntent {
 
     @Parameter(
         title: LocalizedStringResource("intent.param.minutes"),
-        default: 60,
         inclusiveRange: (1, 360)
     )
-    var minutes: Int
+    var minutes: Int?
 
     static var parameterSummary: some ParameterSummary {
         Summary("Start a \(\.$minutes) minute timer")
@@ -182,13 +129,16 @@ struct StartSleepTimerIntent: AppIntent {
         guard let mixer = IntentBridge.mixer else {
             return .result(dialog: IntentDialog(LocalizedStringResource("intent.unavailable")))
         }
+        let length = mixer.timerMinutes(requested: minutes)
         switch mixer.startTimer(minutes: minutes) {
         case .started:
-            return .result(dialog: IntentDialog(stringLiteral: IntentReply.timerStarted(minutes: minutes)))
+            return .result(dialog: IntentDialog(stringLiteral: IntentReply.timerStarted(minutes: length)))
         case .needsPro:
-            return .result(dialog: IntentDialog(stringLiteral: IntentReply.timerNeedsPro(minutes: minutes)))
+            return .result(dialog: IntentDialog(stringLiteral: IntentReply.timerNeedsPro(minutes: length)))
         case .outOfRange:
             return .result(dialog: IntentDialog(stringLiteral: IntentReply.timerOutOfRange()))
+        case .nothingToPlay:
+            return .result(dialog: IntentDialog(LocalizedStringResource("intent.nothingToPlay")))
         case .failed, .stopped, .nothingPlaying:
             return .result(dialog: IntentDialog(LocalizedStringResource("intent.failed")))
         }
@@ -228,15 +178,6 @@ struct SleepNoiseShortcuts: AppShortcutsProvider {
             ],
             shortTitle: LocalizedStringResource("shortcut.playSound"),
             systemImageName: "play.fill"
-        )
-        AppShortcut(
-            intent: PlayPresetIntent(),
-            phrases: [
-                "Play \(\.$preset) in \(.applicationName)",
-                "Start \(\.$preset) with \(.applicationName)"
-            ],
-            shortTitle: LocalizedStringResource("shortcut.playPreset"),
-            systemImageName: "moon.stars.fill"
         )
         AppShortcut(
             intent: StartSleepTimerIntent(),

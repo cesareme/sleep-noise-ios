@@ -29,6 +29,8 @@ final class MixerModel: ObservableObject {
     private let defaults: UserDefaults
     private let levelsKey = "sleepnoise.levels.v1"
     private let timerKey = "sleepnoise.timerMinutes.v1"
+    /// Length the timer Shortcut uses when none was asked for or chosen.
+    static let fallbackTimerMinutes = 60
     private var didStart = false
     private var resumeAfterInterruption = false
     private var noteTask: Task<Void, Never>?
@@ -209,8 +211,13 @@ final class MixerModel: ObservableObject {
     /// paywall is raised, because the request may come by voice in the dark.
     /// The intent answers in words instead. `play()` does the one-time setup,
     /// so a refused request has no side effects.
+    ///
+    /// Every Shortcut entry point reads the trial clock first: a trial that
+    /// ran out while the app was suspended must not let one more Pro night
+    /// through because the scene has not become active yet.
     @discardableResult
     func playPreset(_ preset: SoundPreset) -> IntentOutcome {
+        purchases.refreshAccess(canDowngrade: !isPlaying)
         switch PresetLibrary.apply(preset, hasFullAccess: purchases.hasFullAccess) {
         case .needsPro:
             return .needsPro
@@ -227,6 +234,7 @@ final class MixerModel: ObservableObject {
     /// Shortcuts: play one sound on its own. Same rule as `playPreset`.
     @discardableResult
     func playSound(_ sound: SoundID) -> IntentOutcome {
+        purchases.refreshAccess(canDowngrade: !isPlaying)
         guard AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess) else {
             return .needsPro
         }
@@ -240,19 +248,42 @@ final class MixerModel: ObservableObject {
         return startOrUpdate()
     }
 
-    /// Shortcuts: choose a length and start the bed. A length outside the
-    /// allowed range, or a Pro length without access, leaves the current
-    /// timer alone.
+    /// Length the timer Shortcut runs: the one asked for, else the one
+    /// already chosen in the app, else `fallbackTimerMinutes`.
+    func timerMinutes(requested: Int?) -> Int {
+        requested ?? timer.selectedMinutes ?? Self.fallbackTimerMinutes
+    }
+
+    /// Shortcuts: start the timer and the bed. A length outside the allowed
+    /// range, or a Pro length without access, leaves the current timer
+    /// alone, and a silent mix is not started. Only a length that was asked
+    /// for becomes the stored choice; with none, the chosen one (or the
+    /// fallback) runs tonight and the stored choice is not touched.
     @discardableResult
-    func startTimer(minutes: Int) -> IntentOutcome {
+    func startTimer(minutes requested: Int?) -> IntentOutcome {
+        if let refusal = armTimer(minutes: requested) { return refusal }
+        if isPlaying { return .started }
+        play()
+        return audioError == nil ? .started : .failed
+    }
+
+    /// Everything `startTimer` does short of starting the engine. Returns the
+    /// refusal, or nil once the timer is set.
+    func armTimer(minutes requested: Int?) -> IntentOutcome? {
+        purchases.refreshAccess(canDowngrade: !isPlaying)
+        let minutes = timerMinutes(requested: requested)
         guard (1...AccessPolicy.maxTimerMinutes).contains(minutes) else { return .outOfRange }
         guard AccessPolicy.timerIsIncluded(minutes: minutes, hasFullAccess: purchases.hasFullAccess) else {
             return .needsPro
         }
-        selectTimer(minutes: minutes)
-        if isPlaying { return .started }
-        play()
-        return audioError == nil ? .started : .failed
+        if !isPlaying && isSilent { return .nothingToPlay }
+        if requested != nil {
+            selectTimer(minutes: minutes)
+        } else {
+            timer.choose(minutes)
+            if isPlaying { timer.start() }
+        }
+        return nil
     }
 
     /// Shortcuts: stop. Also cancels a resume that was waiting for the end of

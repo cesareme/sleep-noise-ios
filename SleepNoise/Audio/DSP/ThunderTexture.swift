@@ -9,6 +9,11 @@ import Foundation
 /// same index) strike together and the image stays centred. Gaps land between
 /// 4.5 and 12.5 seconds. The first rumble arrives before a second has passed,
 /// then the storm settles into those long gaps.
+///
+/// `scheduleOffset` shifts the index the schedule is read at. The engine
+/// picks one per launch and hands the same value to both channels, so the
+/// rumbles do not fall on the same seconds every night and the channels
+/// still strike together.
 struct ThunderTexture {
     /// Seconds from a fresh start to the first rumble.
     static let firstRumbleSeconds: Float = 0.7
@@ -17,6 +22,7 @@ struct ThunderTexture {
     private var sampleRate: Float = 0
     private var rendered: Int = 0
     private var rumbleIndex: Int = 0
+    private var scheduleOffset: Int = 0
     private var nextRumbleSample: Int = 0
     private var attackUntil: Int = 0
     private var rumbleTarget: Float = 0
@@ -33,9 +39,15 @@ struct ThunderTexture {
     private var drop0 = BurstVoice()
     private var drop1 = BurstVoice()
 
-    init(seed: UInt32, sampleRate: Float = 48_000) {
+    init(seed: UInt32, sampleRate: Float = 48_000, scheduleOffset: UInt32 = 0) {
         rng = XorShift32(seed: seed)
+        self.scheduleOffset = Int(scheduleOffset)
         prepare(sampleRate: sampleRate)
+    }
+
+    /// Time to the start of the next rumble. Not used by the render path.
+    var secondsUntilNextRumble: Float {
+        Float(nextRumbleSample - rendered) / sampleRate
     }
 
     mutating func prepare(sampleRate newRate: Float) {
@@ -60,10 +72,11 @@ struct ThunderTexture {
 
     mutating func next() -> Float {
         if rendered >= nextRumbleSample {
-            rumbleTarget = 0.62 + 0.38 * Self.unit(rumbleIndex, salt: 1)
-            let attack = 0.28 + 0.45 * Self.unit(rumbleIndex, salt: 2)
+            let index = rumbleIndex &+ scheduleOffset
+            rumbleTarget = 0.62 + 0.38 * Self.unit(index, salt: 1)
+            let attack = 0.28 + 0.45 * Self.unit(index, salt: 2)
             attackUntil = rendered + max(1, Int(attack * sampleRate))
-            let gap = Self.gapSeconds(after: rumbleIndex)
+            let gap = Self.gapSeconds(after: index)
             nextRumbleSample = rendered + max(1, Int(gap * sampleRate))
             rumbleIndex += 1
         }
@@ -95,7 +108,8 @@ struct ThunderTexture {
         return clipUnit(rainHiss + rainBody + drops * 0.45 + rumble)
     }
 
-    /// Seconds between rumble `index` (zero-based) and the one after it.
+    /// Seconds between rumble `index` (zero-based, plus the schedule offset)
+    /// and the one after it.
     static func gapSeconds(after index: Int) -> Float {
         4.5 + 8 * unit(index, salt: 3)
     }

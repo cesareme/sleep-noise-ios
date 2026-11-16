@@ -10,7 +10,7 @@ struct SoundGains: Equatable {
     var ocean: Float = 0
     var thunder: Float = 0
     var campfire: Float = 0
-    var stream: Float = 0
+    var brook: Float = 0
     var wind: Float = 0
     var cabin: Float = 0
 
@@ -36,7 +36,7 @@ struct SoundGains: Equatable {
         case .ocean: return ocean
         case .thunder: return thunder
         case .campfire: return campfire
-        case .stream: return stream
+        case .brook: return brook
         case .wind: return wind
         case .cabin: return cabin
         }
@@ -53,7 +53,7 @@ struct SoundGains: Equatable {
         case .ocean: ocean = clamped
         case .thunder: thunder = clamped
         case .campfire: campfire = clamped
-        case .stream: stream = clamped
+        case .brook: brook = clamped
         case .wind: wind = clamped
         case .cabin: cabin = clamped
         }
@@ -68,7 +68,7 @@ struct SoundGains: Equatable {
         ocean += (target.ocean - ocean) * coefficient
         thunder += (target.thunder - thunder) * coefficient
         campfire += (target.campfire - campfire) * coefficient
-        stream += (target.stream - stream) * coefficient
+        brook += (target.brook - brook) * coefficient
         wind += (target.wind - wind) * coefficient
         cabin += (target.cabin - cabin) * coefficient
     }

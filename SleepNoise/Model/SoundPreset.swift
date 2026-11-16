@@ -3,11 +3,11 @@ import Foundation
 /// One-tap mixes. A preset is Pro when any of its layers is a Pro sound, the
 /// same rule as the mixer: during the local trial `hasFullAccess` is true, so
 /// every preset plays; afterwards a locked preset does not change the sliders.
+///
+/// Model only: no view and no Shortcut offers these yet. The house mixes that
+/// replace them bring their own names and their own intent.
 enum SoundPreset: String, CaseIterable, Identifiable {
-    case deepSleep
-    case focus
     case steadyRain
-    case baby
     case storm
     case cabin
     case campfire
@@ -19,32 +19,11 @@ enum SoundPreset: String, CaseIterable, Identifiable {
 
     var nameKey: String { "preset.\(rawValue)" }
 
-    var symbolName: String {
-        switch self {
-        case .deepSleep: return "moon.zzz.fill"
-        case .focus: return "scope"
-        case .steadyRain: return "cloud.rain.fill"
-        case .baby: return "moon.haze.fill"
-        case .storm: return "cloud.bolt.rain.fill"
-        case .cabin: return "airplane"
-        case .campfire: return "flame.fill"
-        case .brook: return "drop.fill"
-        case .nightWind: return "wind"
-        case .shore: return "water.waves"
-        }
-    }
-
     /// Layers above zero. Missing sounds are silent when the preset is applied.
     var layers: [SoundID: Float] {
         switch self {
-        case .deepSleep:
-            return [.brown: 0.74, .rain: 0.32, .pink: 0.16]
-        case .focus:
-            return [.pink: 0.80, .brown: 0.20]
         case .steadyRain:
             return [.rain: 0.78, .pink: 0.24]
-        case .baby:
-            return [.brown: 0.48, .fan: 0.40, .pink: 0.12]
         case .storm:
             return [.rain: 0.55, .thunder: 0.62]
         case .cabin:
@@ -52,7 +31,7 @@ enum SoundPreset: String, CaseIterable, Identifiable {
         case .campfire:
             return [.campfire: 0.72, .wind: 0.16]
         case .brook:
-            return [.stream: 0.80]
+            return [.brook: 0.80]
         case .nightWind:
             return [.wind: 0.70, .rain: 0.15]
         case .shore:
@@ -85,6 +64,8 @@ enum IntentOutcome: Equatable {
     /// Stop was asked for while nothing was playing.
     case nothingPlaying
     case needsPro
+    /// The timer was asked to start a night with every audible layer at zero.
+    case nothingToPlay
     /// A timer length outside 1...`AccessPolicy.maxTimerMinutes`.
     case outOfRange
     case failed

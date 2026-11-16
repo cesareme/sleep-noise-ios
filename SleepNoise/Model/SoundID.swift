@@ -1,5 +1,7 @@
 import Foundation
 
+/// The raw values are stored: saved mixes, the last levels and Shortcuts all
+/// keep them. Renaming a case loses that data, so they are frozen by a test.
 enum SoundID: String, Codable, CaseIterable, Identifiable {
     case white
     case pink
@@ -9,7 +11,7 @@ enum SoundID: String, Codable, CaseIterable, Identifiable {
     case ocean
     case thunder
     case campfire
-    case stream
+    case brook
     case wind
     case cabin
 
@@ -25,7 +27,7 @@ enum SoundID: String, Codable, CaseIterable, Identifiable {
         case .ocean: return "sound.ocean"
         case .thunder: return "sound.thunder"
         case .campfire: return "sound.campfire"
-        case .stream: return "sound.stream"
+        case .brook: return "sound.brook"
         case .wind: return "sound.wind"
         case .cabin: return "sound.cabin"
         }
@@ -41,7 +43,7 @@ enum SoundID: String, Codable, CaseIterable, Identifiable {
         case .ocean: return "sound.ocean.detail"
         case .thunder: return "sound.thunder.detail"
         case .campfire: return "sound.campfire.detail"
-        case .stream: return "sound.stream.detail"
+        case .brook: return "sound.brook.detail"
         case .wind: return "sound.wind.detail"
         case .cabin: return "sound.cabin.detail"
         }
@@ -57,7 +59,7 @@ enum SoundID: String, Codable, CaseIterable, Identifiable {
         case .ocean: return "water.waves"
         case .thunder: return "cloud.bolt.fill"
         case .campfire: return "flame.fill"
-        case .stream: return "drop.fill"
+        case .brook: return "drop.fill"
         case .wind: return "wind"
         case .cabin: return "airplane"
         }

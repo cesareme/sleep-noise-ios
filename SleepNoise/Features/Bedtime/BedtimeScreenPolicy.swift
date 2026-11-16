@@ -2,16 +2,13 @@ import Foundation
 
 /// Rules of the Night screen that do not need a view.
 ///
-/// The screen is drawn black and the clock is dim. System brightness is never
-/// changed and no private API is involved; playback continues with the display
-/// off because the audio session is `.playback` with the audio background mode.
+/// The screen is drawn black. System brightness is never changed and no
+/// private API is involved; playback continues with the display off because
+/// the audio session is `.playback` with the audio background mode.
 ///
 /// Night never creates, changes or stores a sleep timer. It shows the one that
 /// is already running, or none.
 enum BedtimeScreenPolicy {
-    /// How long the clock stays readable after a tap before it dims again.
-    static let dimAfter: TimeInterval = 8
-
     enum Entry: Equatable {
         /// Cover the interface. `startsPlayback` is true when the mix was paused.
         case enter(startsPlayback: Bool)
