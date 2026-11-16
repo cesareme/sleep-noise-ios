@@ -59,6 +59,50 @@ enum IntentPreset: String, AppEnum {
     }
 }
 
+/// What Siri says back. A request that needs Pro is answered in words that
+/// name what is free; a Shortcut never raises the paywall.
+enum IntentReply {
+    static func playing(_ sound: SoundID) -> String {
+        String(format: String(localized: "intent.playedSoundFormat"), sound.localizedName)
+    }
+
+    static func playing(_ preset: SoundPreset) -> String {
+        String(format: String(localized: "intent.playedPresetFormat"), preset.localizedName)
+    }
+
+    static func soundNeedsPro(_ sound: SoundID) -> String {
+        let free = SoundID.allCases
+            .filter { AccessPolicy.soundIsIncluded($0, hasFullAccess: false) }
+            .map(\.localizedName)
+        return String(
+            format: String(localized: "intent.soundNeedsProFormat"),
+            sound.localizedName,
+            ListFormatter.localizedString(byJoining: free)
+        )
+    }
+
+    static func presetNeedsPro(_ preset: SoundPreset) -> String {
+        String(format: String(localized: "intent.presetNeedsProFormat"), preset.localizedName)
+    }
+
+    static func timerStarted(minutes: Int) -> String {
+        String(format: String(localized: "intent.timerStartedFormat"), Int64(minutes))
+    }
+
+    static func timerNeedsPro(minutes: Int) -> String {
+        let free = AccessPolicy.freeTimerMinutes.sorted().map { String($0) }
+        return String(
+            format: String(localized: "intent.timerNeedsProFormat"),
+            Int64(minutes),
+            ListFormatter.localizedString(byJoining: free)
+        )
+    }
+
+    static func timerOutOfRange() -> String {
+        String(format: String(localized: "intent.timerOutOfRangeFormat"), Int64(AccessPolicy.maxTimerMinutes))
+    }
+}
+
 struct PlaySoundIntent: AppIntent {
     static var title: LocalizedStringResource = "intent.playSound.title"
     static var description = IntentDescription(LocalizedStringResource("intent.playSound.description"))
@@ -76,13 +120,13 @@ struct PlaySoundIntent: AppIntent {
         guard let mixer = IntentBridge.mixer else {
             return .result(dialog: IntentDialog(LocalizedStringResource("intent.unavailable")))
         }
-        switch mixer.playSound(sound.soundID) {
+        let id = sound.soundID
+        switch mixer.playSound(id) {
         case .started:
-            let line = String(format: String(localized: "intent.playedSoundFormat"), sound.soundID.localizedName)
-            return .result(dialog: IntentDialog(stringLiteral: line))
+            return .result(dialog: IntentDialog(stringLiteral: IntentReply.playing(id)))
         case .needsPro:
-            return .result(dialog: IntentDialog(LocalizedStringResource("intent.needsPro")))
-        case .failed, .stopped:
+            return .result(dialog: IntentDialog(stringLiteral: IntentReply.soundNeedsPro(id)))
+        case .failed, .stopped, .nothingPlaying, .outOfRange:
             return .result(dialog: IntentDialog(LocalizedStringResource("intent.failed")))
         }
     }
@@ -105,13 +149,13 @@ struct PlayPresetIntent: AppIntent {
         guard let mixer = IntentBridge.mixer else {
             return .result(dialog: IntentDialog(LocalizedStringResource("intent.unavailable")))
         }
-        switch mixer.playPreset(preset.preset) {
+        let chosen = preset.preset
+        switch mixer.playPreset(chosen) {
         case .started:
-            let line = String(format: String(localized: "intent.playedPresetFormat"), preset.preset.localizedName)
-            return .result(dialog: IntentDialog(stringLiteral: line))
+            return .result(dialog: IntentDialog(stringLiteral: IntentReply.playing(chosen)))
         case .needsPro:
-            return .result(dialog: IntentDialog(LocalizedStringResource("intent.needsPro")))
-        case .failed, .stopped:
+            return .result(dialog: IntentDialog(stringLiteral: IntentReply.presetNeedsPro(chosen)))
+        case .failed, .stopped, .nothingPlaying, .outOfRange:
             return .result(dialog: IntentDialog(LocalizedStringResource("intent.failed")))
         }
     }
@@ -122,7 +166,11 @@ struct StartSleepTimerIntent: AppIntent {
     static var description = IntentDescription(LocalizedStringResource("intent.timer.description"))
     static var openAppWhenRun = true
 
-    @Parameter(title: LocalizedStringResource("intent.param.minutes"), default: 60, inclusiveRange: (1, 360))
+    @Parameter(
+        title: LocalizedStringResource("intent.param.minutes"),
+        default: 60,
+        inclusiveRange: (1, 360)
+    )
     var minutes: Int
 
     static var parameterSummary: some ParameterSummary {
@@ -136,20 +184,24 @@ struct StartSleepTimerIntent: AppIntent {
         }
         switch mixer.startTimer(minutes: minutes) {
         case .started:
-            let line = String(format: String(localized: "intent.timerStartedFormat"), Int64(minutes))
-            return .result(dialog: IntentDialog(stringLiteral: line))
+            return .result(dialog: IntentDialog(stringLiteral: IntentReply.timerStarted(minutes: minutes)))
         case .needsPro:
-            return .result(dialog: IntentDialog(LocalizedStringResource("intent.needsPro")))
-        case .failed, .stopped:
+            return .result(dialog: IntentDialog(stringLiteral: IntentReply.timerNeedsPro(minutes: minutes)))
+        case .outOfRange:
+            return .result(dialog: IntentDialog(stringLiteral: IntentReply.timerOutOfRange()))
+        case .failed, .stopped, .nothingPlaying:
             return .result(dialog: IntentDialog(LocalizedStringResource("intent.failed")))
         }
     }
 }
 
+/// Stopping needs no interface: it runs in the background and never brings
+/// the app to the front of a dark bedroom. While audio plays the process is
+/// alive and the bridge is attached; with no mixer there is nothing playing.
 struct StopPlaybackIntent: AppIntent {
     static var title: LocalizedStringResource = "intent.stop.title"
     static var description = IntentDescription(LocalizedStringResource("intent.stop.description"))
-    static var openAppWhenRun = true
+    static var openAppWhenRun = false
 
     static var parameterSummary: some ParameterSummary {
         Summary("Stop")
@@ -157,10 +209,9 @@ struct StopPlaybackIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        guard let mixer = IntentBridge.mixer else {
-            return .result(dialog: IntentDialog(LocalizedStringResource("intent.unavailable")))
+        guard let mixer = IntentBridge.mixer, mixer.stopFromShortcut() == .stopped else {
+            return .result(dialog: IntentDialog(LocalizedStringResource("intent.nothingPlaying")))
         }
-        _ = mixer.stopFromShortcut()
         return .result(dialog: IntentDialog(LocalizedStringResource("intent.stopped")))
     }
 }

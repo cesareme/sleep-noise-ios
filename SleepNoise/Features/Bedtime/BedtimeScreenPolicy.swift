@@ -1,17 +1,34 @@
 import Foundation
 
-/// How the bedtime screen treats the display.
+/// Rules of the Night screen that do not need a view.
 ///
-/// The screen is drawn black and the clock is dim. The system idle timer stays
-/// enabled, so iOS may dim and lock the display on its own; playback continues
-/// because the audio session is `.playback` with the audio background mode.
-/// System brightness is never changed. Both choices are public API and avoid
-/// the private brightness and idle-timer tricks review rejects.
+/// The screen is drawn black and the clock is dim. System brightness is never
+/// changed and no private API is involved; playback continues with the display
+/// off because the audio session is `.playback` with the audio background mode.
+///
+/// Night never creates, changes or stores a sleep timer. It shows the one that
+/// is already running, or none.
 enum BedtimeScreenPolicy {
-    static let systemIdleTimerStaysEnabled = true
-    static let changesSystemBrightness = false
-    /// Free 60-minute timer used when bedtime starts with no timer chosen.
-    static let defaultMinutes = 60
     /// How long the clock stays readable after a tap before it dims again.
     static let dimAfter: TimeInterval = 8
+
+    enum Entry: Equatable {
+        /// Cover the interface. `startsPlayback` is true when the mix was paused.
+        case enter(startsPlayback: Bool)
+        /// Every audible layer is at zero: there is nothing to fall asleep to.
+        case nothingToPlay
+    }
+
+    /// What asking for Night does, given the mixer state.
+    static func entry(isPlaying: Bool, isSilent: Bool) -> Entry {
+        if isSilent { return .nothingToPlay }
+        return .enter(startsPlayback: !isPlaying)
+    }
+}
+
+/// Result of `MixerModel.enterBedtime()`.
+enum BedtimeEntryOutcome: Equatable {
+    case entered
+    case nothingToPlay
+    case audioFailed
 }

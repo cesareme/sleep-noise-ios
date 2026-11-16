@@ -2487,20 +2487,92 @@
         }
       }
     },
-    "intent.needsPro": {
-      "comment": "Siri dialog when the request needs Pro",
+    "intent.soundNeedsProFormat": {
+      "comment": "Siri dialog when a sound needs Pro. %1$@ is the sound, %2$@ the list of free sounds.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "That one is part of Pro."
+            "value": "%1$@ is part of Pro. Free sounds: %2$@."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eso forma parte de Pro."
+            "value": "%1$@ forma parte de Pro. Sonidos gratuitos: %2$@."
+          }
+        }
+      }
+    },
+    "intent.presetNeedsProFormat": {
+      "comment": "Siri dialog when a preset needs Pro. %@ is the preset name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ uses sounds that are part of Pro."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ lleva sonidos que forman parte de Pro."
+          }
+        }
+      }
+    },
+    "intent.timerNeedsProFormat": {
+      "comment": "Siri dialog when a timer length needs Pro. %1$lld is the length asked for, %2$@ the list of free lengths.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A %1$lld minute timer is part of Pro. Free lengths in minutes: %2$@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un temporizador de %1$lld minutos forma parte de Pro. Duraciones gratuitas en minutos: %2$@."
+          }
+        }
+      }
+    },
+    "intent.timerOutOfRangeFormat": {
+      "comment": "Siri dialog when the timer length is outside the allowed range. %lld is the longest timer in minutes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a length between 1 and %lld minutes."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elige una duración entre 1 y %lld minutos."
+          }
+        }
+      }
+    },
+    "intent.nothingPlaying": {
+      "comment": "Siri dialog when asked to stop and nothing was playing",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing was playing."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No sonaba nada."
           }
         }
       }

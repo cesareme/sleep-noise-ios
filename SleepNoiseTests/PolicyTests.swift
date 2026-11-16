@@ -57,12 +57,6 @@ final class AccessPolicyTests: XCTestCase {
         XCTAssertEqual(SoundPreset.allCases.count, free.count + pro.count)
     }
 
-    func testBedtimeUsesAFreeTimerAndDoesNotDimTheHardware() {
-        XCTAssertTrue(AccessPolicy.timerIsIncluded(minutes: BedtimeScreenPolicy.defaultMinutes, hasFullAccess: false))
-        XCTAssertTrue(BedtimeScreenPolicy.systemIdleTimerStaysEnabled)
-        XCTAssertFalse(BedtimeScreenPolicy.changesSystemBrightness)
-    }
-
     func testSavedMixGate() {
         XCTAssertTrue(AccessPolicy.canSave(existingCount: 0, hasFullAccess: false))
         XCTAssertFalse(AccessPolicy.canSave(existingCount: 1, hasFullAccess: false))
@@ -130,5 +124,133 @@ final class MixStoreTests: XCTestCase {
         let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
         defaults.removePersistentDomain(forName: name)
         return defaults
+    }
+}
+
+/// The Night model and the Shortcut entry points of the mixer. Every path
+/// exercised here returns before the audio engine would start.
+@MainActor
+final class NightAndShortcutTests: XCTestCase {
+    private let timerKey = "sleepnoise.timerMinutes.v1"
+    private let day0 = Date(timeIntervalSinceReferenceDate: 700_000_000)
+
+    private func makeDefaults() throws -> UserDefaults {
+        let name = "sleepnoise.tests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        defaults.removePersistentDomain(forName: name)
+        return defaults
+    }
+
+    /// The trial ran out days ago and nothing was bought.
+    private func expire(_ purchases: PurchaseManager) {
+        purchases.startTrialIfNeeded(now: day0)
+        purchases.refreshAccess(now: day0.addingTimeInterval(8 * 86_400), canDowngrade: true)
+    }
+
+    private func makeFreeTierModel() throws -> MixerModel {
+        let defaults = try makeDefaults()
+        let purchases = PurchaseManager(defaults: defaults, now: day0)
+        expire(purchases)
+        XCTAssertFalse(purchases.hasFullAccess)
+        return MixerModel(purchases: purchases, defaults: defaults)
+    }
+
+    func testNightEntryPlan() {
+        XCTAssertEqual(BedtimeScreenPolicy.entry(isPlaying: false, isSilent: false), .enter(startsPlayback: true))
+        XCTAssertEqual(BedtimeScreenPolicy.entry(isPlaying: true, isSilent: false), .enter(startsPlayback: false))
+        XCTAssertEqual(BedtimeScreenPolicy.entry(isPlaying: false, isSilent: true), .nothingToPlay)
+        XCTAssertEqual(BedtimeScreenPolicy.entry(isPlaying: true, isSilent: true), .nothingToPlay)
+    }
+
+    func testNightRefusesASilentMixAndNeverCreatesATimer() throws {
+        let defaults = try makeDefaults()
+        let model = MixerModel(purchases: PurchaseManager(defaults: defaults, now: day0), defaults: defaults)
+        for sound in SoundID.allCases {
+            model.levels[sound] = 0
+        }
+        XCTAssertTrue(model.isSilent)
+        XCTAssertEqual(model.enterBedtime(), .nothingToPlay)
+        XCTAssertFalse(model.isBedtime)
+        XCTAssertFalse(model.isPlaying)
+        XCTAssertNil(model.timer.selectedMinutes, "Night does not choose a timer")
+        XCTAssertNil(defaults.object(forKey: timerKey), "and does not store one")
+    }
+
+    func testShortcutsRefuseProRequestsInWordsWithoutThePaywall() throws {
+        let model = try makeFreeTierModel()
+        let before = model.levels
+
+        XCTAssertEqual(model.playSound(.thunder), .needsPro)
+        XCTAssertEqual(model.playPreset(.storm), .needsPro)
+        XCTAssertEqual(model.startTimer(minutes: 45), .needsPro)
+        XCTAssertEqual(model.startTimer(minutes: 0), .outOfRange)
+        XCTAssertEqual(model.startTimer(minutes: AccessPolicy.maxTimerMinutes + 1), .outOfRange)
+
+        XCTAssertFalse(model.showPaywall)
+        XCTAssertFalse(model.isPlaying)
+        XCTAssertEqual(model.levels, before)
+        XCTAssertNil(model.activePreset)
+        XCTAssertNil(model.timer.selectedMinutes)
+    }
+
+    func testStopWithNothingPlayingSaysSoAndStaysInTheBackground() throws {
+        let model = try makeFreeTierModel()
+        XCTAssertEqual(model.stopFromShortcut(), .nothingPlaying)
+        XCTAssertFalse(StopPlaybackIntent.openAppWhenRun)
+    }
+
+    func testRepliesNameWhatIsFree() {
+        let sound = IntentReply.soundNeedsPro(.thunder)
+        XCTAssertTrue(sound.contains(SoundID.thunder.localizedName))
+        for free in SoundID.allCases where AccessPolicy.soundIsIncluded(free, hasFullAccess: false) {
+            XCTAssertTrue(sound.contains(free.localizedName), "\(sound) should name \(free.rawValue)")
+        }
+
+        let timer = IntentReply.timerNeedsPro(minutes: 45)
+        XCTAssertTrue(timer.contains("45"))
+        for minutes in AccessPolicy.freeTimerMinutes {
+            XCTAssertTrue(timer.contains(String(minutes)), "\(timer) should name \(minutes)")
+        }
+
+        XCTAssertTrue(IntentReply.timerOutOfRange().contains(String(AccessPolicy.maxTimerMinutes)))
+        XCTAssertTrue(IntentReply.presetNeedsPro(.storm).contains(SoundPreset.storm.localizedName))
+    }
+
+    func testEverySoundAndPresetCanBeAskedFor() {
+        let sounds = IntentSound.caseDisplayRepresentations.keys
+        XCTAssertEqual(Set(sounds.map(\.soundID)), Set(SoundID.allCases))
+        XCTAssertEqual(sounds.count, SoundID.allCases.count)
+        for sound in sounds {
+            XCTAssertEqual(sound.rawValue, sound.soundID.rawValue)
+        }
+
+        let presets = IntentPreset.caseDisplayRepresentations.keys
+        XCTAssertEqual(Set(presets.map(\.preset)), Set(SoundPreset.allCases))
+        XCTAssertEqual(presets.count, SoundPreset.allCases.count)
+        for preset in presets {
+            XCTAssertEqual(preset.rawValue, preset.preset.rawValue)
+        }
+    }
+
+    func testAMixLoadedDuringTheTrialIsMarkedStrippedWhenItEnds() throws {
+        let defaults = try makeDefaults()
+        let purchases = PurchaseManager(defaults: defaults, now: day0)
+        let model = MixerModel(purchases: purchases, defaults: defaults)
+        let mix = SavedMix(
+            id: UUID(),
+            name: "Storm",
+            levels: [MixLevel(sound: .rain, value: 0.5), MixLevel(sound: .thunder, value: 0.6)],
+            createdAt: day0
+        )
+        XCTAssertFalse(model.apply(mix), "whole while the trial is open")
+        XCTAssertFalse(model.loadedMixWasStripped)
+
+        expire(purchases)
+        model.refreshEntitledAudio()
+        XCTAssertTrue(model.loadedMixWasStripped, "thunder is muted now and the mixer should say so")
+
+        XCTAssertTrue(MixerModel.hasMutedLayers([.thunder: 0.6], hasFullAccess: false))
+        XCTAssertFalse(MixerModel.hasMutedLayers([.thunder: 0.6], hasFullAccess: true))
+        XCTAssertFalse(MixerModel.hasMutedLayers([.rain: 0.6, .thunder: 0], hasFullAccess: false))
     }
 }

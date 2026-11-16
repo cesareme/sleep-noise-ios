@@ -2,8 +2,7 @@ import Foundation
 
 /// One-tap mixes. A preset is Pro when any of its layers is a Pro sound, the
 /// same rule as the mixer: during the local trial `hasFullAccess` is true, so
-/// every preset plays; afterwards a locked preset opens the paywall and does
-/// not change the sliders.
+/// every preset plays; afterwards a locked preset does not change the sliders.
 enum SoundPreset: String, CaseIterable, Identifiable {
     case deepSleep
     case focus
@@ -83,7 +82,11 @@ enum SoundPreset: String, CaseIterable, Identifiable {
 enum IntentOutcome: Equatable {
     case started
     case stopped
+    /// Stop was asked for while nothing was playing.
+    case nothingPlaying
     case needsPro
+    /// A timer length outside 1...`AccessPolicy.maxTimerMinutes`.
+    case outOfRange
     case failed
 }
 
@@ -93,7 +96,7 @@ enum PresetApplyResult: Equatable {
 }
 
 enum PresetLibrary {
-    /// Level a tile uses when it is switched on from the grid.
+    /// Level of a sound that a Shortcut plays on its own.
     static let engagedLevel: Float = 0.65
 
     static func apply(_ preset: SoundPreset, hasFullAccess: Bool) -> PresetApplyResult {

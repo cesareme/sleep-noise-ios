@@ -19,7 +19,7 @@
             "state": "translated",
             "values": [
               "Reproduce ${sound} en ${applicationName}",
-              "Pon ${sound} con ${applicationName}"
+              "Pon ${sound} en ${applicationName}"
             ]
           }
         }
