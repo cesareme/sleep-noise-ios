@@ -10,10 +10,10 @@
 
 ## Definición de hecho (PLAN-SIMPLE §8)
 
-- [ ] 1. `scripts/verify.sh` en verde en el Mac y CI en verde. Pega la última línea (`VERIFY OK · N tests`). Si trabajas sin Xcode, escribe "No he compilado en local" y deja la casilla al revisor.
-- [ ] 2. Sin avisos nuevos de compilación ni de metadatos de App Intents. No se ha tocado `scripts/verify-known-warnings.txt`.
+- [ ] 1. `scripts/verify.sh` en verde en el Mac y CI en verde. Pega la última línea (`VERIFY OK · N tests`). Si trabajas sin Xcode, escribe la frase literal "No he compilado ni ejecutado nada en local." y deja la casilla al revisor.
+- [ ] 2. Sin avisos nuevos de compilación ni de metadatos de App Intents. No se ha tocado `scripts/verify-known-warnings.txt` ni se ha bajado `scripts/verify-min-tests.txt`.
 - [ ] 3. Cadenas nuevas en EN y ES (o "ninguna cadena").
-- [ ] 4. Sin red, sin analítica, sin afirmaciones médicas y sin palabras de la lista negra.
+- [ ] 4. Sin red, sin analítica, sin afirmaciones médicas y sin palabras de la lista negra. Hoy solo los términos médicos son automáticos (`CopyLintTests`); el resto de la lista (`docs/design/10-GUIA-DE-COPY.md` §0.5) se revisa a mano.
 - [ ] 5. Respeta el documento 03: un solo acento, SF Pro, sin candados ni degradados, y nada de venta entre 21:00 y 07:00.
 - [ ] 6. Revisado por el otro agente y fusionado por Claude.
 

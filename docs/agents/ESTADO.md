@@ -27,4 +27,8 @@ Notas:
 
 - S-03 va en dos PR. La mitad A puede empezar cuando S-01 esté en `main`; la mitad B espera a S-02 (PLAN-SIMPLE §10). Brief: `docs/briefs/S-03.md`.
 - Las ramas de los paquetes pendientes son nombres propuestos: se fijan al lanzar cada paquete.
-- Pendiente del dueño tras fusionar S-01: proteger `main` y marcar el check `verify` de la CI como obligatorio.
+- Pendiente del dueño tras fusionar S-01: proteger `main` y marcar el check `verify` de la CI como obligatorio. En ese momento conviene añadir `.github/CODEOWNERS` para `scripts/`, `.github/` y `project.yml`: hoy la CI solo avisa cuando un PR toca la puerta, no lo impide.
+- El PR #3 es anterior al plan y sigue abierto hasta que S-02 lo cierre. Nadie empuja a su rama ni lo fusiona, así que no cuenta para el límite de dos PR (por eso el resumen dice "del plan"). Es la lectura del integrador: si el dueño prefiere contarlo, S-03a no abre su PR hasta que S-02 cierre el PR #3.
+- Mínimo de tests: `scripts/verify-min-tests.txt` (hoy 49). Claude lo sube al total nuevo al fusionar cada paquete que añade tests.
+- El lint de la lista negra de palabras (`docs/design/10-GUIA-DE-COPY.md` §0.5) todavía no existe: `CopyLintTests` solo cubre los términos médicos. Propuesta del integrador: entra con S-08, ampliando `CopyLintTests` junto al catálogo de cadenas. Hasta entonces el punto 4 de la definición de hecho se revisa a mano.
+- La mitad B del brief S-03 se revalida contra `main` cuando S-02 esté fusionado, antes de lanzarla.

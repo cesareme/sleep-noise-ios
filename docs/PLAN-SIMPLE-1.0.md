@@ -151,13 +151,11 @@ Notas del integrador al arrancar la semana 1. No cambian el texto de las seccion
 
 - **S-03 se hace en dos mitades.** Mitad A: solo ficheros nuevos (`NightWindow`, el reloj de la prueba de 7 noches y la receta de Madrugada) con sus tests en ficheros nuevos; puede empezar en cuanto S-01 esté en `main`. Mitad B: cuando S-02 esté en `main`, los ficheros compartidos de política de acceso (`AccessPolicy.swift`) y sus tests. Brief: `docs/briefs/S-03.md`.
 - **El trabajo de audio escondido se hace explícito.** S-04 incluye publicar el nivel RMS desde el hilo de audio para el Horizonte. S-06 incluye la ganancia maestra con rampa para Manto y para el eje vertical de Noche. Siempre con un solo escritor en `SleepNoise/Audio/`.
-- **Tres tareas del dueño pasan al martes 17-11:**
-  - crear la ficha en App Store Connect para comprobar que el nombre está libre;
-  - acuerdo de apps de pago, con banco y fiscalidad;
-  - escuchar primero el viento, porque es textura gratuita.
 
 ### Propuestos, pendientes del sí del dueño (no se aplican hasta entonces)
 
+- Adelantar al martes 17-11 dos tareas del dueño que §6 pone en la semana 1: crear la ficha en App Store Connect, para comprobar que el nombre está libre, y el acuerdo de apps de pago, con banco y fiscalidad.
+- En la escucha de texturas, empezar por el viento, porque es textura gratuita, en cuanto S-02 compile (hoy el viento no está en `main`).
 - Accesibilidad con VoiceOver en la definición de hecho (§8).
 - Reconciliar las specs 05 y 07 antes de S-04.
 - Fijar una segunda fecha de envío: 18-12-2026 o 04-01-2027.
