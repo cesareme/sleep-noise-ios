@@ -10,5 +10,6 @@ final class AppRoot: ObservableObject {
         let purchases = PurchaseManager()
         self.purchases = purchases
         mixer = MixerModel(purchases: purchases)
+        IntentBridge.attach(mixer)
     }
 }

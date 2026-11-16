@@ -59,6 +59,7 @@ final class MixerModel: ObservableObject {
     func startIfNeeded() {
         guard !didStart else { return }
         didStart = true
+        IntentBridge.attach(self)
         purchases.start()
         installSessionHandlers()
         nowPlaying.install(
