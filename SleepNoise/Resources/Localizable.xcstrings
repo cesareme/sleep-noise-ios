@@ -1,0 +1,1844 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "app.name": {
+      "comment": "App name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SleepNoise"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SleepNoise"
+          }
+        }
+      }
+    },
+    "mixer.tagline": {
+      "comment": "Subtitle under the app name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For the night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Para la noche"
+          }
+        }
+      }
+    },
+    "mixer.silent": {
+      "comment": "Shown when every slider is at zero",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raise a sound to hear the mix."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sube un sonido para oír la mezcla."
+          }
+        }
+      }
+    },
+    "sound.white": {
+      "comment": "White noise name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "White"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blanco"
+          }
+        }
+      }
+    },
+    "sound.white.detail": {
+      "comment": "White noise description",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Even hiss"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siseo parejo"
+          }
+        }
+      }
+    },
+    "sound.pink": {
+      "comment": "Pink noise name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pink"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rosa"
+          }
+        }
+      }
+    },
+    "sound.pink.detail": {
+      "comment": "Pink noise description",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soft and balanced"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suave y equilibrado"
+          }
+        }
+      }
+    },
+    "sound.brown": {
+      "comment": "Brown noise name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brown"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marrón"
+          }
+        }
+      }
+    },
+    "sound.brown.detail": {
+      "comment": "Brown noise description",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deep rumble"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retumbo grave"
+          }
+        }
+      }
+    },
+    "sound.rain": {
+      "comment": "Rain texture name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rain"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lluvia"
+          }
+        }
+      }
+    },
+    "sound.rain.detail": {
+      "comment": "Rain texture description",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drops on a steady bed"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gotas sobre un fondo constante"
+          }
+        }
+      }
+    },
+    "sound.fan": {
+      "comment": "Fan texture name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fan"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ventilador"
+          }
+        }
+      }
+    },
+    "sound.fan.detail": {
+      "comment": "Fan texture description",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slow mechanical whoosh"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zumbido mecánico lento"
+          }
+        }
+      }
+    },
+    "sound.ocean": {
+      "comment": "Ocean texture name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocean"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Océano"
+          }
+        }
+      }
+    },
+    "sound.ocean.detail": {
+      "comment": "Ocean texture description",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swells that come and go"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oleaje que va y viene"
+          }
+        }
+      }
+    },
+    "sound.proOnly": {
+      "comment": "Badge on a locked sound",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro"
+          }
+        }
+      }
+    },
+    "sound.locked": {
+      "comment": "Accessibility label for a locked sound",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Included with Pro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incluido con Pro"
+          }
+        }
+      }
+    },
+    "control.play": {
+      "comment": "Play button",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproducir"
+          }
+        }
+      }
+    },
+    "control.pause": {
+      "comment": "Pause button",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausa"
+          }
+        }
+      }
+    },
+    "control.timer": {
+      "comment": "Timer button when no timer is set",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timer"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temporizador"
+          }
+        }
+      }
+    },
+    "control.save": {
+      "comment": "Save mix button",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar"
+          }
+        }
+      }
+    },
+    "control.mixes": {
+      "comment": "Opens the mix library",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved mixes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mezclas guardadas"
+          }
+        }
+      }
+    },
+    "control.pro": {
+      "comment": "Opens the paywall",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro"
+          }
+        }
+      }
+    },
+    "timer.title": {
+      "comment": "Timer sheet title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep timer"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temporizador"
+          }
+        }
+      }
+    },
+    "timer.off": {
+      "comment": "Clears the sleep timer",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apagado"
+          }
+        }
+      }
+    },
+    "timer.minutesFormat": {
+      "comment": "Short duration. Argument is minutes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        }
+      }
+    },
+    "timer.custom": {
+      "comment": "Custom timer",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personalizado"
+          }
+        }
+      }
+    },
+    "timer.note": {
+      "comment": "Explains the fade",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playback fades out before the timer ends."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El audio se desvanece antes de que termine el temporizador."
+          }
+        }
+      }
+    },
+    "timer.locked": {
+      "comment": "Shown when a timer is locked",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timers past 60 minutes and custom lengths are part of Pro."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los temporizadores de más de 60 minutos y a medida son parte de Pro."
+          }
+        }
+      }
+    },
+    "timer.remaining": {
+      "comment": "Label above the countdown",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remaining"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restante"
+          }
+        }
+      }
+    },
+    "mixes.title": {
+      "comment": "Mix library title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved mixes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mezclas guardadas"
+          }
+        }
+      }
+    },
+    "mixes.empty": {
+      "comment": "Empty library",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No saved mixes yet."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay mezclas guardadas."
+          }
+        }
+      }
+    },
+    "mixes.save.title": {
+      "comment": "Save dialog title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save mix"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar mezcla"
+          }
+        }
+      }
+    },
+    "mixes.save.message": {
+      "comment": "Save dialog message",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name this blend."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ponle nombre a esta mezcla."
+          }
+        }
+      }
+    },
+    "mixes.name.placeholder": {
+      "comment": "Placeholder mix name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night rain"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lluvia nocturna"
+          }
+        }
+      }
+    },
+    "mixes.defaultNameFormat": {
+      "comment": "Default name. Argument is a number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mix %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mezcla %lld"
+          }
+        }
+      }
+    },
+    "paywall.title": {
+      "comment": "Paywall title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SleepNoise Pro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SleepNoise Pro"
+          }
+        }
+      }
+    },
+    "paywall.subtitle": {
+      "comment": "Paywall subtitle",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything for the night, generated on this device."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todo para la noche, generado en este dispositivo."
+          }
+        }
+      }
+    },
+    "paywall.benefit.textures": {
+      "comment": "Pro benefit title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fan and ocean"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ventilador y océano"
+          }
+        }
+      }
+    },
+    "paywall.benefit.textures.detail": {
+      "comment": "Pro benefit detail",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Two more beds beside rain."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dos fondos más, además de la lluvia."
+          }
+        }
+      }
+    },
+    "paywall.benefit.mixes": {
+      "comment": "Pro benefit title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlimited mixes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mezclas ilimitadas"
+          }
+        }
+      }
+    },
+    "paywall.benefit.mixes.detail": {
+      "comment": "Pro benefit detail",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep a blend for every room and season."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guarda una mezcla para cada cuarto y cada estación."
+          }
+        }
+      }
+    },
+    "paywall.benefit.timer": {
+      "comment": "Pro benefit title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timers past 60 minutes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más de 60 minutos de temporizador"
+          }
+        }
+      }
+    },
+    "paywall.benefit.timer.detail": {
+      "comment": "Pro benefit detail",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "90 minutes, custom, up to six hours."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "90 minutos, a medida, hasta seis horas."
+          }
+        }
+      }
+    },
+    "paywall.purchaseFormat": {
+      "comment": "Purchase button. %@ is the localized price.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock Pro — %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desbloquear Pro — %@"
+          }
+        }
+      }
+    },
+    "paywall.purchaseUnavailable": {
+      "comment": "Shown when the product cannot be loaded",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro is unavailable right now"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro no está disponible ahora"
+          }
+        }
+      }
+    },
+    "paywall.restore": {
+      "comment": "Restore button",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore purchases"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurar compras"
+          }
+        }
+      }
+    },
+    "paywall.active": {
+      "comment": "Shown to people who already purchased",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro is active on this device."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro está activo en este dispositivo."
+          }
+        }
+      }
+    },
+    "paywall.restored": {
+      "comment": "Restore succeeded",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro restored."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro restaurado."
+          }
+        }
+      }
+    },
+    "paywall.nothingToRestore": {
+      "comment": "Restore found nothing",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No purchases to restore."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay compras para restaurar."
+          }
+        }
+      }
+    },
+    "paywall.pending": {
+      "comment": "Ask to Buy",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purchase is waiting for approval."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La compra está pendiente de aprobación."
+          }
+        }
+      }
+    },
+    "paywall.failed": {
+      "comment": "Purchase error",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The purchase didn't finish."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La compra no se completó."
+          }
+        }
+      }
+    },
+    "paywall.once": {
+      "comment": "Paywall footer",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One payment. No account. No tracking."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un solo pago. Sin cuenta. Sin rastreo."
+          }
+        }
+      }
+    },
+    "common.cancel": {
+      "comment": "Cancel",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelar"
+          }
+        }
+      }
+    },
+    "common.save": {
+      "comment": "Save",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar"
+          }
+        }
+      }
+    },
+    "common.close": {
+      "comment": "Close",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cerrar"
+          }
+        }
+      }
+    },
+    "common.pro": {
+      "comment": "Badge for an unlocked account",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro"
+          }
+        }
+      }
+    },
+    "error.audio": {
+      "comment": "Session or engine failure",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio didn't start. Try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El audio no se inició. Inténtalo de nuevo."
+          }
+        }
+      }
+    },
+    "nowplaying.title": {
+      "comment": "Now Playing title when no mix is loaded",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep Noise"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ruido para dormir"
+          }
+        }
+      }
+    },
+    "nowplaying.artist": {
+      "comment": "Now Playing artist",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SleepNoise"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SleepNoise"
+          }
+        }
+      }
+    },
+    "a11y.percentFormat": {
+      "comment": "VoiceOver volume. Argument is 0 to 100.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld percent"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld por ciento"
+          }
+        }
+      }
+    },
+    "breath.allNight": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All night (subtle)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toda la noche (sutil)"
+          }
+        }
+      }
+    },
+    "breath.dissolve": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Then the waves drift back to their own rhythm. The guide ends on its own."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Después las olas vuelven a su propio ritmo. La guía termina sola."
+          }
+        }
+      }
+    },
+    "breath.duration": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guide for"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guiar durante"
+          }
+        }
+      }
+    },
+    "breath.rate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breaths per minute"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respiraciones por minuto"
+          }
+        }
+      }
+    },
+    "breath.rate.format": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld per minute"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld por minuto"
+          }
+        }
+      }
+    },
+    "breath.settings.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens breathing settings"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre los ajustes de respiración"
+          }
+        }
+      }
+    },
+    "breath.state.guiding": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breathing with you"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respirando contigo"
+          }
+        }
+      }
+    },
+    "breath.subtitle.allNightFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld breaths/min · all night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld resp/min · toda la noche"
+          }
+        }
+      }
+    },
+    "breath.subtitle.format": {
+      "comment": "Breathing rate and guide length.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld breaths/min · %lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld resp/min · %lld min"
+          }
+        }
+      }
+    },
+    "breath.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breathing tide"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marea respiratoria"
+          }
+        }
+      }
+    },
+    "paywall.benefit.breath": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breathing tide"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marea respiratoria"
+          }
+        }
+      }
+    },
+    "paywall.trial.activeFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Last day. Afterwards white, pink, brown, rain and a 60-minute timer stay free, and the mixes you saved are kept; saving more needs Pro."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld days left. Afterwards white, pink, brown, rain and a 60-minute timer stay free, and the mixes you saved are kept; saving more needs Pro."
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Último día. Después seguirán gratis blanco, rosa, marrón, lluvia y el temporizador de 60 minutos, y las mezclas que guardaste se conservan; guardar más necesita Pro."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Quedan %lld días. Después seguirán gratis blanco, rosa, marrón, lluvia y el temporizador de 60 minutos, y las mezclas que guardaste se conservan; guardar más necesita Pro."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "breath.subtitle.off": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waves follow your slow breath"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las olas siguen tu respiración lenta"
+          }
+        }
+      }
+    },
+    "breath.state.dissolving": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letting the waves go"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soltando las olas"
+          }
+        }
+      }
+    },
+    "breath.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breathe in as the wave builds, out as it washes away. No need to watch the screen."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inhala mientras la ola sube, exhala mientras se retira. No hace falta mirar la pantalla."
+          }
+        }
+      }
+    },
+    "breath.comfort": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If it feels like too little air, pick a faster pace or breathe at your own rhythm."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si te falta el aire, elige un ritmo más rápido o respira a tu ritmo."
+          }
+        }
+      }
+    },
+    "breath.oceanRaised": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocean raised so you can hear the tide."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Océano activado para que oigas la marea."
+          }
+        }
+      }
+    },
+    "mixes.stripped": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Pro sounds in this mix are muted. Tap to see Pro."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los sonidos Pro de esta mezcla están en silencio. Toca para ver Pro."
+          }
+        }
+      }
+    },
+    "trial.chip.daysFormat": {
+      "comment": "Header chip during the trial.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Trial · last day"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Trial · %lld days"
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Prueba · último día"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Prueba · %lld días"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "trial.intro.detailFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your %lld days start the first time you press Play. Afterwards white, pink, brown, rain and a 60-minute timer stay free, and the mixes you saved are kept; saving more needs Pro."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus %lld días empiezan la primera vez que pulses Reproducir. Después seguirán gratis blanco, rosa, marrón, lluvia y el temporizador de 60 minutos, y las mezclas que guardaste se conservan; guardar más necesita Pro."
+          }
+        }
+      }
+    },
+    "trial.intro.more": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is Pro?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Qué es Pro?"
+          }
+        }
+      }
+    },
+    "trial.ended.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trial over. Free stays free."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se acabó la prueba. Lo gratis sigue."
+          }
+        }
+      }
+    },
+    "trial.ended.detailFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocean, fan, the breathing tide and long timers are Pro: %@, paid once. Your saved mixes are kept and come back whole."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Océano, ventilador, marea respiratoria y temporizadores largos son Pro: %@, pagado una sola vez. Tus mezclas guardadas se conservan y vuelven enteras."
+          }
+        }
+      }
+    },
+    "trial.ended.more": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See Pro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver Pro"
+          }
+        }
+      }
+    },
+    "trial.gotIt": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Got it"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entendido"
+          }
+        }
+      }
+    },
+    "paywall.trial.notStartedFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your %lld days start at the first Play. Afterwards white, pink, brown, rain and a 60-minute timer stay free, and the mixes you saved are kept; saving more needs Pro."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus %lld días empiezan al primer Reproducir. Después seguirán gratis blanco, rosa, marrón, lluvia y el temporizador de 60 minutos, y las mezclas que guardaste se conservan; guardar más necesita Pro."
+          }
+        }
+      }
+    },
+    "paywall.trial.endedTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trial over. Free stays free."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se acabó la prueba. Lo gratis sigue."
+          }
+        }
+      }
+    },
+    "paywall.trial.endedDetail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "White, pink, brown, rain and the 60-minute timer stay free. Your saved mixes are kept and come back whole with Pro."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blanco, rosa, marrón, lluvia y el temporizador de 60 minutos siguen gratis. Tus mezclas guardadas se conservan y vuelven enteras con Pro."
+          }
+        }
+      }
+    },
+    "paywall.keepFormat": {
+      "comment": "Purchase button during the trial. Argument is the localized price.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep everything — %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quédate con todo — %@"
+          }
+        }
+      }
+    },
+    "paywall.benefit.breath.detail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The waves pace a slow breath, then let go."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El oleaje marca una respiración lenta y luego suelta."
+          }
+        }
+      }
+    },
+    "trial.ended.detailNoPrice": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocean, fan, the breathing tide and long timers are Pro, a single payment with no subscription. Your saved mixes are kept and come back whole."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Océano, ventilador, marea respiratoria y temporizadores largos son Pro, un único pago sin suscripción. Tus mezclas guardadas se conservan y vuelven enteras."
+          }
+        }
+      }
+    },
+    "trial.chip.notStartedFormat": {
+      "comment": "Header chip before the first Play. Argument is the trial length in days.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld-day trial"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prueba de %lld días"
+          }
+        }
+      }
+    },
+    "trial.chip.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens Pro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre Pro"
+          }
+        }
+      }
+    },
+    "trial.intro.titleFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days of everything. No card."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld días con todo. Sin tarjeta."
+          }
+        }
+      }
+    },
+    "trial.intro.runningFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Last day of your trial. Afterwards white, pink, brown, rain and a 60-minute timer stay free, and the mixes you saved are kept; saving more needs Pro."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld days of trial left. Afterwards white, pink, brown, rain and a 60-minute timer stay free, and the mixes you saved are kept; saving more needs Pro."
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Último día de prueba. Después seguirán gratis blanco, rosa, marrón, lluvia y el temporizador de 60 minutos, y las mezclas que guardaste se conservan; guardar más necesita Pro."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Quedan %lld días de prueba. Después seguirán gratis blanco, rosa, marrón, lluvia y el temporizador de 60 minutos, y las mezclas que guardaste se conservan; guardar más necesita Pro."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "trial.price.onceFormat": {
+      "comment": "Argument is the localized price.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro is %@, paid once."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro cuesta %@, pagado una sola vez."
+          }
+        }
+      }
+    },
+    "trial.price.onceNoPrice": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro is a single payment, no subscription."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro es un único pago, sin suscripción."
+          }
+        }
+      }
+    },
+    "paywall.trial.titleFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days of everything, no card"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld días con todo, sin tarjeta"
+          }
+        }
+      }
+    },
+    "breath.allNight.note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stays with the waves all night, more subtly. Ends with the timer or Pause."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acompaña las olas toda la noche, más sutil. Termina con el temporizador o al pausar."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
