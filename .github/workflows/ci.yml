@@ -1,0 +1,68 @@
+# The gate for main. The job name "verify" is the required status check:
+# renaming the job means updating the branch protection rule.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# One run per branch or PR. A newer push cancels the older run of a PR;
+# runs on main are never cancelled so every merge keeps its own result.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Same Xcode as the integrator's Mac. Bump both together.
+  XCODE_APP: /Applications/Xcode_26.6.app
+  HOMEBREW_NO_AUTO_UPDATE: "1"
+  HOMEBREW_NO_INSTALL_CLEANUP: "1"
+  HOMEBREW_NO_ENV_HINTS: "1"
+
+jobs:
+  verify:
+    name: verify
+    # Pinned image, not macos-latest: the label moves between macOS versions.
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode
+        run: |
+          if [ -d "$XCODE_APP" ]; then
+            sudo xcode-select -s "$XCODE_APP"
+          else
+            echo "::warning::$XCODE_APP is not on this image; using the default Xcode"
+          fi
+
+      - name: Toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+          xcrun simctl list devices available
+
+      - name: Install XcodeGen
+        run: |
+          brew install xcodegen
+          xcodegen --version
+
+      - name: Verify
+        run: scripts/verify.sh --ci
+
+      - name: Upload verify.log
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: verify-log
+          path: .build/verify.log
+          if-no-files-found: ignore
+          retention-days: 7

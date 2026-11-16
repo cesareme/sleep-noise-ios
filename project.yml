@@ -36,7 +36,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.cesareme.sleepnoise
         PRODUCT_NAME: SleepNoise
-        TARGETED_DEVICE_FAMILY: "1,2"
+        TARGETED_DEVICE_FAMILY: "1"
         SUPPORTS_MACCATALYST: NO
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: SleepNoise/Resources/Info.plist
@@ -64,6 +64,7 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: com.cesareme.sleepnoise.tests
+        TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.9"
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/SleepNoise.app/SleepNoise"
         BUNDLE_LOADER: "$(TEST_HOST)"
