@@ -1,3 +1,5 @@
+> **Aviso (16-11-2026):** sustituido para 1.0 por `docs/PLAN-SIMPLE-1.0.md`. Se conserva como referencia.
+
 # SleepNoise 1.0 · Plan de desarrollo con agentes
 
 Fecha: 16-11-2026. Estado: propuesta para arrancar el 17-11-2026. Rama de trabajo de los documentos: `research/plan-sueno`.

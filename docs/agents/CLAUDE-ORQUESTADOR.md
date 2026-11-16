@@ -1,3 +1,5 @@
+> **Aviso (16-11-2026):** sustituido para 1.0 por `docs/PLAN-SIMPLE-1.0.md`. Se conserva como referencia.
+
 # Claude Code · orquestador, revisor e integrador
 
 Fecha: 16-11-2026. Acompaña a `docs/PLAN-DESARROLLO-AGENTES-2026-11-16.md` y no lo sustituye. Si algo de aquí lo contradice, manda el plan. Si el plan contradice a la reconciliación, manda la reconciliación. Las reglas comunes están en `AGENTS.md`. Aquí solo va lo propio de Claude Code.
