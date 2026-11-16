@@ -8,6 +8,10 @@ final class MixerModel: ObservableObject {
     @Published var audioError: String?
     @Published var showPaywall = false
     @Published private(set) var loadedMixName: String?
+    /// Preset last applied, until the person edits a level.
+    @Published private(set) var activePreset: SoundPreset?
+    /// OLED bedtime screen. Audio keeps running when this turns off.
+    @Published var isBedtime = false
     /// A saved mix was loaded with fan or ocean muted because they need Pro.
     @Published private(set) var loadedMixWasStripped = false
     /// Short note under the breathing card ("Ocean raised so you can hear it").
@@ -73,6 +77,7 @@ final class MixerModel: ObservableObject {
         levels[sound] = min(1, max(0, value))
         loadedMixName = nil
         loadedMixWasStripped = false
+        activePreset = nil
         if sound == .ocean { oceanBeforeTide = nil }
         persistLevels()
         if isPlaying {
@@ -92,6 +97,7 @@ final class MixerModel: ObservableObject {
     /// interruption, media-services reset). The breathing guide then continues
     /// its window instead of starting a fresh fifteen minutes on someone asleep.
     func play(userInitiated: Bool = true) {
+        startIfNeeded()
         audioError = nil
         resumeAfterInterruption = false
         // The guide publishes before the engine starts, so the first command
@@ -187,6 +193,7 @@ final class MixerModel: ObservableObject {
         levels = next
         loadedMixName = mix.name
         loadedMixWasStripped = stripped
+        activePreset = nil
         persistLevels()
         if isPlaying {
             engine.updateGains(currentGains())
@@ -196,6 +203,107 @@ final class MixerModel: ObservableObject {
 
     func suggestedMixName() -> String {
         String(format: String(localized: "mixes.defaultNameFormat"), Int64(mixStore.mixes.count + 1))
+    }
+
+    // MARK: Presets, tiles, bedtime, Shortcuts
+
+    /// Grid tap. Turns the layer on at `PresetLibrary.engagedLevel` or off.
+    /// A locked sound opens the paywall and does not change the mix.
+    func toggleSound(_ sound: SoundID) {
+        let current = levels[sound] ?? 0
+        if current > 0.01 {
+            setLevel(sound, 0)
+        } else {
+            setLevel(sound, PresetLibrary.engagedLevel)
+        }
+    }
+
+    /// One tap: replace the mix and start playback. Pro presets need full access.
+    @discardableResult
+    func playPreset(_ preset: SoundPreset) -> IntentOutcome {
+        startIfNeeded()
+        switch PresetLibrary.apply(preset, hasFullAccess: purchases.hasFullAccess) {
+        case .needsPro:
+            showPaywall = true
+            return .needsPro
+        case .levels(let next):
+            levels = next
+            activePreset = preset
+            loadedMixName = preset.localizedName
+            loadedMixWasStripped = false
+            persistLevels()
+            return startOrUpdate()
+        }
+    }
+
+    /// Shortcuts: play one sound on its own.
+    @discardableResult
+    func playSound(_ sound: SoundID) -> IntentOutcome {
+        startIfNeeded()
+        guard AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess) else {
+            showPaywall = true
+            return .needsPro
+        }
+        var next = Self.defaultLevels()
+        for id in SoundID.allCases { next[id] = 0 }
+        next[sound] = PresetLibrary.engagedLevel
+        levels = next
+        activePreset = nil
+        loadedMixName = sound.localizedName
+        loadedMixWasStripped = false
+        persistLevels()
+        return startOrUpdate()
+    }
+
+    /// Shortcuts: choose a length and start the bed. A Pro length without
+    /// access opens the paywall and leaves the current timer alone.
+    @discardableResult
+    func startTimer(minutes: Int) -> IntentOutcome {
+        startIfNeeded()
+        guard (1...AccessPolicy.maxTimerMinutes).contains(minutes) else { return .failed }
+        guard AccessPolicy.timerIsIncluded(minutes: minutes, hasFullAccess: purchases.hasFullAccess) else {
+            showPaywall = true
+            return .needsPro
+        }
+        selectTimer(minutes: minutes)
+        if isPlaying { return .started }
+        play()
+        return audioError == nil ? .started : .failed
+    }
+
+    func stopFromShortcut() -> IntentOutcome {
+        startIfNeeded()
+        pause(resumeLater: false)
+        return .stopped
+    }
+
+    /// Starts the current mix (and a 60-minute timer when none is set) and
+    /// covers the UI. Does not change system brightness or the idle timer.
+    func enterBedtime() {
+        if timer.selectedMinutes == nil {
+            selectTimer(minutes: BedtimeScreenPolicy.defaultMinutes)
+        }
+        if !isPlaying {
+            play()
+        } else if timer.remaining == nil {
+            timer.start()
+        }
+        guard isPlaying else { return }
+        isBedtime = true
+    }
+
+    func leaveBedtime() {
+        isBedtime = false
+    }
+
+    private func startOrUpdate() -> IntentOutcome {
+        if isPlaying {
+            engine.updateGains(currentGains())
+            nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
+            return .started
+        }
+        play()
+        return audioError == nil ? .started : .failed
     }
 
     var nowPlayingTitle: String {
