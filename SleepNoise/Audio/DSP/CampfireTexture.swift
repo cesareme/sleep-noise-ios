@@ -6,6 +6,13 @@ import Foundation
 /// together; the cracks are independent noise bursts, which is what spreads
 /// the fire across the stereo image.
 struct CampfireTexture {
+    /// Output trim. The flame body sits below 300 Hz, where the ear is least
+    /// sensitive, so at unity the fire read about 11 dB(A) under rain at the
+    /// same slider position. The flicker gives the body a high crest factor;
+    /// the output therefore goes through `softClip`, which is transparent
+    /// below its knee and rounds the few peaks above it instead of clipping.
+    static let outputGain: Float = 2.5
+
     var rng: XorShift32
     private var sampleRate: Float = 48_000
     private var bodyA: Float = 0
@@ -62,6 +69,6 @@ struct CampfireTexture {
             pitchMin: 700, pitchSpan: 1_800, decaySecondsMin: 0.006, decaySecondsSpan: 0.016, loudness: 0.7
         )
 
-        return clipUnit(flame + air + cracks * 0.85)
+        return softClip((flame + air + cracks * 0.85) * Self.outputGain)
     }
 }

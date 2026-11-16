@@ -6,6 +6,11 @@ import Foundation
 /// Gust phases start at fixed values so the swells stay centred in stereo
 /// while the noise itself is decorrelated.
 struct WindTexture {
+    /// Output trim. At unity the top of a gust reached full scale and the
+    /// wind was the loudest of the new beds. `softClip` then keeps the peak of
+    /// the strongest gust under full scale at every sample rate.
+    static let outputGain: Float = 0.75
+
     var rng: XorShift32
     private var whoosh = StateVariableFilter()
     private var air: Float = 0
@@ -42,6 +47,6 @@ struct WindTexture {
         air = flushDenormal(air + airCoefficient * (white - air))
         let hiss = (white - air) * 0.12 * gust
 
-        return clipUnit(body * 1.35 + hiss)
+        return softClip((body * 1.35 + hiss) * Self.outputGain)
     }
 }

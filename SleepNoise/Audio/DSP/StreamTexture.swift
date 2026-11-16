@@ -5,6 +5,10 @@ import Foundation
 /// bubble voices pitched well below raindrops. A slow level drift keeps it
 /// from sitting as a static hiss.
 struct StreamTexture {
+    /// Output trim. At unity the brook read about 7 dB(A) under rain at the
+    /// same slider position.
+    static let outputGain: Float = 2
+
     var rng: XorShift32
     private var sampleRate: Float = 48_000
     private var flow = StateVariableFilter()
@@ -56,6 +60,6 @@ struct StreamTexture {
             pitchMin: 280, pitchSpan: 700, decaySecondsMin: 0.025, decaySecondsSpan: 0.05, loudness: 0.6
         )
 
-        return clipUnit((band + gurgle + bubbles * 0.7) * drift)
+        return softClip((band + gurgle + bubbles * 0.7) * drift * Self.outputGain)
     }
 }

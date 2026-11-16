@@ -1,14 +1,18 @@
 import Darwin
 import Foundation
 
-/// Thunder: a quiet rain bed with sparse, slow rumbles.
+/// Thunder: a quiet rain bed with sparse, slow rumbles. Distant: a rumble
+/// swells and rolls away, with no strike at its start.
 ///
 /// The rumble schedule is a deterministic function of the rumble index, not of
 /// the noise generator, so the left and right channels (different noise seeds,
 /// same index) strike together and the image stays centred. Gaps land between
-/// about 4.5 and 12.5 seconds. The first rumble arrives before a second has
-/// passed, then the storm settles into those long gaps.
+/// 4.5 and 12.5 seconds. The first rumble arrives before a second has passed,
+/// then the storm settles into those long gaps.
 struct ThunderTexture {
+    /// Seconds from a fresh start to the first rumble.
+    static let firstRumbleSeconds: Float = 0.7
+
     var rng: XorShift32
     private var sampleRate: Float = 0
     private var rendered: Int = 0
@@ -22,8 +26,6 @@ struct ThunderTexture {
     private var rumbleA: Float = 0
     private var rumbleB: Float = 0
     private var rumbleCoefficient: Float = 0.02
-    private var crackEnvelope: Float = 0
-    private var crackDecay: Float = 0.9
     private var hiss: Float = 0
     private var hissCoefficient: Float = 0.2
     private var body: Float = 0
@@ -44,7 +46,7 @@ struct ThunderTexture {
             nextRumbleSample = Int((Float(nextRumbleSample) * scale).rounded())
             attackUntil = Int((Float(attackUntil) * scale).rounded())
         } else {
-            nextRumbleSample = Int(0.7 * rate)
+            nextRumbleSample = Int(Self.firstRumbleSeconds * rate)
         }
         self.sampleRate = rate
         rumbleCoefficient = OnePole.coefficient(sampleRate: rate, hertz: 140)
@@ -52,21 +54,18 @@ struct ThunderTexture {
         bodyCoefficient = OnePole.coefficient(sampleRate: rate, hertz: 400)
         rumbleAttack = 1 - expf(-1 / (rate * 0.45))
         rumbleRelease = 1 - expf(-1 / (rate * 2.6))
-        crackDecay = expf(-1 / (rate * 0.06))
         drop0.prepare(sampleRate: rate, cutoff: 2_400, resonance: 3.2)
         drop1.prepare(sampleRate: rate, cutoff: 3_200, resonance: 3.2)
     }
 
     mutating func next() -> Float {
         if rendered >= nextRumbleSample {
-            let roll = unit(rumbleIndex)
-            rumbleTarget = 0.62 + 0.38 * roll
-            let attack = 0.28 + 0.45 * unit(rumbleIndex &+ 3)
+            rumbleTarget = 0.62 + 0.38 * Self.unit(rumbleIndex, salt: 1)
+            let attack = 0.28 + 0.45 * Self.unit(rumbleIndex, salt: 2)
             attackUntil = rendered + max(1, Int(attack * sampleRate))
-            crackEnvelope = 0.25 + 0.55 * unit(rumbleIndex &+ 7)
-            rumbleIndex += 1
-            let gap = 4.5 + 8 * unit(rumbleIndex &+ 11)
+            let gap = Self.gapSeconds(after: rumbleIndex)
             nextRumbleSample = rendered + max(1, Int(gap * sampleRate))
+            rumbleIndex += 1
         }
         if rendered > attackUntil {
             rumbleTarget = 0
@@ -81,9 +80,6 @@ struct ThunderTexture {
         rumbleB = flushDenormal(rumbleB + rumbleCoefficient * (rumbleA - rumbleB))
         let rumble = rumbleB * rumbleEnvelope * 5.2
 
-        crackEnvelope = flushDenormal(crackEnvelope * crackDecay)
-        let crack = (white - rumbleA) * crackEnvelope * 0.55
-
         hiss = flushDenormal(hiss + hissCoefficient * (white - hiss))
         let rainHiss = (white - hiss) * 0.16
         body = flushDenormal(body + bodyCoefficient * (white - body))
@@ -96,12 +92,28 @@ struct ThunderTexture {
             pitchMin: 1_800, pitchSpan: 3_400, decaySecondsMin: 0.008, decaySecondsSpan: 0.02, loudness: 0.55
         )
 
-        return clipUnit(rainHiss + rainBody + drops * 0.45 + rumble + crack)
+        return clipUnit(rainHiss + rainBody + drops * 0.45 + rumble)
     }
 
-    /// Stable in 0..<1 for a given index. Shared by both channels.
-    private func unit(_ index: Int) -> Float {
-        let mixed = UInt32(bitPattern: Int32(index)) &* 1_664_525 &+ 1_013_904_223
-        return Float(mixed % 10_000) / 10_000
+    /// Seconds between rumble `index` (zero-based) and the one after it.
+    static func gapSeconds(after index: Int) -> Float {
+        4.5 + 8 * unit(index, salt: 3)
+    }
+
+    /// Stable in 0..<1 for a given rumble and salt, shared by both channels.
+    ///
+    /// An integer hash with full avalanche, so neighbouring rumbles are
+    /// unrelated. One multiply-add of the index is not a hash: it walks the
+    /// unit interval in constant steps and the gaps repeat. Integer arithmetic
+    /// only, so it is safe on the render thread.
+    static func unit(_ index: Int, salt: UInt32) -> Float {
+        var x = UInt32(truncatingIfNeeded: index) &* 0x9E37_79B1
+        x = x &+ salt &* 0x85EB_CA77
+        x ^= x >> 16
+        x = x &* 0x7FEB_352D
+        x ^= x >> 15
+        x = x &* 0x846C_A68B
+        x ^= x >> 16
+        return Float(x >> 8) / 16_777_216
     }
 }

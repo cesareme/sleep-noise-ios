@@ -74,3 +74,64 @@ final class GeneratorBox<State> {
         step(&state)
     }
 }
+
+/// A-weighted level meter for the bed-loudness tests.
+///
+/// The analog A-weighting prototype has four zeros at DC, double poles at
+/// 20.6 Hz and 12 194 Hz and single poles at 107.7 Hz and 737.9 Hz. Each pole
+/// becomes a first-order section through the bilinear transform with its
+/// corner pre-warped, and the cascade is normalised to 0 dB at 1 kHz.
+enum AWeighting {
+    private struct Section {
+        let isHighpass: Bool
+        let gain: Double
+        let feedback: Double
+        var lastInput = 0.0
+        var lastOutput = 0.0
+
+        init(corner: Double, sampleRate: Double, isHighpass: Bool) {
+            let k = tan(Double.pi * min(corner, sampleRate * 0.49) / sampleRate)
+            self.isHighpass = isHighpass
+            gain = (isHighpass ? 1 : k) / (1 + k)
+            feedback = (1 - k) / (1 + k)
+        }
+
+        mutating func process(_ input: Double) -> Double {
+            let output = gain * (isHighpass ? input - lastInput : input + lastInput) + feedback * lastOutput
+            lastInput = input
+            lastOutput = output
+            return output
+        }
+
+        func magnitude(at hertz: Double, sampleRate: Double) -> Double {
+            let cosine = cos(2 * Double.pi * hertz / sampleRate)
+            let numerator = isHighpass ? 2 - 2 * cosine : 2 + 2 * cosine
+            let denominator = 1 - 2 * feedback * cosine + feedback * feedback
+            return gain * sqrt(numerator / denominator)
+        }
+    }
+
+    /// Root mean square of the A-weighted signal, in dB relative to full scale.
+    static func decibels(_ samples: [Float], sampleRate: Double) -> Double {
+        guard !samples.isEmpty else { return -.infinity }
+        var sections = [
+            Section(corner: 20.6, sampleRate: sampleRate, isHighpass: true),
+            Section(corner: 20.6, sampleRate: sampleRate, isHighpass: true),
+            Section(corner: 107.7, sampleRate: sampleRate, isHighpass: true),
+            Section(corner: 737.9, sampleRate: sampleRate, isHighpass: true),
+            Section(corner: 12_194, sampleRate: sampleRate, isHighpass: false),
+            Section(corner: 12_194, sampleRate: sampleRate, isHighpass: false)
+        ]
+        let reference = sections.reduce(1.0) { $0 * $1.magnitude(at: 1_000, sampleRate: sampleRate) }
+        var energy = 0.0
+        for sample in samples {
+            var value = Double(sample)
+            for index in sections.indices {
+                value = sections[index].process(value)
+            }
+            energy += value * value
+        }
+        let rms = sqrt(energy / Double(samples.count)) / reference
+        return 20 * log10(max(rms, 1e-12))
+    }
+}
