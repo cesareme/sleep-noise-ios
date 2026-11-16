@@ -1,32 +1,46 @@
 import SwiftUI
 
-enum Palette {
-    static let background = Color(red: 0.055, green: 0.067, blue: 0.078)
-    static let ink = Color(red: 0.09, green: 0.11, blue: 0.13)
-    static let card = Color(red: 0.122, green: 0.137, blue: 0.153)
-    static let amber = Color(red: 0.922, green: 0.722, blue: 0.451)
-    static let mist = Color(red: 0.655, green: 0.745, blue: 0.753)
-    static let text = Color(red: 0.933, green: 0.914, blue: 0.863)
-    static let muted = Color(red: 0.58, green: 0.60, blue: 0.62)
-}
-
+/// Slow wash behind the mixer. While audio is running and the bedtime cover
+/// is not up, the accent glow drifts on a ten-second cycle. Reduce Motion
+/// holds a still frame. The timeline pauses when nothing is playing so an
+/// overnight session does not redraw a hidden background.
 struct NightBackground: View {
     var isPlaying: Bool
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [Palette.ink, Palette.background],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            RadialGradient(
-                colors: [Palette.amber.opacity(isPlaying ? 0.18 : 0.06), .clear],
-                center: .top,
-                startRadius: 12,
-                endRadius: 420
-            )
+        TimelineView(.animation(minimumInterval: 1.0 / 15.0, paused: !isPlaying || reduceMotion)) { context in
+            let breath = glow(at: context.date)
+            ZStack {
+                DesignTokens.Colors.background
+                LinearGradient(
+                    colors: [
+                        DesignTokens.Colors.backgroundRaised,
+                        DesignTokens.Colors.background,
+                        DesignTokens.Colors.accent.opacity(0.05 + 0.12 * breath)
+                    ],
+                    startPoint: UnitPoint(x: 0.2 + 0.15 * breath, y: 0),
+                    endPoint: UnitPoint(x: 0.8 - 0.1 * breath, y: 1)
+                )
+                RadialGradient(
+                    colors: [
+                        DesignTokens.Colors.accent.opacity(0.05 + 0.16 * breath),
+                        .clear
+                    ],
+                    center: UnitPoint(x: 0.5, y: 0.18 + 0.06 * breath),
+                    startRadius: 8,
+                    endRadius: 380 + 80 * breath
+                )
+            }
         }
         .ignoresSafeArea()
+        .accessibilityHidden(true)
+    }
+
+    private func glow(at date: Date) -> Double {
+        guard isPlaying, !reduceMotion else { return 0.35 }
+        let cycle = date.timeIntervalSinceReferenceDate / 10
+        return 0.5 + 0.5 * sin(cycle * 2 * Double.pi)
     }
 }

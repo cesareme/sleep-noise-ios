@@ -7,15 +7,14 @@ struct SavedMixesView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            Group {
+        Group {
                 if store.mixes.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "square.stack")
                             .font(.title)
                             .foregroundStyle(Palette.amber)
                         Text("mixes.empty")
-                            .font(.body)
+                            .tokenFont(.body)
                             .multilineTextAlignment(.center)
                             .foregroundStyle(Palette.muted)
                     }
@@ -30,7 +29,7 @@ struct SavedMixesView: View {
                             } label: {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(mix.name)
-                                        .font(.body.weight(.semibold))
+                                        .tokenFont(.body, weight: .semibold)
                                         .foregroundStyle(Palette.text)
                                     Text(summary(mix))
                                         .font(.caption)
@@ -60,8 +59,6 @@ struct SavedMixesView: View {
                     Button("common.close") { dismiss() }
                 }
             }
-        }
-        .preferredColorScheme(.dark)
     }
 
     private func summary(_ mix: SavedMix) -> String {

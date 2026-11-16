@@ -10,6 +10,7 @@ struct BreathingCard: View {
     var onToggle: (Bool) -> Void
     var onOpenSettings: () -> Void
     var onLocked: () -> Void
+    var onUpdate: ((BreathingSettings) -> Void)? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -20,31 +21,8 @@ struct BreathingCard: View {
                     .frame(width: 36, height: 36)
                     .accessibilityHidden(true)
 
-                Button(action: isLocked ? onLocked : onOpenSettings) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 8) {
-                            Text("breath.title")
-                                .font(.body.weight(.semibold))
-                                .foregroundStyle(Palette.text)
-                            if isLocked {
-                                Text("sound.proOnly")
-                                    .font(.caption2.weight(.bold))
-                                    .foregroundStyle(Palette.muted)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(Capsule().fill(Color.white.opacity(0.08)))
-                            }
-                        }
-                        Text(subtitle)
-                            .font(.caption)
-                            .foregroundStyle(Palette.muted)
-                            .lineLimit(2)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityHint(Text(isLocked ? "sound.locked" : "breath.settings.hint"))
+                settingsTitle
+                    .accessibilityHint(Text(isLocked ? "sound.locked" : "breath.settings.hint"))
 
                 if isLocked {
                     Button(action: onLocked) {
@@ -80,6 +58,48 @@ struct BreathingCard: View {
         )
         .opacity(isLocked ? 0.72 : 1)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: note)
+    }
+
+    @ViewBuilder
+    private var settingsTitle: some View {
+        let block = VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 8) {
+                Text("breath.title")
+                    .tokenFont(.body, weight: .semibold)
+                    .foregroundStyle(Palette.text)
+                if isLocked {
+                    Text("sound.proOnly")
+                        .tokenFont(.caption2, weight: .bold)
+                        .foregroundStyle(Palette.muted)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(DesignTokens.Colors.hairline))
+                }
+            }
+            Text(subtitle)
+                .tokenFont(.caption)
+                .foregroundStyle(Palette.muted)
+                .lineLimit(2)
+                .minimumScaleFactor(0.85)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+
+        if isLocked {
+            Button(action: onLocked) { block }
+                .buttonStyle(.plain)
+        } else if let onUpdate {
+            NavigationLink {
+                BreathingSettingsView(guide: guide, onChange: onUpdate)
+            } label: {
+                block
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("openBreathing")
+        } else {
+            Button(action: onOpenSettings) { block }
+                .buttonStyle(.plain)
+        }
     }
 
     private var isOn: Bool { guide.settings.isEnabled && !isLocked }
@@ -128,7 +148,7 @@ private struct BreathIndicator: View {
             }()
             ZStack {
                 Circle()
-                    .fill(Color.white.opacity(0.05))
+                    .fill(DesignTokens.Colors.hairline)
                 if reduceMotion {
                     Circle()
                         .fill(tint.opacity(0.3 + 0.6 * Double(breath)))
@@ -165,16 +185,15 @@ struct BreathingSettingsView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
                     Text("breath.hint")
-                        .font(.body)
+                        .tokenFont(.body)
                         .foregroundStyle(Palette.muted)
 
                     VStack(alignment: .leading, spacing: 10) {
                         Text("breath.rate")
-                            .font(.headline)
+                            .tokenFont(.headline, weight: .semibold)
                             .foregroundStyle(Palette.text)
                         Stepper(value: $draft.breathsPerMinute, in: BreathingSettings.rateRange) {
                             Text(String(format: String(localized: "breath.rate.format"), Int64(draft.breathsPerMinute)))
@@ -192,7 +211,7 @@ struct BreathingSettingsView: View {
 
                     VStack(alignment: .leading, spacing: 10) {
                         Text("breath.duration")
-                            .font(.headline)
+                            .tokenFont(.headline, weight: .semibold)
                             .foregroundStyle(Palette.text)
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                             ForEach(BreathingSettings.durationChoices.filter { $0 != 0 }, id: \.self) { minutes in
@@ -206,19 +225,17 @@ struct BreathingSettingsView: View {
                     }
                     .padding(16)
                     .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Palette.card))
-                }
-                .padding(24)
             }
-            .background(Palette.background.ignoresSafeArea())
-            .navigationTitle(Text("breath.title"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("common.close") { dismiss() }
-                }
+            .padding(24)
+        }
+        .background(Palette.background.ignoresSafeArea())
+        .navigationTitle(Text("breath.title"))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("common.close") { dismiss() }
             }
         }
-        .preferredColorScheme(.dark)
     }
 
     private func durationButton(_ minutes: Int) -> some View {
@@ -232,11 +249,11 @@ struct BreathingSettingsView: View {
                 .font(.subheadline.weight(.medium))
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
-                .foregroundStyle(selected ? Palette.background : Palette.text)
+                .foregroundStyle(selected ? Palette.onAccent : Palette.text)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(selected ? Palette.amber : Color.white.opacity(0.06))
+                        .fill(selected ? Palette.amber : DesignTokens.Colors.hairline)
                 )
         }
         .accessibilityAddTraits(selected ? .isSelected : [])

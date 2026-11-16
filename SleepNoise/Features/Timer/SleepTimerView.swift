@@ -12,15 +12,15 @@ struct SleepTimerView: View {
     private let presets = [15, 30, 60, 90]
 
     var body: some View {
-        NavigationStack {
+        ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 if let remaining = timer.remaining {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("timer.remaining")
-                            .font(.caption)
+                            .tokenFont(.caption)
                             .foregroundStyle(Palette.muted)
                         Text(TimeFormat.clock(remaining))
-                            .font(.system(size: 44, weight: .light, design: .rounded))
+                            .font(DesignTokens.Typography.display(.light))
                             .monospacedDigit()
                             .foregroundStyle(Palette.text)
                     }
@@ -39,22 +39,19 @@ struct SleepTimerView: View {
                 customRow
 
                 Text("timer.note")
-                    .font(.footnote)
+                    .tokenFont(.footnote)
                     .foregroundStyle(Palette.muted)
-
-                Spacer()
             }
             .padding(24)
-            .background(Palette.background.ignoresSafeArea())
-            .navigationTitle(Text("timer.title"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("common.close") { dismiss() }
-                }
+        }
+        .background(Palette.background.ignoresSafeArea())
+        .navigationTitle(Text("timer.title"))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("common.close") { dismiss() }
             }
         }
-        .preferredColorScheme(.dark)
     }
 
     private func presetButton(title: String, minutes: Int?) -> some View {
@@ -70,14 +67,15 @@ struct SleepTimerView: View {
         } label: {
             HStack {
                 Text(title)
-                    .font(.body.weight(.medium))
+                    .tokenFont(.body, weight: .medium)
                 Spacer()
                 if locked {
                     Image(systemName: "lock.fill")
                         .font(.caption)
+                        .accessibilityHidden(true)
                 }
             }
-            .foregroundStyle(selected ? Palette.background : Palette.text)
+            .foregroundStyle(selected ? Palette.onAccent : Palette.text)
             .padding(.horizontal, 16)
             .frame(maxWidth: .infinity, minHeight: 52)
             .background(
@@ -92,7 +90,7 @@ struct SleepTimerView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("timer.custom")
-                    .font(.headline)
+                    .tokenFont(.headline, weight: .semibold)
                     .foregroundStyle(Palette.text)
                 Spacer()
                 if !hasFullAccess {
@@ -113,12 +111,12 @@ struct SleepTimerView: View {
                     dismiss()
                 } label: {
                     Text("timer.custom")
-                        .font(.body.weight(.semibold))
+                        .tokenFont(.body, weight: .semibold)
                         .frame(maxWidth: .infinity, minHeight: 48)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Palette.amber)
-                .foregroundStyle(Palette.background)
+                .foregroundStyle(Palette.onAccent)
             } else {
                 Button(action: onLocked) {
                     Text("timer.locked")

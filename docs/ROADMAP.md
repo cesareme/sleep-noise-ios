@@ -1,12 +1,14 @@
 # Roadmap
 
-SleepNoise 1.0 is an on-device mixer: six synthesized beds, a fading sleep timer, saved mixes, and a single non-consumable Pro unlock. Later versions should stay offline-first. Do not add accounts, ads, or analytics to “complete” these items.
+SleepNoise 1.0 is an on-device mixer: eleven synthesized beds, one-tap presets, a fading sleep timer, a bedtime screen, saved mixes, Siri Shortcuts, and a single non-consumable Pro unlock. Later versions should stay offline-first. Do not add accounts, ads, or analytics to “complete” these items.
+
+Presets, the bedtime screen and the extra beds (thunder, campfire, brook, wind, cabin) are in the app. Shortcuts can play a sound, play a preset, start the sleep timer and stop. They call the same free/Pro checks as the mixer. Bedtime draws a black screen and a dim clock. It does not change system brightness and it does not disable the idle timer; if the screen sleeps, audio continues through the background audio mode.
 
 ## v1.1 — Widgets and Live Activity
 
 - Home Screen widgets (small and medium) that show the active mix name, whether audio is running, and the timer remaining.
 - A Lock Screen widget with the same snapshot.
-- App Intents for Play, Pause, and “start my last mix” so the widgets and Shortcuts can drive the existing engine. The intent should call the same entitlement checks as the mixer. A free user cannot start fan or ocean from a widget.
+- Widget buttons should call the App Intents that already drive Shortcuts, not a second audio path. A free user cannot start a Pro sound or a Pro preset from a widget.
 - A Live Activity (and Dynamic Island presentation on supported iPhones) for a running timer: remaining time, a calm icon, and pause. Update it from the timer’s existing end date rather than a second clock.
 - Widget timelines should not spin the audio engine. They read a small `Codable` snapshot the app already writes (levels, mix name, end date, playing flag).
 - Keep the widget extension free of third-party code and of any network client.
@@ -28,7 +30,7 @@ Do these before submitting 1.0. The implementation in this repo does not replace
 ### Identity and binary
 
 - [ ] App ID `com.cesareme.sleepnoise` with In-App Purchase enabled.
-- [ ] Non-consumable `com.cesareme.sleepnoise.pro` created in App Store Connect, priced, and localized in English and Spanish. The display name and description should match the paywall (breathing tide, fan and ocean, unlimited mixes, timers past 60 minutes and custom). No StoreKit introductory offer and no subscription; the 7-day full-access period is a local flag disclosed on first launch, never call it a free trial in the IAP description.
+- [ ] Non-consumable `com.cesareme.sleepnoise.pro` created in App Store Connect, priced, and localized in English and Spanish. The display name and description should match the paywall (breathing tide, fan, ocean, thunder, campfire, brook, wind, cabin, unlimited mixes, timers past 60 minutes and custom). No StoreKit introductory offer and no subscription; the 7-day full-access period is a local flag disclosed on first launch, never call it a free trial in the IAP description.
 - [ ] A screenshot of the paywall uploaded for the in-app purchase review.
 - [ ] Version and build numbers match `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`.
 - [ ] Archive with a distribution certificate. Confirm `PrivacyInfo.xcprivacy` is inside the bundle.
@@ -54,6 +56,8 @@ Do these before submitting 1.0. The implementation in this repo does not replace
 - [ ] Tell App Review that background audio is the product: a person presses Play and the noise continues with the screen locked. The app does not start audio by itself and does not play silence to stay resident.
 - [ ] Point at the Restore purchases button and the local `.storekit` file if they ask how to test Pro. Give a sandbox account only if they are not using StoreKit Testing.
 - [ ] Explain the trial: fresh installs get 7 days of everything, locally, with no transaction; the first-launch card states the duration, what stays free and the price. The header chip opens the paywall, where Pro can be bought at any time. To see the free tier, press Play once, stop, set the device date forward 8 days and bring the app back to the foreground while nothing is playing (a reinstall starts a new trial). There is no hidden switch.
+- [ ] Bedtime is a black screen with a dim clock. It does not set screen brightness and it does not disable the idle timer. Audio continues if the display sleeps because the session category is `.playback`.
+- [ ] Shortcuts (“Play brown noise in SleepNoise”, “Start sleep timer in SleepNoise”, “Stop SleepNoise”, and the Spanish phrases) use the same free/Pro rules as the buttons. A free request for a Pro sound opens the paywall.
 - [ ] Breathing tide is a sound feature, not a health feature: it paces the swell of the ocean to a slow breath. No HealthKit, no claims.
 - [ ] Mention that the Ring/Silent switch does not mute playback, because the session category is `.playback`.
 
@@ -65,7 +69,7 @@ Apple rejects noise and sleep apps that look like a template with the art swappe
 - The UI, copy, and icon are original. Don’t reskin this target into a second listing (“Baby Noise”, “Focus Noise”) with the same binary.
 - Metadata names what the app does and doesn’t repeat a keyword block across languages.
 - One non-consumable, with Restore, and a free tier that is usable without paying (white, pink, brown, rain, up to 60 minutes, one mix). Don’t lock the entire mixer behind the paywall.
-- No private APIs, no repackaged web view, no “minimal experience” that is only a play button and a color.
+- No private APIs, no repackaged web view, no “minimal experience” that is only a play button and a color. The main screen is intentionally quiet (play, presets, tiles), and the mixer, timer, breathing tide and bedtime screen are still in the app.
 
 If a 4.3 rejection arrives, reply with the DSP location (`SleepNoise/Audio/DSP`), the entitlement split, and the fact that audio is generated at runtime. Don’t ship a trivial palette change and resubmit the same product.
 

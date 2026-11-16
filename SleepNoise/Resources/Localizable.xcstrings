@@ -692,13 +692,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fan and ocean"
+            "value": "More beds"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ventilador y océano"
+            "value": "Más fondos"
           }
         }
       }
@@ -710,13 +710,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Two more beds beside rain."
+            "value": "Fan, ocean, thunder, campfire, brook, wind and cabin."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dos fondos más, además de la lluvia."
+            "value": "Ventilador, océano, trueno, hoguera, arroyo, viento y cabina."
           }
         }
       }
@@ -1529,13 +1529,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ocean, fan, the breathing tide and long timers are Pro: %@, paid once. Your saved mixes are kept and come back whole."
+            "value": "Fan, ocean, thunder, campfire, brook, wind, cabin, the breathing tide and long timers are Pro: %@, paid once. Your saved mixes are kept and come back whole."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Océano, ventilador, marea respiratoria y temporizadores largos son Pro: %@, pagado una sola vez. Tus mezclas guardadas se conservan y vuelven enteras."
+            "value": "Ventilador, océano, trueno, hoguera, arroyo, viento, cabina, la marea respiratoria y los temporizadores largos son Pro: %@, pagado una sola vez. Tus mezclas guardadas se conservan y vuelven enteras."
           }
         }
       }
@@ -1666,13 +1666,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ocean, fan, the breathing tide and long timers are Pro, a single payment with no subscription. Your saved mixes are kept and come back whole."
+            "value": "Fan, ocean, thunder, campfire, brook, wind, cabin, the breathing tide and long timers are Pro, a single payment with no subscription. Your saved mixes are kept and come back whole."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Océano, ventilador, marea respiratoria y temporizadores largos son Pro, un único pago sin suscripción. Tus mezclas guardadas se conservan y vuelven enteras."
+            "value": "Ventilador, océano, trueno, hoguera, arroyo, viento, cabina, la marea respiratoria y los temporizadores largos son Pro, un único pago sin suscripción. Tus mezclas guardadas se conservan y vuelven enteras."
           }
         }
       }
@@ -1835,6 +1835,1266 @@
           "stringUnit": {
             "state": "translated",
             "value": "Acompaña las olas toda la noche, más sutil. Termina con el temporizador o al pausar."
+          }
+        }
+      }
+    },
+    "sound.thunder": {
+      "comment": "Sound name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thunder"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trueno"
+          }
+        }
+      }
+    },
+    "sound.thunder.detail": {
+      "comment": "Sound detail",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Distant rumbles on rain"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Truenos lejanos sobre la lluvia"
+          }
+        }
+      }
+    },
+    "sound.campfire": {
+      "comment": "Sound name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Campfire"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoguera"
+          }
+        }
+      }
+    },
+    "sound.campfire.detail": {
+      "comment": "Sound detail",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soft cracks and a low flame"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crepitar suave y una llama baja"
+          }
+        }
+      }
+    },
+    "sound.stream": {
+      "comment": "Sound name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brook"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arroyo"
+          }
+        }
+      }
+    },
+    "sound.stream.detail": {
+      "comment": "Sound detail",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Water over stones"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agua entre piedras"
+          }
+        }
+      }
+    },
+    "sound.wind": {
+      "comment": "Sound name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wind"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viento"
+          }
+        }
+      }
+    },
+    "sound.wind.detail": {
+      "comment": "Sound detail",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slow gusts"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ráfagas lentas"
+          }
+        }
+      }
+    },
+    "sound.cabin": {
+      "comment": "Sound name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cabin"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cabina"
+          }
+        }
+      }
+    },
+    "sound.cabin.detail": {
+      "comment": "Sound detail",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Airplane and train hum"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zumbido de avión y tren"
+          }
+        }
+      }
+    },
+    "sound.on": {
+      "comment": "Tile value when the layer is in the mix",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activado"
+          }
+        }
+      }
+    },
+    "sound.off": {
+      "comment": "Tile value when the layer is silent",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apagado"
+          }
+        }
+      }
+    },
+    "sound.tile.hint": {
+      "comment": "VoiceOver hint for a sound tile",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turns this layer on or off"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enciende o apaga esta capa"
+          }
+        }
+      }
+    },
+    "sound.slider.hint": {
+      "comment": "VoiceOver hint for a volume slider",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjusts how loud this layer is"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajusta el volumen de esta capa"
+          }
+        }
+      }
+    },
+    "preset.section": {
+      "comment": "Accessibility label for the preset row",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presets"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preajustes"
+          }
+        }
+      }
+    },
+    "preset.hint": {
+      "comment": "VoiceOver hint for a preset",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plays this mix"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproduce esta mezcla"
+          }
+        }
+      }
+    },
+    "preset.deepSleep": {
+      "comment": "Preset name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deep sleep"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sueño profundo"
+          }
+        }
+      }
+    },
+    "preset.focus": {
+      "comment": "Preset name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Focus"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Concentración"
+          }
+        }
+      }
+    },
+    "preset.steadyRain": {
+      "comment": "Preset name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steady rain"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lluvia constante"
+          }
+        }
+      }
+    },
+    "preset.baby": {
+      "comment": "Preset name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baby"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bebé"
+          }
+        }
+      }
+    },
+    "preset.storm": {
+      "comment": "Preset name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storm"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tormenta"
+          }
+        }
+      }
+    },
+    "preset.cabin": {
+      "comment": "Preset name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Airplane cabin"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cabina de avión"
+          }
+        }
+      }
+    },
+    "preset.campfire": {
+      "comment": "Preset name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Campfire"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoguera"
+          }
+        }
+      }
+    },
+    "preset.brook": {
+      "comment": "Preset name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brook"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arroyo"
+          }
+        }
+      }
+    },
+    "preset.nightWind": {
+      "comment": "Preset name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night wind"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viento nocturno"
+          }
+        }
+      }
+    },
+    "preset.shore": {
+      "comment": "Preset name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shore"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orilla"
+          }
+        }
+      }
+    },
+    "control.mixer": {
+      "comment": "Opens the volume, timer and breathing sheet",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Levels"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niveles"
+          }
+        }
+      }
+    },
+    "control.bedtime": {
+      "comment": "Starts bedtime mode",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bedtime"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noche"
+          }
+        }
+      }
+    },
+    "control.bedtime.hint": {
+      "comment": "VoiceOver hint",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starts the mix and a timer, then darkens the screen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inicia la mezcla y un temporizador, y deja la pantalla a oscuras"
+          }
+        }
+      }
+    },
+    "bedtime.hint": {
+      "comment": "Shown briefly on the bedtime screen",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The screen can sleep. Sound keeps playing."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La pantalla puede apagarse. El sonido sigue."
+          }
+        }
+      }
+    },
+    "bedtime.wake": {
+      "comment": "VoiceOver action",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show bedtime controls"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar los controles"
+          }
+        }
+      }
+    },
+    "bedtime.leave": {
+      "comment": "Leaves the bedtime screen without stopping audio",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salir"
+          }
+        }
+      }
+    },
+    "bedtime.clock": {
+      "comment": "VoiceOver label for the clock",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hora"
+          }
+        }
+      }
+    },
+    "mixer.status.playing": {
+      "comment": "Status under the play control",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playing"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonando"
+          }
+        }
+      }
+    },
+    "intent.playSound.title": {
+      "comment": "Shortcut title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play a sound"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproducir un sonido"
+          }
+        }
+      }
+    },
+    "intent.playSound.description": {
+      "comment": "Shortcut description",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plays one generated sound."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproduce un sonido generado."
+          }
+        }
+      }
+    },
+    "intent.playPreset.title": {
+      "comment": "Shortcut title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play a preset"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproducir un preajuste"
+          }
+        }
+      }
+    },
+    "intent.playPreset.description": {
+      "comment": "Shortcut description",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plays a ready-made mix."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproduce una mezcla preparada."
+          }
+        }
+      }
+    },
+    "intent.timer.title": {
+      "comment": "Shortcut title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start sleep timer"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar temporizador"
+          }
+        }
+      }
+    },
+    "intent.timer.description": {
+      "comment": "Shortcut description",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starts the mix and a timer."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inicia la mezcla y un temporizador."
+          }
+        }
+      }
+    },
+    "intent.stop.title": {
+      "comment": "Shortcut title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detener"
+          }
+        }
+      }
+    },
+    "intent.stop.description": {
+      "comment": "Shortcut description",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stops playback."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detiene la reproducción."
+          }
+        }
+      }
+    },
+    "intent.param.sound": {
+      "comment": "Shortcut parameter",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sound"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonido"
+          }
+        }
+      }
+    },
+    "intent.param.preset": {
+      "comment": "Shortcut parameter",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preset"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preajuste"
+          }
+        }
+      }
+    },
+    "intent.param.minutes": {
+      "comment": "Shortcut parameter",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minutes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minutos"
+          }
+        }
+      }
+    },
+    "intent.sound.type": {
+      "comment": "Shortcut type name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sound"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonido"
+          }
+        }
+      }
+    },
+    "intent.preset.type": {
+      "comment": "Shortcut type name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preset"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preajuste"
+          }
+        }
+      }
+    },
+    "intent.playedSoundFormat": {
+      "comment": "Siri dialog. %@ is the sound name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playing %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproduciendo %@."
+          }
+        }
+      }
+    },
+    "intent.playedPresetFormat": {
+      "comment": "Siri dialog. %@ is the preset name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playing %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproduciendo %@."
+          }
+        }
+      }
+    },
+    "intent.timerStartedFormat": {
+      "comment": "Siri dialog",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timer set for %lld minutes."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temporizador de %lld minutos."
+          }
+        }
+      }
+    },
+    "intent.needsPro": {
+      "comment": "Siri dialog when the request needs Pro",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That one is part of Pro."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eso forma parte de Pro."
+          }
+        }
+      }
+    },
+    "intent.failed": {
+      "comment": "Siri dialog",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio didn't start. Try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El audio no se inició. Inténtalo de nuevo."
+          }
+        }
+      }
+    },
+    "intent.unavailable": {
+      "comment": "Siri dialog",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open SleepNoise and try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre SleepNoise e inténtalo de nuevo."
+          }
+        }
+      }
+    },
+    "intent.stopped": {
+      "comment": "Siri dialog",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopped."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detenido."
+          }
+        }
+      }
+    },
+    "shortcut.playSound": {
+      "comment": "Shortcuts tile",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play sound"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproducir sonido"
+          }
+        }
+      }
+    },
+    "shortcut.playPreset": {
+      "comment": "Shortcuts tile",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play preset"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproducir preajuste"
+          }
+        }
+      }
+    },
+    "shortcut.timer": {
+      "comment": "Shortcuts tile",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep timer"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temporizador"
+          }
+        }
+      }
+    },
+    "shortcut.stop": {
+      "comment": "Shortcuts tile",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detener"
+          }
+        }
+      }
+    },
+    "Play ${sound} in ${applicationName}": {
+      "comment": "App Shortcut phrase",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play ${sound} in ${applicationName}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproduce ${sound} en ${applicationName}"
+          }
+        }
+      }
+    },
+    "Start ${sound} with ${applicationName}": {
+      "comment": "App Shortcut phrase",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start ${sound} with ${applicationName}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pon ${sound} con ${applicationName}"
+          }
+        }
+      }
+    },
+    "Play ${preset} in ${applicationName}": {
+      "comment": "App Shortcut phrase",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play ${preset} in ${applicationName}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproduce ${preset} en ${applicationName}"
+          }
+        }
+      }
+    },
+    "Start ${preset} with ${applicationName}": {
+      "comment": "App Shortcut phrase",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start ${preset} with ${applicationName}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pon ${preset} en ${applicationName}"
+          }
+        }
+      }
+    },
+    "Start sleep timer in ${applicationName}": {
+      "comment": "App Shortcut phrase",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start sleep timer in ${applicationName}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inicia el temporizador en ${applicationName}"
+          }
+        }
+      }
+    },
+    "Start a ${minutes} minute sleep timer in ${applicationName}": {
+      "comment": "App Shortcut phrase",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start a ${minutes} minute sleep timer in ${applicationName}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inicia un temporizador de ${minutes} minutos en ${applicationName}"
+          }
+        }
+      }
+    },
+    "Stop ${applicationName}": {
+      "comment": "App Shortcut phrase",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop ${applicationName}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detén ${applicationName}"
+          }
+        }
+      }
+    },
+    "Pause ${applicationName}": {
+      "comment": "App Shortcut phrase",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause ${applicationName}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausa ${applicationName}"
+          }
+        }
+      }
+    },
+    "Play ${sound}": {
+      "comment": "Shortcut parameter summary",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play ${sound}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproduce ${sound}"
+          }
+        }
+      }
+    },
+    "Play ${preset}": {
+      "comment": "Shortcut parameter summary",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play ${preset}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproduce ${preset}"
+          }
+        }
+      }
+    },
+    "Start a ${minutes} minute timer": {
+      "comment": "Shortcut parameter summary",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start a ${minutes} minute timer"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inicia un temporizador de ${minutes} minutos"
+          }
+        }
+      }
+    },
+    "Stop": {
+      "comment": "Shortcut parameter summary",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detener"
           }
         }
       }

@@ -8,6 +8,9 @@ final class AccessPolicyTests: XCTestCase {
         }
         XCTAssertFalse(AccessPolicy.soundIsIncluded(.fan, hasFullAccess: false))
         XCTAssertFalse(AccessPolicy.soundIsIncluded(.ocean, hasFullAccess: false))
+        for sound in [SoundID.thunder, .campfire, .stream, .wind, .cabin] {
+            XCTAssertFalse(AccessPolicy.soundIsIncluded(sound, hasFullAccess: false))
+        }
         for sound in SoundID.allCases {
             XCTAssertTrue(AccessPolicy.soundIsIncluded(sound, hasFullAccess: true))
         }
@@ -25,6 +28,39 @@ final class AccessPolicyTests: XCTestCase {
         XCTAssertFalse(AccessPolicy.timerIsIncluded(minutes: 361, hasFullAccess: true))
         XCTAssertTrue(AccessPolicy.timerIsIncluded(minutes: 45, hasFullAccess: true))
         XCTAssertTrue(AccessPolicy.timerIsIncluded(minutes: 360, hasFullAccess: true))
+    }
+
+    func testPresetTiersFollowTheSoundsInsideThem() {
+        let free: [SoundPreset] = [.deepSleep, .focus, .steadyRain]
+        for preset in free {
+            XCTAssertFalse(preset.requiresFullAccess, preset.rawValue)
+            guard case .levels(let levels) = PresetLibrary.apply(preset, hasFullAccess: false) else {
+                return XCTFail("A free preset should apply without Pro")
+            }
+            for sound in SoundID.allCases {
+                let level = levels[sound] ?? 0
+                if level > 0.001 {
+                    XCTAssertTrue(AccessPolicy.soundIsIncluded(sound, hasFullAccess: false))
+                }
+            }
+        }
+
+        let pro: [SoundPreset] = [.baby, .storm, .cabin, .campfire, .brook, .nightWind, .shore]
+        for preset in pro {
+            XCTAssertTrue(preset.requiresFullAccess, preset.rawValue)
+            XCTAssertEqual(PresetLibrary.apply(preset, hasFullAccess: false), .needsPro)
+            guard case .levels = PresetLibrary.apply(preset, hasFullAccess: true) else {
+                return XCTFail("Full access should apply a Pro preset")
+            }
+        }
+
+        XCTAssertEqual(SoundPreset.allCases.count, free.count + pro.count)
+    }
+
+    func testBedtimeUsesAFreeTimerAndDoesNotDimTheHardware() {
+        XCTAssertTrue(AccessPolicy.timerIsIncluded(minutes: BedtimeScreenPolicy.defaultMinutes, hasFullAccess: false))
+        XCTAssertTrue(BedtimeScreenPolicy.systemIdleTimerStaysEnabled)
+        XCTAssertFalse(BedtimeScreenPolicy.changesSystemBrightness)
     }
 
     func testSavedMixGate() {

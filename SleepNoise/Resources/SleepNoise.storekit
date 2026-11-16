@@ -10,12 +10,12 @@
       "internalID" : "SLEEPNOISEPRO",
       "localizations" : [
         {
-          "description" : "Breathing tide, fan and ocean, timers past 60 minutes and custom, unlimited saved mixes.",
+          "description" : "Breathing tide, fan, ocean, thunder, campfire, brook, wind and cabin, timers past 60 minutes and custom, unlimited saved mixes.",
           "displayName" : "SleepNoise Pro",
           "locale" : "en_US"
         },
         {
-          "description" : "Marea respiratoria, ventilador y océano, temporizadores de más de 60 minutos y a medida, mezclas ilimitadas.",
+          "description" : "Marea respiratoria, ventilador, océano, trueno, hoguera, arroyo, viento y cabina, temporizadores de más de 60 minutos y a medida, mezclas ilimitadas.",
           "displayName" : "SleepNoise Pro",
           "locale" : "es_ES"
         }

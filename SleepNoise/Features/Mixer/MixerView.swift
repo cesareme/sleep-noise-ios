@@ -5,95 +5,122 @@ struct MixerView: View {
     @ObservedObject var purchases: PurchaseManager
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("sleepnoise.trial.introDismissed.v1") private var trialIntroDismissed = false
     @AppStorage("sleepnoise.trial.endedDismissed.v1") private var trialEndedDismissed = false
-    @State private var showTimer = false
-    @State private var showBreathing = false
-    @State private var showMixes = false
-    @State private var showSave = false
-    @State private var draftName = ""
+    @State private var showMixer = false
+    @State private var hapticTick = 0
+    @ScaledMetric(relativeTo: .largeTitle) private var playDiameter: CGFloat = 128
 
     var body: some View {
         ZStack {
-            NightBackground(isPlaying: model.isPlaying)
+            NightBackground(isPlaying: model.isPlaying && !model.isBedtime)
                 .animation(reduceMotion ? nil : .easeInOut(duration: 0.8), value: model.isPlaying)
 
             VStack(spacing: 0) {
                 header
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-                    .padding(.bottom, 8)
-
-                if let audioError = model.audioError {
-                    Text(audioError)
-                        .font(.footnote)
-                        .foregroundStyle(Palette.text)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(12)
-                        .background(RoundedRectangle(cornerRadius: 12).fill(Color.red.opacity(0.28)))
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 8)
-                }
-
-                if model.loadedMixWasStripped {
-                    strippedNote
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 8)
-                }
+                    .padding(.horizontal, DesignTokens.Spacing.l)
+                    .padding(.top, DesignTokens.Spacing.s)
 
                 ScrollView {
-                    VStack(spacing: 12) {
+                    VStack(spacing: DesignTokens.Spacing.xl) {
+                        if let audioError = model.audioError {
+                            note(audioError, tint: .red)
+                        }
                         if showsTrialIntro {
                             TrialCard(kind: .intro, trialState: purchases.trialState, price: purchases.product?.displayPrice) {
                                 trialIntroDismissed = true
                             } onMore: {
-                                model.showPaywall = true
+                                openPaywall()
                             }
                         } else if showsTrialEnded {
                             TrialCard(kind: .ended, trialState: purchases.trialState, price: purchases.product?.displayPrice) {
                                 trialEndedDismissed = true
                             } onMore: {
-                                model.showPaywall = true
+                                openPaywall()
                             }
                         }
-                        if purchases.hasFullAccess {
-                            breathingCard
+                        if model.loadedMixWasStripped {
+                            strippedNote
                         }
-                        ForEach(SoundID.allCases) { sound in
-                            SoundRowView(
-                                sound: sound,
-                                level: displayedLevel(sound),
-                                isLocked: !AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess),
-                                onChange: { model.setLevel(sound, $0) },
-                                onLocked: { model.showPaywall = true }
-                            )
+
+                        playControl
+                        PlaybackStatusLine(
+                            timer: model.timer,
+                            title: model.loadedMixName,
+                            isPlaying: model.isPlaying
+                        )
+
+                        Button(action: beginBedtime) {
+                            Label("control.bedtime", systemImage: "moon.fill")
+                                .tokenFont(.subheadline, weight: .medium)
+                                .foregroundStyle(DesignTokens.Colors.text)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                .background(Capsule().fill(DesignTokens.Colors.surface))
                         }
-                        if !purchases.hasFullAccess {
-                            breathingCard
+                        .accessibilityHint(Text("control.bedtime.hint"))
+                        .accessibilityIdentifier("bedtimeButton")
+
+                        PresetStrip(
+                            presets: Array(SoundPreset.allCases),
+                            active: model.activePreset,
+                            hasFullAccess: purchases.hasFullAccess
+                        ) { preset in
+                            hapticTick += 1
+                            _ = model.playPreset(preset)
                         }
-                        if model.isSilent {
-                            Text("mixer.silent")
-                                .font(.footnote)
-                                .foregroundStyle(Palette.muted)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.top, 4)
+
+                        LazyVGrid(columns: tileColumns, spacing: DesignTokens.Spacing.s) {
+                            ForEach(SoundID.allCases) { sound in
+                                SoundTileView(
+                                    sound: sound,
+                                    isOn: displayedLevel(sound) > 0.01,
+                                    isLocked: !AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess)
+                                ) {
+                                    if AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess) {
+                                        hapticTick += 1
+                                        model.toggleSound(sound)
+                                    } else {
+                                        openPaywall()
+                                    }
+                                }
+                            }
                         }
+                        .padding(.horizontal, DesignTokens.Spacing.l)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 16)
+                    .padding(.top, DesignTokens.Spacing.l)
+                    .padding(.bottom, DesignTokens.Spacing.xl)
                 }
 
-                bottomBar
+                Button {
+                    hapticTick += 1
+                    showMixer = true
+                } label: {
+                    VStack(spacing: 6) {
+                        Capsule()
+                            .fill(DesignTokens.Colors.secondary.opacity(0.45))
+                            .frame(width: 36, height: 4)
+                            .accessibilityHidden(true)
+                        Text("control.mixer")
+                            .tokenFont(.caption, weight: .semibold)
+                            .foregroundStyle(DesignTokens.Colors.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 8)
+                    .padding(.bottom, 6)
+                }
+                .accessibilityIdentifier("openMixer")
             }
-            .frame(maxWidth: 560)
+            .frame(maxWidth: 640)
             .frame(maxWidth: .infinity)
         }
-        .foregroundStyle(Palette.text)
-        .preferredColorScheme(.dark)
+        .foregroundStyle(DesignTokens.Colors.text)
+        .sensoryFeedback(.selection, trigger: model.isPlaying)
+        .sensoryFeedback(.impact(weight: .light), trigger: hapticTick)
         .onAppear { model.startIfNeeded() }
         .onChange(of: scenePhase) { _, phase in
-            // A trial that ran out is only applied while nothing is playing.
             if phase == .active { purchases.refreshAccess(canDowngrade: !model.isPlaying) }
         }
         .onChange(of: purchases.hasFullAccess) { _, _ in
@@ -102,46 +129,29 @@ struct MixerView: View {
         }
         .sheet(isPresented: $model.showPaywall) {
             PaywallView(purchases: purchases)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
                 .onDisappear { purchases.clearNotice() }
         }
-        .sheet(isPresented: $showTimer) {
-            SleepTimerView(
-                timer: model.timer,
-                hasFullAccess: purchases.hasFullAccess,
-                onSelect: { model.selectTimer(minutes: $0) },
-                onLocked: {
-                    showTimer = false
-                    Task { @MainActor in
-                        model.showPaywall = true
-                    }
-                }
-            )
+        .sheet(isPresented: $showMixer) {
+            MixSheet(model: model, purchases: purchases, onPaywall: openPaywall, onBedtime: beginBedtime)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationContentInteraction(.scrolls)
         }
-        .sheet(isPresented: $showBreathing) {
-            BreathingSettingsView(guide: model.breathing) { settings in
-                model.updateBreathing(settings)
-            }
-            .presentationDetents([.medium, .large])
+        .fullScreenCover(isPresented: Binding(
+            get: { model.isBedtime },
+            set: { if !$0 { model.leaveBedtime() } }
+        )) {
+            BedtimeView(model: model)
         }
-        .sheet(isPresented: $showMixes) {
-            SavedMixesView(store: model.mixStore) { mix in
-                model.apply(mix)
-            }
-        }
-        .alert("mixes.save.title", isPresented: $showSave) {
-            TextField("mixes.name.placeholder", text: $draftName)
-            Button("common.save") {
-                _ = model.saveCurrent(name: draftName)
-            }
-            Button("common.cancel", role: .cancel) {}
-        } message: {
-            Text("mixes.save.message")
-        }
-        .sensoryFeedback(.selection, trigger: model.isPlaying)
     }
 
-    /// The disclosure stays until "Got it", even once the first Play has
-    /// started the clock, so it cannot vanish before it was read.
+    private var tileColumns: [GridItem] {
+        let count = typeSize.isAccessibilitySize ? 2 : 3
+        return Array(repeating: GridItem(.flexible(), spacing: DesignTokens.Spacing.s), count: count)
+    }
+
     private var showsTrialIntro: Bool {
         !purchases.isPro && purchases.trialState != .ended && !trialIntroDismissed
     }
@@ -150,104 +160,51 @@ struct MixerView: View {
         !purchases.isPro && purchases.trialState == .ended && !trialEndedDismissed
     }
 
-    private var breathingCard: some View {
-        BreathingCard(
-            guide: model.breathing,
-            isLocked: !model.breathingIsIncluded,
-            note: model.breathingNote,
-            onToggle: { model.setBreathingEnabled($0) },
-            onOpenSettings: { showBreathing = true },
-            onLocked: { model.showPaywall = true }
-        )
-    }
-
-    private var strippedNote: some View {
-        Button {
-            model.showPaywall = true
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "lock.fill")
-                    .font(.caption.weight(.bold))
-                    .accessibilityHidden(true)
-                Text("mixes.stripped")
-                    .font(.footnote)
-                    .multilineTextAlignment(.leading)
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.caption2.weight(.bold))
-                    .accessibilityHidden(true)
-            }
-            .foregroundStyle(Palette.amber)
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Palette.amber.opacity(0.12)))
-        }
-        .accessibilityIdentifier("strippedMixNote")
-    }
-
     private var header: some View {
         HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("app.name")
-                    .font(.title.weight(.semibold))
-                Text(model.loadedMixName ?? String(localized: "mixer.tagline"))
-                    .font(.subheadline)
-                    .foregroundStyle(Palette.muted)
-                    .lineLimit(1)
-            }
+            Text("app.name")
+                .tokenFont(.title3, weight: .semibold)
             Spacer()
-            Button {
-                showMixes = true
-            } label: {
-                Image(systemName: "square.stack")
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(Palette.mist)
-                    .frame(width: 44, height: 44)
-            }
-            .accessibilityLabel(Text("control.mixes"))
-            .accessibilityIdentifier("openMixes")
             accessChip
         }
     }
 
-    /// Purchased: a quiet "Pro" badge. Trial: an outlined chip with the days
-    /// left that opens the paywall. Free: the amber "Pro" button.
     @ViewBuilder
     private var accessChip: some View {
         if purchases.isPro {
             Text("common.pro")
-                .font(.caption.weight(.bold))
+                .tokenFont(.caption, weight: .bold)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Capsule().fill(Palette.amber.opacity(0.18)))
-                .foregroundStyle(Palette.amber)
+                .background(Capsule().fill(DesignTokens.Colors.accent.opacity(0.18)))
+                .foregroundStyle(DesignTokens.Colors.accent)
         } else {
             switch purchases.trialState {
             case .notStarted, .active:
                 Button {
-                    model.showPaywall = true
+                    openPaywall()
                 } label: {
                     Text(trialChipTitle)
-                        .font(.caption.weight(.bold).monospacedDigit())
+                        .tokenFont(.caption, weight: .bold)
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(Capsule().stroke(Palette.amber.opacity(0.7), lineWidth: 1))
-                        .foregroundStyle(Palette.amber)
+                        .background(Capsule().stroke(DesignTokens.Colors.accent.opacity(0.7), lineWidth: 1))
+                        .foregroundStyle(DesignTokens.Colors.accent)
                 }
                 .accessibilityHint(Text("trial.chip.hint"))
                 .accessibilityIdentifier("openPaywall")
             case .ended:
                 Button {
-                    model.showPaywall = true
+                    openPaywall()
                 } label: {
                     Text("control.pro")
-                        .font(.caption.weight(.bold))
+                        .tokenFont(.caption, weight: .bold)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
-                        .background(Capsule().fill(Palette.amber))
-                        .foregroundStyle(Palette.background)
+                        .background(Capsule().fill(DesignTokens.Colors.accent))
+                        .foregroundStyle(DesignTokens.Colors.onAccent)
                 }
                 .accessibilityIdentifier("openPaywall")
             }
@@ -265,52 +222,48 @@ struct MixerView: View {
         }
     }
 
-    private var bottomBar: some View {
-        HStack(spacing: 16) {
-            Button {
-                showTimer = true
-            } label: {
-                TimerButtonLabel(timer: model.timer)
-            }
-            .accessibilityIdentifier("openTimer")
-
-            Button {
-                model.togglePlayback()
-            } label: {
-                Image(systemName: model.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(Palette.background)
-                    .frame(width: 76, height: 76)
-                    .background(Circle().fill(Palette.amber))
-            }
-            .accessibilityLabel(Text(LocalizedStringKey(model.isPlaying ? "control.pause" : "control.play")))
-            .accessibilityIdentifier("playButton")
-
-            barButton(
-                title: String(localized: "control.save"),
-                symbol: "square.and.arrow.down",
-                action: beginSave
-            )
+    private var playControl: some View {
+        Button {
+            model.togglePlayback()
+        } label: {
+            Image(systemName: model.isPlaying ? "pause.fill" : "play.fill")
+                .font(.system(size: playDiameter * 0.28, weight: .medium, design: .rounded))
+                .foregroundStyle(DesignTokens.Colors.onAccent)
+                .frame(width: playDiameter, height: playDiameter)
+                .background(Circle().fill(DesignTokens.Colors.accent))
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 12)
-        .padding(.bottom, 8)
-        .background(Palette.background.opacity(0.92))
+        .accessibilityLabel(Text(LocalizedStringKey(model.isPlaying ? "control.pause" : "control.play")))
+        .accessibilityIdentifier("playButton")
     }
 
-    private func barButton(title: String, symbol: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(spacing: 6) {
-                Image(systemName: symbol)
-                    .font(.body.weight(.semibold))
-                Text(title)
-                    .font(.caption.weight(.medium))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+    private var strippedNote: some View {
+        Button(action: openPaywall) {
+            HStack(spacing: 10) {
+                Image(systemName: "lock.fill")
+                    .font(.caption.weight(.bold))
+                    .accessibilityHidden(true)
+                Text("mixes.stripped")
+                    .tokenFont(.footnote)
+                    .multilineTextAlignment(.leading)
+                Spacer(minLength: 0)
             }
-            .foregroundStyle(Palette.mist)
-            .frame(maxWidth: .infinity, minHeight: 64)
+            .foregroundStyle(DesignTokens.Colors.accent)
+            .padding(DesignTokens.Spacing.m)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: DesignTokens.Radius.s, style: .continuous).fill(DesignTokens.Colors.accent.opacity(0.12)))
         }
+        .padding(.horizontal, DesignTokens.Spacing.l)
+        .accessibilityIdentifier("strippedMixNote")
+    }
+
+    private func note(_ text: String, tint: Color) -> some View {
+        Text(text)
+            .tokenFont(.footnote)
+            .foregroundStyle(DesignTokens.Colors.text)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(DesignTokens.Spacing.m)
+            .background(RoundedRectangle(cornerRadius: DesignTokens.Radius.s).fill(tint.opacity(0.28)))
+            .padding(.horizontal, DesignTokens.Spacing.l)
     }
 
     private func displayedLevel(_ sound: SoundID) -> Float {
@@ -318,18 +271,63 @@ struct MixerView: View {
         return model.levels[sound] ?? 0
     }
 
-    private func beginSave() {
-        guard AccessPolicy.canSave(existingCount: model.mixStore.mixes.count, hasFullAccess: purchases.hasFullAccess) else {
+    private func openPaywall() {
+        if showMixer {
+            showMixer = false
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(280))
+                model.showPaywall = true
+            }
+        } else {
             model.showPaywall = true
-            return
         }
-        draftName = model.suggestedMixName()
-        showSave = true
+    }
+
+    private func beginBedtime() {
+        let wasOpen = showMixer
+        showMixer = false
+        hapticTick += 1
+        Task { @MainActor in
+            if wasOpen {
+                try? await Task.sleep(for: .milliseconds(280))
+            }
+            model.enterBedtime()
+        }
     }
 }
 
-/// First-launch disclosure (duration, what stays free, price) and the one-time
-/// "trial over" note. Both dismiss for good.
+/// Timer digits have to observe the timer itself. `MixerModel` does not
+/// republish its child's ticks, so a label read through the model stays still.
+private struct PlaybackStatusLine: View {
+    @ObservedObject var timer: SleepTimerController
+    var title: String?
+    var isPlaying: Bool
+
+    var body: some View {
+        Text(line)
+            .tokenFont(.callout, weight: .medium)
+            .monospacedDigit()
+            .foregroundStyle(timer.remaining != nil ? DesignTokens.Colors.accent : DesignTokens.Colors.secondary)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+            .padding(.horizontal, DesignTokens.Spacing.l)
+    }
+
+    private var line: String {
+        if let remaining = timer.remaining {
+            return TimeFormat.clock(remaining)
+        }
+        if let title, !title.isEmpty {
+            return title
+        }
+        if isPlaying {
+            return String(localized: "mixer.status.playing")
+        }
+        return String(localized: "mixer.tagline")
+    }
+}
+
+/// First-launch disclosure and the one-time "trial over" note.
 private struct TrialCard: View {
     enum Kind { case intro, ended }
 
@@ -340,46 +338,47 @@ private struct TrialCard: View {
     var onMore: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.m) {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: kind == .intro ? "gift" : "hourglass.bottomhalf.filled")
                     .font(.body.weight(.semibold))
-                    .foregroundStyle(Palette.amber)
+                    .foregroundStyle(DesignTokens.Colors.accent)
                     .frame(width: 28)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(Palette.text)
+                        .tokenFont(.body, weight: .semibold)
+                        .foregroundStyle(DesignTokens.Colors.text)
                     Text(detail)
-                        .font(.caption)
-                        .foregroundStyle(Palette.muted)
+                        .tokenFont(.caption)
+                        .foregroundStyle(DesignTokens.Colors.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
             HStack(spacing: 12) {
                 Button(action: onDismiss) {
                     Text("trial.gotIt")
-                        .font(.caption.weight(.bold))
+                        .tokenFont(.caption, weight: .bold)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
-                        .background(Capsule().fill(Palette.amber))
-                        .foregroundStyle(Palette.background)
+                        .background(Capsule().fill(DesignTokens.Colors.accent))
+                        .foregroundStyle(DesignTokens.Colors.onAccent)
                 }
                 .accessibilityIdentifier("trialCardDismiss")
                 Button(action: onMore) {
                     Text(kind == .intro ? "trial.intro.more" : "trial.ended.more")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Palette.mist)
+                        .tokenFont(.caption, weight: .semibold)
+                        .foregroundStyle(DesignTokens.Colors.text)
                 }
                 Spacer(minLength: 0)
             }
         }
-        .padding(14)
+        .padding(DesignTokens.Spacing.m)
         .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Palette.amber.opacity(0.10))
+            RoundedRectangle(cornerRadius: DesignTokens.Radius.m, style: .continuous)
+                .fill(DesignTokens.Colors.accent.opacity(0.10))
         )
+        .padding(.horizontal, DesignTokens.Spacing.l)
         .accessibilityIdentifier(kind == .intro ? "trialIntroCard" : "trialEndedCard")
     }
 
@@ -408,36 +407,5 @@ private struct TrialCard: View {
         case (.ended, _, nil):
             return String(localized: "trial.ended.detailNoPrice")
         }
-    }
-}
-
-/// Observes the timer directly. `MixerModel` does not republish its child's
-/// `objectWillChange`, so a label read through the model would never tick.
-private struct TimerButtonLabel: View {
-    @ObservedObject var timer: SleepTimerController
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        VStack(spacing: 6) {
-            Image(systemName: "timer")
-                .font(.body.weight(.semibold))
-                .symbolEffect(.pulse, options: .repeating, isActive: timer.isFading && !reduceMotion)
-            Text(title)
-                .font(.caption.weight(.medium).monospacedDigit())
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-        }
-        .foregroundStyle(timer.remaining != nil ? Palette.amber : Palette.mist)
-        .frame(maxWidth: .infinity, minHeight: 64)
-    }
-
-    private var title: String {
-        if let remaining = timer.remaining {
-            return TimeFormat.clock(remaining)
-        }
-        if let minutes = timer.selectedMinutes {
-            return TimeFormat.minutes(minutes)
-        }
-        return String(localized: "control.timer")
     }
 }

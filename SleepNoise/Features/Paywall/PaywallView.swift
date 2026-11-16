@@ -14,10 +14,10 @@ struct PaywallView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("paywall.title")
-                            .font(.largeTitle.weight(.semibold))
+                            .font(DesignTokens.Typography.display(.medium))
                             .foregroundStyle(Palette.text)
                         Text("paywall.subtitle")
-                            .font(.body)
+                            .tokenFont(.body)
                             .foregroundStyle(Palette.muted)
                     }
 
@@ -32,7 +32,7 @@ struct PaywallView: View {
                             detail: "paywall.benefit.breath.detail"
                         )
                         benefit(
-                            symbol: "fan.fill",
+                            symbol: "square.grid.2x2.fill",
                             title: "paywall.benefit.textures",
                             detail: "paywall.benefit.textures.detail"
                         )
@@ -50,7 +50,7 @@ struct PaywallView: View {
 
                     if purchases.isPro {
                         Label("paywall.active", systemImage: "checkmark.seal.fill")
-                            .font(.body.weight(.semibold))
+                            .tokenFont(.body, weight: .semibold)
                             .foregroundStyle(Palette.amber)
                     } else {
                         purchaseButton
@@ -58,7 +58,7 @@ struct PaywallView: View {
                             Task { await purchases.restore() }
                         } label: {
                             Text("paywall.restore")
-                                .font(.body.weight(.medium))
+                                .tokenFont(.body, weight: .medium)
                                 .frame(maxWidth: .infinity, minHeight: 44)
                         }
                         .disabled(purchases.isPurchasing)
@@ -67,12 +67,12 @@ struct PaywallView: View {
 
                     if let notice = purchases.notice {
                         Text(noticeText(notice))
-                            .font(.footnote)
+                            .tokenFont(.footnote)
                             .foregroundStyle(Palette.amber)
                     }
 
                     Text("paywall.once")
-                        .font(.footnote)
+                        .tokenFont(.footnote)
                         .foregroundStyle(Palette.muted)
                 }
                 .padding(24)
@@ -87,7 +87,6 @@ struct PaywallView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
         .task {
             await purchases.refresh()
         }
@@ -114,15 +113,15 @@ struct PaywallView: View {
         }()
         return HStack(alignment: .top, spacing: 12) {
             Image(systemName: symbol)
-                .font(.body.weight(.semibold))
+                .tokenFont(.body, weight: .semibold)
                 .foregroundStyle(Palette.amber)
                 .frame(width: 28)
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.body.weight(.semibold))
+                    .tokenFont(.body, weight: .semibold)
                     .foregroundStyle(Palette.text)
                 Text(detail)
-                    .font(.subheadline)
+                    .tokenFont(.subheadline)
                     .foregroundStyle(Palette.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -143,19 +142,19 @@ struct PaywallView: View {
             Group {
                 if purchases.isPurchasing {
                     ProgressView()
-                        .tint(Palette.background)
+                        .tint(Palette.onAccent)
                 } else if let price = purchases.product?.displayPrice {
                     Text(String(format: String(localized: purchaseKey), price))
                 } else {
                     Text("paywall.purchaseUnavailable")
                 }
             }
-            .font(.body.weight(.semibold))
+            .tokenFont(.body, weight: .semibold)
             .frame(maxWidth: .infinity, minHeight: 52)
         }
         .buttonStyle(.borderedProminent)
         .tint(Palette.amber)
-        .foregroundStyle(Palette.background)
+        .foregroundStyle(Palette.onAccent)
         .disabled(purchases.isPurchasing || purchases.product == nil)
         .accessibilityIdentifier("paywall.purchase")
     }
@@ -172,15 +171,15 @@ struct PaywallView: View {
     private func benefit(symbol: String, title: LocalizedStringKey, detail: LocalizedStringKey) -> some View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: symbol)
-                .font(.body.weight(.semibold))
+                .tokenFont(.body, weight: .semibold)
                 .foregroundStyle(Palette.amber)
                 .frame(width: 28)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.body.weight(.semibold))
+                    .tokenFont(.body, weight: .semibold)
                     .foregroundStyle(Palette.text)
                 Text(detail)
-                    .font(.subheadline)
+                    .tokenFont(.subheadline)
                     .foregroundStyle(Palette.muted)
             }
             Spacer(minLength: 0)
