@@ -475,6 +475,37 @@ final class TextureReviewTests: XCTestCase {
         }
     }
 
+    func testPresetsWithTrimmedTexturesStayBelowTheSoftClipKnee() {
+        // The trims must not push a one-tap mix into the saturating part of
+        // the output stage. Ten seconds cover the campfire flicker.
+        let rate = Self.rate
+        for preset in [SoundPreset.campfire, .brook, .nightWind] {
+            var gains = SoundGains.zero
+            for (sound, level) in preset.layers {
+                gains.set(sound, level)
+            }
+            var state = RenderState(sampleRate: rate)
+            let command = EngineCommand(
+                gains: gains,
+                envelopeTarget: 1,
+                rampSamples: 1,
+                generation: 1,
+                envelopeGeneration: 1
+            )
+            let frames = Int(rate) * 10
+            var aboveKnee = 0
+            var peak: Float = 0
+            for _ in 0..<frames {
+                let frame = state.processStereo(command)
+                let magnitude = max(abs(frame.left), abs(frame.right))
+                if magnitude > 0.6 { aboveKnee += 1 }
+                peak = max(peak, magnitude)
+            }
+            XCTAssertLessThan(peak, 0.9, "\(preset.rawValue) should keep headroom")
+            XCTAssertLessThan(Double(aboveKnee) / Double(frames), 0.01, "\(preset.rawValue) should rarely reach the knee")
+        }
+    }
+
     // MARK: Thunder
 
     func testThunderScheduleIsAHashNotAConstantStep() {
