@@ -14,21 +14,31 @@ import Foundation
 /// layers kept at a level when access comes back, or the trial ending the
 /// other way round. Nothing stored is rewritten for it.
 ///
-/// Two layers at the same level: the one that comes first in
+/// A level is compared as the whole percent the row shows and the mix
+/// keeps, not as the fraction a finger passes through on its way: what is
+/// heard in the middle of a drag is what is left when the finger lifts.
+/// Two layers at the same percent: the one that comes first in
 /// `SoundID.allCases` sounds. That order is the order of the stored ids and
 /// never changes, so the same mix always sounds the same way.
 enum LayerCap {
     /// The most layers that sound at once.
     static let limit = 6
 
+    /// The level as the whole percent a row shows. The same arithmetic as
+    /// `LevelMath.percent`, which lives with the design.
+    static func percent(_ level: Float) -> Int {
+        guard level == level else { return 0 }
+        return Int((min(1, max(0, level)) * 100).rounded())
+    }
+
     /// The layers above zero that are included, the highest level first.
-    /// Equal levels keep the order of `SoundID.allCases`.
+    /// Equal percents keep the order of `SoundID.allCases`.
     static func ranked(_ levels: [SoundID: Float], isIncluded: (SoundID) -> Bool) -> [SoundID] {
         SoundID.allCases
             .filter { (levels[$0] ?? 0) > MixLoad.audibleThreshold && isIncluded($0) }
             .enumerated()
             .sorted { left, right in
-                let (a, b) = (levels[left.element] ?? 0, levels[right.element] ?? 0)
+                let (a, b) = (percent(levels[left.element] ?? 0), percent(levels[right.element] ?? 0))
                 return a == b ? left.offset < right.offset : a > b
             }
             .map(\.element)

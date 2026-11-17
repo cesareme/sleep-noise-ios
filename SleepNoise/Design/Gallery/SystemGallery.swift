@@ -348,6 +348,9 @@ private struct GalleryRows: View {
             GalleryCase(title: "level row · waiting: six others sound, its level kept") {
                 face(.wind, 0.15, .waiting)
             }
+            GalleryCase(title: "level row · waiting, under a finger: value grown, no level ink, no accent") {
+                face(.wind, 0.15, .waitingUnderFinger)
+            }
             GalleryCase(title: "editorial row · 56, hairline above (page)") {
                 EditorialRow(title: "Todas las capas", value: "y 2 más", rule: .top) {}
                 EditorialRow(title: Localized.string("temporizador.titulo"), value: "Hasta dormirme · 45 min", rule: .top) {}

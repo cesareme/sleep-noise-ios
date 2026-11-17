@@ -8,6 +8,10 @@ import UIKit
 /// the page still go over it. Small Hours wins when both are asked for: it
 /// may have been started from an ended Night, and when it ends what is
 /// behind it is the night page.
+///
+/// When an ended Night gives way to the day page by itself in the morning
+/// (`MixerModel.nightYields`), the cover takes no touch until that fade is
+/// over. A fade the person asked for answers touches as it always did.
 struct NightCover: View {
     enum Surface: Equatable {
         case night
@@ -23,6 +27,9 @@ struct NightCover: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var shown: Surface?
+    /// The Night screen is giving way by itself: for as long as that fade
+    /// lasts no touch reaches what is leaving or what is under it.
+    @State private var swallowsTouches = false
 
     private var asked: Surface? {
         Surface.resolve(isBedtime: model.isBedtime, isSmallHours: model.isSmallHours)
@@ -37,6 +44,26 @@ struct NightCover: View {
             if shown == .smallHours {
                 SmallHoursScreen(model: model, session: model.smallHours)
                     .transition(.opacity)
+            }
+            if swallowsTouches {
+                // Whoever opens the app in the morning and touches what is
+                // fading ("Small hours · 20 min", right over the Play of
+                // the page) starts nothing: a fade nobody asked for is not
+                // a moment to answer a touch.
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture {}
+                    .gesture(DragGesture(minimumDistance: 0))
+                    .ignoresSafeArea()
+                    .accessibilityHidden(true)
+            }
+        }
+        .onChange(of: model.nightYields) { _, _ in
+            swallowsTouches = true
+            let fade = Self.fade(from: .night, to: nil, reduceMotion: reduceMotion)
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(fade))
+                swallowsTouches = false
             }
         }
         .onChange(of: asked, initial: true) { previous, next in

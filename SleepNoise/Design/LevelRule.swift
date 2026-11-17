@@ -20,7 +20,8 @@ import UIKit
 ///
 /// A waiting row (an included layer above zero while six others sound) is
 /// drawn in secondary ink with its value and no level ink: it keeps its
-/// level and does not sound. It still moves under a finger like any other.
+/// level and does not sound. It still moves under a finger like any other,
+/// and stays without level ink and without the accent while it waits.
 struct LevelRule: View {
     /// Stable identifier of the layer, for the accent arbiter.
     let id: String
@@ -117,7 +118,9 @@ struct LevelRule: View {
             .animation(Motion.contentCurve, value: channelNote)
             .frame(maxWidth: .infinity, minHeight: Grid.layerChannel, alignment: .leading)
             .padding(.horizontal, Grid.margin)
-            .accessibilityHidden(channelNote == nil)
+            // A row that waits already says "Six at once" in its value:
+            // the note would be a second stop with the same words.
+            .accessibilityHidden(channelNote == nil || isWaiting)
             .allowsHitTesting(false)
     }
 
@@ -158,7 +161,11 @@ struct LevelRule: View {
     private var faceMode: LevelRuleFace.Mode {
         if isLocked { return .locked }
         if showsSlider { return .fineSlider }
-        if isDragging { return .underFinger(accent: arbiter.owns(.finger(id))) }
+        if isDragging {
+            // A layer that waits is silent under the finger too: no level
+            // ink and no accent until it is one of the six.
+            return isWaiting ? .waitingUnderFinger : .underFinger(accent: arbiter.owns(.finger(id)))
+        }
         return isWaiting ? .waiting : .rest
     }
 
@@ -349,6 +356,11 @@ struct LevelRuleFace: View {
         /// Six other layers sound: secondary ink, the value it keeps,
         /// track only. Same anatomy as `rest`.
         case waiting
+        /// A finger is dragging a layer that waits: the `grafito` track
+        /// and the value grown in place, like any row under a finger, but
+        /// no ink on the line and no accent, because it still does not
+        /// sound. It becomes `underFinger` the moment it is one of the six.
+        case waitingUnderFinger
     }
 
     var name: String
@@ -371,11 +383,11 @@ struct LevelRuleFace: View {
     private var percent: Int { LevelMath.percent(level) }
     private var isLocked: Bool { mode == .locked }
     /// Nothing of this row sounds: no ink on its line.
-    private var isMuted: Bool { mode == .locked || mode == .waiting }
+    private var isMuted: Bool { mode == .locked || mode == .waiting || mode == .waitingUnderFinger }
     private var showsSlider: Bool { mode == .fineSlider }
     private var isUnderFinger: Bool {
         if case .underFinger = mode { return true }
-        return false
+        return mode == .waitingUnderFinger
     }
     private var ownsAccent: Bool { mode == .underFinger(accent: true) }
 

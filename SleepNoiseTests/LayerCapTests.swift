@@ -111,6 +111,37 @@ final class LayerCapTests: XCTestCase {
         )
     }
 
+    /// Red if the rule compares the fraction a finger passes through and
+    /// not the whole percent the row shows and the mix keeps: two rows
+    /// that both say "20" would sound in the wrong order, and a layer
+    /// heard while it is dragged would go silent when the finger lifts.
+    func testALevelIsComparedAsThePercentTheRowShows() {
+        let everything: (SoundID) -> Bool = { _ in true }
+        XCTAssertEqual(LayerCap.percent(0.2049), 20)
+        XCTAssertEqual(LayerCap.percent(0.20), 20)
+        XCTAssertEqual(LayerCap.percent(0.205), LevelMath.percent(0.205))
+        for level: Float in [-1, 0, 0.004, 0.005, 0.1549, 0.155, 0.5, 0.995, 1, 2, .nan] {
+            XCTAssertEqual(LayerCap.percent(level), LevelMath.percent(level), "\(level)")
+        }
+
+        // Six at 30 and two that both show 20: brown is before thunder in
+        // the stored order, so brown sounds, however little thunder is
+        // over it in the fraction nobody sees.
+        var mix: [SoundID: Float] = [
+            .white: 0.3, .pink: 0.3, .rain: 0.3, .wind: 0.3, .ocean: 0.3, .brown: 0.20, .thunder: 0.2049,
+        ]
+        XCTAssertEqual(
+            LayerCap.sounding(mix, isIncluded: everything), [.white, .pink, .rain, .wind, .ocean, .brown]
+        )
+        XCTAssertEqual(LayerCap.waiting(mix, isIncluded: everything), [.thunder])
+        // What is left when the finger lifts (20) is what sounded on the way.
+        mix[.thunder] = LevelMath.quantized(0.2049)
+        XCTAssertEqual(LayerCap.waiting(mix, isIncluded: everything), [.thunder])
+        // A whole percent more is more.
+        mix[.thunder] = 0.2051
+        XCTAssertEqual(LayerCap.waiting(mix, isIncluded: everything), [.brown])
+    }
+
     // MARK: Every road to more than six
 
     /// Red if a saved mix of eight plays eight, loses a level on the way
@@ -258,6 +289,61 @@ final class LayerCapTests: XCTestCase {
         XCTAssertEqual(night.model.levels[.thunder], 0)
     }
 
+    /// Red if a drag that touches zero cannot come back: in a mix with
+    /// layers waiting, the next one comes in the moment the row reaches
+    /// zero, and the way back up would be refused as a seventh layer with
+    /// the finger still down. The level would be lost at the lift.
+    func testALayerTakenToZeroComesBackInTheSameDrag() throws {
+        let defaults = try makeDefaults()
+        try store(eight, in: defaults)
+        let night = try NightHarness(at: time(12), defaults: defaults)
+        night.model.play()
+        assertHeard(night, sixOfEight)
+
+        night.model.beginLevelGesture()
+        XCTAssertEqual(night.model.setLevel(.thunder, 0.1), .applied)
+        XCTAssertEqual(night.model.setLevel(.thunder, 0), .applied)
+        assertHeard(night, [.ocean, .rain, .campfire, .pink, .wind, .white], "white came in meanwhile")
+        // Back up without lifting: it is still a layer of this mix.
+        XCTAssertEqual(night.model.setLevel(.thunder, 0.05), .applied)
+        XCTAssertEqual(night.model.levels[.thunder], 0.05)
+        assertHeard(night, [.ocean, .rain, .campfire, .pink, .wind, .white], "under white it waits, by level")
+        XCTAssertEqual(night.model.waitingLayers, [.brown, .thunder])
+        XCTAssertEqual(night.model.setLevel(.thunder, 0.2), .applied)
+        assertHeard(night, sixOfEight, "and over it, it sounds again")
+        // Down and up again in the same drag.
+        XCTAssertEqual(night.model.setLevel(.thunder, 0), .applied)
+        XCTAssertEqual(night.model.setLevel(.thunder, 0.2), .applied)
+        night.model.endLevelGesture()
+        assertHeard(night, sixOfEight)
+        XCTAssertEqual(night.model.levels, full(eight), "the mix is as it was")
+        XCTAssertEqual(
+            try JSONDecoder().decode([MixLevel].self, from: XCTUnwrap(defaults.data(forKey: levelsKey)))
+                .first { $0.sound == .thunder }?.value,
+            0.2
+        )
+
+        // Left at zero when the finger lifts, it is out of the mix: from
+        // then on it is a seventh layer like any other.
+        night.model.beginLevelGesture()
+        XCTAssertEqual(night.model.setLevel(.thunder, 0), .applied)
+        night.model.endLevelGesture()
+        night.model.beginLevelGesture()
+        XCTAssertEqual(night.model.setLevel(.thunder, 0.2), .capReached)
+        XCTAssertEqual(night.model.levels[.thunder], 0)
+        // And a layer that was never in the mix gets nothing from an open
+        // drag on another row.
+        XCTAssertEqual(night.model.setLevel(.pink, 0), .applied)
+        XCTAssertEqual(night.model.setLevel(.cabin, 0.5), .capReached, "brown came in for pink")
+        XCTAssertEqual(night.model.setLevel(.pink, 0.3), .applied)
+        night.model.endLevelGesture()
+
+        // Without a finger (a step of VoiceOver) there is no way back:
+        // zero is zero at once.
+        XCTAssertEqual(night.model.setLevel(.wind, 0), .applied)
+        XCTAssertEqual(night.model.setLevel(.wind, 0.25), .capReached)
+    }
+
     /// The rule has no memory: the six that sound are the six highest at
     /// every moment, also while a level moves.
     func testTheSixAreAlwaysTheHighestWhileALevelMoves() throws {
@@ -285,6 +371,37 @@ final class LayerCapTests: XCTestCase {
         night.model.setBreathingEnabled(true)
         XCTAssertEqual(night.model.levels[.ocean], 0.04)
         XCTAssertEqual(night.model.breathingNote, Localized.string("capas.tope"))
+    }
+
+    /// Red if the tide can be switched on over an ocean that keeps a level
+    /// and waits, and nothing says the ocean is not heard.
+    func testTheTideOverAnOceanThatWaitsSaysSixAtOnce() throws {
+        var mix = eight
+        // The ocean at 10 is the lowest of the eight with brown: it waits.
+        mix[.ocean] = 0.10
+        mix[.brown] = 0.12
+        let defaults = try makeDefaults()
+        try store(mix, in: defaults)
+        let night = try NightHarness(at: time(12), defaults: defaults)
+        night.model.play()
+        XCTAssertEqual(night.model.waitingLayers, [.brown, .ocean])
+        let raises = night.model.tideOceanRaises
+
+        night.model.setBreathingEnabled(true)
+        XCTAssertTrue(night.model.breathing.settings.isEnabled, "the tide is armed")
+        XCTAssertEqual(night.model.levels[.ocean], 0.10, "the level it keeps is not touched")
+        XCTAssertEqual(night.model.tideOceanRaises, raises)
+        XCTAssertEqual(night.model.breathingNote, Localized.string("capas.tope"))
+        XCTAssertFalse(night.model.soundingLayers.contains(.ocean))
+
+        // An ocean that sounds, however low, needs no note for the cap.
+        let low = try makeDefaults()
+        try store([.rain: 0.4, .ocean: 0.10], in: low)
+        let quiet = try NightHarness(at: time(12), defaults: low)
+        quiet.model.play()
+        quiet.model.setBreathingEnabled(true)
+        XCTAssertNil(quiet.model.breathingNote)
+        XCTAssertEqual(quiet.model.levels[.ocean], 0.10)
     }
 
     /// A tie in a real mix is settled the same way at every launch.
@@ -334,5 +451,81 @@ final class LayerCapTests: XCTestCase {
             speech(0.15, waiting: true, bundle: english).label,
             speech(0.15, waiting: false, bundle: english).label
         )
+    }
+
+    // MARK: What the page says
+
+    /// Red if the page reads as if everything sounded. Its three rows are
+    /// chosen in page order, beds first: in the mix of eight they are
+    /// rain, wind and ocean, all sounding, and the two layers that wait
+    /// have no row to say so.
+    func testThePageSaysThatLayersWaitWhenNoneOfThemHasARow() throws {
+        let app = Bundle(for: MixStore.self)
+        let spanish = try XCTUnwrap(app.url(forResource: "es", withExtension: "lproj").flatMap(Bundle.init(url:)))
+        let english = try XCTUnwrap(app.url(forResource: "en", withExtension: "lproj").flatMap(Bundle.init(url:)))
+        func value(_ levels: [SoundID: Float], rows: [SoundID], waiting: [SoundID], _ bundle: Bundle) -> String? {
+            PageLayers.moreValue(
+                levels, rows: rows, waiting: waiting,
+                more: { Localized.format("capas.mas", bundle: bundle, Int64($0)) },
+                cap: Localized.string("capas.tope", bundle: bundle)
+            )
+        }
+        let rows = PageLayers.rows(eight, capacity: 3)
+        XCTAssertEqual(rows, [.rain, .wind, .ocean])
+        let waiting = LayerCap.waiting(eight, isIncluded: { _ in true })
+        XCTAssertEqual(waiting, [.white, .brown])
+        XCTAssertEqual(value(eight, rows: rows, waiting: waiting, spanish), "y 5 más · Seis a la vez")
+        XCTAssertEqual(value(eight, rows: rows, waiting: waiting, english), "and 5 more · Six at once")
+        XCTAssertEqual(
+            PageStatus.spoken(value(eight, rows: rows, waiting: waiting, english) ?? ""),
+            "and 5 more, Six at once"
+        )
+
+        // Nothing waits: the value of always.
+        let five: [SoundID: Float] = [.rain: 0.45, .wind: 0.25, .ocean: 0.5, .pink: 0.3, .brown: 0.2]
+        XCTAssertEqual(value(five, rows: [.rain, .wind, .ocean], waiting: [], spanish), "y 2 más")
+        XCTAssertNil(value([.rain: 0.4], rows: [.rain], waiting: [], spanish))
+        // Every layer that waits has its row, which says it itself.
+        XCTAssertEqual(value(eight, rows: [.white, .brown], waiting: waiting, spanish), "y 6 más")
+        // One of them has no row: the page still says it.
+        XCTAssertEqual(value(eight, rows: [.rain, .white], waiting: waiting, spanish), "y 6 más · Seis a la vez")
+
+        // The state line names them while it plays, in the words it
+        // already has for a layer of the mix that does not sound.
+        let defaults = try makeDefaults()
+        try store(eight, in: defaults)
+        let night = try NightHarness(at: time(12), defaults: defaults)
+        night.model.play()
+        XCTAssertEqual(night.model.unheardLayers, [.white, .brown])
+        let status = PageStatus.resolve(PageStatus.Input(isPlaying: true, omitted: night.model.unheardLayers))
+        XCTAssertEqual(status, .playingWithout([.white, .brown]))
+        XCTAssertEqual(
+            status.text(
+                localized: { Localized.string($0, bundle: spanish) },
+                soundName: { Localized.string($0.nameKey, bundle: spanish) },
+                locale: Locale(identifier: "es")
+            ),
+            "Sonando · sin blanco ni marrón"
+        )
+        XCTAssertEqual(
+            status.text(
+                localized: { Localized.string($0, bundle: english) },
+                soundName: { Localized.string($0.nameKey, bundle: english) },
+                locale: Locale(identifier: "en")
+            ),
+            "Playing · without white or brown"
+        )
+        // One of the six goes: the next one sounds and leaves the line.
+        night.model.setLevel(.thunder, 0)
+        XCTAssertEqual(night.model.unheardLayers, [.brown])
+        night.model.setLevel(.ocean, 0)
+        XCTAssertEqual(night.model.unheardLayers, [])
+        XCTAssertEqual(PageStatus.resolve(PageStatus.Input(isPlaying: true, omitted: [])), .playing)
+
+        // Without access the Pro layers come first, then the ones that
+        // wait: here five free layers sound and nothing waits.
+        let free = try NightHarness(at: time(12), free: true, defaults: defaults)
+        XCTAssertEqual(free.model.waitingLayers, [])
+        XCTAssertTrue(free.model.unheardLayers.allSatisfy { !AccessPolicy.soundIsIncluded($0, hasFullAccess: false) })
     }
 }

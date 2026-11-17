@@ -43,6 +43,9 @@ enum PageDebugState: String, CaseIterable {
     case layersCap
     /// Layers with a mix of eight: the six highest sound, two wait.
     case layersOver
+    /// The page with that mix of eight, playing: its three rows sound, the
+    /// two layers that wait have none, and the page says so.
+    case pageOver
     /// Layers without access, scrolled to its end: the last beds, a Pro
     /// one that keeps its level, and the notes over the bar.
     case layersEnd
@@ -227,10 +230,15 @@ enum PageDebugState: String, CaseIterable {
     case settingsNightRestoring
     /// The App Store had nothing for this account: the longest line.
     case settingsNightNothing
-    /// The purchase came back: the receipt line and "Thank you".
+    /// The purchase came back: "Thank you" under the row, which no longer
+    /// answers; the Pro row keeps the name alone until Settings closes.
     case settingsNightRestored
+    /// The same with a purchase shared by the family.
+    case settingsNightRestoredFamily
     /// The store did not answer.
-    case settingsNightFailed
+    case settingsNightStoreAway
+    /// The dialog of the Apple Account was closed: no line at all.
+    case settingsNightCancelled
     /// "What's not here".
     case settingsNotHere
     /// The end of Mixes: "Settings", its last row.
@@ -286,7 +294,7 @@ enum PageDebugState: String, CaseIterable {
     /// How "Restore purchase" ends in a staged Settings at night, or nil
     /// for a state that does not press it.
     enum RestoreOutcome {
-        case looking, nothing, restored, storeAway
+        case looking, nothing, restored, restoredFamily, storeAway, cancelled
     }
 
     var restoreOutcome: RestoreOutcome? {
@@ -294,7 +302,9 @@ enum PageDebugState: String, CaseIterable {
         case .settingsNightRestoring: return .looking
         case .settingsNightNothing: return .nothing
         case .settingsNightRestored: return .restored
-        case .settingsNightFailed: return .storeAway
+        case .settingsNightRestoredFamily: return .restoredFamily
+        case .settingsNightStoreAway: return .storeAway
+        case .settingsNightCancelled: return .cancelled
         default: return nil
         }
     }
@@ -697,7 +707,8 @@ enum PageStage {
         case .timer:
             model.selectTimer(minutes: 45)
         case .nightLayers, .settingsNight, .settingsNightRestoring, .settingsNightNothing,
-             .settingsNightRestored, .settingsNightFailed:
+             .settingsNightRestored, .settingsNightRestoredFamily, .settingsNightStoreAway,
+             .settingsNightCancelled:
             model.beginNightSession()
         case .tide:
             model.setBreathingEnabled(true)
@@ -709,13 +720,19 @@ enum PageStage {
             setLevels(model, [.rain: 0.45, .wind: 0.25, .ocean: 0.5, .white: 0.15, .pink: 0.3, .brown: 0.2])
         case .layersCap:
             setLevels(model, [.rain: 0.45, .wind: 0.25, .ocean: 0.5, .thunder: 0.2, .pink: 0.3, .brown: 0.2])
-        case .layersOver:
+        case .layersOver, .pageOver:
             // A mix saved by a version without the cap. White and brown
             // are the lowest: they keep their level and wait.
             setLevels(model, [
                 .white: 0.15, .pink: 0.3, .brown: 0.1, .rain: 0.45, .wind: 0.25,
                 .ocean: 0.5, .thunder: 0.2, .campfire: 0.35,
             ])
+            if state == .pageOver {
+                // No timer: the state line is free to name the layers
+                // that wait. With one it says the hour, and the "All
+                // layers" row alone says "Six at once".
+                model.chooseTimer(TimerChoice.firstUse.with(mode: .off))
+            }
         case .layersEnd:
             // Thunder was saved at 20 while the trial lasted; it keeps it.
             setLevels(model, [.rain: 0.45, .wind: 0.25, .thunder: 0.2, .pink: 0.3])
@@ -782,13 +799,16 @@ enum PageStage {
             store.hangs = true
         case .nothing:
             store.syncResult = .synced
-        case .restored:
+        case .restored, .restoredFamily:
             // Bought the day before the capture.
             store.entitlementAfterSync = .entitled(ProReceipt(
-                purchaseDate: stageClock.date.addingTimeInterval(-86_400), isFamilyShared: false
+                purchaseDate: stageClock.date.addingTimeInterval(-86_400),
+                isFamilyShared: outcome == .restoredFamily
             ))
         case .storeAway:
             store.syncResult = .unavailable
+        case .cancelled:
+            store.syncResult = .cancelled
         }
     }
 
@@ -800,7 +820,8 @@ enum PageStage {
              .tideRest, .tideLocked, .mixesEmpty,
              .trialNight1, .trialNight3, .trialNight7, .trialLastDay, .trialNight8, .trialAtNight,
              .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNight, .settingsNotHere,
-             .settingsNightRestoring, .settingsNightNothing, .settingsNightRestored, .settingsNightFailed:
+             .settingsNightRestoring, .settingsNightNothing, .settingsNightRestored,
+             .settingsNightRestoredFamily, .settingsNightStoreAway, .settingsNightCancelled:
             // Settings presses its own "Restore purchase" (`stageRestore`).
             break
         case .proOffer, .proTrial, .proLoading, .proUnavailable, .proReceipt, .proReceiptFamily,
@@ -929,8 +950,8 @@ enum PageStage {
             for _ in 0..<2 { model.debugFailStart() }
         case .error3:
             for _ in 0..<3 { model.debugFailStart() }
-        case .playingTwo, .playingFive, .night, .timer, .layers, .layersCap, .layersOver, .largeType,
-             .storePlaying, .storeLayers,
+        case .playingTwo, .playingFive, .night, .timer, .layers, .layersCap, .layersOver, .pageOver,
+             .largeType, .storePlaying, .storeLayers,
              .nightLayers, .tide, .nightTide, .timerAsleep, .timerBlanket, .timerNight,
              .tideGuiding, .tideDescent, .tideNight,
              .mixes, .mixesSave, .mixesRename, .mixesDelete, .mixesFourth, .mixesNight, .mixesNightFree,
