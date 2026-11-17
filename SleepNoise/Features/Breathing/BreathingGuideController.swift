@@ -3,19 +3,62 @@ import Foundation
 
 struct BreathingSettings: Codable, Equatable {
     static let rateRange = 4...8
-    static let durationChoices = [5, 10, 15, 20, 30, 0]
+    /// "Recedes after": five to thirty minutes (03 §5 #6).
+    static let durationChoices = [5, 10, 15, 20, 30]
+    /// The two paces with a name: "Calm · 6" and "Gentle · 8".
+    static let calmRate = 6
+    static let gentleRate = 8
+    /// "Descent" starts here, a fixed parameter (C34), and comes down one
+    /// breath a minute every forty seconds to the pace chosen (C14, C24).
+    static let descentStartRate = 12
+    static let descentStepSeconds: TimeInterval = 40
 
     var isEnabled = false
     var breathsPerMinute = 6
     /// Minutes of guided breathing before the beds drift back to their own
-    /// rhythm. `0` keeps the tide all night, at a subtler depth.
+    /// rhythm. `0` keeps the tide all night, at a subtler depth: no screen
+    /// offers it in 1.0, and a stored 0 is read as the longest choice.
     var guideMinutes = 15
+    /// "Descent", the ritual of the tide: the guide begins at twelve a
+    /// minute and comes down to the pace, stays there, then dissolves.
+    var descends = false
 
     var guidesAllNight: Bool { guideMinutes == 0 }
 
     /// Depth of the bed modulation. All night is kept subtle: a 4 dB swell
     /// every ten seconds for eight hours is what light sleepers call pulsing.
     var bedDepth: Float { guidesAllNight ? 0.2 : 0.4 }
+
+    /// The pace the guide holds `elapsed` seconds into a descent. Without
+    /// the ritual, or once it has come down, the pace chosen.
+    func rate(descentElapsed elapsed: TimeInterval?) -> Int {
+        guard descends, let elapsed, breathsPerMinute < Self.descentStartRate else {
+            return breathsPerMinute
+        }
+        let steps = Int((max(0, elapsed) / Self.descentStepSeconds).rounded(.down))
+        return max(breathsPerMinute, Self.descentStartRate - steps)
+    }
+
+    /// Seconds into the descent at which the pace next comes down, or nil
+    /// once it is on its plateau.
+    func nextDescentStep(after elapsed: TimeInterval) -> TimeInterval? {
+        guard descends, rate(descentElapsed: elapsed) > breathsPerMinute else { return nil }
+        let steps = (max(0, elapsed) / Self.descentStepSeconds).rounded(.down) + 1
+        return steps * Self.descentStepSeconds
+    }
+}
+
+extension BreathingSettings {
+    /// Settings stored before a field existed keep everything else: a
+    /// missing key takes its default instead of failing the whole value.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init()
+        isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? isEnabled
+        breathsPerMinute = try container.decodeIfPresent(Int.self, forKey: .breathsPerMinute) ?? breathsPerMinute
+        guideMinutes = try container.decodeIfPresent(Int.self, forKey: .guideMinutes) ?? guideMinutes
+        descends = try container.decodeIfPresent(Bool.self, forKey: .descends) ?? descends
+    }
 }
 
 enum BreathingPhase: Equatable {
@@ -45,12 +88,19 @@ final class BreathingGuideController: ObservableObject {
     @Published private(set) var phase: BreathingPhase = .idle
     /// Start of the current epoch; drives the on-screen indicator.
     @Published private(set) var anchor: Date?
+    /// Breaths a minute the guide holds right now: the pace chosen, or the
+    /// step of the descent it is on. Nil while idle.
+    @Published private(set) var guidingRate: Int?
+    /// When the guide lets go and the dissolve begins ("Recedes at"). Nil
+    /// while idle and when it guides all night.
+    @Published private(set) var guideEndsAt: Date?
 
     var onChange: (@MainActor (BreathParameters) -> Void)?
 
-    /// The session's window: when the guide began and when it ends (nil = all night).
+    /// The session's window: when the guide began. It ends at `guideEndsAt`.
     private(set) var windowStart: Date?
-    private(set) var guideEndsAt: Date?
+    /// When the descent of this window began, if it has one.
+    private var descentStart: Date?
     private var epoch: UInt32 = 0
     private var ticker: Timer?
     private let defaults: UserDefaults
@@ -59,7 +109,12 @@ final class BreathingGuideController: ObservableObject {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         if let data = defaults.data(forKey: Self.storageKey),
-           let decoded = try? JSONDecoder().decode(BreathingSettings.self, from: data) {
+           var decoded = try? JSONDecoder().decode(BreathingSettings.self, from: data) {
+            // "All night" is not offered in 1.0: it is read as the longest
+            // of the lengths that are.
+            if decoded.guidesAllNight {
+                decoded.guideMinutes = BreathingSettings.durationChoices.last ?? decoded.guideMinutes
+            }
             settings = decoded
         } else {
             settings = BreathingSettings()
@@ -67,6 +122,13 @@ final class BreathingGuideController: ObservableObject {
     }
 
     var isActive: Bool { phase != .idle }
+
+    /// The guide stopped with its window still open (a pause): Play goes on
+    /// with it instead of guiding again.
+    func hasOpenWindow(now: Date = Date()) -> Bool {
+        guard windowStart != nil else { return false }
+        return guideEndsAt.map { now < $0 } ?? true
+    }
 
     /// Whether the disc should move at `now`.
     func isVisuallyActive(now: Date = Date()) -> Bool {
@@ -78,6 +140,7 @@ final class BreathingGuideController: ObservableObject {
     func begin(now: Date = Date()) {
         stopTicking()
         windowStart = now
+        descentStart = settings.descends ? now : nil
         guideEndsAt = settings.guidesAllNight ? nil : now.addingTimeInterval(TimeInterval(settings.guideMinutes) * 60)
         startEpoch(now: now)
     }
@@ -94,6 +157,7 @@ final class BreathingGuideController: ObservableObject {
         }
         if let guideEndsAt, now >= guideEndsAt {
             self.windowStart = nil
+            self.descentStart = nil
             self.guideEndsAt = nil
             finish()
             return
@@ -108,12 +172,21 @@ final class BreathingGuideController: ObservableObject {
     /// the finish timer is left alone.
     func settingsDidChange(now: Date = Date()) {
         guard isActive, let windowStart else { return }
-        let rateChanged = abs(BreathParameters.guided(breathsPerMinute: settings.breathsPerMinute).rate - lastPublished.rate) > 1e-6
+        // "Descent" switched on while guiding begins its way down now;
+        // switched off, the guide goes to the pace chosen.
+        if !settings.descends {
+            descentStart = nil
+        } else if descentStart == nil, phase == .guiding {
+            descentStart = now
+        }
+        let rate = scheduledRate(now: now)
+        let rateChanged = abs(BreathParameters.guided(breathsPerMinute: rate).rate - lastPublished.rate) > 1e-6
         switch phase {
         case .idle:
             return
         case .dissolving:
             if rateChanged {
+                guidingRate = rate
                 var parameters = parameters(weight: 0, dissolve: lastPublished.dissolveSeconds)
                 parameters.bedDepth = lastPublished.bedDepth
                 publish(parameters)
@@ -126,16 +199,45 @@ final class BreathingGuideController: ObservableObject {
                 dissolve(now: now)
                 return
             }
-            if rateChanged, let anchor, lastPublished.rate > 0 {
-                let newRate = Double(BreathParameters.guided(breathsPerMinute: settings.breathsPerMinute).rate)
-                let elapsedCycles = now.timeIntervalSince(anchor) * Double(lastPublished.rate)
-                let fraction = elapsedCycles - elapsedCycles.rounded(.down)
-                self.anchor = now.addingTimeInterval(-fraction / newRate)
-            }
+            if rateChanged { rebase(to: rate, now: now) }
             stopTicking()
             publish(parameters(weight: 1, dissolve: 0))
-            scheduleGuideEnd()
+            scheduleNext(now: now)
         }
+    }
+
+    /// Applies what came due at `now`: the next step of the descent, or the
+    /// end of the guide. Internal so that a test can move the clock.
+    func advance(now: Date = Date()) {
+        guard phase == .guiding else { return }
+        if let guideEndsAt, now >= guideEndsAt {
+            stopTicking()
+            dissolve(now: now)
+            return
+        }
+        let rate = scheduledRate(now: now)
+        if rate != guidingRate {
+            rebase(to: rate, now: now)
+            publish(parameters(weight: 1, dissolve: 0))
+        }
+        scheduleNext(now: now)
+    }
+
+    /// The pace the settings call for at `now`.
+    private func scheduledRate(now: Date) -> Int {
+        settings.rate(descentElapsed: descentStart.map { now.timeIntervalSince($0) })
+    }
+
+    /// A new pace keeps the fraction of the cycle: the anchor moves so the
+    /// line on screen stays with the audio, which does the same.
+    private func rebase(to rate: Int, now: Date) {
+        if let anchor, lastPublished.rate > 0 {
+            let newRate = Double(BreathParameters.guided(breathsPerMinute: rate).rate)
+            let elapsedCycles = now.timeIntervalSince(anchor) * Double(lastPublished.rate)
+            let fraction = elapsedCycles - elapsedCycles.rounded(.down)
+            self.anchor = now.addingTimeInterval(-fraction / newRate)
+        }
+        guidingRate = rate
     }
 
     /// The sleep timer is fading the whole bed out: let the tide go with it so
@@ -153,6 +255,7 @@ final class BreathingGuideController: ObservableObject {
         guard isActive || lastPublished != .off else { return }
         phase = .idle
         anchor = nil
+        guidingRate = nil
         publish(.off)
     }
 
@@ -171,21 +274,34 @@ final class BreathingGuideController: ObservableObject {
         if epoch == 0 { epoch = 1 }
         anchor = now
         phase = .guiding
+        guidingRate = scheduledRate(now: now)
         publish(parameters(weight: 1, dissolve: 0))
-        scheduleGuideEnd()
+        scheduleNext(now: now)
     }
 
     private func parameters(weight: Float, dissolve: Float) -> BreathParameters {
-        var parameters = BreathParameters.guided(breathsPerMinute: settings.breathsPerMinute, weight: weight, epoch: epoch)
+        var parameters = BreathParameters.guided(
+            breathsPerMinute: guidingRate ?? settings.breathsPerMinute,
+            weight: weight,
+            epoch: epoch
+        )
         parameters.dissolveSeconds = dissolve
         parameters.bedDepth = settings.bedDepth
         return parameters
     }
 
-    private func scheduleGuideEnd() {
-        guard let guideEndsAt else { return }
-        schedule(at: guideEndsAt) { [weak self] in
-            self?.dissolve()
+    /// One timer for whatever comes first: the next step of the descent
+    /// or the end of the guide.
+    private func scheduleNext(now: Date) {
+        var next = guideEndsAt
+        if let descentStart,
+           let step = settings.nextDescentStep(after: now.timeIntervalSince(descentStart)) {
+            let date = descentStart.addingTimeInterval(step)
+            next = next.map { min($0, date) } ?? date
+        }
+        guard let next else { return }
+        schedule(at: next) { [weak self] in
+            self?.advance()
         }
     }
 
@@ -201,6 +317,7 @@ final class BreathingGuideController: ObservableObject {
         stopTicking()
         phase = .idle
         anchor = nil
+        guidingRate = nil
         publish(.off)
     }
 

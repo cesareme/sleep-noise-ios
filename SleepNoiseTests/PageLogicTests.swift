@@ -697,9 +697,9 @@ final class PageModelTests: XCTestCase {
         let percent = Int64((MixerModel.tideOceanLevel * 100).rounded())
         XCTAssertEqual(model.breathingNote, Localized.format("marea.oceano.subido", percent))
         XCTAssertTrue(model.breathingNote?.contains("\(percent)") == true)
-        // Switched off before the level is touched: the ocean goes back.
+        // Switched off: the tide never lowers the ocean it raised.
         model.setBreathingEnabled(false)
-        XCTAssertEqual(model.levels[.ocean], 0)
+        XCTAssertEqual(model.levels[.ocean], MixerModel.tideOceanLevel)
     }
 
     // MARK: Levels on disk

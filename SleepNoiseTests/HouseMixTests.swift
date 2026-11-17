@@ -280,7 +280,7 @@ final class HouseMixModelTests: XCTestCase {
 
         model.loadHouseMix(mix)
         model.setBreathingEnabled(true)
-        XCTAssertEqual(model.levels[.ocean], 0.5, "raised by the tide")
+        XCTAssertEqual(model.levels[.ocean], MixerModel.tideOceanLevel, "raised by the tide")
         XCTAssertEqual(model.activeHouseMix, mix)
 
         expire(purchases)
@@ -289,10 +289,8 @@ final class HouseMixModelTests: XCTestCase {
         XCTAssertEqual(model.nowPlayingTitle, mix.localizedName)
     }
 
-    /// Loading a mix replaces every level, the ocean the tide raised too:
-    /// switching the tide off afterwards must not put the old ocean back
-    /// into the new mix. "Sea and wind" has the ocean at the very level the
-    /// tide raises it to.
+    /// Loading a mix replaces every level, the ocean the tide raised too,
+    /// and switching the tide off afterwards changes nothing in the new mix.
     func testLoadingAMixForgetsTheOceanTheTideRaised() throws {
         let seaAndWind = HouseMix.seaAndWind
         XCTAssertEqual(seaAndWind.levelsBySound()[.ocean], 0.5)
@@ -316,7 +314,7 @@ final class HouseMixModelTests: XCTestCase {
             XCTAssertEqual(model.levels[.ocean], 0, name)
 
             model.setBreathingEnabled(true)
-            XCTAssertEqual(model.levels[.ocean], 0.5, "\(name): raised by the tide")
+            XCTAssertEqual(model.levels[.ocean], MixerModel.tideOceanLevel, "\(name): raised by the tide")
             if house {
                 model.loadHouseMix(seaAndWind)
             } else {
@@ -327,12 +325,13 @@ final class HouseMixModelTests: XCTestCase {
             XCTAssertEqual(MixerModel(purchases: purchases, defaults: defaults).levels, expected, "\(name): stored whole")
         }
 
-        // Without a load in between the tide still undoes its own raise.
+        // Without a load in between the ocean the tide raised stays up: the
+        // tide never switches off a layer it turned on.
         let defaults = try makeDefaults()
         let model = MixerModel(purchases: PurchaseManager(defaults: defaults, now: day0), defaults: defaults)
         model.setBreathingEnabled(true)
         model.setBreathingEnabled(false)
-        XCTAssertEqual(model.levels[.ocean], 0)
+        XCTAssertEqual(model.levels[.ocean], MixerModel.tideOceanLevel)
     }
 
     /// A saved mix with Pro layers loads trimmed like a house mix: the title

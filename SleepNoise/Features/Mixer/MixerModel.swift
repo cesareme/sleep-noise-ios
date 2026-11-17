@@ -66,8 +66,9 @@ final class MixerModel: ObservableObject {
     /// sounds.
     nonisolated static let fallbackSound = SoundID.pink
     nonisolated static let fallbackLevel: Float = 0.4
-    /// Where the tide puts a silent ocean so that it can be heard.
-    nonisolated static let tideOceanLevel: Float = 0.5
+    /// Where the tide puts a silent ocean so that it can be heard. It never
+    /// lowers it again: the tide does not switch off a layer it raised.
+    nonisolated static let tideOceanLevel: Float = 0.4
     /// The lowest the session level goes: the vertical axis of Night turns
     /// the night down, it does not switch it off in the dark by accident.
     nonisolated static let minimumSessionLevel: Float = 0.05
@@ -179,9 +180,6 @@ final class MixerModel: ObservableObject {
     private var offerTimer: Timer?
     private var dimTimer: Timer?
     private var noteTask: Task<Void, Never>?
-    /// Ocean level before the tide raised it, restored if the tide is switched
-    /// off again before the slider is touched.
-    private var oceanBeforeTide: Float?
     /// The levels the loaded mix came with. Its title is worked out from
     /// these, not from the live levels, which the tide may have raised.
     private var loadedMixRecipe: [SoundID: Float]?
@@ -284,7 +282,6 @@ final class MixerModel: ObservableObject {
         loadedMixRecipe = nil
         if loadedMixWasStripped { loadedMixWasStripped = false }
         if activeHouseMix != nil { activeHouseMix = nil }
-        if sound == .ocean { oceanBeforeTide = nil }
         if liveLevelGestures == 0 {
             persistLevels()
         }
@@ -744,7 +741,6 @@ final class MixerModel: ObservableObject {
         loadedMixRecipe = load.levels
         loadedMixName = load.title(name: name)
         loadedMixWasStripped = load.isTrimmed
-        oceanBeforeTide = nil
         isPlayingFallback = false
         mixRevision += 1
     }
@@ -808,7 +804,6 @@ final class MixerModel: ObservableObject {
         loadedMixBaseName = sound.localizedName
         loadedMixRecipe = nil
         loadedMixWasStripped = false
-        oceanBeforeTide = nil
         isPlayingFallback = false
         mixRevision += 1
         persistLevels()
@@ -1076,11 +1071,18 @@ final class MixerModel: ObservableObject {
         AccessPolicy.breathingIsIncluded(hasFullAccess: purchases.hasFullAccess)
     }
 
-    /// Switches the tide on or off. Takes effect at once when playing. Turning
-    /// it on with the ocean silent raises the ocean so the tide can be heard,
-    /// unless six layers already sound: the cap is a rule of the model, so
-    /// the tide is armed and the ocean stays where it was.
-    func setBreathingEnabled(_ enabled: Bool) {
+    /// Switches the tide on or off. Takes effect at once when playing.
+    /// Turning it on with the ocean silent raises the ocean so the tide can
+    /// be heard, unless six layers already sound: the cap is a rule of the
+    /// model, so the tide is armed and the ocean stays where it was. The
+    /// ocean it raised stays up when the tide goes.
+    ///
+    /// `startsSound` is the switch on the page and in the tide sheet: with
+    /// nothing playing, turning the tide on starts the night, so the switch
+    /// never says "on" over silence (05 §2.1; the instrument always sounds).
+    /// Without access the request is for the Pro sheet, which only goes up
+    /// while something may be sold; nothing else happens.
+    func setBreathingEnabled(_ enabled: Bool, startsSound: Bool = false) {
         if enabled, !breathingIsIncluded {
             offerPro()
             return
@@ -1091,20 +1093,20 @@ final class MixerModel: ObservableObject {
             if !soundingLayers.contains(.ocean), soundingLayers.count >= Self.maxSimultaneousLayers {
                 showBreathingNote(String(localized: "capas.tope"))
             } else {
-                oceanBeforeTide = levels[.ocean] ?? 0
                 writeLevel(.ocean, Self.tideOceanLevel)
                 showBreathingNote(String(
                     format: String(localized: "marea.oceano.subido"),
                     Int64((Self.tideOceanLevel * 100).rounded())
                 ))
             }
-        } else if !enabled, let previous = oceanBeforeTide,
-                  abs((levels[.ocean] ?? 0) - Self.tideOceanLevel) < 0.001 {
-            oceanBeforeTide = nil
-            writeLevel(.ocean, previous)
         }
         // Small Hours has its own tide: the switch is armed for the mix.
-        guard isPlaying, !isSmallHours else { return }
+        guard !isSmallHours else { return }
+        guard isPlaying else {
+            // Play begins the guide with the bed.
+            if enabled, startsSound { play() }
+            return
+        }
         if enabled {
             breathing.begin()
         } else {
@@ -1137,7 +1139,7 @@ final class MixerModel: ObservableObject {
     }
 
     /// Level change that keeps the loaded mix's identity (used by the tide's
-    /// ocean raise and its undo).
+    /// ocean raise).
     private func writeLevel(_ sound: SoundID, _ value: Float) {
         levels[sound] = min(1, max(0, value))
         persistLevels()
