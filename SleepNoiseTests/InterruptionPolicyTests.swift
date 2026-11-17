@@ -116,12 +116,20 @@ final class InterruptionPolicyTests: XCTestCase {
             Row(name: "crosses five", kind: .call, from: (4, 50, 0), to: (5, 10, 0), expected: .endSession),
             Row(name: "covers the whole morning", kind: .call, from: (4, 0, 0), to: (11, 30, 0), expected: .endSession),
 
-            // A lost output never resumes from here.
+            // A lost output never resumes from here, and it is not taken for
+            // the alarm: in the morning it stays paused like at night, so the
+            // route policy can offer the speaker. Twenty minutes end it.
             Row(name: "AirPods out at two", kind: .routeDisconnected, from: (2, 0, 0), to: (2, 1, 0), expected: .stayPaused),
             Row(name: "AirPods out for half an hour", kind: .routeDisconnected, from: (2, 0, 0), to: (2, 30, 0),
                 expected: .endSession),
             Row(name: "AirPods out in the morning", kind: .routeDisconnected, from: (6, 30, 0), to: (6, 31, 0),
+                expected: .stayPaused),
+            Row(name: "AirPods run out at five", kind: .routeDisconnected, from: (4, 58, 0), to: (5, 10, 0),
+                expected: .stayPaused),
+            Row(name: "AirPods out for twenty minutes of the morning", kind: .routeDisconnected, from: (6, 30, 0), to: (6, 50, 0),
                 expected: .endSession),
+            Row(name: "07:00 night, AirPods out at 06:30", kind: .routeDisconnected, from: (6, 30, 0), to: (6, 31, 0),
+                fixedEnd: (7, 0), expected: .stayPaused),
 
             // A night that was already paused is left alone.
             Row(name: "paused before, at three", kind: .call, from: (3, 0, 0), to: (3, 5, 0), wasPlaying: false,
@@ -165,7 +173,8 @@ final class InterruptionPolicyTests: XCTestCase {
     }
 
     /// Whatever the kind, the hour or the length: inside the window nothing
-    /// resumes, and a lost output or a night that was paused never does.
+    /// resumes, and a lost output or a night that was paused never does. A
+    /// lost output is the one kind the window does not end: only time does.
     func testNothingResumesInTheMorningAndALostOutputNeverDoes() throws {
         let madrid = try calendar()
         let midnight = try at(0, 0, in: madrid)
@@ -187,6 +196,9 @@ final class InterruptionPolicyTests: XCTestCase {
                         }
                         if !wasPlaying {
                             XCTAssertEqual(outcome, .stayPaused, label)
+                        } else if kind == .routeDisconnected {
+                            let over = SessionPause.isOver(pausedAt: began, now: ended)
+                            XCTAssertEqual(outcome, over ? .endSession : .stayPaused, label)
                         } else if morning {
                             XCTAssertEqual(outcome, .endSession, label)
                         } else if kind == .call {
@@ -315,5 +327,98 @@ final class InterruptionPolicyTests: XCTestCase {
 
         tracker.note(.call)
         XCTAssertNil(tracker.kind, "nothing to note with nothing open")
+    }
+
+    /// The output going away under the alarm, or during a morning call, is
+    /// still an interruption that may have been the alarm: the night ends.
+    /// An interruption that is the lost output itself does not.
+    func testALostOutputDuringAnotherInterruptionStillCountsTheMorning() throws {
+        let madrid = try calendar()
+        var clock = try at(6, 45, in: madrid)
+        var tracker = InterruptionTracker(calendar: madrid, now: { clock })
+
+        tracker.began(.system, wasPlaying: true)
+        tracker.note(.routeDisconnected)
+        XCTAssertEqual(tracker.kind, .routeDisconnected)
+        clock = try at(6, 47, in: madrid)
+        XCTAssertEqual(tracker.ended(), .endSession)
+
+        // The flag does not outlive its interruption.
+        clock = try at(6, 50, in: madrid)
+        tracker.began(.routeDisconnected, wasPlaying: true)
+        tracker.note(.routeDisconnected)
+        clock = try at(6, 52, in: madrid)
+        XCTAssertEqual(tracker.ended(), .stayPaused)
+
+        // Outside the window it stays paused either way.
+        clock = try at(2, 0, in: madrid)
+        tracker.began(.call, wasPlaying: true)
+        tracker.note(.routeDisconnected)
+        clock = try at(2, 5, in: madrid)
+        XCTAssertEqual(tracker.ended(), .stayPaused)
+
+        let mixed = Interruption(
+            kind: .routeDisconnected, beganAt: try at(6, 45, in: madrid), endedAt: try at(6, 46, in: madrid),
+            wasPlaying: true, fixedEnd: nil, lostOutputMeanwhile: true
+        )
+        XCTAssertEqual(InterruptionPolicy.outcome(of: mixed, calendar: madrid), .endSession)
+    }
+
+    func testCancelForgetsTheOpenInterruption() throws {
+        let madrid = try calendar()
+        var clock = try at(3, 0, in: madrid)
+        var tracker = InterruptionTracker(calendar: madrid, now: { clock })
+
+        // The person stops during a call: the end of the call resumes nothing.
+        tracker.began(.call, wasPlaying: true)
+        clock = try at(3, 1, in: madrid)
+        tracker.cancel()
+        XCTAssertFalse(tracker.isOpen)
+        XCTAssertNil(tracker.kind)
+        clock = try at(3, 4, in: madrid)
+        XCTAssertEqual(tracker.ended(), .stayPaused)
+
+        // An `.ended` that never came: the person played again by hand, and
+        // the next interruption is measured from its own start, not from the
+        // one left open days before.
+        clock = try at(1, 0, day: 14, in: madrid)
+        tracker.began(.system, wasPlaying: true)
+        tracker.note(.routeDisconnected)
+        clock = try at(1, 30, day: 14, in: madrid)
+        tracker.cancel()
+        clock = try at(3, 0, in: madrid)
+        tracker.began(.system, wasPlaying: true)
+        XCTAssertEqual(tracker.beganAt, clock)
+        XCTAssertEqual(tracker.kind, .system)
+        clock = try at(3, 2, in: madrid)
+        XCTAssertEqual(tracker.ended(), resume)
+
+        // Without the cancel the old start would have ended the night.
+        clock = try at(1, 0, day: 14, in: madrid)
+        tracker.began(.system, wasPlaying: true)
+        clock = try at(3, 0, in: madrid)
+        tracker.began(.system, wasPlaying: true)
+        clock = try at(3, 2, in: madrid)
+        XCTAssertEqual(tracker.ended(), .endSession)
+
+        tracker.cancel()
+        XCTAssertFalse(tracker.isOpen, "cancelling with nothing open changes nothing")
+    }
+
+    func testANightPausedForTwentyMinutesIsOver() {
+        let pausedAt = Date(timeIntervalSinceReferenceDate: 785_000_000)
+        let cases: [(TimeInterval, Bool)] = [
+            (0, false), (60, false), (1_199.9, false), (1_200, true), (7_200, true),
+            // The clock was set back meanwhile.
+            (-3_600, false),
+        ]
+        for (elapsed, expected) in cases {
+            XCTAssertEqual(
+                SessionPause.isOver(pausedAt: pausedAt, now: pausedAt.addingTimeInterval(elapsed)), expected, "\(elapsed) s"
+            )
+        }
+        XCTAssertEqual(SessionPause.longest, 20 * 60)
+        XCTAssertEqual(InterruptionPolicy.longestPause, SessionPause.longest)
+        XCTAssertEqual(RoutePolicy.longestPause, SessionPause.longest)
     }
 }

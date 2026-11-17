@@ -18,7 +18,8 @@ final class RoutePolicyTests: XCTestCase {
         current: OutputRoute,
         lost: TimeInterval? = nil,
         active: Bool = true,
-        master: Float = 0.8
+        master: Float = 0.8,
+        held: Bool = false
     ) -> RouteState {
         RouteState(
             isPlaying: playing,
@@ -26,7 +27,8 @@ final class RoutePolicyTests: XCTestCase {
             currentRoute: current,
             lostOutputAt: lost.map(ago),
             appIsActive: active,
-            master: master
+            master: master,
+            heldByInterruption: held
         )
     }
 
@@ -43,6 +45,14 @@ final class RoutePolicyTests: XCTestCase {
              state(playing: true, session: airPods, current: kitchen),
              .pause(fadeOut: 0.04, speakerOfferUntil: nil)),
             ("an output leaves a paused night", .outputLost, state(session: airPods, current: speaker), .none),
+            // AirPods that run out during a call: nothing is playing, but
+            // the night was, so it is a lost output like any other.
+            ("AirPods out during a call", .outputLost, state(session: airPods, current: speaker, held: true),
+             .pause(fadeOut: 0.04, speakerOfferUntil: offer)),
+            ("AirPods back during the call", .outputAvailable,
+             state(session: airPods, current: airPods, lost: 30, held: true), .none),
+            ("a touch during the call", .resumeRequested, state(session: airPods, current: speaker, lost: 30, held: true),
+             .resume(fadeIn: 0.8, master: 0.4)),
 
             // An output appears: it resumes unasked only on the same output,
             // with the app in front, within twenty minutes, at full level.
@@ -83,6 +93,19 @@ final class RoutePolicyTests: XCTestCase {
             ("from AirPods to another speaker", .resumeRequested, state(session: airPods, current: kitchen),
              .resume(fadeIn: 0.8, master: 0.8)),
             ("a touch while playing", .resumeRequested, state(playing: true, session: airPods, current: airPods), .none),
+
+            // Twenty minutes after the output went away the night is over:
+            // a touch starts a new one, under the same cap.
+            ("on speaker after 19:59", .resumeRequested, state(session: airPods, current: speaker, lost: 1_199),
+             .resume(fadeIn: 0.8, master: 0.4)),
+            ("on speaker after 20:00", .resumeRequested, state(session: airPods, current: speaker, lost: 1_200),
+             .startNewSession(fadeIn: 0.8, master: 0.4)),
+            ("on speaker two hours later", .resumeRequested, state(session: airPods, current: speaker, lost: 7_200),
+             .startNewSession(fadeIn: 0.8, master: 0.4)),
+            ("AirPods back in two hours later, then a touch", .resumeRequested,
+             state(session: airPods, current: airPods, lost: 7_200), .startNewSession(fadeIn: 0.8, master: 0.8)),
+            ("paused by hand long ago", .resumeRequested, state(session: speaker, current: speaker),
+             .resume(fadeIn: 0.8, master: 0.8)),
         ]
         for (name, event, state, expected) in rows {
             XCTAssertEqual(RoutePolicy.action(for: event, state: state, now: now), expected, name)
@@ -91,7 +114,7 @@ final class RoutePolicyTests: XCTestCase {
 
     /// Over every combination: the night never comes back by itself on the
     /// iPhone's speaker, and a resume never plays louder than the master.
-    func testItNeverResumesByItselfOnTheSpeaker() {
+    func testItNeverResumesByItselfOnTheSpeaker() throws {
         let routes = [speaker, airPods, kitchen]
         var checked = 0
         for event in RouteEvent.allCases {
@@ -101,24 +124,41 @@ final class RoutePolicyTests: XCTestCase {
                         for lost in [nil, 5.0, 59, 61, 1_199, 1_200, 7_200] as [TimeInterval?] {
                             for active in [true, false] {
                                 for master in [0.1, 0.4, 0.41, 1] as [Float] {
-                                    let state = self.state(
-                                        playing: playing, session: session, current: current,
-                                        lost: lost, active: active, master: master
-                                    )
-                                    let action = RoutePolicy.action(for: event, state: state, now: now)
-                                    checked += 1
-                                    guard case .resume(_, let level) = action else { continue }
-                                    let label = "\(event) \(state)"
-                                    XCTAssertLessThanOrEqual(level, master, label)
-                                    XCTAssertFalse(playing, label)
-                                    if event != .resumeRequested {
-                                        XCTAssertNotEqual(current, speaker, label)
-                                        XCTAssertEqual(current, session, label)
-                                        XCTAssertTrue(active, label)
-                                    } else if current == speaker, session != speaker {
-                                        XCTAssertLessThanOrEqual(level, RoutePolicy.speakerMasterCap, label)
-                                    } else {
-                                        XCTAssertEqual(level, master, label)
+                                    for held in [false, true] {
+                                        let state = self.state(
+                                            playing: playing, session: session, current: current,
+                                            lost: lost, active: active, master: master, held: held
+                                        )
+                                        let action = RoutePolicy.action(for: event, state: state, now: now)
+                                        checked += 1
+                                        let label = "\(event) \(state)"
+                                        let level: Float
+                                        switch action {
+                                        case .resume(_, let played):
+                                            level = played
+                                            if event == .resumeRequested, let lost {
+                                                XCTAssertLessThan(lost, RoutePolicy.longestPause, label)
+                                            }
+                                        case .startNewSession(_, let played):
+                                            level = played
+                                            // Only the person starts a new night.
+                                            XCTAssertEqual(event, .resumeRequested, label)
+                                            XCTAssertGreaterThanOrEqual(try XCTUnwrap(lost), RoutePolicy.longestPause, label)
+                                        case .none, .pause, .endSession:
+                                            continue
+                                        }
+                                        XCTAssertLessThanOrEqual(level, master, label)
+                                        XCTAssertFalse(playing, label)
+                                        if event != .resumeRequested {
+                                            XCTAssertNotEqual(current, speaker, label)
+                                            XCTAssertEqual(current, session, label)
+                                            XCTAssertTrue(active, label)
+                                            XCTAssertFalse(held, label)
+                                        } else if current == speaker, session != speaker {
+                                            XCTAssertLessThanOrEqual(level, RoutePolicy.speakerMasterCap, label)
+                                        } else {
+                                            XCTAssertEqual(level, master, label)
+                                        }
                                     }
                                 }
                             }
@@ -127,7 +167,7 @@ final class RoutePolicyTests: XCTestCase {
                 }
             }
         }
-        XCTAssertEqual(checked, 3 * 2 * 3 * 3 * 7 * 2 * 4)
+        XCTAssertEqual(checked, 3 * 2 * 3 * 3 * 7 * 2 * 4 * 2)
     }
 
     func testUnaskedResumeOnlyOnTheSameOutput() {

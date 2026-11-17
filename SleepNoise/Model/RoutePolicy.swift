@@ -35,6 +35,9 @@ struct RouteState: Equatable {
     var appIsActive: Bool
     /// The session's master level, 0 to 1. Never the system volume.
     var master: Float
+    /// The night was playing when an interruption that is still open began
+    /// (`InterruptionTracker`): silent now, but not paused by the person.
+    var heldByInterruption = false
 }
 
 enum RouteAction: Equatable {
@@ -44,6 +47,11 @@ enum RouteAction: Equatable {
     case pause(fadeOut: TimeInterval, speakerOfferUntil: Date?)
     /// Play again on the current output with this master level.
     case resume(fadeIn: TimeInterval, master: Float)
+    /// The person asked to play a night that was paused too long. That night
+    /// is over, as with `endSession`, and a new one starts on the current
+    /// output at this master level: the trial is evaluated and the timer
+    /// starts again.
+    case startNewSession(fadeIn: TimeInterval, master: Float)
     /// It was paused too long: the night is over.
     case endSession
 }
@@ -58,6 +66,16 @@ enum RouteAction: Equatable {
 ///   A touch anywhere does the same at any time.
 /// - A resume the person asks for is capped to 0.4 only when the output
 ///   changed to the iPhone's speaker since the night paused.
+/// - Twenty minutes after the output went away the night is over
+///   (`SessionPause`): an output that comes back ends it, and a touch starts
+///   a new night under the same cap.
+/// - An output that goes away under an open interruption (AirPods that ran
+///   out during a call) is a lost output all the same: the offer is made and
+///   the loss is remembered. Nothing plays by itself while the interruption
+///   is open.
+///
+/// This policy only knows when the output was lost. A night the person paused
+/// by hand is measured with `SessionPause` by whoever holds that time.
 enum RoutePolicy {
     /// Catalog key of the explicit action.
     static let speakerOfferKey = "ruta.seguir_altavoz"
@@ -69,19 +87,20 @@ enum RoutePolicy {
     /// A pause command with headphones on (lock screen, the stem, the
     /// earbuds pausing by themselves) fades this long.
     static let headphonesPauseFadeOut: TimeInterval = 3
-    static let longestPause = InterruptionPolicy.longestPause
+    static let longestPause = SessionPause.longest
 
     static func action(for event: RouteEvent, state: RouteState, now: Date) -> RouteAction {
         switch event {
         case .outputLost:
-            guard state.isPlaying else { return .none }
+            guard state.isPlaying || state.heldByInterruption else { return .none }
             let offer = state.currentRoute == .builtInSpeaker ? now.addingTimeInterval(speakerOfferDuration) : nil
             return .pause(fadeOut: lostOutputFadeOut, speakerOfferUntil: offer)
 
         case .outputAvailable:
             guard !state.isPlaying, let lostAt = state.lostOutputAt else { return .none }
-            if now.timeIntervalSince(lostAt) >= longestPause { return .endSession }
+            if SessionPause.isOver(pausedAt: lostAt, now: now) { return .endSession }
             guard state.appIsActive,
+                  !state.heldByInterruption,
                   state.currentRoute != .builtInSpeaker,
                   mayResumeUnasked(pausedOn: state.sessionRoute, current: state.currentRoute)
             else { return .none }
@@ -89,10 +108,11 @@ enum RoutePolicy {
 
         case .resumeRequested:
             guard !state.isPlaying else { return .none }
-            return .resume(
-                fadeIn: resumeFadeIn,
-                master: resumeMaster(pausedOn: state.sessionRoute, current: state.currentRoute, master: state.master)
-            )
+            let master = resumeMaster(pausedOn: state.sessionRoute, current: state.currentRoute, master: state.master)
+            if let lostAt = state.lostOutputAt, SessionPause.isOver(pausedAt: lostAt, now: now) {
+                return .startNewSession(fadeIn: resumeFadeIn, master: master)
+            }
+            return .resume(fadeIn: resumeFadeIn, master: master)
         }
     }
 
