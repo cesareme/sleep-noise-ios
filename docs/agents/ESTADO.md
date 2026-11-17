@@ -17,7 +17,7 @@ Resumen: 1 en curso (S-04), 9 pendientes, 2 integrados (S-01 y S-02). PR abierto
 | S-05 | Códec de mezclas v2, mezclas de la casa, políticas de interrupción y de ruta | Cursor | Claude | 2 | `cursor/s-05-mezclas-politicas` | pendiente | - |
 | S-06 | Noche, Madrugada, Temporizador, Marea y Mezclas en Grafito (con ganancia maestra con rampa) | Claude | Cursor (CI) | 2-3 | `claude/s-06-noche-temporizador` | en curso | - |
 | S-07 | Hoja Pro, prueba de 7 noches, recibo y estados de la tienda; sandbox | Claude | Cursor (CI) | 3 | `claude/s-07-pro-prueba` | en revisión | - |
-| S-08 | Catálogo de cadenas EN y ES, test de interfaz que genera las capturas | Claude | Cursor (CI) | 3 | `claude/s-08-cadenas-capturas` | pendiente | - |
+| S-08 | Catálogo de cadenas EN y ES, test de interfaz que genera las capturas | Claude | Cursor (CI) | 3 | `claude/s-08-cadenas-capturas` | en revisión | - |
 | S-09 | Ficha de App Store EN y ES, notas para revisión, "Lo que no hay", política de privacidad | Cursor | Claude + dueño | 3 | `cursor/s-09-ficha` | pendiente | - |
 | S-10 | Icono "La regla y la marea" | Claude o diseñador | Dueño | 3 | `claude/s-10-icono` | pendiente | - |
 | S-11 | Correcciones de la beta | Claude | Cursor (CI) | 4 | `claude/s-11-beta` | pendiente | - |
@@ -491,3 +491,41 @@ Tests: 623 (suelo en `scripts/verify-min-tests.txt`).
 
 - El parpadeo del indicador y los 16 pt del pie en un iPhone SE real (solo simulador de iOS 26.5).
 - Que la columna no se desplace nada en 393 y 390 pt: se deduce de las medidas (cabe con 17,6 pt de sobra), no se arrastró.
+
+## Lo que S-08 lleva hecho (17-11-2026)
+
+Rama `claude/s-08-cadenas-capturas`, apilada sobre S-07.
+
+### Hecho
+
+- **Catálogo auditado por test** (`CatalogAuditTests`, sobre los dos `.xcstrings` y los fuentes Swift): toda clave en inglés y español y en ningún idioma más, todo valor en estado traducido, mismos especificadores de formato en los dos idiomas, parámetros de las frases de Siri iguales a los de su clave, plural donde una cifra cuenta minutos o noches, ninguna clave huérfana, ninguna clave leída que no exista, ningún texto de interfaz escrito en Swift fuera de `#if DEBUG` y de los `#Preview`, y nada del reparto antiguo. La auditoría no encontró claves huérfanas ni literales a mano: el catálogo ya estaba completo. Un cambio: `ax.la.madrugada` pasa a plural, como las demás cadenas habladas con minutos.
+- **Lint de copy** (`CopyLintTests`): las dos listas negras de la guía 10 (§0.4 y §0.5) enteras, por idioma y sobre valores; cifras de precio, porcentajes, recuentos de texturas, exclamaciones, emojis, interrogaciones fuera de sus dos claves y dígitos escritos a mano (solo "7 noches", "+15 min" y el singular "1 noche"). Trece falsos positivos declarados uno a uno, cada uno atado a su clave, su idioma y su frase; uno declarado que deje de encontrarse hace fallar el test. Los titulares de las capturas (`docs/store/ficha-*.md`) pasan por el mismo lint.
+- **La contradicción de "Until I sleep" está cerrada** en la guía 10 (§0.2 y §0.5): el nombre del modo es "Until I sleep" (§5e.6, C15, reconciliación §3) y lo vetado es la forma larga anterior, "Until I fall asleep", junto con "Sleep timer". El sinónimo de Siri `atajo.modo.dormirme.sinonimo` ("until I fall asleep") queda como falso positivo declarado: Siri lo entiende y nunca se ve.
+- **Capturas de tienda**: `scripts/screenshots.sh` y `scripts/screenshots/ShotComposer.swift` (notas en `scripts/screenshots/README.md`). Doce PNG de 1320 × 2868 px en `.build/store-shots/<idioma>/`, con el titular de la ficha compuesto sobre el lienzo de 11 §2.2, más la pantalla sola en `raw/`. Estados nuevos: `storePlaying`, `storeLayers`, `storeTide`, `storeNight`; `-storeShot` oculta la barra de estado y el indicador de inicio. Las doce se miraron una a una en ES y EN.
+- **La segunda línea de la captura 3 cabe**: "Arrastra sobre el nombre para cambiar el nivel." mide 330 pt de 376 a 17 pt. No hace falta la variante corta que 11 §9 dejaba pendiente.
+- **Firma sin datos en el repo**: `Config/Signing.xcconfig` (versionado) incluye `Config/Local.xcconfig` (ignorado por Git) si existe. Sin él, simulador y CI compilan igual.
+- **Noche en AX3 sobre 667 pt** (pendiente de S-06): el solape existía, en español y en inglés. Ahora lo que Noche enseña se dispone por encima de sus acciones y el estado baja de tamaño (hasta la mitad) antes de meterse bajo "Seguir por el altavoz"; la hora conserva el suyo. Mirado en un simulador de iPhone SE (3.ª generación) de AX1 a AX3 y en 956 pt de Large a AX5.
+- **Página en 375 pt de xL a xxxL** (pendiente de S-07): mirada en ES y EN con instalación nueva y con prueba; nada se solapa ni se corta. La fila del Temporizador queda bajo la barra y se alcanza desplazando.
+
+### Decisiones de S-08, a confirmar
+
+- **La captura 1 es de tarde (20:15), no de las 23:57 de 11 §3.2**: dentro de `NightWindow` la página no nombra la prueba, y la captura la necesita ("prueba · quedan 6 noches"). Las capturas 3 y 4 van a la misma hora.
+- **La captura 2 es una instalación nueva tal cual** (`restFree`): "Rosa y lluvia" en silencio y la Marea con "Apagada · pro". Es lo que ve quien abre la app por primera vez, y deja a la vista qué es de Pro (directriz 2.3.2).
+- **La pantalla de dentro es la de 6,9 pulgadas a 0,764**, no la de 393 pt a 0,855 de 11 §2.2: margen inferior de 30 pt y texto un 10 % más pequeño que en la maqueta. Si el dueño prefiere la proporción de 11, basta capturar en un iPhone 17 Pro y quitar la comprobación de tamaño de la pantalla sola.
+- **"Small hours" sigue con minúscula en la segunda palabra**, como fija la guía (§0.2, §5e.8), también en los títulos de los Atajos.
+- **El inglés no se ha reescrito**: los valores coinciden letra a letra con la guía 10 §5e. Las cadenas que conviene que lea un hablante nativo de en-US están en el informe de entrega del paquete y aquí abajo.
+
+### Para un hablante nativo de en-US
+
+`temporizador.dormirme` "Until I sleep" (un nativo diría "Until I'm asleep" o "Until I fall asleep"; lo fija C15) · `temporizador.manto` "Blanket" (reconciliación §6.4) · `madrugada.titulo` "Small hours" · `mezclas.vacio` "Tonight's mix is saved from its name." · `pro.prueba.empezar.nota` y `ax.prueba.empezar.pista` "no card is asked" · `pro.fallo.sin_confirmar` "Restore purchase opens it." · `pro.fallo` "Couldn't complete." · `pro.pendiente` "It will open on its own." · `capas.cero` "costs nothing" (quiere decir batería, se puede leer como precio) · `capas.cabin.detalle` "aircraft at cruise" · `capas.campfire.detalle` "embers, no crackle" · `marea.retirada` "It has receded. The sea goes on." · `marea.ritmo` "Start at 12 a minute" junto a "6 per minute" · `ax.nombre.pista` "Hold to save or rename." (Apple escribe "Touch and hold") · `ax.autor.pista` "Opens your mail." · `siri.mezcla.cual` "Which of your mixes?" · `mezcla.casa.marron_hoguera` "Brown and fire" · `lo_que_no_hay.resena` "We won't ask you to rate it." · titular de la captura 4 "The sea breathes six times a minute."
+
+### Abierto
+
+- **Noche en AX4 y AX5 sobre 667 pt con la oferta del altavoz**: el estado, ya a la mitad de tamaño, sigue tocando "Seguir por el altavoz". Pide la disposición apilada de 07 §6 (reloj arriba, Horizonte debajo), que no está construida. "Terminó a las…" con "Madrugada · 20 min" en AX5 queda muy justo.
+- **El titular y la segunda línea de la captura 1** ("Un solo pago." / "sin tarjeta") siguen pendientes del sí del dueño por la directriz 2.3.7 (`docs/store/README.md`).
+
+### Sin verificar
+
+- Las capturas en App Store Connect y en un iPhone real; el juego es-419.
+- El cambio de Noche en un iPhone SE real y con VoiceOver.
+- La firma con un equipo de verdad: sin `Config/Local.xcconfig` todo compila igual; con él no se ha archivado nada.
