@@ -27,6 +27,9 @@ struct EditorialRow: View {
     var stateWord: String?
     /// The chosen option of a list.
     var isSelected = false
+    /// The words step back to secondary ink: the option that means "none"
+    /// while it is not the chosen one ("Off").
+    var isQuiet = false
     var rule = Rule.bottom
     var action: () -> Void
 
@@ -67,7 +70,7 @@ struct EditorialRow: View {
         VStack(alignment: .leading, spacing: Grid.unit / 2) {
             Text(verbatim: title)
                 .step(.row)
-                .foregroundStyle(stateWord == nil ? Ink.primary(phase) : Ink.secondary(phase))
+                .foregroundStyle(stateWord == nil && !isQuiet ? Ink.primary(phase) : Ink.secondary(phase))
             if let subtitle {
                 Text(verbatim: subtitle)
                     .step(.secondary)

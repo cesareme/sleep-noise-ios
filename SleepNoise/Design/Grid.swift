@@ -76,6 +76,14 @@ enum Grid {
         return night ? max(height, largeTarget) : height
     }
 
+    /// How far the system toggle draws past its own frame on the trailing
+    /// side: 2 pt on iOS 26 (measured: 63 pt drawn, ending 2 pt beyond the
+    /// frame), nothing before. Taken back so its edge is the column's.
+    static var toggleOverhang: CGFloat {
+        if #available(iOS 26, *) { return 2 }
+        return 0
+    }
+
     /// Hairline thickness: one device pixel, 0.5 pt at 2x.
     static func hairline(displayScale: CGFloat) -> CGFloat {
         1 / max(1, displayScale)

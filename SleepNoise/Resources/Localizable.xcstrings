@@ -127,132 +127,6 @@
         }
       }
     },
-    "timer.title": {
-      "comment": "Timer sheet title",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sleep timer"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Temporizador"
-          }
-        }
-      }
-    },
-    "timer.off": {
-      "comment": "Clears the sleep timer",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Off"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apagado"
-          }
-        }
-      }
-    },
-    "timer.minutesFormat": {
-      "comment": "Short duration. Argument is minutes.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld min"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld min"
-          }
-        }
-      }
-    },
-    "timer.custom": {
-      "comment": "Custom timer",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Custom"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Personalizado"
-          }
-        }
-      }
-    },
-    "timer.note": {
-      "comment": "Explains the fade",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Playback fades out before the timer ends."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "El audio se desvanece antes de que termine el temporizador."
-          }
-        }
-      }
-    },
-    "timer.locked": {
-      "comment": "Shown when a timer is locked",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Timers past 60 minutes and custom lengths are part of Pro."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Los temporizadores de más de 60 minutos y a medida son parte de Pro."
-          }
-        }
-      }
-    },
-    "timer.remaining": {
-      "comment": "Label above the countdown",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Remaining"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Restante"
-          }
-        }
-      }
-    },
     "mixes.title": {
       "comment": "Mix library title",
       "extractionState": "manual",
@@ -703,108 +577,6 @@
         }
       }
     },
-    "breath.allNight": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "All night (subtle)"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Toda la noche (sutil)"
-          }
-        }
-      }
-    },
-    "breath.dissolve": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Then the waves drift back to their own rhythm. The guide ends on its own."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Después las olas vuelven a su propio ritmo. La guía termina sola."
-          }
-        }
-      }
-    },
-    "breath.duration": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Guide for"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Guiar durante"
-          }
-        }
-      }
-    },
-    "breath.rate": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Breaths per minute"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Respiraciones por minuto"
-          }
-        }
-      }
-    },
-    "breath.rate.format": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld per minute"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld por minuto"
-          }
-        }
-      }
-    },
-    "breath.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Breathing tide"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Marea respiratoria"
-          }
-        }
-      }
-    },
     "paywall.benefit.breath": {
       "extractionState": "manual",
       "localizations": {
@@ -859,40 +631,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "breath.hint": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Breathe in as the wave builds, out as it washes away. No need to watch the screen."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inhala mientras la ola sube, exhala mientras se retira. No hace falta mirar la pantalla."
-          }
-        }
-      }
-    },
-    "breath.comfort": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "If it feels like too little air, pick a faster pace or breathe at your own rhythm."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Si te falta el aire, elige un ritmo más rápido o respira a tu ritmo."
           }
         }
       }
@@ -1038,23 +776,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld días con todo, sin tarjeta"
-          }
-        }
-      }
-    },
-    "breath.allNight.note": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stays with the waves all night, more subtly. Ends with the timer or Pause."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Acompaña las olas toda la noche, más sutil. Termina con el temporizador o al pausar."
           }
         }
       }
@@ -3089,6 +2810,750 @@
           "stringUnit": {
             "state": "translated",
             "value": "Madrugada"
+          }
+        }
+      }
+    },
+    "comun.min": {
+      "comment": "Minutes, abbreviated: lengths and counts.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        }
+      }
+    },
+    "comun.min.quedan": {
+      "comment": "Timer sheet, paused: minutes left of the night.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min left"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "quedan %lld min"
+          }
+        }
+      }
+    },
+    "comun.mas15": {
+      "comment": "Action: the night ends fifteen minutes later.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+15 min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+15 min"
+          }
+        }
+      }
+    },
+    "temporizador.dormirme": {
+      "comment": "Timer mode: a length with a fade at the end.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Until I sleep"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hasta dormirme"
+          }
+        }
+      }
+    },
+    "temporizador.dormirme.detalle": {
+      "comment": "Subtitle of \"Until I sleep\": its length.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min · fades out at the end"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min · se funde al final"
+          }
+        }
+      }
+    },
+    "temporizador.manto": {
+      "comment": "Timer mode: it sounds until an hour of the clock.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blanket"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manto"
+          }
+        }
+      }
+    },
+    "temporizador.manto.detalle": {
+      "comment": "Subtitle of \"Blanket\": its hour, and the minutes after which the level eases down.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "until %1$@ · eases down after %2$lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hasta las %1$@ · baja un poco a los %2$lld min"
+          }
+        }
+      }
+    },
+    "temporizador.duracion": {
+      "comment": "Timer sheet: row of the wheel of lengths.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Length"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duración"
+          }
+        }
+      }
+    },
+    "temporizador.hora": {
+      "comment": "Timer sheet: row of the time picker of the blanket.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hora"
+          }
+        }
+      }
+    },
+    "temporizador.estado.manto": {
+      "comment": "Setting of the timer row: a blanket and its hour.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blanket · until %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manto · hasta las %@"
+          }
+        }
+      }
+    },
+    "temporizador.nota": {
+      "comment": "Note at the foot of the timer sheet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The sound fades; your alarm is never touched."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El sonido se funde; tu alarma no se toca."
+          }
+        }
+      }
+    },
+    "noche.estado.funde": {
+      "comment": "When the night ends, as an hour.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fades at %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se funde a las %@"
+          }
+        }
+      }
+    },
+    "noche.estado.fundiendo": {
+      "comment": "The final fade is under way: whole minutes left.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fading · %lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fundiendo · %lld min"
+          }
+        }
+      }
+    },
+    "pagina.estado.sonando.hasta": {
+      "comment": "State line: playing under a blanket, until its hour.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playing · until %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonando · hasta las %@"
+          }
+        }
+      }
+    },
+    "ax.temporizador.valor": {
+      "comment": "VoiceOver value of the timer row while it counts: mode and minutes left.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$lld minutes left"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, quedan %2$lld minutos"
+          }
+        }
+      }
+    },
+    "ax.duracion.pista": {
+      "comment": "VoiceOver hint of the wheel of lengths.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe up or down."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desliza arriba o abajo."
+          }
+        }
+      }
+    },
+    "ax.mas15": {
+      "comment": "VoiceOver label of \"+15 min\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fifteen more minutes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quince minutos más"
+          }
+        }
+      }
+    },
+    "ax.anuncio.quedan": {
+      "comment": "VoiceOver announcement after \"+15 min\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld minute left"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld minutes left"
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Queda %lld minuto"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Quedan %lld minutos"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ax.anuncio.hasta": {
+      "comment": "VoiceOver announcement after \"+15 min\" under a blanket.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Until %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hasta las %@"
+          }
+        }
+      }
+    },
+    "marea.instruccion": {
+      "comment": "Tide sheet: the one sentence there is to know.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breathe in as the wave rises, out as it pulls back. No need to watch the screen."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inhala mientras la ola sube, exhala mientras se retira. No hace falta mirar la pantalla."
+          }
+        }
+      }
+    },
+    "marea.fase.inhala": {
+      "comment": "Tide sheet: the water is rising.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "breathe in"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "inhala"
+          }
+        }
+      }
+    },
+    "marea.fase.exhala": {
+      "comment": "Tide sheet: the water is falling.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "breathe out"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "exhala"
+          }
+        }
+      }
+    },
+    "marea.estado.pausa": {
+      "comment": "State word of the tide while the night is paused.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "paused"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en pausa"
+          }
+        }
+      }
+    },
+    "marea.estado.apagada": {
+      "comment": "Spoken state of the water line while the tide is off.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "off"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "apagada"
+          }
+        }
+      }
+    },
+    "marea.retira.hora": {
+      "comment": "Tide sheet: when the guide lets go, as an hour.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recedes at %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se retira a las %@"
+          }
+        }
+      }
+    },
+    "marea.retirada": {
+      "comment": "Tide sheet: note for ten seconds after the guide ended by itself.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It has receded. The sea goes on."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se ha retirado. El mar sigue."
+          }
+        }
+      }
+    },
+    "marea.toggle": {
+      "comment": "Tide sheet: row of the switch, and label of the water line.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tide"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marea"
+          }
+        }
+      }
+    },
+    "marea.descenso": {
+      "comment": "Tide sheet: the ritual. The guide starts fast and comes down to the pace.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descent"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descenso"
+          }
+        }
+      }
+    },
+    "marea.ritmo": {
+      "comment": "Subtitle of \"Descent\": the pace it starts at.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start at %lld a minute"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empezar a %lld por minuto"
+          }
+        }
+      }
+    },
+    "marea.ritmo.fila": {
+      "comment": "Tide sheet: row of the pace.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pace"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ritmo"
+          }
+        }
+      }
+    },
+    "marea.ritmo.tranquilo": {
+      "comment": "Pace option with a name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calm · %lld per minute"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tranquilo · %lld por minuto"
+          }
+        }
+      }
+    },
+    "marea.ritmo.suave": {
+      "comment": "Pace option with a name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gentle · %lld per minute"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suave · %lld por minuto"
+          }
+        }
+      }
+    },
+    "marea.ritmo.tranquilo.corto": {
+      "comment": "Value of the pace row.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calm · %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tranquilo · %lld"
+          }
+        }
+      }
+    },
+    "marea.ritmo.suave.corto": {
+      "comment": "Value of the pace row.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gentle · %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suave · %lld"
+          }
+        }
+      }
+    },
+    "marea.ritmo.exacto": {
+      "comment": "A pace without a name; also how VoiceOver says any pace.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld per minute"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld por minuto"
+          }
+        }
+      }
+    },
+    "marea.retira": {
+      "comment": "Tide sheet: row of the length of the guide.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recedes after"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se retira a los"
+          }
+        }
+      }
+    },
+    "marea.retira.valor": {
+      "comment": "Length of the guide, in minutes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        }
+      }
+    },
+    "ax.agua.valor": {
+      "comment": "VoiceOver value of the water line while it guides: phase, pace, minutes until it recedes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$lld per minute, recedes in %3$lld minutes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$lld por minuto, se retira en %3$lld minutos"
+          }
+        }
+      }
+    },
+    "ax.agua.pista": {
+      "comment": "VoiceOver hint of the water line.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe up or down to change the pace."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desliza arriba o abajo para cambiar el ritmo."
+          }
+        }
+      }
+    },
+    "ax.marea.pista": {
+      "comment": "VoiceOver hint of the tide switch with access while nothing plays.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap to turn it on; the sound starts."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca dos veces para encenderla; el sonido arranca."
           }
         }
       }

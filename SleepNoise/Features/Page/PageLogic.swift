@@ -82,6 +82,8 @@ enum PageStatus: Equatable {
     case playing
     /// Playing with the sleep timer counting: when it ends.
     case playingFadesAt(Date)
+    /// Playing under a blanket: the hour it sounds until.
+    case playingUntil(Date)
     /// The final fade of the timer is running: whole minutes left.
     case fading(minutes: Int)
     /// Playing without the Pro layers of the mix, loudest first.
@@ -103,6 +105,8 @@ enum PageStatus: Equatable {
         /// Starts that failed in a row. Zero when the last one worked.
         var startFailures = 0
         var timerEndsAt: Date?
+        /// The timer is a blanket: it ends at an hour the person chose.
+        var timerEndsAtAnHour = false
         var timerIsFading = false
         var timerRemaining: TimeInterval?
         /// Pro layers above zero that do not sound, loudest first.
@@ -126,7 +130,9 @@ enum PageStatus: Equatable {
                     percent: Int((MixerModel.fallbackLevel * 100).rounded())
                 )
             }
-            if let end = input.timerEndsAt { return .playingFadesAt(end) }
+            if let end = input.timerEndsAt {
+                return input.timerEndsAtAnHour ? .playingUntil(end) : .playingFadesAt(end)
+            }
             if !input.omitted.isEmpty { return .playingWithout(input.omitted) }
             return .playing
         }
@@ -164,6 +170,8 @@ enum PageStatus: Equatable {
             return localized("pagina.estado.sonando")
         case .playingFadesAt(let date):
             return String(format: localized("pagina.estado.sonando.funde"), time(date))
+        case .playingUntil(let date):
+            return String(format: localized("pagina.estado.sonando.hasta"), time(date))
         case .fading(let minutes):
             return String(format: localized("pagina.estado.fundiendo"), locale: locale, Int64(minutes))
         case .playingWithout(let sounds):

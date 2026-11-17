@@ -43,6 +43,63 @@ enum PageDebugState: String, CaseIterable {
     case tide
     /// The night page with the tide on.
     case nightTide
+
+    // The timer sheet over the page.
+    /// First use, nothing playing: "Until I sleep", 45 minutes.
+    case timerRest
+    /// "Until I sleep" counting.
+    case timerAsleep
+    /// A blanket until seven.
+    case timerBlanket
+    /// Inside the final fade.
+    case timerFading
+    /// Paused with time left.
+    case timerPaused
+    /// The wheel of lengths open.
+    case timerLength
+    /// The time picker of the blanket open.
+    case timerHour
+    /// Opened from the night page: one ink.
+    case timerNight
+
+    // The tide sheet over the page.
+    /// Off, with access.
+    case tideRest
+    /// Guiding at the pace chosen.
+    case tideGuiding
+    /// Guiding with "Descent": it begins at twelve a minute.
+    case tideDescent
+    /// Letting go.
+    case tideDissolving
+    /// Without access: "pro" beside the title.
+    case tideLocked
+    /// Opened from the night page: one ink.
+    case tideNight
+
+    var opensTimer: Bool {
+        switch self {
+        case .timerRest, .timerAsleep, .timerBlanket, .timerFading, .timerPaused, .timerLength,
+             .timerHour, .timerNight:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var opensTide: Bool {
+        switch self {
+        case .tideRest, .tideGuiding, .tideDescent, .tideDissolving, .tideLocked, .tideNight: return true
+        default: return false
+        }
+    }
+
+    /// Staged in the small hours, on the night page.
+    var isNight: Bool {
+        switch self {
+        case .night, .nightLayers, .nightTide, .timerNight, .tideNight: return true
+        default: return false
+        }
+    }
 }
 
 enum PageArguments {
@@ -62,6 +119,20 @@ enum PageArguments {
         case .layers, .layersSix, .layersCap, .layersEnd, .nightLayers: return true
         default: return false
         }
+    }
+
+    /// The sheet a staged launch opens over the page.
+    static var initialSheet: PageSheet? {
+        guard let state else { return nil }
+        if opensLayers { return .layers }
+        if state.opensTimer { return .timer }
+        if state.opensTide { return .tide }
+        return nil
+    }
+
+    /// The timer sheet opens with the control of its mode unfolded.
+    static var opensTimerControl: Bool {
+        state == .timerLength || state == .timerHour
     }
 
     /// Layers opens at the end of its content.
@@ -104,15 +175,22 @@ struct DebugDynamicType: ViewModifier {
 enum PageStage {
     static let suiteName = "sleepnoise.debug.page"
 
+    /// The clock a staged launch runs on. It stands still unless a state
+    /// moves it (to land inside the final fade of the timer).
+    final class Clock: @unchecked Sendable {
+        var date = Date()
+    }
+
+    private static let stageClock = Clock()
+
     /// Midday on a fixed date, or 02:14 the next night, local time.
     static func clock(for state: PageDebugState) -> Date {
         var components = DateComponents()
         components.year = 2026
         components.month = 11
         components.day = 17
-        let isNight = state == .night || state == .nightLayers || state == .nightTide
-        components.hour = isNight ? 2 : 12
-        components.minute = isNight ? 14 : 0
+        components.hour = state.isNight ? 2 : 12
+        components.minute = state.isNight ? 14 : 0
         return Calendar.current.date(from: components) ?? Date()
     }
 
@@ -120,18 +198,37 @@ enum PageStage {
         let defaults = UserDefaults(suiteName: suiteName) ?? .standard
         defaults.removePersistentDomain(forName: suiteName)
         let purchases = PurchaseManager(defaults: defaults)
-        if state == .layersSix || state == .layersEnd {
+        if state == .layersSix || state == .layersEnd || state == .tideLocked {
             // The trial ran out long ago and nothing was bought.
             let start = Date().addingTimeInterval(-30 * 86_400)
             purchases.startTrialIfNeeded(now: start)
             purchases.refreshAccess(now: start.addingTimeInterval(8 * 86_400), canDowngrade: true)
         }
-        let pinned = clock(for: state)
-        let model = MixerModel(purchases: purchases, defaults: defaults, now: { pinned })
+        let clock = stageClock
+        clock.date = Self.clock(for: state)
+        let model = MixerModel(purchases: purchases, defaults: defaults, now: { clock.date })
 
         switch state {
-        case .rest, .playingTwo, .layers, .error, .error2, .error3, .largeType:
+        case .rest, .playingTwo, .layers, .error, .error2, .error3, .largeType,
+             .timerRest, .tideRest, .tideLocked:
             break
+        case .timerAsleep, .timerFading, .timerPaused, .timerLength:
+            model.chooseTimer(.untilAsleep(TimerChoice.defaultMinutes))
+        case .timerBlanket, .timerHour:
+            model.chooseTimer(.blanket(hour: TimerChoice.defaultEndHour))
+        case .timerNight:
+            model.chooseTimer(.untilAsleep(90))
+            model.beginNightSession()
+        case .tideGuiding, .tideDissolving:
+            model.setBreathingEnabled(true)
+        case .tideDescent:
+            var settings = model.breathing.settings
+            settings.descends = true
+            model.updateBreathing(settings)
+            model.setBreathingEnabled(true)
+        case .tideNight:
+            model.setBreathingEnabled(true)
+            model.beginNightSession()
         case .playingFive:
             setLevels(model, [.rain: 0.45, .wind: 0.25, .ocean: 0.5, .pink: 0.3, .brown: 0.2])
         case .night:
@@ -173,8 +270,21 @@ enum PageStage {
     static func didAppear(_ model: MixerModel) {
         guard let state = PageArguments.state else { return }
         switch state {
-        case .rest, .layersSix, .layersEnd:
+        case .rest, .layersSix, .layersEnd, .timerRest, .timerHour, .timerLength, .tideRest, .tideLocked:
             break
+        case .timerFading:
+            if !model.isPlaying { model.play() }
+            // Eight minutes from the end: the final fade is under way.
+            stageClock.date.addTimeInterval(TimeInterval((TimerChoice.defaultMinutes - 8) * 60))
+            model.timer.tick()
+        case .timerPaused:
+            if !model.isPlaying { model.play() }
+            stageClock.date.addTimeInterval(7 * 60)
+            model.timer.tick()
+            model.pause()
+        case .tideDissolving:
+            if !model.isPlaying { model.play() }
+            model.breathing.release(over: 10 * 60)
         case .error:
             model.debugFailStart()
         case .error2:
@@ -182,7 +292,8 @@ enum PageStage {
         case .error3:
             for _ in 0..<3 { model.debugFailStart() }
         case .playingTwo, .playingFive, .night, .timer, .layers, .layersCap, .largeType,
-             .nightLayers, .tide, .nightTide:
+             .nightLayers, .tide, .nightTide, .timerAsleep, .timerBlanket, .timerNight,
+             .tideGuiding, .tideDescent, .tideNight:
             if !model.isPlaying { model.play() }
         }
     }

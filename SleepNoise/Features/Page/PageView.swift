@@ -40,7 +40,7 @@ struct PageView: View {
         self.purchases = purchases
         _rows = State(initialValue: PageLayers.rows(model.levels, capacity: PageLayers.fullCapacity))
         #if DEBUG
-        _sheet = State(initialValue: PageArguments.opensLayers ? .layers : nil)
+        _sheet = State(initialValue: PageArguments.initialSheet)
         #endif
     }
 
@@ -148,8 +148,8 @@ struct PageView: View {
             clock += 1
         }
         .onChange(of: model.showPaywall) { _, asked in
-            // The old sheets cannot present the Pro sheet themselves: they
-            // step aside for it.
+            // The tide sheet and the old Mixes sheet do not present the Pro
+            // sheet themselves: they step aside for it.
             if asked, let sheet, sheet != .layers { self.sheet = nil }
         }
         .sheet(item: $sheet) { which in
@@ -309,21 +309,17 @@ struct PageView: View {
             .modifier(DebugDynamicType())
             #endif
         case .timer:
-            // The whole timer is free (C03): the old sheet is asked to show
-            // every length open, so it has nothing to sell.
-            SleepTimerView(
-                timer: model.timer,
-                hasFullAccess: true,
-                onSelect: { model.selectTimer(minutes: $0) },
-                onLocked: {}
-            )
-            .tint(Palette.amber)
+            TimerSheet(model: model)
+                .environment(\.nightPhase, phase)
+                #if DEBUG
+                .modifier(DebugDynamicType())
+                #endif
         case .tide:
-            BreathingSettingsView(guide: model.breathing) { settings in
-                model.updateBreathing(settings)
-            }
-            .tint(Palette.amber)
-            .presentationDetents([.medium, .large])
+            TideSheet(model: model)
+                .environment(\.nightPhase, phase)
+                #if DEBUG
+                .modifier(DebugDynamicType())
+                #endif
         case .mixes:
             SavedMixesView(store: model.mixStore) { mix in
                 model.apply(mix)
@@ -455,6 +451,7 @@ private struct StatusLine: View {
             pauseCause: model.pauseCause,
             startFailures: model.startFailures,
             timerEndsAt: timer.endsAt,
+            timerEndsAtAnHour: timer.choice.mode == .blanket,
             timerIsFading: timer.isFading,
             timerRemaining: timer.remaining,
             omitted: MixLoad(levels: model.levels, hasFullAccess: hasFullAccess).omitted,
@@ -541,14 +538,6 @@ private struct TideRow: View {
     private var isIncluded: Bool { model.breathingIsIncluded }
     private var isOn: Bool { guide.settings.isEnabled && isIncluded }
 
-    /// How far the system toggle draws past its own frame on the trailing
-    /// side: 2 pt on iOS 26 (measured: 63 pt drawn, ending 2 pt beyond the
-    /// frame), nothing before. Taken back so its edge is the column's.
-    private static var toggleOverhang: CGFloat {
-        if #available(iOS 26, *) { return 2 }
-        return 0
-    }
-
     var body: some View {
         HStack(alignment: .top, spacing: Grid.inner) {
             Button(action: onOpen) {
@@ -571,7 +560,7 @@ private struct TideRow: View {
                 // that line.
                 .fixedSize()
                 .frame(height: nameLine)
-                .padding(.trailing, Self.toggleOverhang)
+                .padding(.trailing, Grid.toggleOverhang)
         }
         .padding(.top, Grid.unit * 3)
         .padding(.bottom, Grid.unit * 2)
@@ -585,7 +574,7 @@ private struct TideRow: View {
     private var plainToggle: some View {
         Toggle(isOn: Binding(
             get: { isOn },
-            set: { model.setBreathingEnabled($0) }
+            set: { model.setBreathingEnabled($0, startsSound: true) }
         )) {
             Text("marea.titulo")
         }
@@ -598,7 +587,11 @@ private struct TideRow: View {
     /// On the night page nothing says "requires Pro" (copy guide §3): the
     /// toggle just says it is off.
     @ViewBuilder private var toggle: some View {
-        if isIncluded || phase.isNight {
+        if isIncluded {
+            // Turning it on over silence starts the night: say so.
+            plainToggle
+                .accessibilityHint(isOn || model.isPlaying ? Text(verbatim: "") : Text("ax.marea.pista"))
+        } else if phase.isNight {
             plainToggle
         } else if canSell {
             plainToggle
@@ -620,7 +613,7 @@ private struct TideRow: View {
             StateWord(text: Localized.string("marea.estado.disolviendo"))
         } else if isOn, guide.isActive {
             StateWord(text: Localized.format(
-                "marea.estado.guiando.corto", Int64(guide.settings.breathsPerMinute)
+                "marea.estado.guiando.corto", Int64(guide.guidingRate ?? guide.settings.breathsPerMinute)
             ))
         } else {
             line(" ").accessibilityHidden(true)
@@ -634,27 +627,28 @@ private struct TideRow: View {
     }
 }
 
-/// The timer on the page: the setting, never the count. The whole timer is
-/// free, so the word "pro" never appears here. When it ends is said by the
-/// state line, as an hour.
+/// The timer on the page: the setting, never the count ("Until I sleep ·
+/// 45 min", "Blanket · until 07:00", "Off"). The whole timer is free, so the
+/// word "pro" never appears here. When it ends is said by the state line, as
+/// an hour; VoiceOver also gets the minutes left on this row.
 private struct TimerRow: View {
     @ObservedObject var timer: SleepTimerController
     var onOpen: () -> Void
 
-    private var setting: String {
-        guard let minutes = timer.selectedMinutes else {
-            return Localized.string("temporizador.apagado")
-        }
-        return Localized.format("temporizador.estado.dormirme", Int64(minutes))
-    }
+    @Environment(\.calendar) private var calendar
 
     var body: some View {
+        let input = TimerSheetText.Input(timer)
         EditorialRow(
             title: Localized.string("temporizador.titulo"),
-            value: setting,
+            value: TimerSheetText.setting(
+                timer.choice,
+                hour: TimerSheetText.blanketHour(timer.choice, on: Date(), calendar: calendar)
+            ),
             rule: .top,
             action: onOpen
         )
+        .accessibilityValue(Text(verbatim: TimerSheetText.settingSpokenValue(input) ?? ""))
         .accessibilityIdentifier("openTimer")
     }
 }

@@ -346,7 +346,7 @@ private struct GalleryRows: View {
             }
             GalleryCase(title: "editorial row · 56, hairline above (page)") {
                 EditorialRow(title: "Todas las capas", value: "y 2 más", rule: .top) {}
-                EditorialRow(title: Localized.string("timer.title"), value: "Hasta dormirme · 45 min", rule: .top) {}
+                EditorialRow(title: Localized.string("temporizador.titulo"), value: "Hasta dormirme · 45 min", rule: .top) {}
             }
             GalleryCase(title: "editorial row · 72 with subtitle, option chosen, state word") {
                 EditorialRow(title: "Mar y viento", subtitle: "océano 50 · viento 20") {}
@@ -432,10 +432,10 @@ private struct GallerySheetSample: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        GrafitoSheet(title: Localized.string("timer.title"), detents: [.medium, .large]) {
+        GrafitoSheet(title: Localized.string("temporizador.titulo"), detents: [.medium, .large]) {
             EditorialRow(title: "Hasta dormirme", value: "45 min", isSelected: false) {}
             EditorialRow(title: "45 min", isSelected: true) {}
-            EditorialRow(title: Localized.string("timer.off")) {}
+            EditorialRow(title: Localized.string("temporizador.apagado")) {}
             HairlineAction(title: Localized.string("common.save")) { dismiss() }
                 .padding(.top, Grid.group)
             TextAction(title: "Ahora no") { dismiss() }

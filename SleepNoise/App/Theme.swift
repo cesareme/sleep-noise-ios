@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Colours of the sheets that are not rebuilt in Grafito yet (timer, tide,
-/// mixes and Pro). The page and the Layers sheet use `Ink`.
+/// Colours of the sheets that are not rebuilt in Grafito yet (mixes and
+/// Pro). Everything else uses `Ink`.
 enum Palette {
     static let background = Color(red: 0.055, green: 0.067, blue: 0.078)
     static let card = Color(red: 0.122, green: 0.137, blue: 0.153)

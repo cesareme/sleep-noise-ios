@@ -94,10 +94,10 @@ final class TimerFormatTests: XCTestCase {
         XCTAssertEqual(TimerMath.fadeDuration(totalSeconds: -5), 0)
     }
 
-    func testClockFormat() {
-        XCTAssertEqual(TimeFormat.clock(0), "0:00")
-        XCTAssertEqual(TimeFormat.clock(65), "1:05")
-        XCTAssertEqual(TimeFormat.clock(3_661), "1:01:01")
+    /// The timer is never shown in seconds: a length is whole minutes.
+    func testMinutesFormat() {
+        XCTAssertEqual(TimeFormat.minutes(45), Localized.format("comun.min", Int64(45)))
+        XCTAssertTrue(TimeFormat.minutes(360).contains("360"))
     }
 }
 
