@@ -42,6 +42,7 @@ De la revisión de S-03 (17-11-2026). S-03 solo podía tocar lógica pura, así 
 - **Temporizador a medida (S-06).** `SleepNoise/Features/Timer/SleepTimerView.swift`, fila "Custom": se bifurca por `hasFullAccess` sin consultar `AccessPolicy`. Sin acceso completo enseña un candado y la cadena `timer.locked`, y `MixerView` abre la hoja Pro al tocarla, a cualquier hora. Contradice C03: el temporizador entero es libre. Arreglo: quitar el candado y la rama `else`, y dejar el Stepper y el botón para todos. Si S-06 sustituye la vista entera, su revisión comprueba que no hereda la bifurcación.
 - **Hecho en S-06 (tarea 2).** `SleepTimerView` se borró entera, con `timer.locked` y el resto de sus cadenas. La hoja nueva (`TimerSheet`) no consulta el acceso en ningún punto y `TimerCatalogTests.testTheWordProDoesNotAppearInTheTimer` vigila que la palabra "pro" no vuelva a sus cadenas.
 - **Respuesta de Siri inalcanzable.** `IntentReply.timerNeedsPro` (`SleepNoise/Intents/SleepIntents.swift`) ya no se alcanza. Al retirarla se van también `intent.timerNeedsProFormat` y el ayudante `lengthThatNeedsPro` de `SleepNoiseTests/PolicyTests.swift`.
+- **Hecho en S-06 (tarea 4).** `IntentReply` entero, `lengthThatNeedsPro` y todas las cadenas `intent.*` y `shortcut.*` se fueron con los intents antiguos. `IntentOutcome` ya no tiene ningún caso que pida Pro.
 
 ### Cadenas del catálogo que afirman el reparto antiguo
 
@@ -88,7 +89,7 @@ De la entrega de la página y de Capas (17-11-2026). Quien abra el paquete indic
 - **"y N más"** cuenta las capas por encima de cero que no tienen fila, también las Pro que conservan nivel.
 - **Versalitas con `.smallCaps()`**, como pide 03 §3.4 y dibuja la maqueta (`all-small-caps`): las cifras y las mayúsculas bajan a la altura de la versalita ("pro · 50", "prueba · 7 días"). 04 §2.0.2 y su anexo A2 escriben `.lowercaseSmallCaps()`, que deja las cifras a altura de mayúscula; manda 03.
 - **Las notas de Capas son un solo párrafo** (`capas.nota`, salto de línea, `capas.cero`), para que el interlineado del paso 7 valga también entre las dos. VoiceOver las lee como un elemento.
-- **Play con la mezcla en silencio** (vacía o toda Pro sin acceso) sube rosa a 40 como nivel real (05 §2.12). Los intents siguen negándose a empezar una noche en silencio.
+- **Play con la mezcla en silencio** (vacía o toda Pro sin acceso) sube rosa a 40 como nivel real (05 §2.12). Desde S-06 (tarea 4) los intents y las filas de Mezclas hacen lo mismo: el instrumento siempre suena (guía 10 §4.10).
 
 ### Página nocturna (S-06)
 
@@ -109,6 +110,7 @@ De la entrega de la página y de Capas (17-11-2026). Quien abra el paquete indic
 - Línea 2: "Seguir por el altavoz", "Sonando · al 40", "En pausa · llamada", "· AirPods" y el fin de sesión a los 20 minutos en pausa dependen de cablear `RoutePolicy` e `InterruptionPolicy` (S-06).
 - **S-06 (tarea 3):** "Seguir por el altavoz" y "Sonando · al 40" existen en Noche. **La segunda línea de la página sigue sin hacer**: en la página, tras perder los auriculares, la línea de estado dice "En pausa · auriculares" y el Disco reanuda con la misma regla del 40, pero no hay botón de texto ni nota del nivel. Pide el sitio reservado de 64 pt de la cabecera (guía §2.1), que la página no tiene, y un dato nuevo en el modelo ("capado hasta el primer toque").
 - Menú del nombre: solo "Guardar como mezcla…". Renombrar y Vaciar, con Mezclas (S-06).
+- **S-06 (tarea 4):** el menú del nombre lleva "Guardar como mezcla…", "Renombrar" (si la cargada es una mezcla propia) y "Vaciar", solo de día: en la página nocturna la pulsación larga no hace nada (08 §2.2). "Guardar en «…»" no está.
 - Descomposición del Horizonte por pulsación larga, TipKit del segundo arrastre, fila Timbre (1.1) y "Enviar informe".
 - Una mezcla guardada con más de seis capas se carga entera: el tope solo impide añadir la séptima (ver "Lo que la corrección de S-04 aplaza").
 
@@ -130,10 +132,12 @@ De la revisión de la página y de Capas (17-11-2026). Lo que sigue no se arregl
 - **La identidad de la mezcla cargada no sobrevive al reinicio.** Quien carga una mezcla guardada y vuelve a abrir la app ve "Esta noche" con los niveles de su mezcla, y pierde el "· sin Océano" del título recortado. Guardar nombre base, receta e id de la mezcla de la casa junto a los niveles.
 - **Mezclas de la casa.** La hoja Mezclas solo lista las guardadas: "Mar y viento", "Marrón y hoguera" y "Pared" no se cargan desde ninguna pantalla, y "Rosa y lluvia" no se recupera tras la primera edición.
 - **Nombre automático de la mezcla** (`mezcla.nombre.auto.*`, guía §4.2). Al guardar, el campo se precarga con el nombre que la mezcla ya tiene, o con "Esta noche".
+- **Hecho en S-06 (tarea 4)** para los tres puntos anteriores: la identidad se guarda en `sleepnoise.loadedMix.v1` (origen, nombre base y receta) y se lee al arrancar; la hoja Mezclas lista las cuatro de la casa; y el campo de guardar se precarga con `MixAutoName` ("Rosa", "Rosa y lluvia", "Rosa, lluvia y viento", "Rosa y 3 más"; "Esta noche" solo con la mezcla vacía).
 - **La Marea sube el océano a 50** (`MixerModel.tideOceanLevel`) y lo vuelve a bajar si se apaga sin tocarlo. La guía dice 40 y "nunca lo vuelve a bajar". La cadena `marea.oceano.subido` lleva la cifra del modelo.
 - **Hecho en S-06 (tarea 2).** `tideOceanLevel` es 0,4 y la Marea no vuelve a bajar el océano que subió (`oceanBeforeTide` se fue).
 - **Copy heredado en las hojas antiguas**, a borrar al rehacerlas: `common.close` como botón en las cuatro (las hojas Grafito no llevan botón de cerrar), `breath.title` ("Marea respiratoria"; C15: "Marea"), `timer.title` EN ("Sleep timer"), `timer.note` ("se desvanece"), `timer.custom` ("Personalizado"), `mixes.title` ("Mezclas guardadas"). En `SleepTimerView` las ramas del candado, `timer.locked` y `onLocked` están muertas: la página pasa `hasFullAccess: true`.
 - **Hecho en S-06 (tarea 2)** para Temporizador y Marea: se borraron `timer.*` y `breath.*` enteras (`TimerCatalogTests.testTheStringsOfTheOldSheetsAreGone`). `common.close` y `mixes.title` siguen en Mezclas y en la hoja Pro.
+- **Hecho en S-06 (tarea 4)** para Mezclas: `SavedMixesView` y `Theme.swift` se borraron, con todas las cadenas `mixes.*` (`MixesCatalogTests.testTheStringsOfTheOldSheetAndShortcutsAreGone`). `common.close` solo queda en la hoja Pro, que guarda su paleta como `private` hasta S-07.
 
 ### S-07 (hoja Pro y prueba)
 
@@ -237,3 +241,36 @@ Sin hacer en esta tarea, y por qué:
 - **"Nivel bajado al 40 para el altavoz"** (nota de 4 s de 07): la guía no trae la cadena; el nivel se dice con "Sonando · al 40" solo tras el arrastre.
 - **Acceso asistido** (`UISupportsFullScreenInAssistiveAccess`), foco de teclado y atajos.
 - Sin verificar en dispositivo: VoiceOver y Control por botón sobre las dos pantallas, la entrada al bloquear (el simulador no tiene código de bloqueo), la guarda de 300 ms tras desbloquear, `isIdleTimerDisabled` cargando (en el simulador la batería es desconocida; con "Siempre" se comprobó que se pide), el arrastre con un dedo real y la línea de agua contra el oleaje.
+
+### Tarea 4 · Mezclas, Atajos y Now Playing (17-11-2026)
+
+`MixesSheet` (superficies 12 y 13) sustituye a `SavedMixesView`. La lógica es pura y está probada: `MixesList`, `MixRecipe`, `MixAutoName`, `MixReference` (`MixesLogic.swift`). Estados de depuración `-pageState mixes…` en `PageDebug.swift`.
+
+- **Mezclas** (C09, C18, C20, C23): hoja sobre `hoja`, como Capas, con la barra (el hueco de "Mezclas" vacío, el Disco y "Noche"). "tuyas": la mezcla viva como primera fila mientras es "Esta noche", y las guardadas; "de la casa": las cuatro. Cada fila es el nombre y la receta en palabras, de mayor a menor ("lluvia 55 · rosa 20"), con "· océano es Pro" al final sin acceso; "sonando ahora" en la cargada mientras suena. El toque carga y vuelve a la página: con algo sonando, la mezcla cede bajo la misma noche; en silencio arranca como un Play (08 §4.1). Recortada si lleva Pro, con su título "· sin …", y nunca hoja Pro. El temporizador y la Marea no se tocan.
+- **Guardar, renombrar, eliminar, mover**: una sola alerta del sistema con campo (`mixNaming`), desde la fila "Esta noche" o desde el nombre de la página; "Renombrar", "Subir", "Bajar" y "Eliminar" en el menú de cada fila propia y como acciones de VoiceOver; eliminar pide confirmación (`mezclas.eliminar.*`). Guardar conserva las capas Pro a su nivel (C23). Tres gratis: la cuarta dice "pro" en la fila y " · pro" en el menú, y pide la hoja Pro solo si `canSell`. En la página nocturna el toque carga y nada más. Tras guardar desde la página, "Guardada" ocupa la línea de estado 3 s.
+- **Identidad tras reinicio**: `MixerModel.loadedMix` (`.house` o `.saved`), guardada con su receta; un nivel editado la borra. La subida del océano por la Marea no cuenta como edición.
+- **Atajos** (C43, C10, C03, C05): los cinco de PLAN-SIMPLE §4.3, `PlayLastMixIntent`, `PauseIntent`, `PlayMixIntent(MixEntity)`, `SetTimerIntent(modo)` y `SmallHoursIntent`, con las frases de la guía en `AppShortcuts.xcstrings`. No dicen nada cuando funcionan; si el sonido no arranca, `siri.error`; si la mezcla ya no existe, `siri.mezcla.cual`. Ninguno abre la hoja Pro ni arranca la prueba (`play(startsTrial: false)`). `MixEntity` son las propias y las cuatro de la casa, por nombre sin mayúsculas ni acentos; tras guardar, renombrar, mover o borrar se llama a `updateAppShortcutParameters()`.
+- **Now Playing** (superficie 34): el título es el de la página (recortado si procede, "Esta noche" si no tiene nombre, "Madrugada" en Madrugada), `isLiveStream`, y Play y Pausa van por el mismo camino que Noche y Madrugada.
+
+Decisiones tomadas al construir, a confirmar:
+
+- **Mezclas es una hoja**, no una pantalla empujada sobre `negro` (08 §2.1): es lo que pedía el encargo y lo que ya es Capas.
+- **La fila "Esta noche" guarda al tocarla**, además de con pulsación larga (la guía solo dice "Mantén para guardarla"). Solo aparece mientras la mezcla viva no tiene nombre y tiene alguna capa.
+- **El campo de guardar llega precargado con el nombre automático** (guía §4.2); 08 §2.2 lo dejaba vacío. Un nombre vacío guarda con ese mismo nombre. No se evita repetir un nombre.
+- **El nombre automático lee las capas en el orden de Capas** (colores y luego camas), que da "Rosa y lluvia" y "Marrón y hoguera".
+- **Dos o más capas Pro en una receta** se dicen una a una ("· trueno es Pro · océano es Pro"): "son Pro" está pendiente en la guía.
+- **`mezcla.guardar.titulo`** ("Guardar como mezcla") y las cadenas `atajo.*` (títulos, parámetros y sinónimos de los modos) no están en la guía 10, que no da claves para ellas.
+- **`SetTimer` guarda el modo, como la hoja**, con la duración o la hora que ese modo ya tenía. Desaparece "solo por esta noche" y los 60 minutos de reserva del intent antiguo. "Apagado" no arranca el sonido; los otros dos sí. El parámetro `minutes` sigue existiendo para el editor de Atajos y nunca va en una frase.
+- **`PlaySoundIntent` (una capa sola) se retira**: no está entre los cinco de PLAN-SIMPLE.
+- **Sin descripciones de intent**: la guía no trae esos textos.
+- **Agujero hasta S-07**: con la prueba antigua, que empieza con Play, quien solo use Atajos en una instalación nueva tiene todo abierto sin que la prueba empiece. Desaparece al cablear `NightTrial`.
+- **`PageStage.setLevels`** (solo depuración) ya no dejaba la mezcla como "Esta noche" desde que un nivel escrito igual no es una edición; ahora hace una edición real primero.
+
+Sin hacer en esta tarea, y por qué:
+
+- **`openAppWhenRun` y `AudioPlaybackIntent`**: los intents de reproducción siguen abriendo la app y son `AppIntent` a secas. La guía pide `false` y `AudioPlaybackIntent` en todos; cambiarlo exige probarlo en un iPhone real.
+- **Deslizar para renombrar o eliminar y arrastrar para reordenar** (08 §4.3): piden un `List`; están el menú de la fila y las acciones de VoiceOver.
+- **"Guardar en «…»"**, la fila "Ajustes" (superficie 18) y el fundido cruzado de 1,5 s entre mezclas (cambio en el hilo de audio; hoy rige el suavizado del motor).
+- **`PlayLayer`, `ExtendTimer`, `Toggle` y `CurrentState`** (C43): fuera de los cinco de PLAN-SIMPLE.
+- **README**: sigue describiendo los atajos y el reparto antiguos; se corrige con S-07.
+- Sin verificar en dispositivo: Siri y la app Atajos (frases, entidad, sinónimos, desambiguación), la pantalla de bloqueo ("En directo", título, controles), VoiceOver sobre la hoja y la háptica de guardar. En el simulador se comprobó a mano cargar una mezcla, el menú del nombre, "Vaciar", el menú de una fila y eliminar.
