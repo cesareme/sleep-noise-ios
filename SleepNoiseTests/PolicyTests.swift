@@ -2,36 +2,66 @@ import XCTest
 @testable import SleepNoise
 
 final class AccessPolicyTests: XCTestCase {
+    /// The free tier is exactly these five (C04); everything else is Pro.
     func testFreeSounds() {
-        for sound in [SoundID.white, .pink, .brown, .rain] {
-            XCTAssertTrue(AccessPolicy.soundIsIncluded(sound, hasFullAccess: false))
-        }
-        XCTAssertFalse(AccessPolicy.soundIsIncluded(.fan, hasFullAccess: false))
-        XCTAssertFalse(AccessPolicy.soundIsIncluded(.ocean, hasFullAccess: false))
-        for sound in [SoundID.thunder, .campfire, .brook, .wind, .cabin] {
-            XCTAssertFalse(AccessPolicy.soundIsIncluded(sound, hasFullAccess: false))
-        }
+        let free = Set(SoundID.allCases.filter { AccessPolicy.soundIsIncluded($0, hasFullAccess: false) })
+        XCTAssertEqual(free, [.white, .pink, .brown, .rain, .wind])
         for sound in SoundID.allCases {
             XCTAssertTrue(AccessPolicy.soundIsIncluded(sound, hasFullAccess: true))
         }
     }
 
+    /// The free list only grows: taking one of these out is a broken promise.
+    func testFreeListOnlyGrows() {
+        XCTAssertTrue(AccessPolicy.freeSounds.isSuperset(of: [.white, .pink, .brown, .rain, .wind]))
+    }
+
+    /// The whole timer is free (C03): the gate only checks the range.
     func testTimerGate() {
-        XCTAssertTrue(AccessPolicy.timerIsIncluded(minutes: 15, hasFullAccess: false))
-        XCTAssertTrue(AccessPolicy.timerIsIncluded(minutes: 30, hasFullAccess: false))
-        XCTAssertTrue(AccessPolicy.timerIsIncluded(minutes: 60, hasFullAccess: false))
-        XCTAssertFalse(AccessPolicy.timerIsIncluded(minutes: 90, hasFullAccess: false))
-        XCTAssertFalse(AccessPolicy.timerIsIncluded(minutes: 45, hasFullAccess: false))
+        for hasFullAccess in [false, true] {
+            for minutes in [1, 15, 45, 90, 360] {
+                XCTAssertTrue(
+                    AccessPolicy.timerIsIncluded(minutes: minutes, hasFullAccess: hasFullAccess),
+                    "\(minutes) min, full access \(hasFullAccess)"
+                )
+            }
+            XCTAssertFalse(AccessPolicy.timerIsIncluded(minutes: 0, hasFullAccess: hasFullAccess))
+            XCTAssertFalse(AccessPolicy.timerIsIncluded(minutes: 361, hasFullAccess: hasFullAccess))
+        }
         XCTAssertFalse(AccessPolicy.breathingIsIncluded(hasFullAccess: false))
         XCTAssertTrue(AccessPolicy.breathingIsIncluded(hasFullAccess: true))
-        XCTAssertFalse(AccessPolicy.timerIsIncluded(minutes: 0, hasFullAccess: true))
-        XCTAssertFalse(AccessPolicy.timerIsIncluded(minutes: 361, hasFullAccess: true))
-        XCTAssertTrue(AccessPolicy.timerIsIncluded(minutes: 45, hasFullAccess: true))
-        XCTAssertTrue(AccessPolicy.timerIsIncluded(minutes: 360, hasFullAccess: true))
+    }
+
+    /// The tide is Pro, but in Small Hours it plays for everyone (C05).
+    func testTideIsOpenInSmallHours() {
+        XCTAssertTrue(AccessPolicy.breathingIsIncluded(hasFullAccess: false, inSmallHours: true))
+        XCTAssertTrue(AccessPolicy.breathingIsIncluded(hasFullAccess: true, inSmallHours: true))
+        XCTAssertFalse(AccessPolicy.breathingIsIncluded(hasFullAccess: false, inSmallHours: false))
+        XCTAssertTrue(AccessPolicy.breathingIsIncluded(hasFullAccess: true, inSmallHours: false))
+        XCTAssertFalse(AccessPolicy.breathingIsIncluded(hasFullAccess: false))
+    }
+
+    /// Small Hours plays its fixed recipe for everyone (C05): the sound of
+    /// the recipe is open there, and only that sound, and only there.
+    func testSmallHoursRecipeSoundIsOpenInSmallHours() {
+        let recipeSound = SmallHoursRecipe.standard.sound
+        XCTAssertFalse(AccessPolicy.freeSounds.contains(recipeSound), "otherwise there is no carve-out to test")
+        XCTAssertTrue(AccessPolicy.soundIsIncluded(recipeSound, hasFullAccess: false, inSmallHours: true))
+        XCTAssertFalse(AccessPolicy.soundIsIncluded(recipeSound, hasFullAccess: false, inSmallHours: false))
+        XCTAssertFalse(AccessPolicy.soundIsIncluded(recipeSound, hasFullAccess: false))
+
+        let openInSmallHours = Set(SoundID.allCases.filter {
+            AccessPolicy.soundIsIncluded($0, hasFullAccess: false, inSmallHours: true)
+        })
+        XCTAssertEqual(openInSmallHours, AccessPolicy.freeSounds.union([recipeSound]))
+        for sound in SoundID.allCases {
+            XCTAssertTrue(AccessPolicy.soundIsIncluded(sound, hasFullAccess: true, inSmallHours: true))
+            XCTAssertTrue(AccessPolicy.soundIsIncluded(sound, hasFullAccess: true, inSmallHours: false))
+        }
     }
 
     func testPresetTiersFollowTheSoundsInsideThem() {
-        let free: [SoundPreset] = [.steadyRain]
+        let free: [SoundPreset] = [.steadyRain, .nightWind]
         for preset in free {
             XCTAssertFalse(preset.requiresFullAccess, preset.rawValue)
             guard case .levels(let levels) = PresetLibrary.apply(preset, hasFullAccess: false) else {
@@ -45,7 +75,7 @@ final class AccessPolicyTests: XCTestCase {
             }
         }
 
-        let pro: [SoundPreset] = [.storm, .cabin, .campfire, .brook, .nightWind, .shore]
+        let pro: [SoundPreset] = [.storm, .cabin, .campfire, .brook, .shore]
         for preset in pro {
             XCTAssertTrue(preset.requiresFullAccess, preset.rawValue)
             XCTAssertEqual(PresetLibrary.apply(preset, hasFullAccess: false), .needsPro)
@@ -67,8 +97,11 @@ final class AccessPolicyTests: XCTestCase {
     }
 
     func testSavedMixGate() {
-        XCTAssertTrue(AccessPolicy.canSave(existingCount: 0, hasFullAccess: false))
-        XCTAssertFalse(AccessPolicy.canSave(existingCount: 1, hasFullAccess: false))
+        XCTAssertEqual(AccessPolicy.freeSavedMixLimit, 3)
+        for count in 0...2 {
+            XCTAssertTrue(AccessPolicy.canSave(existingCount: count, hasFullAccess: false), "\(count)")
+        }
+        XCTAssertFalse(AccessPolicy.canSave(existingCount: 3, hasFullAccess: false))
         XCTAssertTrue(AccessPolicy.canSave(existingCount: 40, hasFullAccess: true))
     }
 }
@@ -89,7 +122,7 @@ final class TimerFormatTests: XCTestCase {
 }
 
 final class MixStoreTests: XCTestCase {
-    func testFreeTierKeepsASingleMixAndProDoesNot() throws {
+    func testFreeTierKeepsThreeMixesAndProDoesNot() throws {
         let defaults = try makeDefaults()
         let store = MixStore(defaults: defaults)
         let first = store.save(name: "  Night  ", levels: [.pink: 0.4, .fan: 1.5], hasFullAccess: false)
@@ -100,26 +133,36 @@ final class MixStoreTests: XCTestCase {
         XCTAssertEqual(mix.value(for: .pink), 0.4, accuracy: 0.000_1)
         XCTAssertEqual(mix.value(for: .fan), 1, accuracy: 0.000_1)
 
-        XCTAssertEqual(store.save(name: "Second", levels: [.rain: 0.2], hasFullAccess: false), .needsPro)
-        XCTAssertEqual(store.mixes.count, 1)
+        for name in ["Second", "Third"] {
+            guard case .saved = store.save(name: name, levels: [.rain: 0.2], hasFullAccess: false) else {
+                return XCTFail("The free tier should save \(name)")
+            }
+        }
+        XCTAssertEqual(store.mixes.count, 3)
 
-        guard case .saved = store.save(name: "Second", levels: [.brown: -3], hasFullAccess: true) else {
+        XCTAssertEqual(store.save(name: "Fourth", levels: [.rain: 0.2], hasFullAccess: false), .needsPro)
+        XCTAssertEqual(store.mixes.count, 3)
+
+        guard case .saved = store.save(name: "Fourth", levels: [.brown: -3], hasFullAccess: true) else {
             return XCTFail("Pro should save another mix")
         }
         XCTAssertEqual(store.mixes[0].value(for: .brown), 0, accuracy: 0.000_1)
 
         let reloaded = MixStore(defaults: defaults)
-        XCTAssertEqual(reloaded.mixes.map(\.name), ["Second", "Night"])
+        XCTAssertEqual(reloaded.mixes.map(\.name), ["Fourth", "Third", "Second", "Night"])
 
+        // Back on the free tier with four stored: nothing is deleted, and
+        // saving opens again only below the limit.
         reloaded.delete(reloaded.mixes[0].id)
+        XCTAssertEqual(reloaded.save(name: "Again", levels: [.white: 0.2], hasFullAccess: false), .needsPro)
         reloaded.delete(reloaded.mixes[0].id)
-        XCTAssertTrue(reloaded.mixes.isEmpty)
+        XCTAssertEqual(reloaded.mixes.map(\.name), ["Second", "Night"])
 
         let fresh = MixStore(defaults: defaults)
         guard case .saved = fresh.save(name: "Again", levels: [.white: 0.2], hasFullAccess: false) else {
-            return XCTFail("Deleting the free mix should open the slot")
+            return XCTFail("Deleting a free mix should open a slot")
         }
-        XCTAssertEqual(fresh.mixes.count, 1)
+        XCTAssertEqual(fresh.mixes.count, 3)
     }
 
     func testEmptyNameIsRejected() throws {
@@ -208,6 +251,26 @@ final class NightAndShortcutTests: XCTestCase {
         XCTAssertEqual(model.levels, before)
         XCTAssertNil(model.activePreset)
         XCTAssertNil(model.timer.selectedMinutes)
+    }
+
+    /// The whole timer is free (C03): red if a paid length, or a cap below
+    /// the technical ceiling, comes back in the model.
+    func testFreeTierSetsAnyTimerLengthWithoutThePaywall() throws {
+        let defaults = try makeDefaults()
+        let model = try makeFreeTierModel(defaults: defaults)
+
+        XCTAssertNil(model.armTimer(minutes: 90))
+        XCTAssertEqual(model.timer.selectedMinutes, 90)
+        XCTAssertEqual(defaults.object(forKey: timerKey) as? Int, 90)
+
+        model.selectTimer(minutes: AccessPolicy.maxTimerMinutes)
+        XCTAssertEqual(model.timer.selectedMinutes, AccessPolicy.maxTimerMinutes)
+        XCTAssertEqual(defaults.object(forKey: timerKey) as? Int, AccessPolicy.maxTimerMinutes)
+
+        model.clampTimerToEntitlement()
+        XCTAssertEqual(model.timer.selectedMinutes, AccessPolicy.maxTimerMinutes)
+        XCTAssertFalse(model.showPaywall)
+        XCTAssertFalse(model.isPlaying)
     }
 
     func testShortcutsReadTheTrialClockBeforeDeciding() throws {
