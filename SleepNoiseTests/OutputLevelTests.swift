@@ -1,3 +1,4 @@
+import AVFoundation
 import XCTest
 @testable import SleepNoise
 
@@ -159,24 +160,165 @@ final class OutputLevelTests: XCTestCase {
         XCTAssertEqual(cell.meanSquare, 0)
     }
 
-    func testCellSurvivesAWriterAndAReaderAtOnce() {
-        // The render thread stores while the main thread loads: every value
-        // read must be one that was written, never a mix of two.
+    func testCellConcurrencySmoke() {
+        // A smoke test, not a proof of atomicity: one aligned 32-bit word
+        // does not tear on these machines whatever the access. It keeps a
+        // writer and a reader on the cell at the same time, which is what
+        // the thread sanitizer needs to see, and checks that the reader only
+        // ever gets a value that was stored.
         let cell = OutputLevelCell()
         let storage = cell.storage
-        let writer = DispatchQueue(label: "level.writer")
+        let stop = OutputLevelCell()
+        let stopFlag = stop.storage
+        let started = expectation(description: "writer running")
         let done = expectation(description: "writer finished")
-        writer.async {
-            for index in 0..<200_000 {
+        DispatchQueue(label: "level.writer").async {
+            var index = 0
+            var announced = false
+            // Runs until the reader is done, so the two always overlap.
+            while stop.meanSquare == 0 {
                 publishOutputLevel(index % 2 == 0 ? 0.25 : 0.0625, to: storage)
+                index += 1
+                if !announced {
+                    announced = true
+                    started.fulfill()
+                }
             }
             done.fulfill()
         }
+        wait(for: [started], timeout: 10)
+        var seen = Set<Float>()
         for _ in 0..<200_000 {
-            let value = cell.meanSquare
-            XCTAssertTrue(value == 0 || value == 0.25 || value == 0.0625)
+            seen.insert(cell.meanSquare)
         }
+        publishOutputLevel(1, to: stopFlag)
         wait(for: [done], timeout: 10)
+        XCTAssertTrue(seen.isSubset(of: [0.25, 0.0625]), "\(seen)")
+        XCTAssertFalse(seen.isEmpty)
+    }
+
+    // MARK: The callback itself
+
+    /// Runs the body of the render callback offline, on a plain buffer.
+    private func renderOffline(
+        _ buffer: AVAudioPCMBuffer,
+        frames: Int,
+        state: UnsafeMutablePointer<RenderState>,
+        mailbox: ParameterMailbox,
+        cell: OutputLevelCell
+    ) {
+        renderOutput(
+            state: state,
+            command: UnsafePointer(mailbox.storage),
+            sequence: mailbox.sequence,
+            level: cell.storage,
+            frameCount: frames,
+            bufferList: buffer.mutableAudioBufferList
+        )
+    }
+
+    func testRenderCallbackFillsEveryLayoutAndPublishesItsLevel() throws {
+        let layouts: [(name: String, format: AVAudioFormat?, channels: Int)] = [
+            ("deinterleaved", AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2), 2),
+            (
+                "interleaved",
+                AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 48_000, channels: 2, interleaved: true),
+                2
+            ),
+            ("mono", AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 1), 1),
+        ]
+        let frames = 4_800
+        for layout in layouts {
+            let format = try XCTUnwrap(layout.format, layout.name)
+            let buffer = try XCTUnwrap(
+                AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(frames)),
+                layout.name
+            )
+            buffer.frameLength = AVAudioFrameCount(frames)
+
+            let mailbox = ParameterMailbox()
+            mailbox.publish(command(gains([(.white, 0.5)])))
+            let state = UnsafeMutablePointer<RenderState>.allocate(capacity: 1)
+            state.initialize(to: RenderState(sampleRate: 48_000))
+            defer {
+                state.deinitialize(count: 1)
+                state.deallocate()
+            }
+            let cell = OutputLevelCell()
+            // Something old in the cell, to tell "not published" from zero.
+            publishOutputLevel(0.9, to: cell.storage)
+
+            // An empty buffer changes nothing: no state, no level.
+            renderOffline(buffer, frames: 0, state: state, mailbox: mailbox, cell: cell)
+            XCTAssertEqual(cell.meanSquare, 0.9, layout.name)
+            XCTAssertEqual(state.pointee.outputMeter.meanSquare, 0, layout.name)
+            XCTAssertEqual(state.pointee.lastCommand.gains.white, 0, layout.name)
+
+            renderOffline(buffer, frames: frames, state: state, mailbox: mailbox, cell: cell)
+            // The command crossed the mailbox, the state was written back
+            // and the level on show is the one the meter holds.
+            XCTAssertEqual(state.pointee.lastCommand.gains.white, 0.5, layout.name)
+            XCTAssertGreaterThan(cell.meanSquare, 0, layout.name)
+            XCTAssertNotEqual(cell.meanSquare, 0.9, layout.name)
+            XCTAssertEqual(cell.meanSquare, state.pointee.outputMeter.meanSquare, layout.name)
+            XCTAssertEqual(cell.rms, state.pointee.outputMeter.rms, layout.name)
+
+            // Every channel of the buffer carries sound.
+            let list = UnsafeMutableAudioBufferListPointer(buffer.mutableAudioBufferList)
+            var loud = [Int](repeating: 0, count: layout.channels)
+            if list.count == 1 {
+                let stride = Int(list[0].mNumberChannels)
+                XCTAssertEqual(stride, layout.channels, layout.name)
+                let data = try XCTUnwrap(list[0].mData?.assumingMemoryBound(to: Float.self), layout.name)
+                for index in 0..<(frames * stride) where abs(data[index]) > 1e-6 {
+                    loud[index % stride] += 1
+                }
+            } else {
+                XCTAssertEqual(list.count, layout.channels, layout.name)
+                for channel in 0..<list.count {
+                    let data = try XCTUnwrap(list[channel].mData?.assumingMemoryBound(to: Float.self), layout.name)
+                    for index in 0..<frames where abs(data[index]) > 1e-6 {
+                        loud[channel] += 1
+                    }
+                }
+            }
+            for count in loud {
+                XCTAssertGreaterThan(count, frames / 2, layout.name)
+            }
+
+            // A second empty call leaves the published level alone.
+            let published = cell.meanSquare
+            renderOffline(buffer, frames: 0, state: state, mailbox: mailbox, cell: cell)
+            XCTAssertEqual(cell.meanSquare, published, layout.name)
+        }
+    }
+
+    func testRenderCallbackKeepsTheLastCommandWhileTheMailboxIsBeingWritten() throws {
+        let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2))
+        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 512))
+        buffer.frameLength = 512
+        let mailbox = ParameterMailbox()
+        mailbox.publish(command(gains([(.pink, 0.4)])))
+        let state = UnsafeMutablePointer<RenderState>.allocate(capacity: 1)
+        state.initialize(to: RenderState(sampleRate: 48_000))
+        defer {
+            state.deinitialize(count: 1)
+            state.deallocate()
+        }
+        let cell = OutputLevelCell()
+        renderOffline(buffer, frames: 512, state: state, mailbox: mailbox, cell: cell)
+        XCTAssertEqual(state.pointee.lastCommand.gains.pink, 0.4)
+
+        // A writer caught halfway (odd sequence): the reader does not wait,
+        // it renders on with the command it had, and still publishes.
+        // (Nothing else touches this mailbox, so plain accesses will do.)
+        XCTAssertEqual(mailbox.sequence.pointee % 2, 0)
+        mailbox.sequence.pointee &+= 1
+        mailbox.storage.pointee.gains.pink = 1
+        publishOutputLevel(0, to: cell.storage)
+        renderOffline(buffer, frames: 512, state: state, mailbox: mailbox, cell: cell)
+        XCTAssertEqual(state.pointee.lastCommand.gains.pink, 0.4)
+        XCTAssertGreaterThan(cell.meanSquare, 0)
     }
 
     func testFollowerReachesTheLevelWithItsTimeConstant() {
@@ -208,6 +350,17 @@ final class OutputLevelTests: XCTestCase {
             value = follower.follow(0, at: time, tau: 0.5)
         }
         XCTAssertEqual(value, 0)
+    }
+
+    func testFollowerFallsFasterOnceTheEngineStops() {
+        // While the engine renders the caller's constant stands; after it
+        // stops the fall is never slower than `stopTau`, Reduce Motion or not.
+        XCTAssertEqual(OutputLevelFollower.tau(requested: 0.5, isRendering: true), 0.5)
+        XCTAssertEqual(OutputLevelFollower.tau(requested: 1.5, isRendering: true), 1.5)
+        XCTAssertEqual(OutputLevelFollower.tau(requested: 0.5, isRendering: false), OutputLevelFollower.stopTau)
+        XCTAssertEqual(OutputLevelFollower.tau(requested: 1.5, isRendering: false), OutputLevelFollower.stopTau)
+        XCTAssertEqual(OutputLevelFollower.tau(requested: 0, isRendering: false), 0)
+        XCTAssertLessThan(OutputLevelFollower.stopTau, 0.5)
     }
 
     func testFollowerIgnoresBadInput() {

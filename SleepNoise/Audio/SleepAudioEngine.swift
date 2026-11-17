@@ -109,9 +109,15 @@ final class SleepAudioEngine {
     /// `outputRMS` followed with a time constant of `tau` seconds. The
     /// smoothing advances with the clock between two calls, so the caller
     /// (the Horizon) decides how often it runs and nothing ticks when nobody
-    /// draws. Main thread.
+    /// draws. Once the engine stops rendering the fall has its own, shorter
+    /// constant, whatever `tau` is: the level is gone well inside 1.5 s.
+    /// Main thread.
     func smoothedOutputRMS(tau: TimeInterval = 0.5, now: TimeInterval? = nil) -> Float {
-        levelFollower.follow(outputRMS, at: now ?? Self.monotonicSeconds(), tau: tau)
+        levelFollower.follow(
+            outputRMS,
+            at: now ?? Self.monotonicSeconds(),
+            tau: OutputLevelFollower.tau(requested: tau, isRendering: engine.isRunning)
+        )
     }
 
     /// Monotonic seconds for the smoothing. `DispatchTime` on purpose: the
@@ -255,63 +261,84 @@ final class SleepAudioEngine {
         let levelPtr = outputLevel.storage
 
         return AVAudioSourceNode(format: format) { _, _, frameCount, audioBufferList in
-            let frames = Int(frameCount)
-            if frames == 0 { return noErr }
-
-            var render = state.pointee
-            let command = readEngineCommand(
+            renderOutput(
+                state: state,
                 command: UnsafePointer(commandPtr),
                 sequence: sequencePtr,
-                fallback: render.lastCommand
+                level: levelPtr,
+                frameCount: Int(frameCount),
+                bufferList: audioBufferList
             )
-            render.lastCommand = command
-
-            let buffers = UnsafeMutableAudioBufferListPointer(audioBufferList)
-            if buffers.isEmpty {
-                state.pointee = render
-                return noErr
-            }
-
-            if buffers.count == 1, let data = buffers[0].mData?.assumingMemoryBound(to: Float.self) {
-                // Interleaved (or mono) buffer.
-                let channels = max(1, Int(buffers[0].mNumberChannels))
-                if channels == 1 {
-                    for index in 0..<frames {
-                        data[index] = render.process(command)
-                    }
-                } else {
-                    var offset = 0
-                    for _ in 0..<frames {
-                        let frame = render.processStereo(command)
-                        data[offset] = frame.left
-                        data[offset + 1] = frame.right
-                        if channels > 2 {
-                            for channel in 2..<channels {
-                                data[offset + channel] = frame.left
-                            }
-                        }
-                        offset += channels
-                    }
-                }
-            } else {
-                // Deinterleaved: one buffer per channel. This is the standard format.
-                let leftData = buffers[0].mData?.assumingMemoryBound(to: Float.self)
-                let rightData = buffers.count > 1 ? buffers[1].mData?.assumingMemoryBound(to: Float.self) : nil
-                for index in 0..<frames {
-                    let frame = render.processStereo(command)
-                    leftData?[index] = frame.left
-                    rightData?[index] = frame.right
-                    if buffers.count > 2 {
-                        for extra in 2..<buffers.count {
-                            buffers[extra].mData?.assumingMemoryBound(to: Float.self)[index] = frame.left
-                        }
-                    }
-                }
-            }
-
-            state.pointee = render
-            publishOutputLevel(render.outputMeter.meanSquare, to: levelPtr)
             return noErr
         }
     }
+}
+
+/// The whole of the render callback: read the mailbox, fill the buffers,
+/// publish the level. A free function over raw pointers so the callback
+/// captures no object, and so a test can run it offline on a plain buffer.
+/// Render thread: no allocation, no lock, no retry.
+func renderOutput(
+    state: UnsafeMutablePointer<RenderState>,
+    command commandPtr: UnsafePointer<EngineCommand>,
+    sequence sequencePtr: UnsafeMutablePointer<UInt32>,
+    level levelPtr: UnsafeMutablePointer<UInt32>,
+    frameCount frames: Int,
+    bufferList audioBufferList: UnsafeMutablePointer<AudioBufferList>
+) {
+    if frames <= 0 { return }
+
+    var render = state.pointee
+    let command = readEngineCommand(
+        command: commandPtr,
+        sequence: sequencePtr,
+        fallback: render.lastCommand
+    )
+    render.lastCommand = command
+
+    let buffers = UnsafeMutableAudioBufferListPointer(audioBufferList)
+    if buffers.isEmpty {
+        state.pointee = render
+        return
+    }
+
+    if buffers.count == 1, let data = buffers[0].mData?.assumingMemoryBound(to: Float.self) {
+        // Interleaved (or mono) buffer.
+        let channels = max(1, Int(buffers[0].mNumberChannels))
+        if channels == 1 {
+            for index in 0..<frames {
+                data[index] = render.process(command)
+            }
+        } else {
+            var offset = 0
+            for _ in 0..<frames {
+                let frame = render.processStereo(command)
+                data[offset] = frame.left
+                data[offset + 1] = frame.right
+                if channels > 2 {
+                    for channel in 2..<channels {
+                        data[offset + channel] = frame.left
+                    }
+                }
+                offset += channels
+            }
+        }
+    } else {
+        // Deinterleaved: one buffer per channel. This is the standard format.
+        let leftData = buffers[0].mData?.assumingMemoryBound(to: Float.self)
+        let rightData = buffers.count > 1 ? buffers[1].mData?.assumingMemoryBound(to: Float.self) : nil
+        for index in 0..<frames {
+            let frame = render.processStereo(command)
+            leftData?[index] = frame.left
+            rightData?[index] = frame.right
+            if buffers.count > 2 {
+                for extra in 2..<buffers.count {
+                    buffers[extra].mData?.assumingMemoryBound(to: Float.self)[index] = frame.left
+                }
+            }
+        }
+    }
+
+    state.pointee = render
+    publishOutputLevel(render.outputMeter.meanSquare, to: levelPtr)
 }
