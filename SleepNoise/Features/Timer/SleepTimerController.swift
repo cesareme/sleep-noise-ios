@@ -82,7 +82,12 @@ final class SleepTimerController: ObservableObject {
             finish()
             return
         }
-        remaining = left
+        // The ticker is finer than anything on show: publish when the whole
+        // second changes, so nothing is redrawn four times a second all
+        // night. `pause()` takes the exact time from the end date.
+        if remaining.map({ $0.rounded(.up) }) != left.rounded(.up) {
+            remaining = left
+        }
         if !didRequestFade, left <= fadeDuration {
             didRequestFade = true
             isFading = true

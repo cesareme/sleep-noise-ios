@@ -178,6 +178,42 @@ final class EnvelopeRampTests: XCTestCase {
         XCTAssertEqual(state.envelope, 1)
     }
 
+    func testALostOutputCutsTheTailOfAPauseShort() {
+        // The person pauses (1.5 s) and takes the earbuds out 0.3 s later:
+        // the rest of the tail must not be heard from the speaker. The short
+        // fade starts where the bed is and reaches silence in 40 ms.
+        var state = RenderState(sampleRate: 48_000)
+        let playing = command(target: 1, ramp: 1, shape: FadeShape.smooth, generation: 1)
+        for _ in 0..<4_800 { _ = state.processStereo(playing) }
+
+        let pause = command(
+            target: 0, ramp: PlaybackFade.samples(PlaybackFade.pause, sampleRate: 48_000),
+            shape: FadeShape.smooth, generation: 2
+        )
+        for _ in 0..<14_400 { _ = state.processStereo(pause) }
+        let reached = state.envelope
+        XCTAssertGreaterThan(reached, 0.85, "0.3 s into the pause the bed is nearly whole")
+
+        let ramp = PlaybackFade.samples(PlaybackFade.lostOutput, sampleRate: 48_000)
+        XCTAssertEqual(ramp, 1_920)
+        let cut = command(target: 0, ramp: ramp, shape: FadeShape.smooth, generation: 3)
+        // Smoothstep from `reached`: steepest in the middle.
+        let steepest = 1.5 * reached / Float(ramp) + 0.000_001
+        var previous = reached
+        for index in 0..<Int(ramp) {
+            _ = state.processStereo(cut)
+            let step = previous - state.envelope
+            XCTAssertGreaterThanOrEqual(step, -0.000_001, "sample \(index): it only falls")
+            XCTAssertLessThanOrEqual(step, steepest, "sample \(index): no step")
+            previous = state.envelope
+        }
+        for _ in 0..<Int(ramp) / 200 + 1 { _ = state.processStereo(cut) }
+        XCTAssertEqual(state.envelope, 0, "silent 40 ms after the output went away")
+        let frame = state.processStereo(cut)
+        XCTAssertEqual(frame.left, 0)
+        XCTAssertEqual(frame.right, 0)
+    }
+
     func testAGainUpdateCarriesTheFadeAndItsShapeUnchanged() {
         // Every other publish repeats the last envelope request. The render
         // state must not start it again, whatever shape it names.

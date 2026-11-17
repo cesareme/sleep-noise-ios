@@ -168,8 +168,14 @@ final class SleepAudioEngine {
         ))
     }
 
+    /// A stop was asked for and its fade is still being rendered. Main thread.
+    var isStopping: Bool {
+        !wantsRunning && engine.isRunning
+    }
+
     /// Ramps to silence, then pauses the engine and releases the session unless
-    /// `start` ran again in the meantime.
+    /// `start` ran again in the meantime. Called again during the fade, the
+    /// new one starts from where the envelope is and replaces the wait.
     func stop(fadeOut seconds: TimeInterval) {
         fadeOut(over: seconds)
         wantsRunning = false
