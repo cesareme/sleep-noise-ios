@@ -8,12 +8,12 @@ final class MixerModel: ObservableObject {
     @Published var audioError: String?
     @Published var showPaywall = false
     @Published private(set) var loadedMixName: String?
-    /// Preset last applied, until the person edits a level.
-    @Published private(set) var activePreset: SoundPreset?
+    /// House mix last loaded, until the person edits a level.
+    @Published private(set) var activeHouseMix: HouseMix?
     /// Night screen is covering the interface. Audio keeps running when this
     /// turns off.
     @Published private(set) var isBedtime = false
-    /// The loaded mix or preset has layers that are muted because they need Pro.
+    /// The loaded mix has layers that are muted because they need Pro.
     @Published private(set) var loadedMixWasStripped = false
     /// Short note under the breathing card ("Ocean raised so you can hear it").
     @Published private(set) var breathingNote: String?
@@ -31,6 +31,8 @@ final class MixerModel: ObservableObject {
     private let timerKey = "sleepnoise.timerMinutes.v1"
     /// Length the timer Shortcut uses when none was asked for or chosen.
     static let fallbackTimerMinutes = 60
+    /// Level of a sound that a Shortcut plays on its own.
+    static let soloSoundLevel: Float = 0.65
     private var didStart = false
     private var resumeAfterInterruption = false
     private var noteTask: Task<Void, Never>?
@@ -81,7 +83,7 @@ final class MixerModel: ObservableObject {
         levels[sound] = min(1, max(0, value))
         loadedMixName = nil
         loadedMixWasStripped = false
-        activePreset = nil
+        activeHouseMix = nil
         if sound == .ocean { oceanBeforeTide = nil }
         persistLevels()
         if isPlaying {
@@ -192,7 +194,7 @@ final class MixerModel: ObservableObject {
         levels = next
         loadedMixName = mix.name
         loadedMixWasStripped = stripped
-        activePreset = nil
+        activeHouseMix = nil
         persistLevels()
         if isPlaying {
             engine.updateGains(currentGains())
@@ -204,34 +206,48 @@ final class MixerModel: ObservableObject {
         String(format: String(localized: "mixes.defaultNameFormat"), Int64(mixStore.mixes.count + 1))
     }
 
-    // MARK: Presets, Shortcuts, Night
+    // MARK: House mixes, Shortcuts, Night
 
-    /// Shortcuts: replace the mix with a preset and start playback. A preset
-    /// with Pro layers needs full access; without it nothing changes and no
-    /// paywall is raised, because the request may come by voice in the dark.
-    /// The intent answers in words instead. `play()` does the one-time setup,
-    /// so a refused request has no side effects.
+    /// Replaces the mix with a house mix, without starting playback. A house
+    /// mix is never refused and never raises the paywall: without full access
+    /// its Pro layers keep their levels, stay muted, and the name says what
+    /// it plays without.
     ///
-    /// Every Shortcut entry point reads the trial clock first: a trial that
-    /// ran out while the app was suspended must not let one more Pro night
-    /// through because the scene has not become active yet.
+    /// Every entry point that can start a night reads the trial clock first:
+    /// a trial that ran out while the app was suspended must not let one more
+    /// Pro night through because the scene has not become active yet.
     @discardableResult
-    func playPreset(_ preset: SoundPreset) -> IntentOutcome {
+    func loadHouseMix(_ mix: HouseMix) -> MixLoad {
         purchases.refreshAccess(canDowngrade: !isPlaying)
-        switch PresetLibrary.apply(preset, hasFullAccess: purchases.hasFullAccess) {
-        case .needsPro:
-            return .needsPro
-        case .levels(let next):
-            levels = next
-            activePreset = preset
-            loadedMixName = preset.localizedName
-            loadedMixWasStripped = false
-            persistLevels()
-            return startOrUpdate()
+        let load = mix.load(hasFullAccess: purchases.hasFullAccess)
+        levels = load.levels
+        activeHouseMix = mix
+        loadedMixName = load.title(name: mix.localizedName)
+        loadedMixWasStripped = load.isTrimmed
+        persistLevels()
+        if isPlaying {
+            engine.updateGains(currentGains())
+            nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
         }
+        return load
     }
 
-    /// Shortcuts: play one sound on its own. Same rule as `playPreset`.
+    /// Loads a house mix and plays it. With nothing playing and no layer
+    /// left to hear, it does not start a silent night.
+    @discardableResult
+    func playHouseMix(_ mix: HouseMix) -> IntentOutcome {
+        let load = loadHouseMix(mix)
+        if isPlaying { return .started }
+        if load.isSilent { return .nothingToPlay }
+        play()
+        return audioError == nil ? .started : .failed
+    }
+
+    /// Shortcuts: play one sound on its own. A Pro sound needs full access;
+    /// without it nothing changes and no paywall is raised, because the
+    /// request may come by voice in the dark. The intent answers in words
+    /// instead. `play()` does the one-time setup, so a refused request has
+    /// no side effects.
     @discardableResult
     func playSound(_ sound: SoundID) -> IntentOutcome {
         purchases.refreshAccess(canDowngrade: !isPlaying)
@@ -239,9 +255,9 @@ final class MixerModel: ObservableObject {
             return .needsPro
         }
         var next = Dictionary(uniqueKeysWithValues: SoundID.allCases.map { ($0, Float(0)) })
-        next[sound] = PresetLibrary.engagedLevel
+        next[sound] = Self.soloSoundLevel
         levels = next
-        activePreset = nil
+        activeHouseMix = nil
         loadedMixName = sound.localizedName
         loadedMixWasStripped = false
         persistLevels()
@@ -330,6 +346,10 @@ final class MixerModel: ObservableObject {
     }
 
     var nowPlayingTitle: String {
+        // Outside the app a house mix goes by its own name, whole or trimmed.
+        if let activeHouseMix {
+            return activeHouseMix.localizedName
+        }
         if let loadedMixName, !loadedMixName.isEmpty {
             return loadedMixName
         }
@@ -343,14 +363,16 @@ final class MixerModel: ObservableObject {
     /// Access changed (purchase, restore, revocation, trial end applied).
     /// Gains and the breathing guide follow it while playing.
     func refreshEntitledAudio() {
-        // A mix or preset that was whole during the trial is a stripped one
-        // once the trial ends: say so instead of keeping its name as if
-        // nothing had changed. A Pro preset is no longer the one playing.
+        // A mix that was whole during the trial is a stripped one once the
+        // trial ends: say so instead of keeping its name as if nothing had
+        // changed. A house mix names what it plays without, and gets its own
+        // name back when access returns.
+        if let mix = activeHouseMix {
+            loadedMixName = MixLoad(levels: levels, hasFullAccess: purchases.hasFullAccess)
+                .title(name: mix.localizedName)
+        }
         loadedMixWasStripped = loadedMixName != nil
             && Self.hasMutedLayers(levels, hasFullAccess: purchases.hasFullAccess)
-        if let preset = activePreset, preset.requiresFullAccess, !purchases.hasFullAccess {
-            activePreset = nil
-        }
         guard isPlaying else { return }
         engine.updateGains(currentGains())
         if !breathingIsIncluded {

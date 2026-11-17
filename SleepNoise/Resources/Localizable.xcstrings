@@ -2019,128 +2019,110 @@
         }
       }
     },
-    "preset.steadyRain": {
-      "comment": "Preset name",
+    "mezcla.casa.rosa_lluvia": {
+      "comment": "House mix name: pink noise and rain",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Steady rain"
+            "value": "Pink and rain"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lluvia constante"
+            "value": "Rosa y lluvia"
           }
         }
       }
     },
-    "preset.storm": {
-      "comment": "Preset name",
+    "mezcla.casa.mar_viento": {
+      "comment": "House mix name: ocean and wind",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Storm"
+            "value": "Sea and wind"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tormenta"
+            "value": "Mar y viento"
           }
         }
       }
     },
-    "preset.cabin": {
-      "comment": "Preset name",
+    "mezcla.casa.marron_hoguera": {
+      "comment": "House mix name: brown noise and campfire",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Airplane cabin"
+            "value": "Brown and fire"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cabina de avión"
+            "value": "Marrón y hoguera"
           }
         }
       }
     },
-    "preset.campfire": {
-      "comment": "Preset name",
+    "mezcla.casa.pared": {
+      "comment": "House mix name: brown noise, rain and wind",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Campfire"
+            "value": "Wall"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hoguera"
+            "value": "Pared"
           }
         }
       }
     },
-    "preset.brook": {
-      "comment": "Preset name",
+    "mezcla.nombre.sin": {
+      "comment": "Name of a mix loaded without its Pro layers. Arguments: the mix name, then the layers left out.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Brook"
+            "value": "%@ · without %@"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Arroyo"
+            "value": "%@ · sin %@"
           }
         }
       }
     },
-    "preset.nightWind": {
-      "comment": "Preset name",
+    "pagina.capas.ni": {
+      "comment": "Joins the last two layers of a list of layers that are left out. Arguments: two layer names.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Night wind"
+            "value": "%@ or %@"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Viento nocturno"
-          }
-        }
-      }
-    },
-    "preset.shore": {
-      "comment": "Preset name",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Shore"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Orilla"
+            "value": "%@ ni %@"
           }
         }
       }
