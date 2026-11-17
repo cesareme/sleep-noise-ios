@@ -45,14 +45,13 @@ struct TimerSheet: View {
         _showsHead = State(initialValue: showsHead)
         // With the block above the list the half sheet cuts the last row
         // and hides the note, which is there to be read.
-        var opensLarge = showsHead
         #if DEBUG
-        _showsControl = State(initialValue: PageArguments.opensTimerControl)
-        opensLarge = opensLarge || PageArguments.opensTimerControl
+        let opensControl = PageArguments.opensTimerControl
         #else
-        _showsControl = State(initialValue: false)
+        let opensControl = false
         #endif
-        _detent = State(initialValue: opensLarge ? .large : .medium)
+        _showsControl = State(initialValue: opensControl)
+        _detent = State(initialValue: showsHead || opensControl ? .large : .medium)
     }
 
     /// The minutes of the block change when a whole minute is left: the

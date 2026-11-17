@@ -12,7 +12,7 @@ App iOS de sonidos para dormir. SwiftUI, iOS 17 o posterior, solo iPhone, inglé
 SN_SIM='<tu simulador>' scripts/verify.sh
 ```
 
-- Es la única puerta: regenera el proyecto, compila en limpio, prueba y termina con `VERIFY OK · N tests` o `VERIFY FAIL · motivo`. Log en `.build/verify.log`.
+- Es la única puerta: regenera el proyecto, compila en limpio, prueba, compila también en Release (lo que se publica, sin el código de `#if DEBUG`) y termina con `VERIFY OK · N tests` o `VERIFY FAIL · motivo`. Log en `.build/verify.log`.
 - Falla con error de compilación, test rojo o saltado (`XCTSkip`), cualquier aviso del compilador o de metadatos de App Intents, o menos tests que `scripts/verify-min-tests.txt`.
 - `--fast` no limpia: no vale como puerta. `--ci` elige simulador solo (para la CI).
 - XcodeGen genera el proyecto desde `project.yml` (no está en Git): los ficheros nuevos entran solos. No edites `SleepNoise.xcodeproj`.

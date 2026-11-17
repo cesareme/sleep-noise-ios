@@ -12,6 +12,7 @@
 #
 # It fails when:
 #   - xcodegen or xcodebuild fail (build error, failing test, missing simulator)
+#   - the Release configuration, which is what ships, does not compile
 #   - the log has a compiler or linker warning that is not listed in
 #     scripts/verify-known-warnings.txt
 #   - the App Intents metadata processor prints a warning or an error that is
@@ -239,6 +240,28 @@ if [[ "$build_status" -ne 0 ]]; then
     fi
     tail -n 25 "$LOG" | sed "s|$ROOT/||g"
     fail "xcodebuild ha fallado con código $build_status"
+fi
+
+# -------------------------------------------------------------------- release
+# The tests run in Debug, and so does everything inside `#if DEBUG`. What ships
+# is Release: it is compiled here too, so an error or a warning that only exists
+# without the debug code is seen before an archive is. Its output goes to the
+# same log and through the same sieve of warnings below.
+release_actions=(build)
+if [[ "$CLEAN" -eq 1 ]]; then
+    release_actions=(clean build)
+fi
+say "verify: xcodebuild ${release_actions[*]} -configuration Release"
+echo "verify: release build" >> "$LOG"
+if ! xcodebuild "${release_actions[@]}" \
+    -project "$PROJECT" \
+    -scheme "$SCHEME" \
+    -configuration Release \
+    -destination "$DESTINATION" \
+    -derivedDataPath "$SN_DERIVED" \
+    >> "$LOG" 2>&1; then
+    show '(error|fatal error): ' 30
+    fail "la compilación en Release ha fallado"
 fi
 
 # ------------------------------------------------------------------- warnings
