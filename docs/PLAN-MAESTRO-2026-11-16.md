@@ -1,3 +1,5 @@
+> **Aviso (16-11-2026):** el alcance y el calendario de 1.0 los fija `docs/PLAN-SIMPLE-1.0.md`.
+
 # Plan maestro — SleepNoise 1.0 "el instrumento de sueño"
 
 *16-11-2026. Documento de cabecera: resume y enlaza la investigación, el plan de funciones, la dirección de diseño, las ocho especificaciones y la reconciliación. Cuando un detalle de aquí difiera de un documento enlazado, manda el enlazado, con el orden de precedencia de la reconciliación §1.*

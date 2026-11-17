@@ -1,3 +1,5 @@
+> **Aviso (16-11-2026):** sustituido para 1.0 por `docs/PLAN-SIMPLE-1.0.md`. Se conserva como referencia.
+
 # Cuaderno de trabajo de Cursor · SleepNoise 1.0
 
 Fecha: 16-11-2026. Manda `docs/PLAN-DESARROLLO-AGENTES-2026-11-16.md`. Si este cuaderno lo contradice, gana el plan. Sobre el plan manda `docs/RECONCILIACION-PRODUCTO-DISENO-2026-11-16.md`.

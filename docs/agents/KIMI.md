@@ -1,3 +1,5 @@
+> **Aviso (16-11-2026):** sustituido para 1.0 por `docs/PLAN-SIMPLE-1.0.md`. Se conserva como referencia.
+
 # SleepNoise 1.0 · Cuaderno de trabajo de Kimi
 
 Fecha: 16-11-2026. Acompaña a `docs/PLAN-DESARROLLO-AGENTES-2026-11-16.md`: si algo de aquí lo contradice, manda el plan. No se ejecutó Kimi ni se compiló nada. [V] comprobado hoy. [INF] inferencia. [SV] sin verificar.

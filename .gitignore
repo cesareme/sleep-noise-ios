@@ -23,7 +23,7 @@ playground.xcworkspace
 *.xcodeproj/project.xcworkspace/xcuserdata/
 *.xcworkspace/xcuserdata/
 
-# Swift Package Manager / local builds
+# Local builds: scripts/verify.sh writes verify.log and DerivedData under .build/
 .build/
 .swiftpm/
 Package.resolved

@@ -1,0 +1,15 @@
+# Known warnings that scripts/verify.sh tolerates.
+#
+# One extended regular expression (grep -E) per line, matched against a full
+# log line. Lines starting with # and blank lines are ignored.
+#
+# Keep this list minimal. Every entry needs a reason and the condition under
+# which it goes away. Never add an entry to make your own PR pass: fix the
+# warning. Only the integrator edits this file.
+
+# Xcode runs the App Intents metadata step for every target. A target that does
+# not link AppIntents.framework gets this notice: the app on main today (no
+# intents yet) and the unit-test bundle always. It is not a metadata problem.
+# Once the app declares intents the app target stops printing it; the test
+# bundle keeps printing it, so the entry stays.
+appintentsmetadataprocessor\[[0-9:]+\] warning: Metadata extraction skipped\. No AppIntents\.framework dependency found\.$

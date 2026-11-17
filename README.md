@@ -1,12 +1,12 @@
 # SleepNoise
 
-Offline sleep-noise synthesizer for iPhone and iPad. Every sound is generated on the device with `AVAudioEngine` and an `AVAudioSourceNode`. There are no bundled audio files, no analytics, and no networking of our own. StoreKit is the only system service that contacts Apple, and only when someone loads or buys Pro.
+Offline sleep-noise synthesizer for iPhone. Every sound is generated on the device with `AVAudioEngine` and an `AVAudioSourceNode`. There are no bundled audio files, no analytics, and no networking of our own. StoreKit is the only system service that contacts Apple, and only when someone loads or buys Pro.
 
 Free includes white, pink, and brown noise, the rain texture, a 15, 30 or 60 minute timer, and one saved mix. Pro (`com.cesareme.sleepnoise.pro`, non-consumable) unlocks fan and ocean, the breathing tide, timers up to 6 hours including a custom length, and unlimited saved mixes. Every install gets a local 7-day trial of everything: no card, no StoreKit product, the clock starts at the first Play and the first-launch card says so.
 
 ## Requirements
 
-- A Mac with Xcode 15 or newer (iOS 17 SDK, Swift 5.9)
+- A Mac with Xcode 26.6, the version the CI gate runs (deployment target iOS 17, Swift 5.9 language mode)
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen) 2.38 or newer
 - Homebrew
 
@@ -25,7 +25,7 @@ In Xcode:
 
 1. Select the **SleepNoise** target, open **Signing & Capabilities**, and choose your Team. The simulator can run with “Sign to Run Locally” if you only need a local build.
 2. Scheme **SleepNoise** is already selected. Its Run action points at `SleepNoise/Resources/SleepNoise.storekit`.
-3. Pick an iPhone or iPad simulator, or a device, on iOS 17 or newer.
+3. Pick an iPhone simulator, or an iPhone, on iOS 17 or newer.
 4. Product → Run (⌘R).
 
 Background audio uses `UIBackgroundModes` → `audio` and `AVAudioSession` category `.playback`. That category keeps playing with the screen locked and ignores the Ring/Silent switch. Unplugging headphones pauses playback. A phone call pauses it and resumes afterward when the system says it should.
@@ -34,17 +34,16 @@ Enable the In-App Purchase capability on the App ID in the developer portal befo
 
 ## Tests
 
-Product → Test (⌘U), or from the command line after `xcodegen generate`:
+The gate is one script. Nothing is merged unless it ends in `VERIFY OK`:
 
 ```bash
 xcrun simctl list devices available
-xcodebuild test \
-  -project SleepNoise.xcodeproj \
-  -scheme SleepNoise \
-  -destination 'platform=iOS Simulator,name=iPhone 17'
+SN_SIM='iPhone 17' scripts/verify.sh
 ```
 
-Use a simulator name that exists on your Mac. The tests cover bounded, finite generator output, pink and brown spectral tilt, the smoothstep fade, the render mix, the parameter mailbox, the free/Pro gates, and saved-mix persistence.
+Use a simulator name that exists on your Mac. The script regenerates the project, does a clean build, runs the tests and prints `VERIFY OK · N tests` or `VERIFY FAIL · reason` as its last line; the full log is in `.build/verify.log`. It fails on a build error, a failing or skipped test, any compiler or App Intents metadata warning, or fewer tests than the floor in `scripts/verify-min-tests.txt`. `--fast` skips the clean step for a quick loop and does not count as the gate. Product → Test (⌘U) in Xcode is fine while you work, but it is not the gate either. CI runs the same script on every pull request (`.github/workflows/ci.yml`).
+
+The tests cover bounded, finite generator output, pink and brown spectral tilt, the smoothstep fade, the render mix, the parameter mailbox, the free/Pro gates, and saved-mix persistence.
 
 ## StoreKit testing
 
@@ -63,6 +62,7 @@ A TestFlight or App Store build ignores this file and uses App Store Connect.
 
 ```
 project.yml                  XcodeGen spec (app + unit tests)
+scripts/verify.sh            The gate: clean build, tests, no warnings
 SleepNoise/App               Entry point and colors
 SleepNoise/Audio             Session, engine, Now Playing
 SleepNoise/Audio/DSP         Real-time generators, fade, mailbox
