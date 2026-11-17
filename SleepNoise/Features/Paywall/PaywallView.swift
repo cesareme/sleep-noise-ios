@@ -41,11 +41,6 @@ struct PaywallView: View {
                             title: "paywall.benefit.mixes",
                             detail: "paywall.benefit.mixes.detail"
                         )
-                        benefit(
-                            symbol: "timer",
-                            title: "paywall.benefit.timer",
-                            detail: "paywall.benefit.timer.detail"
-                        )
                     }
 
                     if purchases.isPro {

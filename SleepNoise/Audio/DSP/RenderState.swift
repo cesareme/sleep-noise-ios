@@ -92,6 +92,8 @@ struct RenderState {
     var fadeTo: Float = 0
     var fadeProgress: Float = 1
     var fadeStep: Float = 0
+    /// Curve of the fade in progress: a `FadeShape`.
+    var fadeShape: Int32 = FadeShape.smooth
     var appliedEnvelopeGeneration: UInt32 = 0
     var gainCoefficient: Float = 0.002
     var sampleRate: Float = 48_000
@@ -117,6 +119,8 @@ struct RenderState {
     /// Bed modulation depth, smoothed like the weight so a settings change
     /// (0.4 ⇄ 0.2) never steps the beds.
     var breathDepth: Float = 0.4
+    /// Level of what actually leaves `processStereo`, for the interface.
+    var outputMeter = OutputMeter()
     /// `thunderSchedule` goes to both channels unchanged: it moves the
     /// thunder rumbles in time, never one channel against the other.
     init(sampleRate: Float = 48_000, thunderSchedule: UInt32 = 0) {
@@ -132,6 +136,7 @@ struct RenderState {
         gainCoefficient = 1 - expf(-1 / (rate * 0.02))
         breathWeightCoefficient = 1 - expf(-1 / (rate * 1.5))
         breathValueCoefficient = 1 - expf(-1 / (rate * 0.25))
+        outputMeter.prepare(sampleRate: rate)
         // A running breath keeps its place in the cycle across a rate change.
         if breathPeriod > 0, breathRate > 0 {
             let fraction = Float(breathSample) / Float(breathPeriod)
@@ -150,10 +155,12 @@ struct RenderState {
         fadeTo = 0
         fadeProgress = 1
         fadeStep = 0
+        fadeShape = FadeShape.smooth
         breathWeight = 0
         breathWeightTarget = 0
         breathValue = 0
         breathValueSmoothed = 0
+        outputMeter.reset()
     }
 
     /// Stereo frame. Both channels share the envelope and smoothed gains.
@@ -162,7 +169,11 @@ struct RenderState {
         if command.envelopeGeneration != appliedEnvelopeGeneration {
             appliedEnvelopeGeneration = command.envelopeGeneration
             if command.rampSamples >= 0 {
-                beginFade(to: command.envelopeTarget, samples: command.rampSamples)
+                beginFade(
+                    to: command.envelopeTarget,
+                    samples: command.rampSamples,
+                    shape: command.envelopeShape
+                )
             }
         }
         advanceFade()
@@ -171,7 +182,11 @@ struct RenderState {
 
         let l = left.mix(smoothed, breath: breathValueSmoothed, weight: breathWeight, depth: breathDepth)
         let r = right.mix(smoothed, breath: breathValueSmoothed, weight: breathWeight, depth: breathDepth)
-        return (softClip(l * envelope), softClip(r * envelope))
+        let outLeft = softClip(l * envelope)
+        let outRight = softClip(r * envelope)
+        // Measured after the soft clip: the level of what is really heard.
+        outputMeter.add(left: outLeft, right: outRight)
+        return (outLeft, outRight)
     }
 
     /// One sample of the breath oscillator.
@@ -246,13 +261,15 @@ struct RenderState {
         breathValueSmoothed = flushDenormal(breathValueSmoothed)
     }
 
-    /// Mono frame: a power-preserving sum of both channels.
+    /// Mono frame: a power-preserving sum of both channels. The meter reads
+    /// the stereo pair before the sum, which carries the same power.
     mutating func process(_ command: EngineCommand) -> Float {
         let frame = processStereo(command)
         return softClip((frame.left + frame.right) * 0.7071)
     }
 
-    private mutating func beginFade(to target: Float, samples: Int32) {
+    private mutating func beginFade(to target: Float, samples: Int32, shape: Int32) {
+        fadeShape = shape
         if samples <= 1 {
             envelope = target
             fadeFrom = target
@@ -276,7 +293,7 @@ struct RenderState {
             envelope = fadeTo
             return
         }
-        let shaped = FadeCurve.unity(fadeProgress)
+        let shaped = FadeCurve.shaped(fadeProgress, shape: fadeShape)
         envelope = fadeFrom + (fadeTo - fadeFrom) * shaped
     }
 }

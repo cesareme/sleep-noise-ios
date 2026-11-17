@@ -22,8 +22,4 @@ enum TimeFormat {
     static func minutes(_ minutes: Int) -> String {
         String(format: String(localized: "timer.minutesFormat"), Int64(minutes))
     }
-
-    static func percentSpoken(_ percent: Int) -> String {
-        String(format: String(localized: "a11y.percentFormat"), Int64(percent))
-    }
 }

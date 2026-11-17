@@ -1,12 +1,65 @@
 import Combine
 import Foundation
 
+/// Why the bed is paused. The page says it in words.
+enum PauseCause: Equatable {
+    /// The person paused.
+    case person
+    /// The system took the output: a call, an alarm, another app.
+    case system
+    /// The output went away: earbuds out.
+    case lostOutput
+
+    /// How long the bed takes to leave.
+    var fade: TimeInterval {
+        switch self {
+        case .person: return PlaybackFade.pause
+        case .system: return PlaybackFade.interruption
+        case .lostOutput: return PlaybackFade.lostOutput
+        }
+    }
+}
+
+/// What became of a request to change a level.
+enum LevelChange: Equatable {
+    case applied
+    /// A Pro layer without access: nothing changed.
+    case needsPro
+    /// Six layers already sound: the seventh is not added.
+    case capReached
+}
+
 @MainActor
 final class MixerModel: ObservableObject {
+    /// The most layers that may sound at once (C19). A rule of the model:
+    /// the interface never draws slots for it.
+    nonisolated static let maxSimultaneousLayers = 6
+    /// What Play raises when nothing would sound: the instrument always
+    /// sounds.
+    nonisolated static let fallbackSound = SoundID.pink
+    nonisolated static let fallbackLevel: Float = 0.4
+    /// Where the tide puts a silent ocean so that it can be heard.
+    nonisolated static let tideOceanLevel: Float = 0.5
+
     @Published var levels: [SoundID: Float]
     @Published private(set) var isPlaying = false
     @Published var audioError: String?
-    @Published var showPaywall = false
+    /// The Pro sheet is asked for. Only `offerPro()` raises it, and never at
+    /// night.
+    @Published private(set) var showPaywall = false
+    /// Paused, and why. Nil at rest and once a night has ended.
+    @Published private(set) var pauseCause: PauseCause?
+    /// Starts that failed in a row, for the ladder of the error line.
+    @Published private(set) var startFailures = 0
+    /// Play found nothing to sound and raised the fallback layer. Cleared by
+    /// the next change of the mix.
+    @Published private(set) var isPlayingFallback = false
+    /// The page shows one ink: it came back from the Night screen. It lasts
+    /// until the person leaves it; no clock ends it (C40).
+    @Published private(set) var isNightSession = false
+    /// Moves whenever the whole mix is replaced, so the page knows when to
+    /// choose its rows again.
+    @Published private(set) var mixRevision = 0
     /// What the page and Now Playing call the loaded mix: its name, or
     /// "<name> · without <layers>" when it plays trimmed.
     @Published private(set) var loadedMixName: String?
@@ -32,6 +85,8 @@ final class MixerModel: ObservableObject {
     private let nowPlaying = NowPlayingController()
     private let sessionObserver = AudioSessionObserver()
     private let defaults: UserDefaults
+    private let now: () -> Date
+    private let calendar: Calendar
     private let levelsKey = "sleepnoise.levels.v1"
     private let timerKey = "sleepnoise.timerMinutes.v1"
     /// Length the timer Shortcut uses when none was asked for or chosen.
@@ -47,20 +102,39 @@ final class MixerModel: ObservableObject {
     /// The levels the loaded mix came with. Its title is worked out from
     /// these, not from the live levels, which the tide may have raised.
     private var loadedMixRecipe: [SoundID: Float]?
+    /// Level rows with a finger on them right now.
+    private var liveLevelGestures = 0
 
     init(
         purchases: PurchaseManager,
         mixStore: MixStore? = nil,
         timer: SleepTimerController? = nil,
         breathing: BreathingGuideController? = nil,
-        defaults: UserDefaults = .standard
+        defaults: UserDefaults = .standard,
+        now: @escaping () -> Date = { Date() },
+        calendar: Calendar = .autoupdatingCurrent
     ) {
         self.purchases = purchases
         self.defaults = defaults
+        self.now = now
+        self.calendar = calendar
         self.mixStore = mixStore ?? MixStore(defaults: defaults)
         self.timer = timer ?? SleepTimerController()
         self.breathing = breathing ?? BreathingGuideController(defaults: defaults)
-        levels = Self.loadLevels(defaults: defaults, key: levelsKey) ?? Self.defaultLevels()
+        if let stored = Self.loadLevels(defaults: defaults, key: levelsKey) {
+            levels = stored
+        } else {
+            // First use, no onboarding: the house mix "Pink and rain" loaded
+            // as it is. Both its layers are free, so it is never trimmed.
+            let mix = HouseMix.pinkAndRain
+            let load = mix.load(hasFullAccess: purchases.hasFullAccess)
+            levels = load.levels
+            activeHouseMix = mix
+            loadedMixBaseName = mix.localizedName
+            loadedMixRecipe = load.levels
+            loadedMixName = load.title(name: mix.localizedName)
+            loadedMixWasStripped = load.isTrimmed
+        }
         if let minutes = defaults.object(forKey: timerKey) as? Int,
            AccessPolicy.timerIsIncluded(minutes: minutes, hasFullAccess: purchases.hasFullAccess) {
             self.timer.choose(minutes)
@@ -83,22 +157,115 @@ final class MixerModel: ObservableObject {
         nowPlaying.update(isPlaying: false, title: nowPlayingTitle)
     }
 
-    func setLevel(_ sound: SoundID, _ value: Float) {
+    /// Sets the level of a layer. A Pro layer without access does not move
+    /// (and asks for the Pro sheet, which the night refuses). A layer raised
+    /// from zero while six already sound is not added.
+    @discardableResult
+    func setLevel(_ sound: SoundID, _ value: Float) -> LevelChange {
         guard AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess) else {
-            showPaywall = true
-            return
+            offerPro()
+            return .needsPro
         }
-        levels[sound] = min(1, max(0, value))
-        loadedMixName = nil
+        let next = min(1, max(0, value))
+        let current = levels[sound] ?? 0
+        if current <= MixLoad.audibleThreshold, next > MixLoad.audibleThreshold,
+           soundingLayers.count >= Self.maxSimultaneousLayers {
+            return .capReached
+        }
+        // Nothing changed (a drag that came back, a refused seventh layer
+        // let go at zero): the mix keeps its name.
+        guard next != current else { return .applied }
+        levels[sound] = next
+        // A drag writes here on every sample: only what really changes is
+        // published.
+        let hadName = loadedMixName != nil
+        if isPlayingFallback { isPlayingFallback = false }
+        if hadName { loadedMixName = nil }
         loadedMixBaseName = nil
         loadedMixRecipe = nil
-        loadedMixWasStripped = false
-        activeHouseMix = nil
+        if loadedMixWasStripped { loadedMixWasStripped = false }
+        if activeHouseMix != nil { activeHouseMix = nil }
         if sound == .ocean { oceanBeforeTide = nil }
-        persistLevels()
+        if liveLevelGestures == 0 {
+            persistLevels()
+        }
         if isPlaying {
             engine.updateGains(currentGains())
+            // The lock screen follows the page: once, not on every sample.
+            if hadName {
+                nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
+            }
         }
+        return .applied
+    }
+
+    /// A finger went down on a level row. While it is there the levels are
+    /// not written to disk; they are when it leaves.
+    func beginLevelGesture() {
+        liveLevelGestures += 1
+    }
+
+    func endLevelGesture() {
+        liveLevelGestures = max(0, liveLevelGestures - 1)
+        if liveLevelGestures == 0 {
+            persistLevels()
+        }
+    }
+
+    /// The layers that sound: above zero and included at this access level.
+    /// A Pro layer that keeps a level without access is not one of them.
+    var soundingLayers: [SoundID] {
+        SoundID.allCases.filter { sound in
+            (levels[sound] ?? 0) > MixLoad.audibleThreshold
+                && AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess)
+        }
+    }
+
+    // MARK: Pro sheet and night
+
+    /// Whether anything may be sold right now: not inside `NightWindow` and
+    /// not on the night page.
+    var canSell: Bool {
+        SaleGate.isOpen(at: now(), calendar: calendar, nightSession: isNightSession)
+    }
+
+    /// Asks for the Pro sheet. At night the request is dropped: nothing
+    /// opens and nothing is queued for the morning (C08).
+    func offerPro() {
+        guard canSell else { return }
+        showPaywall = true
+    }
+
+    func dismissPro() {
+        showPaywall = false
+    }
+
+    /// A Pro sheet that was already up when the night began comes down: the
+    /// gate is not only for new requests. Called when the app comes forward
+    /// and when the night page begins.
+    func closeSaleIfNight() {
+        if showPaywall, !canSell {
+            showPaywall = false
+        }
+    }
+
+    /// The page keeps one ink from now on (C40). Called when the person
+    /// comes back from the Night screen.
+    func beginNightSession() {
+        isNightSession = true
+        closeSaleIfNight()
+    }
+
+    /// The deliberate way out of the night page: a tap on the name.
+    func endNightSession() {
+        isNightSession = false
+    }
+
+    /// Level of what the engine is producing right now, for the Horizon: the
+    /// RMS measured on the render thread, smoothed with `tau` seconds. 0 when
+    /// nothing sounds.
+    func outputLevel(tau: TimeInterval) -> Float {
+        engine.smoothedOutputRMS(tau: tau)
     }
 
     func togglePlayback() {
@@ -116,6 +283,13 @@ final class MixerModel: ObservableObject {
         startIfNeeded()
         audioError = nil
         resumeAfterInterruption = false
+        if userInitiated, isSilent {
+            // Nothing would sound: an empty mix, or one whose every layer
+            // needs Pro. The instrument always sounds: the fallback layer
+            // comes up as a real level and the mix keeps its name.
+            writeLevel(Self.fallbackSound, Self.fallbackLevel)
+            isPlayingFallback = true
+        }
         // The guide publishes before the engine starts, so the first command
         // the render thread reads already carries the breath (and its epoch),
         // and before the timer, whose fade callback may release it again.
@@ -127,16 +301,29 @@ final class MixerModel: ObservableObject {
         do {
             try engine.start(gains: currentGains())
             isPlaying = true
+            pauseCause = nil
+            startFailures = 0
             purchases.startTrialIfNeeded()
             timer.start()
             nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
         } catch {
             endPlayback(engineAction: .none, canDowngrade: true)
-            audioError = String(localized: "error.audio")
+            pauseCause = nil
+            noteStartFailure()
         }
     }
 
-    func pause(resumeLater: Bool) {
+    /// One more start that did not sound. The page reads the count and says
+    /// more with each one.
+    private func noteStartFailure() {
+        startFailures += 1
+        audioError = String(localized: "pagina.error.inicio")
+    }
+
+    /// `cause` decides how long the bed takes to leave: the person's own
+    /// pause is never a cut (`PlaybackFade.pause`); an interruption and a
+    /// lost output have their own, shorter fades.
+    func pause(resumeLater: Bool, cause: PauseCause = .person) {
         if resumeLater {
             if isPlaying {
                 resumeAfterInterruption = true
@@ -147,12 +334,14 @@ final class MixerModel: ObservableObject {
         guard isPlaying else { return }
         // An interruption that intends to resume is not the end of the night:
         // a trial that ran out meanwhile waits until the session really ends.
-        endPlayback(engineAction: .stop(fadeOut: 0.04), canDowngrade: !resumeAfterInterruption)
+        endPlayback(engineAction: .stop(fadeOut: cause.fade), canDowngrade: !resumeAfterInterruption)
+        pauseCause = cause
     }
 
+    /// The whole timer is free (C03): a length outside its range is not a
+    /// sale, it is ignored.
     func selectTimer(minutes: Int?) {
         if let minutes, !AccessPolicy.timerIsIncluded(minutes: minutes, hasFullAccess: purchases.hasFullAccess) {
-            showPaywall = true
             return
         }
         timer.choose(minutes)
@@ -186,8 +375,11 @@ final class MixerModel: ObservableObject {
             loadedMixBaseName = mix.name
             loadedMixRecipe = levels
             loadedMixWasStripped = false
+            if isPlaying {
+                nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
+            }
         case .needsPro:
-            showPaywall = true
+            offerPro()
         case .emptyName:
             break
         }
@@ -215,10 +407,6 @@ final class MixerModel: ObservableObject {
         return load.isTrimmed
     }
 
-    func suggestedMixName() -> String {
-        MixStore.defaultName(mixStore.mixes.count + 1)
-    }
-
     /// Every whole replacement of `levels` by a mix ends here: the title
     /// follows the mix as it was loaded, and an ocean level the tide meant
     /// to put back belongs to the mix that is gone.
@@ -228,6 +416,8 @@ final class MixerModel: ObservableObject {
         loadedMixName = load.title(name: name)
         loadedMixWasStripped = load.isTrimmed
         oceanBeforeTide = nil
+        isPlayingFallback = false
+        mixRevision += 1
     }
 
     // MARK: House mixes, Shortcuts, Night
@@ -288,6 +478,8 @@ final class MixerModel: ObservableObject {
         loadedMixRecipe = nil
         loadedMixWasStripped = false
         oceanBeforeTide = nil
+        isPlayingFallback = false
+        mixRevision += 1
         persistLevels()
         return startOrUpdate()
     }
@@ -359,8 +551,11 @@ final class MixerModel: ObservableObject {
         }
     }
 
+    /// Back to the page, which is the night page from now on (C40).
     func leaveBedtime() {
+        guard isBedtime else { return }
         isBedtime = false
+        beginNightSession()
     }
 
     private func startOrUpdate() -> IntentOutcome {
@@ -416,19 +611,29 @@ final class MixerModel: ObservableObject {
     }
 
     /// Switches the tide on or off. Takes effect at once when playing. Turning
-    /// it on with the ocean silent raises the ocean so the tide can be heard.
+    /// it on with the ocean silent raises the ocean so the tide can be heard,
+    /// unless six layers already sound: the cap is a rule of the model, so
+    /// the tide is armed and the ocean stays where it was.
     func setBreathingEnabled(_ enabled: Bool) {
         if enabled, !breathingIsIncluded {
-            showPaywall = true
+            offerPro()
             return
         }
         guard breathing.settings.isEnabled != enabled else { return }
         breathing.settings.isEnabled = enabled
         if enabled, (levels[.ocean] ?? 0) < 0.05 {
-            oceanBeforeTide = levels[.ocean] ?? 0
-            writeLevel(.ocean, 0.5)
-            showBreathingNote(String(localized: "breath.oceanRaised"))
-        } else if !enabled, let previous = oceanBeforeTide, abs((levels[.ocean] ?? 0) - 0.5) < 0.001 {
+            if !soundingLayers.contains(.ocean), soundingLayers.count >= Self.maxSimultaneousLayers {
+                showBreathingNote(String(localized: "capas.tope"))
+            } else {
+                oceanBeforeTide = levels[.ocean] ?? 0
+                writeLevel(.ocean, Self.tideOceanLevel)
+                showBreathingNote(String(
+                    format: String(localized: "marea.oceano.subido"),
+                    Int64((Self.tideOceanLevel * 100).rounded())
+                ))
+            }
+        } else if !enabled, let previous = oceanBeforeTide,
+                  abs((levels[.ocean] ?? 0) - Self.tideOceanLevel) < 0.001 {
             oceanBeforeTide = nil
             writeLevel(.ocean, previous)
         }
@@ -521,12 +726,26 @@ final class MixerModel: ObservableObject {
         timer.onComplete = { [weak self] in
             guard let self else { return }
             self.endPlayback(engineAction: .stop(fadeOut: 0.01), canDowngrade: true)
+            // The night is over: the page is silent again, not paused.
+            self.pauseCause = nil
+        }
+    }
+
+    /// The output was taken or went away. While playing it is a pause with
+    /// the fade of its cause. During the tail of a pause already under way
+    /// (the person's own lasts 1.5 s) the tail is cut to that same short
+    /// fade, so the rest of it is not heard from the speaker.
+    private func outputTaken(resumeLater: Bool, cause: PauseCause) {
+        let wasPlaying = isPlaying
+        pause(resumeLater: resumeLater, cause: cause)
+        if !wasPlaying, engine.isStopping {
+            engine.stop(fadeOut: cause.fade)
         }
     }
 
     private func installSessionHandlers() {
         sessionObserver.onInterruptionBegan = { [weak self] in
-            self?.pause(resumeLater: true)
+            self?.outputTaken(resumeLater: true, cause: .system)
         }
         sessionObserver.onInterruptionEnded = { [weak self] shouldResume in
             guard let self else { return }
@@ -539,7 +758,7 @@ final class MixerModel: ObservableObject {
             self.resumeAfterInterruption = false
         }
         sessionObserver.onHeadphonesUnplugged = { [weak self] in
-            self?.pause(resumeLater: false)
+            self?.outputTaken(resumeLater: false, cause: .lostOutput)
         }
         sessionObserver.onRouteChange = { [weak self] in
             guard let self, self.isPlaying else { return }
@@ -593,9 +812,19 @@ final class MixerModel: ObservableObject {
         return defaultLevels().merging(stored) { _, stored in stored }
     }
 
+    /// Every layer at zero: the base a mix or the stored levels are laid on.
     private static func defaultLevels() -> [SoundID: Float] {
-        var levels = Dictionary(uniqueKeysWithValues: SoundID.allCases.map { ($0, Float(0)) })
-        levels[.pink] = 0.65
-        return levels
+        Dictionary(uniqueKeysWithValues: SoundID.allCases.map { ($0, Float(0)) })
     }
 }
+
+#if DEBUG
+extension MixerModel {
+    /// Debug builds only: the page as it is after a start that failed,
+    /// without touching the audio session. For the reference captures.
+    func debugFailStart() {
+        startIfNeeded()
+        noteStartFailure()
+    }
+}
+#endif

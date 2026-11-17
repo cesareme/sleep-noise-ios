@@ -863,6 +863,7 @@ extension ParameterMailboxTests {
                     gains: gains,
                     envelopeTarget: value,
                     rampSamples: Int32(index % 1_000),
+                    envelopeShape: Int32(index % 1_000),
                     generation: 0,
                     envelopeGeneration: UInt32(index % 1_000),
                     breath: breath
@@ -887,6 +888,7 @@ extension ParameterMailboxTests {
                 && command.breath.weight == g.white
                 && command.breath.epoch == UInt32(command.rampSamples)
                 && command.envelopeGeneration == UInt32(command.rampSamples)
+                && command.envelopeShape == command.rampSamples
             if !consistent { torn += 1 }
         }
         wait(for: [done], timeout: 10)

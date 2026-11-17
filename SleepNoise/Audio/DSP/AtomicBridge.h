@@ -22,4 +22,13 @@ uint32_t sn_seqlock_read_begin(uint32_t *sequence);
 /// Reader: fence so the payload loads complete before the second sequence load.
 uint32_t sn_seqlock_read_end(uint32_t *sequence);
 
+/// One-word cell that travels the other way: the render thread is the only
+/// writer during playback and the main thread reads. A relaxed store and a
+/// relaxed load of one aligned 32-bit word never block and never tear, and the
+/// value stands alone, so it needs no ordering against other memory.
+void sn_cell_store(uint32_t *cell, uint32_t value);
+
+/// Reader side of `sn_cell_store`.
+uint32_t sn_cell_load(uint32_t *cell);
+
 #endif

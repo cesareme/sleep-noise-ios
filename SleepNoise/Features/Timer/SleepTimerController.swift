@@ -11,6 +11,8 @@ final class SleepTimerController: ObservableObject {
     var onComplete: (@MainActor () -> Void)?
 
     private var endDate: Date?
+    /// When the running timer ends. Nil when none is counting.
+    var endsAt: Date? { isRunning ? endDate : nil }
     private var ticker: Timer?
     private var isRunning = false
     private var didRequestFade = false
@@ -80,7 +82,12 @@ final class SleepTimerController: ObservableObject {
             finish()
             return
         }
-        remaining = left
+        // The ticker is finer than anything on show: publish when the whole
+        // second changes, so nothing is redrawn four times a second all
+        // night. `pause()` takes the exact time from the end date.
+        if remaining.map({ $0.rounded(.up) }) != left.rounded(.up) {
+            remaining = left
+        }
         if !didRequestFade, left <= fadeDuration {
             didRequestFade = true
             isFading = true

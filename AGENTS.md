@@ -26,9 +26,11 @@ SleepNoise/App        AppRoot, Theme
 SleepNoise/Audio      SleepAudioEngine, sesión, observador, Now Playing
 SleepNoise/Audio/DSP  EngineCommand, ParameterMailbox, AtomicBridge, RenderState,
                       SoundGains, generadores y filtros
+SleepNoise/Design     Grafito: tokens, componentes, galería (-gallery)
 SleepNoise/Model      SoundID, AccessPolicy, TrialClock
 SleepNoise/StoreKit   PurchaseManager
-SleepNoise/Features   Mixer, Timer, Breathing, Library, Paywall
+SleepNoise/Features   Page (página y Capas), Mixer (MixerModel), Timer, Breathing,
+                      Library, Paywall
 SleepNoise/Resources  Localizable.xcstrings, Info.plist, entitlements, .storekit
 SleepNoiseTests       XCTest (Spectrum.swift para tests espectrales)
 ```
