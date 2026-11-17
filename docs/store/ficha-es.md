@@ -2,7 +2,7 @@
 
 Localización "Spanish (Spain)" de la versión 1.0 en App Store Connect. Cada bloque es el texto para pegar tal cual; el recuento, hecho con un script, va debajo. Los límites son los de App Store Connect, salvo los de las capturas, que son los de la maqueta (`docs/design/11-ICONO-Y-APP-STORE.md` §5.e).
 
-Los textos salen de `docs/design/10-GUIA-DE-COPY.md` §5e.15 y de `docs/design/11-ICONO-Y-APP-STORE.md` §5.e. Donde se apartan de ellos, lo dice la nota del campo. Varias frases describen funciones de 1.0 que todavía no están en `main`: la lista está en `README.md` de esta carpeta y hay que repasarla antes de enviar.
+Los textos salen de `docs/design/10-GUIA-DE-COPY.md` §5e.15 y de `docs/design/11-ICONO-Y-APP-STORE.md` §5.e. Donde se apartan de ellos, lo dice la nota del campo. Las funciones que describen ya están en el código de 1.0. Las frases que todavía dependen de un cambio de audio o de algo que el dueño tiene que dar o decidir están en `README.md` de esta carpeta, "Antes de enviar": hay que repasar esa lista antes de enviar.
 
 ## Nombre
 
@@ -28,7 +28,7 @@ Sonido que nunca se repite, fabricado en tu iPhone. Siete noches con todo, sin t
 
 Recuento: 101 de 170.
 
-"Nunca se repite" es una afirmación de hecho que `main` no sostiene todavía (`README.md`, "Antes de enviar"). Si el cambio de audio y su test no llegan, o si el dueño lo prefiere, este es el texto de reserva, que solo dice lo que ya se puede comprobar:
+"Nunca se repite" es una afirmación de hecho que el código no sostiene todavía (`README.md`, "Antes de enviar"). Si el cambio de audio y su test no llegan, o si el dueño lo prefiere, este es el texto de reserva, que solo dice lo que ya se puede comprobar:
 
 ```text es
 Sin archivos de audio ni bucles: el sonido se fabrica en tu iPhone mientras suena. Siete noches con todo, sin tarjeta. Un solo pago.
@@ -111,7 +111,7 @@ Siete noches con todo. Después, Pro es un solo pago. Lo gratis sigue gratis.
 Si algo no suena, Ajustes › Escribir al autor. Nos gustaría saberlo.
 ```
 
-Recuento: 406 de 4000. App Store Connect no pide este campo en la primera versión de una app (a comprobar al crear la ficha); el texto queda listo para la nota de TestFlight y como base de la 1.0.1. Tres cambios respecto a la plantilla de la guía, para no prometer lo que `docs/PLAN-SIMPLE-1.0.md` §4.3 y §4.4 dejan fuera: no dice que la app esté rediseñada, porque es la primera versión en la tienda; Madrugada no se anuncia desde la pantalla de bloqueo del iPhone, porque no hay widgets ni Live Activity; y el aviso de fallos lleva a "Escribir al autor", porque el Diagnóstico pasa a 1.1.
+Recuento: 406 de 4000. App Store Connect no pide este campo en la primera versión de una app (a comprobar al crear la ficha); el texto queda listo para la nota de TestFlight y como base de la 1.0.1. Tres cambios respecto a la plantilla de la guía, para no prometer lo que `docs/PLAN-SIMPLE-1.0.md` §4.3 y §4.4 dejan fuera: no dice que la app esté rediseñada, porque es la primera versión en la tienda; Madrugada no se anuncia desde la pantalla de bloqueo del iPhone, porque no hay widgets ni Live Activity; y el aviso de fallos lleva a "Escribir al autor", porque el Diagnóstico pasa a 1.1. Esa fila de Ajustes solo aparece cuando el dueño da una dirección pública (`AppLinks.authorAddress`, hoy vacía): si la 1.0 sale sin ella, la última línea de este texto se quita.
 
 ## Capturas
 

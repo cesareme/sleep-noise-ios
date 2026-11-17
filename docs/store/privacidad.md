@@ -1,6 +1,6 @@
 # Privacidad, edad, exportación, categoría y derechos
 
-Respuestas para los cuestionarios de App Store Connect que no son texto de ficha. Cada una lleva la comprobación en el código de `main` (17-11-2026). Los literales de los cuestionarios cambian con el tiempo: donde pone "a comprobar", manda lo que se lea en pantalla.
+Respuestas para los cuestionarios de App Store Connect que no son texto de ficha. Cada una lleva la comprobación en el código de 1.0 (paquetes S-01 a S-10, leído el 17-11-2026). Los literales de los cuestionarios cambian con el tiempo: donde pone "a comprobar", manda lo que se lea en pantalla.
 
 ## 1. Privacidad de la app (App Privacy)
 
@@ -9,24 +9,24 @@ Respuestas para los cuestionarios de App Store Connect que no son texto de ficha
 | ¿Tú o tus socios externos recogéis datos de esta app? | No, no recogemos datos de esta app |
 | Etiqueta que resulta | "Data Not Collected" (en español, "No se recopilan datos"; literal a comprobar) |
 | ¿Usa la app datos para hacer seguimiento? | No. No hay aviso de seguimiento ni identificador de publicidad |
-| URL de la política de privacidad | La de GitHub Pages; ver `README.md`. Es obligatoria, y la directriz 5.1.1(i) pide además que la política se pueda leer dentro de la app: en 1.0 ese sitio es la página "Lo que no hay" (`README.md`, "Antes de enviar") |
+| URL de la política de privacidad | La de GitHub Pages; ver `README.md`. Es obligatoria, y la directriz 5.1.1(i) pide además que la política se pueda leer dentro de la app. En 1.0 ese sitio es la página "Lo que no hay", que ya existe (`WhatIsNotHerePage`) pero todavía no lleva ni el texto ni un enlace: es condición de envío (`README.md`, "Antes de enviar") |
 
 Por qué es cierto:
 
 | Hecho | Comprobación |
 |---|---|
-| La app no hace peticiones de red propias | Ningún uso de `URLSession`, `URLRequest` ni `Network` en `SleepNoise/` |
+| La app no hace peticiones de red propias | Ningún uso de `URLSession`, `URLRequest` ni `Network` en `SleepNoise/`; `SettingsTests.testTheSourcesAskForNoReviewPromptAndCarryNoAddress` falla si alguna fuente usa `URLSession`. Las dos salidas de la app son enlaces que abre el sistema, y las dos están ocultas mientras `AppLinks` siga vacío: el correo de la persona ("Escribir al autor") y la página de la app en App Store ("Escribir una reseña") |
 | No hay código de terceros | `project.yml` no declara paquetes ni dependencias |
-| No hay cuenta, analítica ni anuncios | No existe código para ello; los únicos marcos son los de Apple (`AVFoundation`, `MediaPlayer`, `StoreKit`, `AppIntents`, `Security`, `SwiftUI`) |
+| No hay cuenta, analítica ni anuncios | No existe código para ello; los únicos marcos son los de Apple (`AVFoundation`, `MediaPlayer`, `StoreKit`, `AppIntents`, `Security`, `CallKit`, `SwiftUI`, `UIKit`, `Combine`). `CallKit` solo sirve para saber si hay una llamada en curso (`AudioSessionObserver`), y así no reanudar el sonido encima de ella: no lee con quién ni guarda nada |
 | Mezclas y ajustes se guardan en el iPhone y la app no los envía a nadie | `UserDefaults`; el manifiesto declara la razón `CA92.1`. Entran en la copia de seguridad del iPhone que la persona haga con Apple, que no es recogida de datos por la app |
 | El manifiesto de privacidad coincide | `SleepNoise/Resources/PrivacyInfo.xcprivacy`: `NSPrivacyTracking` en `false`, sin dominios y sin tipos de datos recogidos |
-| La compra la gestiona Apple | `StoreKit` 2; la app recibe de Apple la transacción firmada y de ella lee el identificador del producto y si está revocada (`PurchaseManager`). No lleva nombre, correo ni datos de pago |
+| La compra la gestiona Apple | `StoreKit` 2 (`AppStoreProStore`); la app recibe de Apple la transacción firmada y de ella lee el identificador del producto, la fecha de compra, si está revocada y si llega por Family Sharing. Guarda en el iPhone (`UserDefaults`, `PurchaseManager`) que Pro está comprado, esa fecha, si es de un familiar y el nombre del producto que dio la tienda, para el recibo. No lleva nombre, correo ni datos de pago |
 | No pide permisos | `Info.plist` no tiene claves de descripción de uso |
 
 Matices que conviene tener presentes:
 
-- El estado de la prueba irá al llavero del iPhone (`kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, sin sincronizar). No sale del iPhone, así que no es recogida. Hoy `main` todavía lo guarda en `UserDefaults`; lo cambia S-07.
-- "Escribir al autor" abrirá el correo de la persona. Un mensaje que alguien decide enviar desde su propia app de correo no es recogida de datos por la app, pero quien lo recibe sí trata un dato personal: por eso la política dice quién responde, cuánto se guarda el mensaje y cómo pedir que se borre. La fila todavía no existe en `main`.
+- El registro de la prueba (dos fechas y lo consumido, `TrialRecord`) está en el llavero del iPhone (`KeychainTrialStorage`, con `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` y sin sincronizar; `KeychainTrialStorageTests.testItemStaysOnThisDevice`). No sale del iPhone, así que no es recogida. Lo que la app ya dijo sobre la prueba (el aviso de la última noche, el del final y las sesiones gratuitas contadas después) son marcas en `UserDefaults`.
+- "Escribir al autor" abre el correo de la persona con el nombre de la app como asunto y nada más (`AppLinks.authorURL`). Un mensaje que alguien decide enviar desde su propia app de correo no es recogida de datos por la app, pero quien lo recibe sí maneja un dato personal: por eso la política dice quién responde, cuánto se guarda el mensaje y cómo pedir que se borre. La fila existe en `SettingsSheet` y no se enseña hasta que el dueño dé la dirección (`AppLinks.authorAddress`, hoy vacío). Para saber si hay un cliente de correo, `Info.plist` declara el esquema `mailto` en `LSApplicationQueriesSchemes`; eso no es un permiso ni una lectura de datos.
 - Los informes de ventas de App Store Connect son agregados y no identifican a nadie.
 - La respuesta deja de valer si entra red, un SDK, un informe de diagnóstico que salga de la app o iCloud. Cualquiera de esos cambios obliga a repasar este cuestionario antes de enviar.
 
@@ -44,7 +44,7 @@ Resultado esperado: 4+, la más baja.
 | Controles parentales o verificación de edad dentro de la app | No hay; no hacen falta |
 | Hecha para niños (categoría Kids) | No |
 
-A comprobar: Apple cambió el cuestionario y los tramos de edad en 2025, y los literales de arriba son por tema, no palabra por palabra. Si la hoja de Marea sale con la frase sobre estudios de respiración que recoge la guía de copy (`marea.evidencia`), la pregunta sobre temas de salud o bienestar se responde con el nivel más bajo que no sea "ninguno", y se anota aquí. Esa frase tampoco debe verse en la captura 4 (`README.md`, "Antes de enviar").
+A comprobar: Apple cambió el cuestionario y los tramos de edad en 2025, y los literales de arriba son por tema, no palabra por palabra. La hoja de Marea de 1.0 no lleva la frase sobre estudios de respiración que recoge la guía de copy (`marea.evidencia` no está en el catálogo), así que "ninguna" se sostiene: lo que la hoja dice es cómo seguir la ola (`marea.instruccion`), sin prometer nada. Si esa frase entrara alguna vez, la pregunta sobre temas de salud o bienestar se responde con el nivel más bajo que no sea "ninguno", y se anota aquí.
 
 ## 3. Cumplimiento de exportación
 
