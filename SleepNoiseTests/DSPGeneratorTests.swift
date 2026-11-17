@@ -844,6 +844,8 @@ extension ParameterMailboxTests {
         // otherwise reads made before the writer's first publish look torn.
         var initial = EngineCommand(gains: .zero, envelopeTarget: 0, rampSamples: 0, generation: 0)
         initial.breath.inhale = 0
+        initial.masterTarget = 0
+        initial.masterRampSamples = 0
         let mailbox = ParameterMailbox(initial: initial)
         let iterations = 200_000
         let done = expectation(description: "writer finished")
@@ -866,7 +868,10 @@ extension ParameterMailboxTests {
                     envelopeShape: Int32(index % 1_000),
                     generation: 0,
                     envelopeGeneration: UInt32(index % 1_000),
-                    breath: breath
+                    breath: breath,
+                    masterTarget: value,
+                    masterRampSamples: Int32(index % 1_000),
+                    masterGeneration: UInt32(index % 1_000)
                 ))
             }
             done.fulfill()
@@ -889,6 +894,9 @@ extension ParameterMailboxTests {
                 && command.breath.epoch == UInt32(command.rampSamples)
                 && command.envelopeGeneration == UInt32(command.rampSamples)
                 && command.envelopeShape == command.rampSamples
+                && command.masterTarget == g.white
+                && command.masterRampSamples == command.rampSamples
+                && command.masterGeneration == UInt32(command.rampSamples)
             if !consistent { torn += 1 }
         }
         wait(for: [done], timeout: 10)

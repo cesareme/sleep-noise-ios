@@ -93,7 +93,7 @@ Siete entradas; el resto hereda es-ES. No cambia la voz (tú), no cambian los no
 | `mezcla.casa.marron_hoguera` | Marrón y hoguera | Marrón y fogata | idem |
 | Ficha de App Store, primera línea de la descripción (§5e.15; sin clave: no se compila) | SleepNoise fabrica en tu iPhone… | SleepNoise genera en tu iPhone… | "fabricar" suena industrial en LatAm; "generar" es neutro y es lo que dicen las reseñas |
 
-Números y horas: `Text(.time)` y `DateFormatter` del sistema. es-ES: 24 h, "03:42"; es-419 y en-US: según la región del iPhone, "3:42 a. m." / "3:42 AM" (el sufijo lo pinta el sistema dentro de la cifra con `Date.FormatStyle`; la app no compila "am" / "pm"). Decimales: "29,99 €" (es-ES, es-419 con €), "$29.99" (en-US), "MX$ 599" (es-MX): siempre `Product.displayPrice`, nunca una cifra escrita a mano. Signo de minutos: "min" sin punto en los tres idiomas; "m" solo en la Isla Dinámica.
+Números y horas: `Text(.time)` y `DateFormatter` del sistema. es-ES: 24 h, "03:42"; es-419 y en-US: según la región del iPhone, "3:42 a. m." / "3:42 AM" (el sufijo lo pinta el sistema dentro de la frase con `Date.FormatStyle`; la app no compila "am" / "pm"). **Excepción (corrección de S-06, 17-11-2026): la hora como cifra de paso 1** (el reloj de Noche a 72 y la hora del Manto a 56 en la hoja del Temporizador) va sin sufijo, "2:14", como en 07 §2.2.2 y la maqueta; las frases ("Se funde a las 2:59 AM", "hasta las 7:00 AM", la fila Hora) lo conservan. Decimales: "29,99 €" (es-ES, es-419 con €), "$29.99" (en-US), "MX$ 599" (es-MX): siempre `Product.displayPrice`, nunca una cifra escrita a mano. Signo de minutos: "min" sin punto en los tres idiomas; "m" solo en la Isla Dinámica.
 
 ### 0.4 Lista negra 1 · Lo que no se afirma (cerrada; informe §5.2 y brief §7.2)
 
@@ -304,28 +304,28 @@ El temporizador es entero libre (C03): la palabra "pro" no aparece en ninguna du
  y
  0    ┌─────────────────────────────────────────┐ sin barra de estado
  284  │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │ horizonte 2 pt texto-noche (continuo = suena; ausente = pausa)
- 332  │                03:07                    │ hora del sistema, paso 1 · 72/80 Display Regular texto-noche (es-ES 24 h; 12 h donde la región lo pida, con el sufijo que pinta el sistema)
+ 332  │                03:07                    │ hora del sistema, paso 1 · 72/80 Display Regular texto-noche (es-ES 24 h; 12 h donde la región lo pida, **sin sufijo**: la cifra es "2:14", nunca "2:14 AM"; corrección de S-06)
  428  │        Se funde a las 03:42             │ [noche.estado.funde] paso 3 · 22/28 Medium texto-noche
  472  │  (primera vez, 4 s) Puedes apagar la    │ [noche.primera] paso 6 Medium texto-noche
       │  pantalla. El sonido sigue.             │
-      │  Mantén pulsado para volver             │ [noche.volver]
+      │  Mantén pulsado para volver             │ [noche.volver] una frase por línea: `noche.primera` se compone en dos ("Puedes apagar la pantalla." / "El sonido sigue.") y `noche.volver` va 8 pt aparte (ajuste de S-06)
  652  │        Seguir por el altavoz            │ [ruta.seguir_altavoz] paso 4 Medium, 64 pt (y 652-716); 24 pt de canal hasta "+15 min"
  740  │               +15 min                   │ [comun.mas15] paso 4 · 20/25 Medium texto-noche · botón 64 a todo el ancho
  852  └─────────────────────────────────────────┘
 ```
 
-Regla de la maqueta: entre dos objetivos sin borde hay ≥ 24 pt de canal (P8, 03 §3.5); por eso "Seguir por el altavoz" vive en y 652 y no pegado a "+15 min". Estados de la palabra (y 428): `noche.estado.funde` "Se funde a las 03:42" · `noche.estado.pausa` "En pausa" · `noche.estado.fundiendo` "Fundiendo · 8 min" (C31) · `noche.estado.hasta` "hasta las 7:00" (Manto) · `noche.estado.sonando` "Sonando" · `estado.volumen` "Sonando · al 40" (tras el arrastre vertical, 3 s; C51) · `noche.estado.sin_sonido` "Sin sonido" (error; toque reintenta) · `noche.estado.pausa.causa` "En pausa · auriculares". **"+15 min" nunca cambia de sitio ni de significado**, y Noche nunca crea un temporizador (C47): sin temporizador el hueco está vacío; con Hasta dormirme suma 15 a la cuenta ("Se funde a las 03:57"); con Manto mueve la hora fija 15 min y la palabra pasa a "hasta las 7:15". VoiceOver anuncia el resultado ("Quedan cincuenta y tres minutos" / "Hasta las siete y cuarto"). Noche terminada: el hueco del "+15 min" lo ocupa `madrugada.estado` "Madrugada · 20 min" (C27); nunca un gesto oculto. "Seguir por el altavoz" (`ruta.seguir_altavoz`) aparece encima, nunca en su lugar (lección del Reloj de iOS 26, 03 §1.2), y permanece 60 s (C49); nunca reanuda sola por el altavoz; el toque reanuda capado a 0,4 solo si la ruta cambió. La pantalla se atenúa a los 60 s y duerme por defecto (`isIdleTimerDisabled` según "Mantener encendida": mientras carga / siempre / nunca, C46). "atenuada" no es un estado (C47). "Controles visibles de noche" (fila de cuatro botones de 64 bajo la palabra de estado): `noche.ctl.menos15` "−15 min" · pausa (glifo `pause.fill`, etiqueta `ax.accion.pausar`) · `comun.mas15` "+15 min" · `noche.ctl.pagina` "Página" (vuelve a la página; coincide con el anuncio "Página" de §7), más un `Slider` "Volumen" (`ax.volumen`) debajo.
+Regla de la maqueta: entre dos objetivos sin borde hay ≥ 24 pt de canal (P8, 03 §3.5); por eso "Seguir por el altavoz" vive en y 652 y no pegado a "+15 min". Estados de la palabra (y 428): `noche.estado.funde` "Se funde a las 03:42" · `noche.estado.pausa` "En pausa" · `noche.estado.fundiendo` "Fundiendo · 8 min" (C31) · `noche.estado.hasta` "hasta las 7:00" (Manto) · `noche.estado.sonando` "Sonando" · `estado.volumen` "Sonando · al 40" (tras el arrastre vertical, 3 s; C51) · `noche.estado.sin_sonido` "Sin sonido" (error; toque reintenta) · `noche.estado.pausa.causa` "En pausa · auriculares". Cuando una de estas palabras, o una acción de Noche, parte en dos líneas (texto grande), el punto medio abre la segunda y la cifra no se separa de su unidad: "En pausa" / "· auriculares", "Madrugada" / "· 20 min"; se compone al dibujar y el catálogo no cambia (ajuste de S-06). **"+15 min" nunca cambia de sitio ni de significado**, y Noche nunca crea un temporizador (C47): sin temporizador el hueco está vacío; con Hasta dormirme suma 15 a la cuenta ("Se funde a las 03:57"); con Manto mueve la hora fija 15 min y la palabra pasa a "hasta las 7:15". VoiceOver anuncia el resultado ("Quedan cincuenta y tres minutos" / "Hasta las siete y cuarto"). Noche terminada: el hueco del "+15 min" lo ocupa `madrugada.estado` "Madrugada · 20 min" (C27); nunca un gesto oculto. "Seguir por el altavoz" (`ruta.seguir_altavoz`) aparece encima, nunca en su lugar (lección del Reloj de iOS 26, 03 §1.2), y permanece 60 s (C49); nunca reanuda sola por el altavoz; el toque reanuda capado a 0,4 solo si la ruta cambió. La pantalla se atenúa a los 60 s y duerme por defecto (`isIdleTimerDisabled` según "Mantener encendida": mientras carga / siempre / nunca, C46). "atenuada" no es un estado (C47). "Controles visibles de noche" (fila de cuatro botones de 64 bajo la palabra de estado): `noche.ctl.menos15` "−15 min" · pausa (glifo `pause.fill`, etiqueta `ax.accion.pausar`) · `comun.mas15` "+15 min" · `noche.ctl.pagina` "Página" (vuelve a la página; coincide con el anuncio "Página" de §7), más un `Slider` "Volumen" (`ax.volumen`) debajo.
 
 ### 2.6 Madrugada [E4] · como Noche, sin hora
 
 ```
  284  │ ╲╱ línea de agua 1,5 pt texto-noche (o horizonte 2 pt sin Marea) │
  332  │                20 min                  │ [madrugada.quedan] paso 1 · 56/64 texto-noche; baja por minuto
- 428  │           Se retira · 4 min            │ [madrugada.retirada] paso 3 Medium texto-noche, solo los últimos 5 min (C60)
+ 428  │               Se retira                │ [madrugada.retirada.palabra] paso 3 Medium texto-noche, solo los últimos 5 min (C60); sin cifra: la cifra es la de y 332 (ajuste de S-06)
  740  │                Parar                   │ [comun.parar] paso 4 Medium, 64 pt a todo el ancho
 ```
 
-Ninguna otra cadena. Ni "Pro", ni "sin océano", ni la hora (opt-in `madrugada.ajuste.hora`), ni prueba, ni hoja (C05). Receta fija: océano a nivel bajo con Marea a 8 por minuto para todos, entrada 3 s, la Marea se retira hacia el minuto 13, el mar funde los últimos 5 min con "Se retira · n min" (`madrugada.retirada`; distinto de "Fundiendo" también en EN). Una sola tinta (sin ámbar). Al terminar, nada; en 1.0 no hay retirada luminosa (C60). En pausa: la línea desaparece; ninguna palabra (la cifra congelada y la ausencia de línea bastan; VoiceOver sí dice "En pausa").
+Ninguna otra cadena. Ni "Pro", ni "sin océano", ni la hora (opt-in `madrugada.ajuste.hora`), ni prueba, ni hoja (C05). Receta fija: océano a nivel bajo con Marea a 8 por minuto para todos, entrada 3 s, la Marea se retira hacia el minuto 13, el mar funde los últimos 5 min con "Se retira" bajo la cifra (`madrugada.retirada.palabra`; distinto de "Fundiendo" también en EN). El estado de C60 es "Se retira · n min": en esta pantalla la cifra de minutos ya está a 72 pt justo encima y la palabra no la repite (ajuste de S-06, como `temporizador.cabecera.fundiendo`); VoiceOver lo dice entero (`ax.madrugada.retirada`) y fuera de la app sigue siendo `la.madrugada.retirada`. Una sola tinta (sin ámbar). Al terminar, nada; en 1.0 no hay retirada luminosa (C60). En pausa: la línea desaparece; ninguna palabra (la cifra congelada y la ausencia de línea bastan; VoiceOver sí dice "En pausa").
 
 ### 2.7 Mezclas [E5] · pantalla empujada, `negro`
 
@@ -542,7 +542,7 @@ Para una guía de copy, las tablas (a)-(d) recogen **el texto que se mueve, se l
 | T25 | `noche.primera` + `noche.volver` (no son TipKit) | primera entrada en Noche | aparecen con la pantalla · 4 s · 500 ms out | igual | sí de noche: son las dos frases de Noche |
 | T26 | `mezclas.sonando` (versalita junto a la mezcla cargada) | cargar una mezcla | 250 ms opacidad, con el fundido cruzado | igual | n/a |
 | T27 | `pagina.estado.manana.error` | sesión nueva a la mañana tras un corte | aparece con la pantalla; se va 250 ms al primer toque | igual | nunca de noche |
-| T28 | `madrugada.retirada` ("Se retira · n min") | últimos 5 min de Madrugada (C60) | 250 ms opacidad; cifra en seco por minuto | igual | sí de noche, `texto-noche` |
+| T28 | `madrugada.retirada.palabra` ("Se retira", bajo la cifra "n min") | últimos 5 min de Madrugada (C60) | 250 ms opacidad; cifra en seco por minuto | igual | sí de noche, `texto-noche` |
 | T29 | `madrugada.estado` ("Madrugada · 20 min") en el hueco del "+15 min" | Noche terminada (C27) | 250 ms opacidad; mismo sitio | igual | sí de noche |
 
 Reglas: **ningún texto cambia de posición jamás** (03 §3.7): la segunda línea de estado tiene su sitio reservado (y 160, 64 pt) aunque esté vacía, el horizonte vive en y 284 y la banda de 120 está reservada aunque no haya Marea; nada parpadea (cifras por minuto, nunca por segundo); fuera de la app el tiempo lo pinta el sistema (`Text(timerInterval:)`), no una actualización; ninguna cadena se anima con `.bounce` ni cambia de tamaño salvo T2.
@@ -872,7 +872,8 @@ Once texturas en 1.0 vía PR-A (C19): cinco libres (blanco, rosa, marrón, lluvi
 |---|---|---|---|---|
 | `madrugada.titulo` | Madrugada | Small hours | nombre de la función en Ajustes, `ControlWidgetButton` del Centro de control, Siri, Live Activity (nunca en la propia pantalla); EN "Small hours", nunca "Small hours mode" (C15); receta fija de 20 min (C05): sin fila de duración | 12 |
 | `madrugada.quedan` | %lld min | %lld min | cifra paso 1 · 56 `texto-noche`, baja por minuto (= `comun.min` en paso 1; clave propia solo por el paso) | 7 |
-| `madrugada.retirada` | Se retira · %lld min | Winding down · %lld min | palabra de estado paso 3 Medium `texto-noche` los últimos 5 min, cuando el mar funde (C05, C60); también versalita en la Live Activity; distinto de "Fundiendo" / "Fading" también en EN; en 1.0 sin retirada luminosa; al terminar, nada | 20 |
+| `madrugada.retirada` | [retirada en el ajuste de S-06: en la pantalla repetía la cifra que tiene encima] | — | el estado de C05/C60 "Se retira · n min" se compone en Madrugada con `madrugada.quedan` (la cifra) y `madrugada.retirada.palabra` (la palabra); fuera de la app, `la.madrugada.retirada`; VoiceOver, `ax.madrugada.retirada` | — |
+| `madrugada.retirada.palabra` | Se retira | Winding down | palabra de estado paso 3 Medium `texto-noche` bajo la cifra los últimos 5 min, cuando el mar funde (C05, C60); sin cifra, porque `madrugada.quedan` la dice a 72 pt justo encima (ajuste de S-06); distinto de "Fundiendo" / "Fading" también en EN; en 1.0 sin retirada luminosa; al terminar, nada | 14 |
 | `madrugada.ajuste.nota` | Madrugada no enseña la hora a propósito. | Small hours hides the clock on purpose. | nota de Ajustes paso 8 | 44 |
 | `madrugada.ajuste.hora` | Mostrar la hora en Madrugada | Show the clock in Small hours | toggle de Ajustes (opt-in, C60); una sola tinta, sin ámbar; ninguna frase de levantarse (lo que dicen los estudios va a `que_sabemos.en_vela`) | 30 |
 
@@ -894,7 +895,7 @@ Once texturas en 1.0 vía PR-A (C19): cinco libres (blanco, rosa, marrón, lluvi
 | `mezclas.receta.temporizador` | [retirada por C20] | — | idem | — |
 | `mezclas.receta.escudo` | [retirada por C20] | — | idem | — |
 | `mezclas.receta.pro` | %@ es Pro | %@ is Pro | segmento final inline, sin tachar ("· océano es Pro") | 18 |
-| `mezclas.receta.separador` | · | · | se compila para que la receta se componga por segmentos y parta líneas en el separador | 1 |
+| `mezclas.receta.separador` | · | · | se compila para que la receta se componga por segmentos y parta líneas en el separador: un segmento no se parte por dentro ("lluvia 50", "ventilador es Pro") y el separador abre el segmento siguiente, así que la segunda línea empieza por "· ventilador es Pro" y ninguna línea acaba en punto medio (maqueta, lámina 14; ajuste de S-06). Solo en AX5 la cláusula Pro puede partir tras el nombre ("es Pro" va junto) | 1 |
 | `mezclas.sonando` | sonando ahora | playing now | versalita paso 9 `texto2` junto al nombre de la mezcla cargada | 14 |
 | `mezclas.vacio` | La mezcla de esta noche se guarda desde su nombre. | Tonight's mix is saved from its name. | paso 6 `texto2`, sustituye a la sección "tuyas" vacía (sustituye `mixes.empty`); sin imperativo: con Button Shapes no debe parecer un botón | 52 |
 | `mezclas.guardada` | Guardada | Saved | 1,5 s junto al nombre; `.success` | 10 |
@@ -1114,11 +1115,13 @@ Sin columna Máx.: VoiceOver no mide. Las etiquetas que son la propia cadena vis
 | `ax.marea.off.pro` | Desactivada, requiere Pro | Off, requires Pro | sin acceso |
 | `ax.marea.pista` | Toca dos veces para encenderla; el sonido arranca. | Double-tap to turn it on; the sound starts. | pista con acceso, en silencio |
 | `ax.marea.pista.pro` | Toca dos veces para ver Pro. | Double-tap to see Pro. | pista sin acceso, solo de día (C06) |
-| `ax.agua.valor` | %@, %lld por minuto, se retira en %lld minutos | %@, %lld per minute, recedes in %lld minutes | valor de la línea de agua; `%@` = inhala / exhala |
+| `ax.agua.valor` | [retirada en la corrección de S-06: la fase y los minutos caducaban entre dos dibujos] | — | el valor de la línea de agua se compone con `marea.ritmo.exacto` y `marea.retira.hora`: "6 por minuto, Se retira a las 23:27" |
 | `ax.agua.pista` | Desliza arriba o abajo para cambiar el ritmo. | Swipe up or down to change the pace. | pista de la línea de agua |
 | `ax.sabemos.pista` | Abre la pantalla de evidencia. | Opens the evidence screen. | pista del enlace "Qué sabemos ›" |
 | `ax.haptica.pista` | De noche nunca vibra. | Never at night. | pista de la fila Háptica (C35) |
-| `ax.temporizador.valor` | %@, quedan %lld minutos | %@, %lld minutes left | valor de la fila Temporizador sonando (`%@` = modo) |
+| `ax.temporizador.valor` | %1$@, %2$@ | %1$@, %2$@ | valor de la fila Temporizador sonando: el modo y los minutos tal como los dice `ax.anuncio.quedan` (plural: "Queda 1 minuto"); corrección de S-06 |
+| `temporizador.cabecera.fundiendo` | Fundiendo | Fading | hoja del Temporizador, línea bajo la cifra de minutos durante el fundido: no repite la cifra (corrección de S-06) |
+| `temporizador.cabecera.manto` | Baja un poco a los %lld min | Eases down after %lld min | hoja del Temporizador, línea bajo la hora del Manto, solo mientras la bajada está por venir; después, nada (corrección de S-06) |
 | `ax.escudo.pro` | [retirada por C03] | — | el temporizador es libre |
 | `ax.escudo.pro.pista` | [retirada por C03] | — | idem |
 | `ax.duracion.pista` | Desliza arriba o abajo. | Swipe up or down. | pista de la rueda Duración (sin "requiere Pro", C03) |

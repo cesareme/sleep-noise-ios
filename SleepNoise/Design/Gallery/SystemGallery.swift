@@ -301,6 +301,7 @@ private struct GalleryRows: View {
     @State private var ocean: Float = 0.5
     @State private var wind: Float = 0.4
     @State private var lockedTaps = 0
+    @State private var switchIsOn = true
 
     private func name(_ sound: SoundID) -> String { sound.localizedName }
     private func detail(_ sound: SoundID) -> String { Localized.string(sound.detailKey) }
@@ -346,12 +347,26 @@ private struct GalleryRows: View {
             }
             GalleryCase(title: "editorial row · 56, hairline above (page)") {
                 EditorialRow(title: "Todas las capas", value: "y 2 más", rule: .top) {}
-                EditorialRow(title: Localized.string("timer.title"), value: "Hasta dormirme · 45 min", rule: .top) {}
+                EditorialRow(title: Localized.string("temporizador.titulo"), value: "Hasta dormirme · 45 min", rule: .top) {}
             }
             GalleryCase(title: "editorial row · 72 with subtitle, option chosen, state word") {
                 EditorialRow(title: "Mar y viento", subtitle: "océano 50 · viento 20") {}
                 EditorialRow(title: "45 min", isSelected: true) {}
                 EditorialRow(title: name(.thunder), stateWord: Localized.string("comun.pro")) {}
+            }
+            GalleryCase(title: "switch · tokens only: off, on, on at night (nothing lighter than the ink); live") {
+                HStack(spacing: Grid.group) {
+                    GrafitoSwitch(isOn: false)
+                    GrafitoSwitch(isOn: true)
+                    GrafitoSwitch(isOn: true)
+                        .environment(\.nightPhase, .nightPage)
+                    Toggle(isOn: $switchIsOn) {
+                        Text(verbatim: Localized.string("marea.titulo"))
+                    }
+                    .toggleStyle(GrafitoToggleStyle(showsLabel: false))
+                }
+                .padding(.horizontal, Grid.margin)
+                .padding(.vertical, Grid.unit * 3)
             }
         }
     }
@@ -422,6 +437,10 @@ private struct GalleryActions: View {
                 TextAction(title: "Ahora no") {}
                     .environment(\.nightPhase, .nightPage)
             }
+            GalleryCase(title: "night action · Night and Small Hours: step 4, 64 pt (96 from AX3), one ink") {
+                NightAction(title: Localized.string("comun.mas15")) {}
+                    .environment(\.nightPhase, .night)
+            }
         }
     }
 }
@@ -432,10 +451,10 @@ private struct GallerySheetSample: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        GrafitoSheet(title: Localized.string("timer.title"), detents: [.medium, .large]) {
+        GrafitoSheet(title: Localized.string("temporizador.titulo"), detents: [.medium, .large]) {
             EditorialRow(title: "Hasta dormirme", value: "45 min", isSelected: false) {}
             EditorialRow(title: "45 min", isSelected: true) {}
-            EditorialRow(title: Localized.string("timer.off")) {}
+            EditorialRow(title: Localized.string("temporizador.apagado")) {}
             HairlineAction(title: Localized.string("common.save")) { dismiss() }
                 .padding(.top, Grid.group)
             TextAction(title: "Ahora no") { dismiss() }

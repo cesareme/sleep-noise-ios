@@ -127,204 +127,6 @@
         }
       }
     },
-    "timer.title": {
-      "comment": "Timer sheet title",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sleep timer"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Temporizador"
-          }
-        }
-      }
-    },
-    "timer.off": {
-      "comment": "Clears the sleep timer",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Off"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apagado"
-          }
-        }
-      }
-    },
-    "timer.minutesFormat": {
-      "comment": "Short duration. Argument is minutes.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld min"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld min"
-          }
-        }
-      }
-    },
-    "timer.custom": {
-      "comment": "Custom timer",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Custom"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Personalizado"
-          }
-        }
-      }
-    },
-    "timer.note": {
-      "comment": "Explains the fade",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Playback fades out before the timer ends."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "El audio se desvanece antes de que termine el temporizador."
-          }
-        }
-      }
-    },
-    "timer.locked": {
-      "comment": "Shown when a timer is locked",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Timers past 60 minutes and custom lengths are part of Pro."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Los temporizadores de más de 60 minutos y a medida son parte de Pro."
-          }
-        }
-      }
-    },
-    "timer.remaining": {
-      "comment": "Label above the countdown",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Remaining"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Restante"
-          }
-        }
-      }
-    },
-    "mixes.title": {
-      "comment": "Mix library title",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Saved mixes"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mezclas guardadas"
-          }
-        }
-      }
-    },
-    "mixes.empty": {
-      "comment": "Empty library",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No saved mixes yet."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aún no hay mezclas guardadas."
-          }
-        }
-      }
-    },
-    "mixes.save.title": {
-      "comment": "Save dialog title",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Save mix"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Guardar mezcla"
-          }
-        }
-      }
-    },
-    "mixes.defaultNameFormat": {
-      "comment": "Default name. Argument is a number.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mix %lld"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mezcla %lld"
-          }
-        }
-      }
-    },
     "paywall.title": {
       "comment": "Paywall title",
       "extractionState": "manual",
@@ -649,24 +451,6 @@
         }
       }
     },
-    "nowplaying.title": {
-      "comment": "Now Playing title when no mix is loaded",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sleep Noise"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ruido para dormir"
-          }
-        }
-      }
-    },
     "nowplaying.artist": {
       "comment": "Now Playing artist",
       "extractionState": "manual",
@@ -699,108 +483,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld por ciento"
-          }
-        }
-      }
-    },
-    "breath.allNight": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "All night (subtle)"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Toda la noche (sutil)"
-          }
-        }
-      }
-    },
-    "breath.dissolve": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Then the waves drift back to their own rhythm. The guide ends on its own."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Después las olas vuelven a su propio ritmo. La guía termina sola."
-          }
-        }
-      }
-    },
-    "breath.duration": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Guide for"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Guiar durante"
-          }
-        }
-      }
-    },
-    "breath.rate": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Breaths per minute"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Respiraciones por minuto"
-          }
-        }
-      }
-    },
-    "breath.rate.format": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld per minute"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld por minuto"
-          }
-        }
-      }
-    },
-    "breath.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Breathing tide"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Marea respiratoria"
           }
         }
       }
@@ -859,40 +541,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "breath.hint": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Breathe in as the wave builds, out as it washes away. No need to watch the screen."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inhala mientras la ola sube, exhala mientras se retira. No hace falta mirar la pantalla."
-          }
-        }
-      }
-    },
-    "breath.comfort": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "If it feels like too little air, pick a faster pace or breathe at your own rhythm."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Si te falta el aire, elige un ritmo más rápido o respira a tu ritmo."
           }
         }
       }
@@ -1038,23 +686,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld días con todo, sin tarjeta"
-          }
-        }
-      }
-    },
-    "breath.allNight.note": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stays with the waves all night, more subtly. Ends with the timer or Pause."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Acompaña las olas toda la noche, más sutil. Termina con el temporizador o al pausar."
           }
         }
       }
@@ -1271,456 +902,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Seguir por el altavoz"
-          }
-        }
-      }
-    },
-    "intent.playSound.title": {
-      "comment": "Shortcut title",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Play a sound"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reproducir un sonido"
-          }
-        }
-      }
-    },
-    "intent.playSound.description": {
-      "comment": "Shortcut description",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Plays one generated sound."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reproduce un sonido generado."
-          }
-        }
-      }
-    },
-    "intent.timer.title": {
-      "comment": "Shortcut title",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Start sleep timer"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Iniciar temporizador"
-          }
-        }
-      }
-    },
-    "intent.timer.description": {
-      "comment": "Shortcut description",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Starts the mix and a timer."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inicia la mezcla y un temporizador."
-          }
-        }
-      }
-    },
-    "intent.stop.title": {
-      "comment": "Shortcut title",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stop"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Detener"
-          }
-        }
-      }
-    },
-    "intent.stop.description": {
-      "comment": "Shortcut description",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stops playback."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Detiene la reproducción."
-          }
-        }
-      }
-    },
-    "intent.param.sound": {
-      "comment": "Shortcut parameter",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sound"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sonido"
-          }
-        }
-      }
-    },
-    "intent.param.minutes": {
-      "comment": "Shortcut parameter",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Minutes"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Minutos"
-          }
-        }
-      }
-    },
-    "intent.sound.type": {
-      "comment": "Shortcut type name",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sound"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sonido"
-          }
-        }
-      }
-    },
-    "intent.playedSoundFormat": {
-      "comment": "Siri dialog. %@ is the sound name.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Playing %@."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reproduciendo %@."
-          }
-        }
-      }
-    },
-    "intent.timerStartedFormat": {
-      "comment": "Siri dialog",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Timer set for %lld minutes."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Temporizador de %lld minutos."
-          }
-        }
-      }
-    },
-    "intent.soundNeedsProFormat": {
-      "comment": "Siri dialog when a sound needs Pro. %1$@ is the sound, %2$@ the list of free sounds.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ is part of Pro. Free sounds: %2$@."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ forma parte de Pro. Sonidos gratuitos: %2$@."
-          }
-        }
-      }
-    },
-    "intent.timerNeedsProFormat": {
-      "comment": "Siri dialog when a timer length needs Pro. %1$lld is the length asked for, %2$@ the list of free lengths.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "A %1$lld minute timer is part of Pro. Free lengths in minutes: %2$@."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Un temporizador de %1$lld minutos forma parte de Pro. Duraciones gratuitas en minutos: %2$@."
-          }
-        }
-      }
-    },
-    "intent.timerOutOfRangeFormat": {
-      "comment": "Siri dialog when the timer length is outside the allowed range. %lld is the longest timer in minutes.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Choose a length between 1 and %lld minutes."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Elige una duración entre 1 y %lld minutos."
-          }
-        }
-      }
-    },
-    "intent.nothingPlaying": {
-      "comment": "Siri dialog when asked to stop and nothing was playing",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nothing was playing."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No sonaba nada."
-          }
-        }
-      }
-    },
-    "intent.nothingToPlay": {
-      "comment": "Siri dialog when asked to start the sleep timer while every sound is at zero",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Raise a sound first."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sube antes un sonido."
-          }
-        }
-      }
-    },
-    "intent.failed": {
-      "comment": "Siri dialog",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Audio didn't start. Try again."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "El audio no se inició. Inténtalo de nuevo."
-          }
-        }
-      }
-    },
-    "intent.unavailable": {
-      "comment": "Siri dialog",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open SleepNoise and try again."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abre SleepNoise e inténtalo de nuevo."
-          }
-        }
-      }
-    },
-    "intent.stopped": {
-      "comment": "Siri dialog",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stopped."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Detenido."
-          }
-        }
-      }
-    },
-    "shortcut.playSound": {
-      "comment": "Shortcuts tile",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Play sound"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reproducir sonido"
-          }
-        }
-      }
-    },
-    "shortcut.timer": {
-      "comment": "Shortcuts tile",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sleep timer"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Temporizador"
-          }
-        }
-      }
-    },
-    "shortcut.stop": {
-      "comment": "Shortcuts tile",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stop"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Detener"
-          }
-        }
-      }
-    },
-    "Play ${sound}": {
-      "comment": "Shortcut parameter summary",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Play ${sound}"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reproduce ${sound}"
-          }
-        }
-      }
-    },
-    "Start a ${minutes} minute timer": {
-      "comment": "Shortcut parameter summary",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Start a ${minutes} minute timer"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inicia un temporizador de ${minutes} minutos"
-          }
-        }
-      }
-    },
-    "Stop": {
-      "comment": "Shortcut parameter summary",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stop"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Detener"
           }
         }
       }
@@ -2884,13 +2065,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hold to save."
+            "value": "Hold to save or rename."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mantén para guardar."
+            "value": "Mantén para guardar o renombrar."
           }
         }
       }
@@ -3053,6 +2234,2064 @@
           "stringUnit": {
             "state": "translated",
             "value": "No se ha podido iniciar el sonido. Reintentar"
+          }
+        }
+      }
+    },
+    "pagina.estado.pausa.llamada": {
+      "comment": "State line: paused by a call.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused · call"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En pausa · llamada"
+          }
+        }
+      }
+    },
+    "madrugada.titulo": {
+      "comment": "Name of Small Hours outside its own screen: Now Playing, Siri, Settings.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Small hours"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Madrugada"
+          }
+        }
+      }
+    },
+    "comun.min": {
+      "comment": "Minutes, abbreviated: lengths and counts.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        }
+      }
+    },
+    "comun.min.quedan": {
+      "comment": "Timer sheet, paused: minutes left of the night.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld min left"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld min left"
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "queda %lld min"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "quedan %lld min"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "comun.mas15": {
+      "comment": "Action: the night ends fifteen minutes later.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+15 min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+15 min"
+          }
+        }
+      }
+    },
+    "temporizador.dormirme": {
+      "comment": "Timer mode: a length with a fade at the end.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Until I sleep"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hasta dormirme"
+          }
+        }
+      }
+    },
+    "temporizador.dormirme.detalle": {
+      "comment": "Subtitle of \"Until I sleep\": its length.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min · fades out at the end"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min · se funde al final"
+          }
+        }
+      }
+    },
+    "temporizador.manto": {
+      "comment": "Timer mode: it sounds until an hour of the clock.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blanket"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manto"
+          }
+        }
+      }
+    },
+    "temporizador.manto.detalle": {
+      "comment": "Subtitle of \"Blanket\": its hour, and the minutes after which the level eases down.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "until %1$@ · eases down after %2$lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hasta las %1$@ · baja un poco a los %2$lld min"
+          }
+        }
+      }
+    },
+    "temporizador.duracion": {
+      "comment": "Timer sheet: row of the wheel of lengths.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Length"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duración"
+          }
+        }
+      }
+    },
+    "temporizador.hora": {
+      "comment": "Timer sheet: row of the time picker of the blanket.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hora"
+          }
+        }
+      }
+    },
+    "temporizador.estado.manto": {
+      "comment": "Setting of the timer row: a blanket and its hour.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blanket · until %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manto · hasta las %@"
+          }
+        }
+      }
+    },
+    "temporizador.nota": {
+      "comment": "Note at the foot of the timer sheet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The sound fades; your alarm is never touched."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El sonido se funde; tu alarma no se toca."
+          }
+        }
+      }
+    },
+    "noche.estado.funde": {
+      "comment": "When the night ends, as an hour.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fades at %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se funde a las %@"
+          }
+        }
+      }
+    },
+    "noche.estado.fundiendo": {
+      "comment": "The final fade is under way: whole minutes left.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fading · %lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fundiendo · %lld min"
+          }
+        }
+      }
+    },
+    "pagina.estado.sonando.hasta": {
+      "comment": "State line: playing under a blanket, until its hour.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playing · until %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonando · hasta las %@"
+          }
+        }
+      }
+    },
+    "ax.temporizador.valor": {
+      "comment": "VoiceOver value of the timer row while it counts: the mode, then the minutes left as `ax.anuncio.quedan` says them.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "ax.duracion.pista": {
+      "comment": "VoiceOver hint of the wheel of lengths.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe up or down."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desliza arriba o abajo."
+          }
+        }
+      }
+    },
+    "ax.mas15": {
+      "comment": "VoiceOver label of \"+15 min\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fifteen more minutes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quince minutos más"
+          }
+        }
+      }
+    },
+    "ax.anuncio.quedan": {
+      "comment": "VoiceOver announcement after \"+15 min\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld minute left"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld minutes left"
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Queda %lld minuto"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Quedan %lld minutos"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ax.anuncio.hasta": {
+      "comment": "VoiceOver announcement after \"+15 min\" under a blanket.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Until %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hasta las %@"
+          }
+        }
+      }
+    },
+    "marea.instruccion": {
+      "comment": "Tide sheet: the one sentence there is to know.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breathe in as the wave rises, out as it pulls back. No need to watch the screen."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inhala mientras la ola sube, exhala mientras se retira. No hace falta mirar la pantalla."
+          }
+        }
+      }
+    },
+    "marea.fase.inhala": {
+      "comment": "Tide sheet: the water is rising.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "breathe in"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "inhala"
+          }
+        }
+      }
+    },
+    "marea.fase.exhala": {
+      "comment": "Tide sheet: the water is falling.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "breathe out"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "exhala"
+          }
+        }
+      }
+    },
+    "marea.estado.pausa": {
+      "comment": "State word of the tide while the night is paused.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "paused"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en pausa"
+          }
+        }
+      }
+    },
+    "marea.estado.apagada": {
+      "comment": "Spoken state of the water line while the tide is off.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "off"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "apagada"
+          }
+        }
+      }
+    },
+    "marea.retira.hora": {
+      "comment": "Tide sheet: when the guide lets go, as an hour.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recedes at %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se retira a las %@"
+          }
+        }
+      }
+    },
+    "marea.retirada": {
+      "comment": "Tide sheet: note for ten seconds after the guide ended by itself.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It has receded. The sea goes on."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se ha retirado. El mar sigue."
+          }
+        }
+      }
+    },
+    "marea.toggle": {
+      "comment": "Tide sheet: row of the switch, and label of the water line.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tide"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marea"
+          }
+        }
+      }
+    },
+    "marea.descenso": {
+      "comment": "Tide sheet: the ritual. The guide starts fast and comes down to the pace.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descent"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descenso"
+          }
+        }
+      }
+    },
+    "marea.ritmo": {
+      "comment": "Subtitle of \"Descent\": the pace it starts at.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start at %lld a minute"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empezar a %lld por minuto"
+          }
+        }
+      }
+    },
+    "marea.ritmo.fila": {
+      "comment": "Tide sheet: row of the pace.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pace"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ritmo"
+          }
+        }
+      }
+    },
+    "marea.ritmo.tranquilo": {
+      "comment": "Pace option with a name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calm · %lld per minute"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tranquilo · %lld por minuto"
+          }
+        }
+      }
+    },
+    "marea.ritmo.suave": {
+      "comment": "Pace option with a name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gentle · %lld per minute"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suave · %lld por minuto"
+          }
+        }
+      }
+    },
+    "marea.ritmo.tranquilo.corto": {
+      "comment": "Value of the pace row.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calm · %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tranquilo · %lld"
+          }
+        }
+      }
+    },
+    "marea.ritmo.suave.corto": {
+      "comment": "Value of the pace row.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gentle · %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suave · %lld"
+          }
+        }
+      }
+    },
+    "marea.ritmo.exacto": {
+      "comment": "A pace without a name; also how VoiceOver says any pace.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld per minute"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld por minuto"
+          }
+        }
+      }
+    },
+    "marea.retira": {
+      "comment": "Tide sheet: row of the length of the guide.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recedes after"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se retira a los"
+          }
+        }
+      }
+    },
+    "marea.retira.valor": {
+      "comment": "Length of the guide, in minutes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        }
+      }
+    },
+    "ax.agua.pista": {
+      "comment": "VoiceOver hint of the water line.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe up or down to change the pace."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desliza arriba o abajo para cambiar el ritmo."
+          }
+        }
+      }
+    },
+    "ax.marea.pista": {
+      "comment": "VoiceOver hint of the tide switch with access while nothing plays.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap to turn it on; the sound starts."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca dos veces para encenderla; el sonido arranca."
+          }
+        }
+      }
+    },
+    "barra.noche": {
+      "comment": "Bottom bar: opens the Night screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noche"
+          }
+        }
+      }
+    },
+    "barra.noche.ax": {
+      "comment": "VoiceOver label of \"Night\" on the bottom bar.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night screen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantalla de noche"
+          }
+        }
+      }
+    },
+    "noche.estado.sonando": {
+      "comment": "Night screen, state word: playing with no timer.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playing"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonando"
+          }
+        }
+      }
+    },
+    "noche.estado.hasta": {
+      "comment": "Night screen, state word under a blanket: the hour it sounds until. Lower case: it completes the clock above it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "until %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hasta las %@"
+          }
+        }
+      }
+    },
+    "noche.estado.pausa": {
+      "comment": "Night screen, state word: paused.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En pausa"
+          }
+        }
+      }
+    },
+    "noche.estado.sin_sonido": {
+      "comment": "Night screen, state word: the sound did not start. A touch tries again.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No sound"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin sonido"
+          }
+        }
+      }
+    },
+    "noche.estado.termino": {
+      "comment": "Night screen, state word once the night has ended by itself: the hour it ended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ended at %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terminó a las %@"
+          }
+        }
+      }
+    },
+    "noche.primera": {
+      "comment": "Night screen, first time only: fixed text, not a tip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can turn the screen off. The sound keeps playing."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puedes apagar la pantalla. El sonido sigue."
+          }
+        }
+      }
+    },
+    "noche.volver": {
+      "comment": "Night screen, first time only, under the sentence above.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold to go back"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantén pulsado para volver"
+          }
+        }
+      }
+    },
+    "estado.volumen": {
+      "comment": "State word just after the vertical drag of Night and Small Hours: the session level, never the system volume.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playing · at %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonando · al %lld"
+          }
+        }
+      }
+    },
+    "madrugada.estado": {
+      "comment": "Button that takes the place of \"+15 min\" once the night has ended. The figure is the length of the recipe.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Small hours · %lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Madrugada · %lld min"
+          }
+        }
+      }
+    },
+    "madrugada.quedan": {
+      "comment": "Small Hours: the figure, minutes left.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        }
+      }
+    },
+    "madrugada.retirada.palabra": {
+      "comment": "Small Hours, the words under the figure of minutes during the last minutes, while the sea fades. The figure above already says the minutes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Winding down"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se retira"
+          }
+        }
+      }
+    },
+    "comun.parar": {
+      "comment": "Small Hours: ends it. The only \"Stop\" of the app.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parar"
+          }
+        }
+      }
+    },
+    "ax.noche.pantalla": {
+      "comment": "VoiceOver label of the Night screen as one element.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night screen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantalla de noche"
+          }
+        }
+      }
+    },
+    "ax.noche.valor": {
+      "comment": "VoiceOver value of the Night screen: the hour, then the state word.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@. %2$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@. %2$@"
+          }
+        }
+      }
+    },
+    "ax.noche.pista": {
+      "comment": "VoiceOver hint of the Night screen while it plays.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap to pause. Hold to go back."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca dos veces para pausar. Mantén para volver."
+          }
+        }
+      }
+    },
+    "ax.noche.pista.reanudar": {
+      "comment": "VoiceOver hint of the Night screen while it is paused.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap to resume. Hold to go back."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca dos veces para reanudar. Mantén para volver."
+          }
+        }
+      }
+    },
+    "ax.noche.pista.error": {
+      "comment": "VoiceOver hint of the Night screen when the sound did not start.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap to try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca dos veces para reintentar."
+          }
+        }
+      }
+    },
+    "ax.accion.reanudar": {
+      "comment": "VoiceOver action: resume playback.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reanudar"
+          }
+        }
+      }
+    },
+    "ax.accion.volver": {
+      "comment": "VoiceOver action and button of the Night screen: back to the page.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to the page"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volver a la página"
+          }
+        }
+      }
+    },
+    "ax.anuncio.pagina": {
+      "comment": "VoiceOver announcement on leaving the Night screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Page"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Página"
+          }
+        }
+      }
+    },
+    "ax.volumen": {
+      "comment": "VoiceOver label of the session level on Night and Small Hours. Not the system volume.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volume"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volumen"
+          }
+        }
+      }
+    },
+    "ax.altavoz.pista": {
+      "comment": "VoiceOver hint of \"Keep playing on speaker\": the level it is capped at.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The volume drops to %lld."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El volumen baja al %lld."
+          }
+        }
+      }
+    },
+    "ax.la.madrugada": {
+      "comment": "VoiceOver label of the button that starts Small Hours: its length in minutes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Small hours, %lld minutes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Madrugada, %lld minutos"
+          }
+        }
+      }
+    },
+    "ax.madrugada.valor": {
+      "comment": "VoiceOver value of Small Hours: minutes left, then the state.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld minute left. %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld minutes left. %2$@"
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Queda %1$lld minuto. %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Quedan %1$lld minutos. %2$@"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ax.madrugada.pista": {
+      "comment": "VoiceOver hint of Small Hours while it plays.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap to pause."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca dos veces para pausar."
+          }
+        }
+      }
+    },
+    "ax.madrugada.pista.reanudar": {
+      "comment": "VoiceOver hint of Small Hours while it is paused.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap to resume."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca dos veces para reanudar."
+          }
+        }
+      }
+    },
+    "ax.madrugada.retirada": {
+      "comment": "VoiceOver value of Small Hours during its last minutes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Winding down, %lld minute left"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Winding down, %lld minutes left"
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Se retira, queda %lld minuto"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Se retira, quedan %lld minutos"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "mezclas.titulo": {
+      "comment": "Title of the Mixes sheet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mixes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mezclas"
+          }
+        }
+      }
+    },
+    "mezclas.seccion.tuyas": {
+      "comment": "Mixes: header of the section with the mixes the person saved. Small caps.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "yours"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tuyas"
+          }
+        }
+      }
+    },
+    "mezclas.seccion.casa": {
+      "comment": "Mixes: header of the section with the four house mixes. Small caps.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "from the house"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "de la casa"
+          }
+        }
+      }
+    },
+    "mezclas.esta_noche": {
+      "comment": "Mixes: first row of \"yours\", the live mix while it has no name of its own.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tonight"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta noche"
+          }
+        }
+      }
+    },
+    "mezclas.receta.capa": {
+      "comment": "Mixes: one layer of a recipe, name in lower case and level (\"rain 55\").",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ %2$lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ %2$lld"
+          }
+        }
+      }
+    },
+    "mezclas.receta.pro": {
+      "comment": "Mixes: last part of a recipe, a layer that needs Pro without access (\"ocean is Pro\"). Same ink, never struck through.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is Pro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ es Pro"
+          }
+        }
+      }
+    },
+    "mezclas.receta.separador": {
+      "comment": "Mixes: separator between the parts of a recipe.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "·"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "·"
+          }
+        }
+      }
+    },
+    "mezclas.sonando": {
+      "comment": "Mixes: state word of the row of the loaded mix while it sounds. Small caps.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "playing now"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sonando ahora"
+          }
+        }
+      }
+    },
+    "mezclas.vacio": {
+      "comment": "Mixes: takes the place of \"yours\" when nothing is saved. Not an instruction and not a button.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tonight's mix is saved from its name."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La mezcla de esta noche se guarda desde su nombre."
+          }
+        }
+      }
+    },
+    "mezclas.guardada": {
+      "comment": "State line of the page for three seconds after a save, and its VoiceOver announcement.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardada"
+          }
+        }
+      }
+    },
+    "mezclas.eliminar.titulo": {
+      "comment": "Mixes: title of the confirmation before a saved mix is deleted. %@ is its name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete \"%@\"?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Eliminar \"%@\"?"
+          }
+        }
+      }
+    },
+    "mezclas.eliminar.nota": {
+      "comment": "Mixes: message of the delete confirmation. What sounds is not touched.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tonight's mix doesn't change."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La mezcla de esta noche no cambia."
+          }
+        }
+      }
+    },
+    "mezcla.guardar.titulo": {
+      "comment": "Title of the system alert that saves the live mix.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save as a mix"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar como mezcla"
+          }
+        }
+      }
+    },
+    "mezcla.menu.vaciar": {
+      "comment": "Menu of the mix name: every layer to zero. No confirmation: loading a mix undoes it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vaciar"
+          }
+        }
+      }
+    },
+    "mezcla.nombre.auto.3": {
+      "comment": "Name a mix of three layers gets from them when the person gave none (\"Pink, rain and wind\").",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$@ and %3$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$@ y %3$@"
+          }
+        }
+      }
+    },
+    "mezcla.nombre.auto.mas": {
+      "comment": "Name a mix of four or more layers gets from them (\"Pink and 3 more\"). The number is never under 3.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ and %2$lld more"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ y %2$lld más"
+          }
+        }
+      }
+    },
+    "pagina.capas.y": {
+      "comment": "Name a mix of two layers gets from them (\"Pink and rain\"). The second in lower case.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ and %2$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ y %2$@"
+          }
+        }
+      }
+    },
+    "comun.renombrar": {
+      "comment": "Menu of a saved mix and of the mix name; title of the rename alert.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renombrar"
+          }
+        }
+      }
+    },
+    "comun.eliminar": {
+      "comment": "Destructive action of the system: delete a saved mix.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar"
+          }
+        }
+      }
+    },
+    "ax.mezcla.pista": {
+      "comment": "VoiceOver hint of a mix row.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap to load it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca dos veces para cargarla."
+          }
+        }
+      }
+    },
+    "ax.esta_noche": {
+      "comment": "VoiceOver label of the first row of Mixes: the live mix.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tonight, the current mix"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta noche, la mezcla de ahora"
+          }
+        }
+      }
+    },
+    "ax.esta_noche.pista": {
+      "comment": "VoiceOver hint of the live mix row.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold to save it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantén para guardarla."
+          }
+        }
+      }
+    },
+    "ax.receta.pro": {
+      "comment": "VoiceOver: spoken end of a recipe with a layer that needs Pro.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ requires Pro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ requiere Pro"
+          }
+        }
+      }
+    },
+    "ax.vaciar.pista": {
+      "comment": "VoiceOver hint of Clear.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sets every layer to zero. Undo by loading a mix."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pone todas las capas a cero. Se deshace cargando una mezcla."
+          }
+        }
+      }
+    },
+    "atajo.reproducir.titulo": {
+      "comment": "Shortcuts: title of the action that plays the last mix.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play the last mix"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pon la última mezcla"
+          }
+        }
+      }
+    },
+    "atajo.pausa.titulo": {
+      "comment": "Shortcuts: title of the action that pauses.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausa"
+          }
+        }
+      }
+    },
+    "atajo.mezcla.titulo": {
+      "comment": "Shortcuts: title of the action that plays a mix by name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play a mix"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pon una mezcla"
+          }
+        }
+      }
+    },
+    "atajo.parametro.mezcla": {
+      "comment": "Shortcuts: name of the mix parameter and of its type.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mix"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mezcla"
+          }
+        }
+      }
+    },
+    "atajo.parametro.modo": {
+      "comment": "Shortcuts: name of the timer mode parameter.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modo"
+          }
+        }
+      }
+    },
+    "atajo.parametro.minutos": {
+      "comment": "Shortcuts: length of \"Until I sleep\", when the Shortcut carries one.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minutes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minutos"
+          }
+        }
+      }
+    },
+    "atajo.modo.dormirme.sinonimo": {
+      "comment": "Shortcuts: another way of saying the timer mode \"Until I sleep\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "until I fall asleep"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hasta que me duerma"
+          }
+        }
+      }
+    },
+    "atajo.modo.manto.sinonimo": {
+      "comment": "Shortcuts: another way of saying the timer mode \"Blanket\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "all night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "toda la noche"
+          }
+        }
+      }
+    },
+    "atajo.modo.apagado.sinonimo": {
+      "comment": "Shortcuts: another way of saying the timer mode \"Off\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no timer"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sin temporizador"
+          }
+        }
+      }
+    },
+    "Play ${mix}": {
+      "comment": "Shortcuts: summary of the action that plays a mix.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play ${mix}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pon ${mix}"
+          }
+        }
+      }
+    },
+    "Set the timer to ${mode}": {
+      "comment": "Shortcuts: summary of the timer action.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set the timer to ${mode}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pon el temporizador en ${mode}"
+          }
+        }
+      }
+    },
+    "siri.error": {
+      "comment": "Siri: the only thing a playback Shortcut says, when the sound did not start.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't start the sound."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se ha podido iniciar el sonido."
+          }
+        }
+      }
+    },
+    "siri.mezcla.cual": {
+      "comment": "Siri: asks which mix when none was named or the one named is gone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Which of your mixes?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Cuál de tus mezclas?"
+          }
+        }
+      }
+    },
+    "temporizador.cabecera.fundiendo": {
+      "comment": "Timer sheet, line under the minutes of the final fade. The figure above already says how long.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fading"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fundiendo"
+          }
+        }
+      }
+    },
+    "temporizador.cabecera.manto": {
+      "comment": "Timer sheet, line under the hour of a blanket while its dip is still to come: the minutes after which the level eases down.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eases down after %lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baja un poco a los %lld min"
           }
         }
       }

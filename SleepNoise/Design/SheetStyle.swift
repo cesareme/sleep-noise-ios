@@ -29,19 +29,32 @@ struct GrafitoSheet<Content: View>: View {
 /// opened from the night page takes its one ink, title included.
 struct SheetHeader: View {
     var title: String
+    /// A state word on the right of the title, on its baseline ("pro" on
+    /// the tide sheet without access). Never a badge.
+    var stateWord: String?
+    /// What VoiceOver reads instead of the title when the word changes its
+    /// meaning ("Tide, requires Pro").
+    var spokenTitle: String?
 
     @Environment(\.nightPhase) private var phase
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(verbatim: title)
-                .step(.header)
-                .foregroundStyle(Ink.primary(phase))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Grid.margin)
-                .padding(.top, Grid.unit * 6)
-                .padding(.bottom, Grid.inner)
-                .accessibilityAddTraits(.isHeader)
+            HStack(alignment: .firstTextBaseline, spacing: Grid.inner) {
+                Text(verbatim: title)
+                    .step(.header)
+                    .foregroundStyle(Ink.primary(phase))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if let stateWord {
+                    StateWord(text: stateWord)
+                }
+            }
+            .padding(.horizontal, Grid.margin)
+            .padding(.top, Grid.unit * 6)
+            .padding(.bottom, Grid.inner)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: spokenTitle ?? title))
+            .accessibilityAddTraits(.isHeader)
             Hairline().padding(.horizontal, Grid.margin)
         }
     }
@@ -61,6 +74,22 @@ extension View {
             .presentationBackground(surface == .sheet ? Ink.sheet : Ink.background)
             .presentationDragIndicator(.visible)
             .presentationDetents(detents)
+            .preferredColorScheme(.dark)
+    }
+
+    /// The same, for a sheet that moves between its detents itself: the
+    /// timer opens at half height and goes to full when its wheel opens.
+    func grafitoSheet(
+        surface: InkSurface = .sheet,
+        detents: Set<PresentationDetent>,
+        selection: Binding<PresentationDetent>
+    ) -> some View {
+        self
+            .environment(\.inkSurface, surface)
+            .tint(Ink.text)
+            .presentationBackground(surface == .sheet ? Ink.sheet : Ink.background)
+            .presentationDragIndicator(.visible)
+            .presentationDetents(detents, selection: selection)
             .preferredColorScheme(.dark)
     }
 }

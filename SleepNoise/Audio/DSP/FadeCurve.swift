@@ -8,6 +8,8 @@ enum FadeShape {
     /// Ease out: quick at first, settling into the target. The start of
     /// playback, so the bed is there at once and arrives without a bump.
     static let easeOut: Int32 = 1
+    /// A straight line: the weight of the tide as it lets go.
+    static let linear: Int32 = 2
 }
 
 /// Equal-slope smoothstep used for the sleep-timer fade.
@@ -31,7 +33,9 @@ enum FadeCurve {
     /// The curve for a `FadeShape`. An unknown shape is the smooth one.
     @inline(__always)
     static func shaped(_ progress: Float, shape: Int32) -> Float {
-        shape == FadeShape.easeOut ? easeOut(progress) : unity(progress)
+        if shape == FadeShape.easeOut { return easeOut(progress) }
+        if shape == FadeShape.linear { return progress < 0 ? 0 : (progress > 1 ? 1 : progress) }
+        return unity(progress)
     }
 
     /// 1 at the start of a fade-out, 0 at the end.

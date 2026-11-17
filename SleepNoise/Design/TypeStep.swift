@@ -191,10 +191,55 @@ private struct Stepped: ViewModifier {
     }
 }
 
+/// Sizes one text in whole lines of a given height and centres it in them.
+/// The system font is shorter than the line of the scale (15 pt text is
+/// about 18 pt tall, its line is 20), so a text left alone puts a row off
+/// the 4 pt grid by a little, and by more with every line it wraps to.
+private struct LineBox: Layout {
+    var lineHeight: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard let text = subviews.first, lineHeight > 0 else { return .zero }
+        let size = text.sizeThatFits(proposal)
+        // n lines are n line heights less the air the last one does not
+        // carry: rounding up, with half a point of slack, counts them.
+        let lines = max(1, ((size.height - 0.5) / lineHeight).rounded(.up))
+        return CGSize(width: size.width, height: lines * lineHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(
+            at: CGPoint(x: bounds.midX, y: bounds.midY),
+            anchor: .center,
+            proposal: ProposedViewSize(width: bounds.width, height: nil)
+        )
+    }
+}
+
+private struct LineBoxed: ViewModifier {
+    let step: TypeStep
+
+    @Environment(\.nightPhase) private var phase
+    @Environment(\.dynamicTypeSize) private var dynamicType
+
+    func body(content: Content) -> some View {
+        let size = step.scaledSize(for: dynamicType)
+        let natural = UIFont.systemFont(ofSize: size, weight: step.weight(phase).uiWeight).lineHeight
+        return LineBox(lineHeight: max(natural, step.scaledLineHeight(for: dynamicType))) { content }
+    }
+}
+
 extension View {
     /// The only way a text gets its font.
     func step(_ step: TypeStep) -> some View {
         modifier(Stepped(step: step))
+    }
+
+    /// A stepped text in whole lines of the scale: one line of step 7 takes
+    /// 20 pt and two take 40. For the rows whose height the mock-up counts
+    /// line by line (72 pt with a recipe of one line, 92 with two).
+    func lineBox(_ step: TypeStep) -> some View {
+        modifier(LineBoxed(step: step))
     }
 }
 

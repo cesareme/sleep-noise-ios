@@ -141,6 +141,8 @@ final class PageLogicTests: XCTestCase {
         XCTAssertEqual(PageStatus.resolve(Input(pauseCause: .person)), .paused)
         XCTAssertEqual(PageStatus.resolve(Input(pauseCause: .system)), .paused)
         XCTAssertEqual(PageStatus.resolve(Input(pauseCause: .lostOutput)), .pausedHeadphones)
+        XCTAssertEqual(PageStatus.resolve(Input(pauseCause: .headphones)), .pausedHeadphones)
+        XCTAssertEqual(PageStatus.resolve(Input(pauseCause: .call)), .pausedCall)
 
         // The final fade outranks everything; whole minutes, never zero.
         XCTAssertEqual(
@@ -199,6 +201,7 @@ final class PageLogicTests: XCTestCase {
             (.playingFallback(.pink, percent: 40), "Playing · pink at 40", "Sonando · rosa a 40"),
             (.paused, "Paused", "En pausa"),
             (.pausedHeadphones, "Paused · headphones", "En pausa · auriculares"),
+            (.pausedCall, "Paused · call", "En pausa · llamada"),
             (.error(attempt: 1), "Couldn't start the sound. Tap to try again.",
              "No se ha podido iniciar el sonido. Toca para reintentar."),
             (.error(attempt: 2), "If it still won't play, close the app and open it again.",
@@ -324,7 +327,8 @@ final class PageLogicTests: XCTestCase {
             "mezcla.nombre.vacio", "pagina.estado.silencio", "pagina.estado.silencio.pro",
             "pagina.estado.sonando", "pagina.estado.sonando.funde", "pagina.estado.sonando.sin",
             "pagina.estado.sonando.defecto", "pagina.estado.fundiendo", "pagina.estado.pausa",
-            "estado.pausa.auriculares", "pagina.error.inicio", "pagina.error.inicio.2",
+            "estado.pausa.auriculares", "pagina.estado.pausa.llamada", "madrugada.titulo",
+            "pagina.error.inicio", "pagina.error.inicio.2",
             "pagina.error.inicio.3", "capas.todas", "capas.mas", "capas.tope", "barra.mezclas",
             "marea.titulo", "marea.estado.apagada.pro", "marea.estado.guiando.corto",
             "marea.estado.disolviendo", "temporizador.titulo", "temporizador.apagado",
@@ -333,7 +337,7 @@ final class PageLogicTests: XCTestCase {
             "ax.mas.pista", "ax.nombre.pista", "ax.nombre.pista.noche", "ax.accion.guardar",
             "ax.accion.volver.dia", "ax.marea.off.pro", "ax.marea.pista.pro", "ax.prueba.pista",
             "ax.reintentar", "trial.chip.daysFormat",
-            "mixes.save.title", "common.save", "common.cancel",
+            "mezcla.guardar.titulo", "common.save", "common.cancel",
             "mezcla.menu.guardar.pro", "ax.guardar.pro", "ax.guardar.pro.pista", "marea.oceano.subido",
         ] + SoundID.allCases.flatMap { [$0.nameKey, $0.detailKey] }
         for language in ["en", "es"] {
@@ -693,9 +697,9 @@ final class PageModelTests: XCTestCase {
         let percent = Int64((MixerModel.tideOceanLevel * 100).rounded())
         XCTAssertEqual(model.breathingNote, Localized.format("marea.oceano.subido", percent))
         XCTAssertTrue(model.breathingNote?.contains("\(percent)") == true)
-        // Switched off before the level is touched: the ocean goes back.
+        // Switched off: the tide never lowers the ocean it raised.
         model.setBreathingEnabled(false)
-        XCTAssertEqual(model.levels[.ocean], 0)
+        XCTAssertEqual(model.levels[.ocean], MixerModel.tideOceanLevel)
     }
 
     // MARK: Levels on disk

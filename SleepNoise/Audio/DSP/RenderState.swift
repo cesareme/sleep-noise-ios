@@ -87,14 +87,16 @@ struct RenderState {
     var right: ChannelGenerators
 
     var smoothed = SoundGains.zero
-    var envelope: Float = 0
-    var fadeFrom: Float = 0
-    var fadeTo: Float = 0
-    var fadeProgress: Float = 1
-    var fadeStep: Float = 0
-    /// Curve of the fade in progress: a `FadeShape`.
-    var fadeShape: Int32 = FadeShape.smooth
+    /// Play, Pause and the final fade of the timer: 0 to 1, counted in whole
+    /// samples so a fifteen minute fade is as exact as a short one (C31).
+    var envelopeRamp = SampleRamp(0)
     var appliedEnvelopeGeneration: UInt32 = 0
+    /// The session level (C51): Manto, the vertical axis of Night and the
+    /// speaker cap. Applied after the soft clip, so turning the night down
+    /// changes how loud it is and never how it sounds. It survives a fresh
+    /// start: the level belongs to the session, not to one Play.
+    var masterRamp = SampleRamp(1)
+    var appliedMasterGeneration: UInt32 = 0
     var gainCoefficient: Float = 0.002
     var sampleRate: Float = 48_000
     var lastCommand = EngineCommand.silence
@@ -111,9 +113,13 @@ struct RenderState {
     var breathValue: Float = 0
     var breathValueSmoothed: Float = 0
     var breathValueCoefficient: Float = 0.0001
-    /// Target weight (ramped linearly over the command's dissolve) and the
+    /// Where the weight is heading: a straight ramp over the command's
+    /// dissolve, counted in whole samples like the two gains (rule 5; a
+    /// fifteen minute dissolve added in float steps never left 1), and the
     /// 1.5 s smoothed weight actually applied.
-    var breathWeightTarget: Float = 0
+    var breathWeightRamp = SampleRamp(0)
+    /// The dissolve of the ramp in course, to tell a new request apart.
+    var breathDissolveSeconds: Float = 0
     var breathWeight: Float = 0
     var breathWeightCoefficient: Float = 0.00001
     /// Bed modulation depth, smoothed like the weight so a settings change
@@ -121,6 +127,26 @@ struct RenderState {
     var breathDepth: Float = 0.4
     /// Level of what actually leaves `processStereo`, for the interface.
     var outputMeter = OutputMeter()
+
+    /// The envelope right now. Setting it drops any fade in progress.
+    var envelope: Float {
+        get { envelopeRamp.value }
+        set { envelopeRamp.set(newValue) }
+    }
+
+    /// Curve of the envelope fade in progress: a `FadeShape`.
+    var fadeShape: Int32 { envelopeRamp.shape }
+
+    /// The master level right now.
+    var master: Float { masterRamp.value }
+
+    /// The weight the tide is at on its way to the command's, before the
+    /// smoothing. Setting it drops any dissolve in progress.
+    var breathWeightTarget: Float {
+        get { breathWeightRamp.value }
+        set { breathWeightRamp.set(newValue) }
+    }
+
     /// `thunderSchedule` goes to both channels unchanged: it moves the
     /// thunder rumbles in time, never one channel against the other.
     init(sampleRate: Float = 48_000, thunderSchedule: UInt32 = 0) {
@@ -132,6 +158,14 @@ struct RenderState {
 
     mutating func prepare(sampleRate: Float) {
         let rate = sampleRate > 1 ? sampleRate : 48_000
+        // A fade in course keeps its place and what is left of it lasts the
+        // same seconds at the new rate (rule 8).
+        if rate != self.sampleRate {
+            let ratio = Double(rate) / Double(self.sampleRate)
+            envelopeRamp.rescale(by: ratio)
+            masterRamp.rescale(by: ratio)
+            breathWeightRamp.rescale(by: ratio)
+        }
         self.sampleRate = rate
         gainCoefficient = 1 - expf(-1 / (rate * 0.02))
         breathWeightCoefficient = 1 - expf(-1 / (rate * 1.5))
@@ -150,12 +184,11 @@ struct RenderState {
     /// Silence everything so the next Play fades in from nothing. Only called
     /// while the engine is stopped, so the render thread is not running.
     mutating func resetForFreshStart() {
-        envelope = 0
-        fadeFrom = 0
-        fadeTo = 0
-        fadeProgress = 1
-        fadeStep = 0
-        fadeShape = FadeShape.smooth
+        envelopeRamp.reset(to: 0)
+        // A master ramp caught half way by the stop lands where it was
+        // going: nothing is audible, and the next Play starts at the level
+        // the session asked for.
+        masterRamp.set(masterRamp.to)
         breathWeight = 0
         breathWeightTarget = 0
         breathValue = 0
@@ -169,22 +202,34 @@ struct RenderState {
         if command.envelopeGeneration != appliedEnvelopeGeneration {
             appliedEnvelopeGeneration = command.envelopeGeneration
             if command.rampSamples >= 0 {
-                beginFade(
+                envelopeRamp.begin(
                     to: command.envelopeTarget,
                     samples: command.rampSamples,
                     shape: command.envelopeShape
                 )
             }
         }
-        advanceFade()
+        if command.masterGeneration != appliedMasterGeneration {
+            appliedMasterGeneration = command.masterGeneration
+            if command.masterRampSamples >= 0 {
+                masterRamp.begin(to: unitGain(command.masterTarget), samples: command.masterRampSamples)
+            }
+        }
+        envelopeRamp.advance()
+        masterRamp.advance()
         smoothed.approach(command.gains, coefficient: gainCoefficient)
         advanceBreath(command.breath)
 
+        let envelope = envelopeRamp.value
+        let master = masterRamp.value
         let l = left.mix(smoothed, breath: breathValueSmoothed, weight: breathWeight, depth: breathDepth)
         let r = right.mix(smoothed, breath: breathValueSmoothed, weight: breathWeight, depth: breathDepth)
-        let outLeft = softClip(l * envelope)
-        let outRight = softClip(r * envelope)
-        // Measured after the soft clip: the level of what is really heard.
+        // The master multiplies what the soft clip already bounded: with a
+        // gain of 1 at most the output stays inside full scale, and a mix
+        // that leans on the knee keeps the same colour at any level.
+        let outLeft = softClip(l * envelope) * master
+        let outRight = softClip(r * envelope) * master
+        // Measured last: the level of what is really heard.
         outputMeter.add(left: outLeft, right: outRight)
         return (outLeft, outRight)
     }
@@ -196,7 +241,7 @@ struct RenderState {
     /// zero or fading in from zero) the weight is seeded directly so the sea
     /// rises with the first inhale instead of dipping after the fade-in.
     @inline(__always)
-    private mutating func advanceBreath(_ breath: BreathParameters) {
+    mutating func advanceBreath(_ breath: BreathParameters) {
         if breath.epoch != breathEpoch {
             breathEpoch = breath.epoch
             breathSample = 0
@@ -204,8 +249,8 @@ struct RenderState {
             // Seed while nothing is audible yet, or while the fade-in from
             // silence is still under way (large IO buffers can deliver the
             // epoch one buffer after the fade began).
-            let fadingInFromSilence = fadeStep > 0 && fadeFrom == 0 && fadeTo > 0
-            if envelope < 1e-3 || fadingInFromSilence {
+            let fadingInFromSilence = envelopeRamp.isRunning && envelopeRamp.from == 0 && envelopeRamp.to > 0
+            if envelopeRamp.value < 1e-3 || fadingInFromSilence {
                 breathWeightTarget = breath.weight
                 breathWeight = breath.weight
                 breathValue = 0
@@ -213,17 +258,26 @@ struct RenderState {
             }
         }
 
-        // Weight: linear ramp toward the command over its dissolve, then smoothed.
-        if breath.dissolveSeconds > 0 {
-            let step = 1 / (breath.dissolveSeconds * sampleRate)
-            if breathWeightTarget < breath.weight {
-                breathWeightTarget = min(breath.weight, breathWeightTarget + step)
-            } else if breathWeightTarget > breath.weight {
-                breathWeightTarget = max(breath.weight, breathWeightTarget - step)
+        // Weight: a straight ramp toward the command, then smoothed. The
+        // dissolve is the time the whole range takes, so a part of the way
+        // takes that part of it. Counted in samples: a float step for a
+        // long dissolve is lost to rounding near 1 (C31).
+        if breath.weight != breathWeightRamp.to || breath.dissolveSeconds != breathDissolveSeconds {
+            breathDissolveSeconds = breath.dissolveSeconds
+            if breath.dissolveSeconds > 0 {
+                let distance = abs(Double(breath.weight) - Double(breathWeightRamp.value))
+                let samples = (Double(breath.dissolveSeconds) * Double(sampleRate) * distance).rounded()
+                breathWeightRamp.begin(
+                    to: breath.weight,
+                    samples: Int32(min(samples, Double(Int32.max))),
+                    shape: FadeShape.linear
+                )
+            } else {
+                breathWeightRamp.set(breath.weight)
             }
-        } else {
-            breathWeightTarget = breath.weight
         }
+        breathWeightRamp.advance()
+        let breathWeightTarget = breathWeightRamp.value
         breathWeight += (breathWeightTarget - breathWeight) * breathWeightCoefficient
         if breathWeight < 1e-4, breathWeightTarget <= 0 {
             breathWeight = 0
@@ -267,33 +321,13 @@ struct RenderState {
         let frame = processStereo(command)
         return softClip((frame.left + frame.right) * 0.7071)
     }
+}
 
-    private mutating func beginFade(to target: Float, samples: Int32, shape: Int32) {
-        fadeShape = shape
-        if samples <= 1 {
-            envelope = target
-            fadeFrom = target
-            fadeTo = target
-            fadeProgress = 1
-            fadeStep = 0
-            return
-        }
-        fadeFrom = envelope
-        fadeTo = target
-        fadeProgress = 0
-        fadeStep = 1 / Float(samples)
-    }
-
-    private mutating func advanceFade() {
-        guard fadeStep > 0 else { return }
-        fadeProgress += fadeStep
-        if fadeProgress >= 1 {
-            fadeProgress = 1
-            fadeStep = 0
-            envelope = fadeTo
-            return
-        }
-        let shaped = FadeCurve.shaped(fadeProgress, shape: fadeShape)
-        envelope = fadeFrom + (fadeTo - fadeFrom) * shaped
-    }
+/// A gain inside 0...1. Anything else, a NaN included, is silence or unity:
+/// a bad level can turn the night down, never up.
+@inline(__always)
+func unitGain(_ x: Float) -> Float {
+    if x >= 1 { return 1 }
+    if x > 0 { return x }
+    return 0
 }

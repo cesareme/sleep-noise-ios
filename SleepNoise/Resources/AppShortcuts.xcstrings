@@ -1,7 +1,7 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "Play ${sound} in ${applicationName}": {
+    "Play ${applicationName}": {
       "comment": "App Shortcut phrases",
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -9,8 +9,8 @@
           "stringSet": {
             "state": "translated",
             "values": [
-              "Play ${sound} in ${applicationName}",
-              "Start ${sound} with ${applicationName}"
+              "Play ${applicationName}",
+              "Start ${applicationName}"
             ]
           }
         },
@@ -18,14 +18,14 @@
           "stringSet": {
             "state": "translated",
             "values": [
-              "Reproduce ${sound} en ${applicationName}",
-              "Pon ${sound} en ${applicationName}"
+              "Pon ${applicationName}",
+              "Reproduce ${applicationName}"
             ]
           }
         }
       }
     },
-    "Start sleep timer in ${applicationName}": {
+    "Pause ${applicationName}": {
       "comment": "App Shortcut phrases",
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -33,7 +33,8 @@
           "stringSet": {
             "state": "translated",
             "values": [
-              "Start sleep timer in ${applicationName}"
+              "Pause ${applicationName}",
+              "Stop ${applicationName}"
             ]
           }
         },
@@ -41,13 +42,14 @@
           "stringSet": {
             "state": "translated",
             "values": [
-              "Inicia el temporizador en ${applicationName}"
+              "Pausa ${applicationName}",
+              "Para ${applicationName}"
             ]
           }
         }
       }
     },
-    "Stop ${applicationName}": {
+    "Play ${mix} in ${applicationName}": {
       "comment": "App Shortcut phrases",
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -55,8 +57,8 @@
           "stringSet": {
             "state": "translated",
             "values": [
-              "Stop ${applicationName}",
-              "Pause ${applicationName}"
+              "Play ${mix} in ${applicationName}",
+              "Play the ${mix} mix in ${applicationName}"
             ]
           }
         },
@@ -64,8 +66,56 @@
           "stringSet": {
             "state": "translated",
             "values": [
-              "Detén ${applicationName}",
-              "Pausa ${applicationName}"
+              "Pon ${mix} en ${applicationName}",
+              "Pon la mezcla ${mix} en ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Set ${mode} in ${applicationName}": {
+      "comment": "App Shortcut phrases",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Set ${mode} in ${applicationName}",
+              "${applicationName} ${mode}"
+            ]
+          }
+        },
+        "es": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Pon ${mode} en ${applicationName}",
+              "${applicationName} ${mode}"
+            ]
+          }
+        }
+      }
+    },
+    "Small hours in ${applicationName}": {
+      "comment": "App Shortcut phrases",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Small hours in ${applicationName}",
+              "Start Small hours in ${applicationName}"
+            ]
+          }
+        },
+        "es": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Madrugada en ${applicationName}",
+              "Empieza Madrugada en ${applicationName}"
             ]
           }
         }
