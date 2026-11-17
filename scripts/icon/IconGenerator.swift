@@ -10,6 +10,7 @@
 //   scripts/icon/generate.sh --layers   also writes transparent layers to .build/icon-layers/
 //
 // No dependencies beyond the macOS SDK that ships with Xcode.
+// Notes, proof rows and what is still open: scripts/icon/README.md.
 
 import CoreGraphics
 import Foundation
@@ -59,6 +60,16 @@ struct RGB {
         return RGB(r: level, g: level, b: level)
     }
 
+    /// Neutral grey with the same relative luminance (linear light), rounded to 8 bits.
+    /// This is the level the tide takes under the greyscale colour filter.
+    var luminanceGrey: RGB {
+        func linear(_ c: CGFloat) -> CGFloat { c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4) }
+        let y = 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+        let encoded = y <= 0.0031308 ? y * 12.92 : 1.055 * pow(y, 1 / 2.4) - 0.055
+        let level = (encoded * 255).rounded() / 255
+        return RGB(r: level, g: level, b: level)
+    }
+
     var cgColor: CGColor { CGColor(srgbRed: r, green: g, blue: b, alpha: 1) }
 }
 
@@ -96,6 +107,11 @@ let appearances = [
     Appearance(name: "tinted", filename: "AppIcon-Tinted.png", luminosity: "tinted",
                palette: Palette(background: Token.negro, tide: Token.texto.grey, rule: Token.texto.grey)),
 ]
+
+/// Proof only, never written to the asset catalog: a tinted image with two grey
+/// levels, the rule lighter than the tide, to compare against the single level.
+let tintedTwoLevelPalette = Palette(background: Token.negro, tide: Token.indice.luminanceGrey,
+                                    rule: Token.texto.grey)
 
 // MARK: - Drawing
 
@@ -237,7 +253,10 @@ func reportCoverage(of image: CGImage) {
 
 /// Home screen stand-ins: the light system background and black.
 let proofBackgrounds: [(name: String, colour: RGB)] = [("light", RGB(0xF2F2F7)), ("dark", Token.negro)]
-let proofPoints = [29, 40, 60, 120]
+/// 20 pt is the smallest size the system draws (folders, Shortcuts, Control Centre).
+let proofPoints = [20, 29, 40, 60, 120]
+/// Sizes that also get a magnified, unsmoothed copy.
+let zoomPoints = [20, 29]
 let proofScale = 3
 
 /// Scales the master down the way the system does and applies an icon mask.
@@ -311,26 +330,29 @@ func writeProofs(masters: [(name: String, image: CGImage)], to directory: URL) {
         writePNG(sheet.makeImage()!, to: directory.appendingPathComponent("sheet-\(background.name).png"))
     }
 
-    // The smallest size at 2x and 3x, magnified without smoothing to inspect pixels.
+    // The smallest sizes at 2x and 3x, magnified without smoothing to inspect pixels.
     let magnification = 8
     for master in masters {
-        let sides = [29 * 2, 29 * 3]
-        let gap = 16
-        let width = sides.reduce(gap) { $0 + $1 * magnification + gap }
-        let height = sides.max()! * magnification + gap * 2
-        let zoom = makeContext(width: width, height: height, opaque: true)
-        zoom.setFillColor(RGB(0x808080).cgColor)
-        zoom.fill(CGRect(x: 0, y: 0, width: width, height: height))
-        var x = gap
-        for side in sides {
-            let small = makeContext(width: side, height: side, opaque: true)
-            small.interpolationQuality = .high
-            small.draw(master.image, in: CGRect(x: 0, y: 0, width: side, height: side))
-            zoom.interpolationQuality = .none
-            zoom.draw(small.makeImage()!, in: CGRect(x: x, y: gap, width: side * magnification, height: side * magnification))
-            x += side * magnification + gap
+        for points in zoomPoints {
+            let sides = [points * 2, points * 3]
+            let gap = 16
+            let width = sides.reduce(gap) { $0 + $1 * magnification + gap }
+            let height = sides.max()! * magnification + gap * 2
+            let zoom = makeContext(width: width, height: height, opaque: true)
+            zoom.setFillColor(RGB(0x808080).cgColor)
+            zoom.fill(CGRect(x: 0, y: 0, width: width, height: height))
+            var x = gap
+            for side in sides {
+                let small = makeContext(width: side, height: side, opaque: true)
+                small.interpolationQuality = .high
+                small.draw(master.image, in: CGRect(x: 0, y: 0, width: side, height: side))
+                zoom.interpolationQuality = .none
+                zoom.draw(small.makeImage()!,
+                          in: CGRect(x: x, y: gap, width: side * magnification, height: side * magnification))
+                x += side * magnification + gap
+            }
+            writePNG(zoom.makeImage()!, to: directory.appendingPathComponent("zoom-\(points)pt-\(master.name).png"))
         }
-        writePNG(zoom.makeImage()!, to: directory.appendingPathComponent("zoom-29pt-\(master.name).png"))
     }
 }
 
@@ -366,13 +388,20 @@ reportCoverage(of: rendered["default"]!)
 
 if arguments.contains("--proof") {
     let directory = root.appendingPathComponent(".build/icon-proof")
+    let twoLevel = renderMaster(tintedTwoLevelPalette)
+    let tint = RGB(0x4DA3FF)
+    // Row order of the sheets, top to bottom.
     let masters: [(name: String, image: CGImage)] = [
         ("default", rendered["default"]!),
         ("tinted", rendered["tinted"]!),
-        ("tinted-preview", tintedPreview(rendered["tinted"]!, tint: RGB(0x4DA3FF))),
+        ("tinted-two-level", twoLevel),
+        ("tinted-preview", tintedPreview(rendered["tinted"]!, tint: tint)),
+        ("tinted-two-level-preview", tintedPreview(twoLevel, tint: tint)),
         ("greyscale", greyscalePreview(rendered["default"]!)),
     ]
     writeProofs(masters: masters, to: directory)
+    // The 1024 px master of the candidate, to try it in a throwaway build.
+    writePNG(twoLevel, to: directory.appendingPathComponent("master-tinted-two-level.png"))
     print("wrote proofs to .build/icon-proof/")
 }
 
