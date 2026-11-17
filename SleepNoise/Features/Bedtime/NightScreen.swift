@@ -178,7 +178,9 @@ struct NightScreen: View {
                 NightAction(title: LineTies.dotLeads(Localized.format("madrugada.estado", Int64(smallHoursMinutes)))) {
                     model.startSmallHours()
                 }
-                .accessibilityLabel(Text(verbatim: Localized.format("ax.la.madrugada", Int64(smallHoursMinutes))))
+                .accessibilityLabel(Text(verbatim: String.localizedStringWithFormat(
+                    Localized.string("ax.la.madrugada"), smallHoursMinutes
+                )))
                 .accessibilityInputLabels([
                     Text(verbatim: Localized.format("madrugada.estado", Int64(smallHoursMinutes))),
                     Text(verbatim: Localized.string("madrugada.titulo")),
