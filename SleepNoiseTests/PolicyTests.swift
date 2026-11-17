@@ -193,24 +193,25 @@ final class NightAndShortcutTests: XCTestCase {
     }
 
     func testNightEntryPlan() {
-        XCTAssertEqual(BedtimeScreenPolicy.entry(isPlaying: false, isSilent: false), .enter(startsPlayback: true))
-        XCTAssertEqual(BedtimeScreenPolicy.entry(isPlaying: true, isSilent: false), .enter(startsPlayback: false))
-        XCTAssertEqual(BedtimeScreenPolicy.entry(isPlaying: false, isSilent: true), .nothingToPlay)
-        XCTAssertEqual(BedtimeScreenPolicy.entry(isPlaying: true, isSilent: true), .nothingToPlay)
+        XCTAssertTrue(BedtimeScreenPolicy.startsPlayback(isPlaying: false), "Night starts the mix that was at rest")
+        XCTAssertFalse(BedtimeScreenPolicy.startsPlayback(isPlaying: true))
     }
 
-    func testNightRefusesASilentMixAndNeverCreatesATimer() throws {
-        let defaults = try makeDefaults()
-        let model = MixerModel(purchases: PurchaseManager(defaults: defaults, now: day0), defaults: defaults)
+    /// "Night" on the bar always works: a mix where nothing would sound
+    /// comes up the way Play brings it up, and Night still chooses no timer.
+    func testNightStartsASilentMixLikePlayAndNeverCreatesATimer() throws {
+        let night = try NightHarness(at: NightHarness.time(23))
         for sound in SoundID.allCases {
-            model.levels[sound] = 0
+            night.model.levels[sound] = 0
         }
-        XCTAssertTrue(model.isSilent)
-        XCTAssertEqual(model.enterBedtime(), .nothingToPlay)
-        XCTAssertFalse(model.isBedtime)
-        XCTAssertFalse(model.isPlaying)
-        XCTAssertEqual(model.timer.choice, .firstUse, "Night does not choose a timer: the first-use one stands")
-        XCTAssertNil(MixerModel.storedTimer(defaults: defaults), "and does not store one")
+        XCTAssertTrue(night.model.isSilent)
+        XCTAssertEqual(night.model.enterBedtime(), .entered)
+        XCTAssertTrue(night.model.isBedtime)
+        XCTAssertTrue(night.model.isPlaying)
+        XCTAssertTrue(night.model.isPlayingFallback, "the instrument always sounds")
+        XCTAssertEqual(night.model.levels[MixerModel.fallbackSound], MixerModel.fallbackLevel)
+        XCTAssertEqual(night.model.timer.choice, .firstUse, "Night does not choose a timer: the first-use one stands")
+        XCTAssertNil(MixerModel.storedTimer(defaults: night.defaults), "and does not store one")
     }
 
     func testShortcutsRefuseProRequestsInWordsWithoutThePaywall() throws {

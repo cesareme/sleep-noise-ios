@@ -3557,6 +3557,576 @@
           }
         }
       }
+    },
+    "barra.noche": {
+      "comment": "Bottom bar: opens the Night screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noche"
+          }
+        }
+      }
+    },
+    "barra.noche.ax": {
+      "comment": "VoiceOver label of \"Night\" on the bottom bar.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night screen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantalla de noche"
+          }
+        }
+      }
+    },
+    "noche.estado.sonando": {
+      "comment": "Night screen, state word: playing with no timer.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playing"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonando"
+          }
+        }
+      }
+    },
+    "noche.estado.hasta": {
+      "comment": "Night screen, state word under a blanket: the hour it sounds until. Lower case: it completes the clock above it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "until %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hasta las %@"
+          }
+        }
+      }
+    },
+    "noche.estado.pausa": {
+      "comment": "Night screen, state word: paused.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En pausa"
+          }
+        }
+      }
+    },
+    "noche.estado.sin_sonido": {
+      "comment": "Night screen, state word: the sound did not start. A touch tries again.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No sound"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin sonido"
+          }
+        }
+      }
+    },
+    "noche.estado.termino": {
+      "comment": "Night screen, state word once the night has ended by itself: the hour it ended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ended at %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terminó a las %@"
+          }
+        }
+      }
+    },
+    "noche.primera": {
+      "comment": "Night screen, first time only: fixed text, not a tip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can turn the screen off. The sound keeps playing."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puedes apagar la pantalla. El sonido sigue."
+          }
+        }
+      }
+    },
+    "noche.volver": {
+      "comment": "Night screen, first time only, under the sentence above.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold to go back"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantén pulsado para volver"
+          }
+        }
+      }
+    },
+    "estado.volumen": {
+      "comment": "State word just after the vertical drag of Night and Small Hours: the session level, never the system volume.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playing · at %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonando · al %lld"
+          }
+        }
+      }
+    },
+    "madrugada.estado": {
+      "comment": "Button that takes the place of \"+15 min\" once the night has ended. The figure is the length of the recipe.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Small hours · %lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Madrugada · %lld min"
+          }
+        }
+      }
+    },
+    "madrugada.quedan": {
+      "comment": "Small Hours: the figure, minutes left.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        }
+      }
+    },
+    "madrugada.retirada": {
+      "comment": "Small Hours, state word of the last minutes, while the sea fades.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Winding down · %lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se retira · %lld min"
+          }
+        }
+      }
+    },
+    "comun.parar": {
+      "comment": "Small Hours: ends it. The only \"Stop\" of the app.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parar"
+          }
+        }
+      }
+    },
+    "ax.noche.pantalla": {
+      "comment": "VoiceOver label of the Night screen as one element.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night screen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantalla de noche"
+          }
+        }
+      }
+    },
+    "ax.noche.valor": {
+      "comment": "VoiceOver value of the Night screen: the hour, then the state word.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@. %2$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@. %2$@"
+          }
+        }
+      }
+    },
+    "ax.noche.pista": {
+      "comment": "VoiceOver hint of the Night screen while it plays.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap to pause. Hold to go back."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca dos veces para pausar. Mantén para volver."
+          }
+        }
+      }
+    },
+    "ax.noche.pista.reanudar": {
+      "comment": "VoiceOver hint of the Night screen while it is paused.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap to resume. Hold to go back."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca dos veces para reanudar. Mantén para volver."
+          }
+        }
+      }
+    },
+    "ax.noche.pista.error": {
+      "comment": "VoiceOver hint of the Night screen when the sound did not start.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap to try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca dos veces para reintentar."
+          }
+        }
+      }
+    },
+    "ax.accion.reanudar": {
+      "comment": "VoiceOver action: resume playback.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reanudar"
+          }
+        }
+      }
+    },
+    "ax.accion.volver": {
+      "comment": "VoiceOver action and button of the Night screen: back to the page.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to the page"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volver a la página"
+          }
+        }
+      }
+    },
+    "ax.anuncio.pagina": {
+      "comment": "VoiceOver announcement on leaving the Night screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Page"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Página"
+          }
+        }
+      }
+    },
+    "ax.volumen": {
+      "comment": "VoiceOver label of the session level on Night and Small Hours. Not the system volume.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volume"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volumen"
+          }
+        }
+      }
+    },
+    "ax.altavoz.pista": {
+      "comment": "VoiceOver hint of \"Keep playing on speaker\": the level it is capped at.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The volume drops to %lld."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El volumen baja al %lld."
+          }
+        }
+      }
+    },
+    "ax.la.madrugada": {
+      "comment": "VoiceOver label of the button that starts Small Hours: its length in minutes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Small hours, %lld minutes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Madrugada, %lld minutos"
+          }
+        }
+      }
+    },
+    "ax.madrugada.valor": {
+      "comment": "VoiceOver value of Small Hours: minutes left, then the state.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld minute left. %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld minutes left. %2$@"
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Queda %1$lld minuto. %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Quedan %1$lld minutos. %2$@"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ax.madrugada.pista": {
+      "comment": "VoiceOver hint of Small Hours while it plays.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap to pause."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca dos veces para pausar."
+          }
+        }
+      }
+    },
+    "ax.madrugada.pista.reanudar": {
+      "comment": "VoiceOver hint of Small Hours while it is paused.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap to resume."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca dos veces para reanudar."
+          }
+        }
+      }
+    },
+    "ax.madrugada.retirada": {
+      "comment": "VoiceOver value of Small Hours during its last minutes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Winding down, %lld minute left"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Winding down, %lld minutes left"
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Se retira, queda %lld minuto"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Se retira, quedan %lld minutos"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "version": "1.0"

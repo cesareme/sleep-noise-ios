@@ -46,6 +46,8 @@ struct PageView: View {
 
     private var phase: NightPhase { model.isNightSession ? .nightPage : .day }
     private var presentsSomething: Bool { sheet != nil || model.showPaywall || showsSave }
+    /// Night or Small Hours is over the page: it is not seen or touched.
+    private var isCovered: Bool { model.isBedtime || model.isSmallHours }
 
     var body: some View {
         GeometryReader { geometry in
@@ -98,6 +100,8 @@ struct PageView: View {
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 PageBar(model: model, timer: model.timer) {
                     sheet = .mixes
+                } onNight: {
+                    enterNight()
                 }
             }
             .onChange(of: fits, initial: true) { _, next in
@@ -106,11 +110,35 @@ struct PageView: View {
             }
         }
         .environment(\.nightPhase, phase)
-        .environment(\.sheetPresented, presentsSomething)
+        // Under Night the Horizon of the page freezes, as under a sheet.
+        .environment(\.sheetPresented, presentsSomething || isCovered)
         .environment(\.fineSliderDismissal, sliderDismissal)
         .indexArbiter(arbiter)
         .grafitoRoot()
         .animation(.easeInOut(duration: Motion.phase(reduceMotion: reduceMotion)), value: model.isNightSession)
+        .accessibilityHidden(isCovered)
+        // Night and Small Hours: a layer over the page, not a
+        // presentation, so they come and go by opacity and nothing moves.
+        .overlay {
+            NightCover(model: model)
+        }
+        .statusBarHidden(isCovered)
+        .persistentSystemOverlays(isCovered ? .hidden : .automatic)
+        .onChange(of: isCovered) { _, covered in
+            // Night never shares the screen with a sheet: whatever was up
+            // when it arrived by itself (a lock, a Shortcut) comes down.
+            if covered {
+                sheet = nil
+                showsSave = false
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(
+            for: UIApplication.protectedDataWillBecomeUnavailableNotification
+        )) { _ in
+            // The iPhone was locked while the night plays: Night is what
+            // is there at the next unlock (C47). A sheet rules.
+            model.enterBedtimeOnLock(sheetIsOpen: presentsSomething)
+        }
         // Magic Tap from any focus: the Disc is last in the reading order.
         .accessibilityAction(.magicTap) { model.togglePlayback() }
         .onAppear {
@@ -303,6 +331,8 @@ struct PageView: View {
         case .layers:
             LayersSheet(model: model, purchases: purchases) {
                 sheet = .mixes
+            } onNight: {
+                enterNight()
             }
             .environment(\.nightPhase, phase)
             #if DEBUG
@@ -335,6 +365,13 @@ struct PageView: View {
             get: { model.showPaywall && isFront },
             set: { if !$0 { model.dismissPro() } }
         )
+    }
+
+    /// "Night" on the bar. It always works: the sheet in front, if any,
+    /// closes, the mix starts if it was at rest and Night covers the page.
+    private func enterNight() {
+        sheet = nil
+        model.enterBedtime()
     }
 
     private func beginSave() {

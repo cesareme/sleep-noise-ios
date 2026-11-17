@@ -1,15 +1,16 @@
 import SwiftUI
 
-/// The bottom bar (03 §4.11): "Mixes", the Disc, and the place of "Night".
+/// The bottom bar (03 §4.11): "Mixes", the Disc and "Night".
 ///
 /// Always there, on the page and in the Layers sheet: nothing blocks the
 /// sound. Words in plain ink and the Disc in the middle; no tint, no icon
-/// outside the Disc. The right-hand place stays empty until the Night screen
-/// exists, so nothing moves when it arrives.
+/// outside the Disc. "Night" always works: with the mix at rest it starts
+/// the sound and covers the page in the same gesture.
 struct PageBar: View {
     @ObservedObject var model: MixerModel
     @ObservedObject var timer: SleepTimerController
     var onMixes: () -> Void
+    var onNight: () -> Void
 
     @Environment(\.nightPhase) private var phase
     @Environment(\.inkSurface) private var surface
@@ -24,6 +25,7 @@ struct PageBar: View {
             HStack(spacing: 0) {
                 mixes
                 Spacer(minLength: Grid.largeTarget + Grid.inner * 2)
+                night
             }
             .padding(.horizontal, Grid.margin)
             // The final fade pulses the glyph by day; at night nothing moves
@@ -41,14 +43,31 @@ struct PageBar: View {
     }
 
     private var mixes: some View {
-        Button(action: onMixes) {
+        word("barra.mezclas", glyph: "square.stack", alignment: .leading, action: onMixes)
+            .accessibilityLabel(Text("barra.mezclas"))
+            .accessibilityIdentifier("openMixes")
+    }
+
+    private var night: some View {
+        word("barra.noche", glyph: "circle.lefthalf.filled", alignment: .trailing, action: onNight)
+            .accessibilityLabel(Text("barra.noche.ax"))
+            .accessibilityIdentifier("openNight")
+    }
+
+    private func word(
+        _ key: LocalizedStringKey,
+        glyph: String,
+        alignment: Alignment,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
             Group {
                 if dynamicType >= .accessibility4 {
                     // The word no longer fits beside the Disc.
-                    Image(systemName: "square.stack")
+                    Image(systemName: glyph)
                         .font(.system(size: 28, weight: .medium))
                 } else {
-                    Text("barra.mezclas")
+                    Text(key)
                         .step(.bar)
                         .underline(buttonShapes, color: Ink.primary(phase))
                         .lineLimit(1)
@@ -56,11 +75,9 @@ struct PageBar: View {
                 }
             }
             .foregroundStyle(Ink.primary(phase))
-            .frame(minWidth: Grid.target, minHeight: Grid.target, alignment: .leading)
+            .frame(minWidth: Grid.target, minHeight: Grid.target, alignment: alignment)
             .contentShape(Rectangle())
         }
         .buttonStyle(PressedFadeStyle())
-        .accessibilityLabel(Text("barra.mezclas"))
-        .accessibilityIdentifier("openMixes")
     }
 }

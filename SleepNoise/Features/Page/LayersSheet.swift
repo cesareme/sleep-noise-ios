@@ -17,6 +17,9 @@ struct LayersSheet: View {
     @ObservedObject var purchases: PurchaseManager
     /// "Mixes" on the bar: the caller swaps this sheet for that one.
     var onMixes: () -> Void
+    /// "Night" on the bar: the caller closes this sheet first, because
+    /// Night never opens over one.
+    var onNight: () -> Void
 
     @Environment(\.nightPhase) private var phase
     /// The box of a section header: 18 pt at Large (05 §2.7).
@@ -54,7 +57,7 @@ struct LayersSheet: View {
                 }
                 #endif
             }
-            PageBar(model: model, timer: model.timer, onMixes: onMixes)
+            PageBar(model: model, timer: model.timer, onMixes: onMixes, onNight: onNight)
         }
         .environment(\.fineSliderDismissal, sliderDismissal)
         .indexArbiter(arbiter)

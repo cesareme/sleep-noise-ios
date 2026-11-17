@@ -76,6 +76,61 @@ enum PageDebugState: String, CaseIterable {
     /// Opened from the night page: one ink.
     case tideNight
 
+    // The Night screen over the page.
+    /// The first time: the two sentences, held on screen.
+    case nightEnter
+    /// "Until I sleep" counting: "+15 min" in its place.
+    case nightTimer
+    /// 60 s without a touch: drawn dimmed.
+    case nightDimmed
+    /// "Keep screen on · Always": awake, and dimmed after its minute.
+    case nightKeepOn
+    /// A blanket until seven.
+    case nightBlanket
+    /// No timer: the place of "+15 min" is empty.
+    case nightPlain
+    /// Inside the final fade.
+    case nightFading
+    /// Paused by a touch.
+    case nightPaused
+    /// The earbuds went away: "Keep playing on speaker" above "+15 min".
+    case nightSpeaker
+    /// Under a finger on the vertical axis: the rule and "Playing · at 40".
+    case nightLevel
+    /// The timer ran out: "Small hours" in the place of "+15 min".
+    case nightEnded
+    /// The sound did not start again.
+    case nightError
+
+    // Small Hours over the page.
+    /// The first minutes: the tide guides, the water line moves.
+    case smallHours
+    /// The tide has gone: the plain sea and the Horizon.
+    case smallHoursPlain
+    /// The last minutes: "Winding down".
+    case smallHoursWinding
+    /// Paused by a touch.
+    case smallHoursPaused
+
+    /// The Night screen is what the launch shows.
+    var isNightScreen: Bool {
+        switch self {
+        case .nightEnter, .nightTimer, .nightDimmed, .nightKeepOn, .nightBlanket, .nightPlain,
+             .nightFading, .nightPaused, .nightSpeaker, .nightLevel, .nightEnded, .nightError:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Small Hours is what the launch shows.
+    var isSmallHours: Bool {
+        switch self {
+        case .smallHours, .smallHoursPlain, .smallHoursWinding, .smallHoursPaused: return true
+        default: return false
+        }
+    }
+
     var opensTimer: Bool {
         switch self {
         case .timerRest, .timerAsleep, .timerBlanket, .timerFading, .timerPaused, .timerLength,
@@ -97,7 +152,7 @@ enum PageDebugState: String, CaseIterable {
     var isNight: Bool {
         switch self {
         case .night, .nightLayers, .nightTide, .timerNight, .tideNight: return true
-        default: return false
+        default: return isNightScreen || isSmallHours
         }
     }
 }
@@ -159,6 +214,21 @@ enum PageArguments {
     }
 }
 
+/// What a staged Night screen needs to know about its own capture.
+enum NightArguments {
+    /// The rule of the level and its note stay up without a finger.
+    static var showsLevelRule: Bool { PageArguments.state == .nightLevel }
+    /// The two first-time sentences do not count their seconds.
+    static var holdsIntro: Bool { PageArguments.state == .nightEnter }
+
+    /// Writes what Night asked of the idle timer to the console of a
+    /// staged launch: a capture cannot show whether the screen will sleep.
+    static func note(screenAwake: Bool) {
+        guard let state = PageArguments.state, state.isNightScreen || state.isSmallHours else { return }
+        print("night.screenAwake=\(screenAwake)")
+    }
+}
+
 /// Forces the text size a capture asks for; otherwise the system's.
 struct DebugDynamicType: ViewModifier {
     func body(content: Content) -> some View {
@@ -204,14 +274,28 @@ enum PageStage {
             purchases.startTrialIfNeeded(now: start)
             purchases.refreshAccess(now: start.addingTimeInterval(8 * 86_400), canDowngrade: true)
         }
+        if state != .nightEnter {
+            // Only one capture is the first Night of the install.
+            defaults.set(true, forKey: MixerModel.nightIntroKey)
+        }
         let clock = stageClock
         clock.date = Self.clock(for: state)
         let model = MixerModel(purchases: purchases, defaults: defaults, now: { clock.date })
 
         switch state {
         case .rest, .playingTwo, .layers, .error, .error2, .error3, .largeType,
-             .timerRest, .tideRest, .tideLocked:
+             .timerRest, .tideRest, .tideLocked,
+             .nightEnter, .nightTimer, .nightDimmed, .nightFading, .nightPaused, .nightSpeaker,
+             .nightLevel, .nightEnded, .nightError,
+             .smallHours, .smallHoursPlain, .smallHoursWinding, .smallHoursPaused:
+            // Night shows the timer of the first use: 45 minutes.
             break
+        case .nightKeepOn:
+            model.setKeepScreenOn(.always)
+        case .nightBlanket:
+            model.chooseTimer(.blanket(hour: TimerChoice.defaultEndHour))
+        case .nightPlain:
+            model.chooseTimer(TimerChoice.firstUse.with(mode: .off))
         case .timerAsleep, .timerFading, .timerPaused, .timerLength:
             model.chooseTimer(.untilAsleep(TimerChoice.defaultMinutes))
         case .timerBlanket, .timerHour:
@@ -266,6 +350,16 @@ enum PageStage {
         model.setLevel(.rain, levels[.rain] ?? 0)
     }
 
+    /// Moves the pinned clock of a staged Night or Small Hours and lets
+    /// what counts time see it. The screen was just touched: it is not
+    /// drawn dimmed.
+    private static func move(_ model: MixerModel, by seconds: TimeInterval) {
+        stageClock.date.addTimeInterval(seconds)
+        model.timer.tick()
+        model.smallHours.tick()
+        model.noteBedtimeTouch()
+    }
+
     /// What a staged page does once it is on screen.
     static func didAppear(_ model: MixerModel) {
         guard let state = PageArguments.state else { return }
@@ -285,6 +379,51 @@ enum PageStage {
         case .tideDissolving:
             if !model.isPlaying { model.play() }
             model.breathing.release(over: 10 * 60)
+        case .nightEnter, .nightTimer, .nightBlanket, .nightPlain:
+            model.enterBedtime()
+        case .nightDimmed, .nightKeepOn:
+            model.enterBedtime()
+            // Once the scene is active, which counts as a touch: its
+            // minute goes by.
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(1))
+                stageClock.date.addTimeInterval(BedtimeScreenPolicy.dimDelay + 1)
+                model.refreshBedtimeDimming()
+            }
+        case .nightFading:
+            model.enterBedtime()
+            move(model, by: TimeInterval((TimerChoice.defaultMinutes - 8) * 60))
+        case .nightPaused:
+            model.enterBedtime()
+            move(model, by: 7 * 60)
+            model.pause()
+        case .nightSpeaker:
+            model.enterBedtime()
+            move(model, by: 7 * 60)
+            model.debugLoseOutput()
+        case .nightLevel:
+            model.enterBedtime()
+            model.setSessionLevel(0.4)
+        case .nightEnded:
+            model.enterBedtime()
+            // The timer runs out: the night ends by itself.
+            move(model, by: TimeInterval(TimerChoice.defaultMinutes * 60 + 1))
+        case .nightError:
+            model.enterBedtime()
+            model.pause()
+            model.debugFailStart()
+        case .smallHours:
+            model.startSmallHours()
+        case .smallHoursPlain:
+            model.startSmallHours()
+            move(model, by: 14 * 60)
+        case .smallHoursWinding:
+            model.startSmallHours()
+            move(model, by: 16 * 60)
+        case .smallHoursPaused:
+            model.startSmallHours()
+            move(model, by: 6 * 60)
+            model.pause()
         case .error:
             model.debugFailStart()
         case .error2:

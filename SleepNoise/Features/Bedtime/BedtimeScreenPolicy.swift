@@ -10,20 +10,22 @@ import Foundation
 /// "Keep screen on" setting says, by default while it charges. While the
 /// screen is on it is drawn dimmed after 60 s without a touch.
 ///
-/// Night never creates, changes or stores a sleep timer. It shows the one that
-/// is already running, or none.
+/// Night never creates, changes or stores a sleep timer (C47). It shows the
+/// one that is already running, or none.
 enum BedtimeScreenPolicy {
-    enum Entry: Equatable {
-        /// Cover the interface. `startsPlayback` is true when the mix was paused.
-        case enter(startsPlayback: Bool)
-        /// Every audible layer is at zero: there is nothing to fall asleep to.
-        case nothingToPlay
+    /// Asking for Night with the mix at rest starts it, in the same
+    /// gesture. A mix where nothing would sound is Play's business: it
+    /// raises the fallback layer, so the word on the bar never does nothing.
+    static func startsPlayback(isPlaying: Bool) -> Bool {
+        !isPlaying
     }
 
-    /// What asking for Night does, given the mixer state.
-    static func entry(isPlaying: Bool, isSilent: Bool) -> Entry {
-        if isSilent { return .nothingToPlay }
-        return .enter(startsPlayback: !isPlaying)
+    /// Whether locking the iPhone leaves Night in front (C47, the default
+    /// of "Switch to Night"): the night is playing, nothing is in front of
+    /// the page (a sheet rules, and Night never opens over one) and it is
+    /// night. By day a lock is just a lock.
+    static func entersOnLock(isPlaying: Bool, isCovered: Bool, sheetIsOpen: Bool, isNight: Bool) -> Bool {
+        isPlaying && !isCovered && !sheetIsOpen && isNight
     }
 
     /// Seconds without a touch after which the Night screen is drawn dimmed.
@@ -32,6 +34,17 @@ enum BedtimeScreenPolicy {
     static func isDimmed(lastTouch: Date, now: Date) -> Bool {
         now.timeIntervalSince(lastTouch) >= dimDelay
     }
+
+    /// How much of its ink a dimmed Night screen keeps. The app never
+    /// touches the brightness of the display: it draws less light.
+    static let dimmedOpacity = 0.5
+    /// A touch counts only this long after the iPhone was unlocked or the
+    /// app came forward: the thumb that unlocks also lands on the screen.
+    static let wakeGuard: TimeInterval = 0.3
+    /// How long the two first-time sentences stay (copy guide T25).
+    static let introDuration: TimeInterval = 4
+    /// How long "Playing · at 40" stays after the vertical drag (C51).
+    static let levelNoteDuration: TimeInterval = 3
 
     /// Whether Night holds the iPhone awake (`isIdleTimerDisabled`). A
     /// phone left on without a charger wakes up flat, so the default only
@@ -48,7 +61,6 @@ enum BedtimeScreenPolicy {
 /// Result of `MixerModel.enterBedtime()`.
 enum BedtimeEntryOutcome: Equatable {
     case entered
-    case nothingToPlay
     case audioFailed
 }
 

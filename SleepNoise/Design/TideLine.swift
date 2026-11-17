@@ -27,6 +27,11 @@ struct TideLine: View {
     var level: (Date) -> Float
     /// A finger is dragging the line.
     var isUnderFinger = false
+    /// High and low water are marked. Small Hours draws no marks: the
+    /// travel of the line already shows the band.
+    var showsMarks = true
+    /// 2 pt in the tide sheet; 1.5 pt in Small Hours.
+    var lineThickness = TideLine.thickness
 
     @Environment(\.nightPhase) private var phase
     @Environment(\.scenePhase) private var scenePhase
@@ -58,8 +63,10 @@ struct TideLine: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            marks
-                .opacity(mode == .off ? 0 : 1)
+            if showsMarks {
+                marks
+                    .opacity(mode == .off ? 0 : 1)
+            }
             switch mode {
             case .off:
                 Hairline()
@@ -74,9 +81,9 @@ struct TideLine: View {
                     if reduceMotion {
                         water
                             .opacity(Self.reducedOpacity(level: level))
-                            .offset(y: Self.offset(level: 0.5))
+                            .offset(y: Self.offset(level: 0.5, thickness: lineThickness))
                     } else {
-                        water.offset(y: Self.offset(level: level))
+                        water.offset(y: Self.offset(level: level, thickness: lineThickness))
                     }
                 }
             }
@@ -89,7 +96,7 @@ struct TideLine: View {
     private var water: some View {
         Rectangle()
             .fill(ink)
-            .frame(height: Self.thickness)
+            .frame(height: Grid.pixelCeil(lineThickness, displayScale: displayScale))
             .frame(maxWidth: .infinity)
     }
 

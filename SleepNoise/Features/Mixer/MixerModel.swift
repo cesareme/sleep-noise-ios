@@ -130,6 +130,9 @@ final class MixerModel: ObservableObject {
     /// morning): "Ended at 03:42" on the Night screen. Nil while a night is
     /// open and after Small Hours, which ends without a word.
     @Published private(set) var sessionEndedAt: Date?
+    /// The Night screen shows its two first-time sentences: nobody has
+    /// seen them on this install yet. They are fixed text, not a tip (C65).
+    @Published private(set) var showsNightIntro = false
 
     let purchases: PurchaseManager
     let mixStore: MixStore
@@ -149,6 +152,7 @@ final class MixerModel: ObservableObject {
     nonisolated static let legacyTimerKey = "sleepnoise.timerMinutes.v1"
     nonisolated static let timerKey = "sleepnoise.timer.v2"
     nonisolated static let keepScreenOnKey = "sleepnoise.night.keepScreenOn.v1"
+    nonisolated static let nightIntroKey = "sleepnoise.night.introShown.v1"
     /// Length the timer Shortcut uses when none was asked for and the timer
     /// chosen in the app is not a length.
     static let fallbackTimerMinutes = 60
@@ -364,6 +368,10 @@ final class MixerModel: ObservableObject {
     func outputLevel(tau: TimeInterval) -> Float {
         engine.smoothedOutputRMS(tau: tau)
     }
+
+    /// The model's clock, for the views that show an hour (the Night
+    /// screen): a staged launch runs on a pinned one.
+    var clockNow: Date { now() }
 
     func togglePlayback() {
         if isPlaying {
@@ -862,34 +870,55 @@ final class MixerModel: ObservableObject {
     }
 
     /// Covers the interface with the Night screen, starting the current mix
-    /// if it was paused. Night never chooses, changes or stores a sleep
-    /// timer (C47): the one the person chose starts with playback as usual,
-    /// and "+15 min" only adds to a count that exists. It does not start a
-    /// silent night. The screen is dimmed after 60 s without a touch;
-    /// whether the iPhone stays awake is `bedtimeKeepsScreenAwake`, for the
-    /// view to apply.
+    /// if it was at rest, the way Play does: a mix where nothing would sound
+    /// comes up with the fallback layer, so "Night" on the bar always works.
+    /// Night never chooses, changes or stores a sleep timer (C47): the one
+    /// the person chose starts with playback as usual, and "+15 min" only
+    /// adds to a count that exists. The screen is dimmed after 60 s without
+    /// a touch; whether the iPhone stays awake is `bedtimeKeepsScreenAwake`,
+    /// for the view to apply.
     @discardableResult
     func enterBedtime() -> BedtimeEntryOutcome {
-        switch BedtimeScreenPolicy.entry(isPlaying: isPlaying, isSilent: isSilent) {
-        case .nothingToPlay:
-            return .nothingToPlay
-        case .enter(let startsPlayback):
-            if startsPlayback {
-                play()
-            }
-            guard isPlaying else { return .audioFailed }
-            isBedtime = true
-            // Nothing is sold on the Night screen, at any hour.
-            if showPaywall { showPaywall = false }
-            noteBedtimeTouch()
-            return .entered
+        guard !isSmallHours else { return .entered }
+        if BedtimeScreenPolicy.startsPlayback(isPlaying: isPlaying) {
+            play()
         }
+        guard isPlaying else { return .audioFailed }
+        isBedtime = true
+        // Nothing is sold on the Night screen, at any hour.
+        if showPaywall { showPaywall = false }
+        showsNightIntro = !defaults.bool(forKey: Self.nightIntroKey)
+        noteBedtimeTouch()
+        return .entered
+    }
+
+    /// The iPhone was locked (C47): with the night playing and nothing in
+    /// front of the page, what is there at the next unlock is Night. Only
+    /// inside `NightWindow`: by day a lock is not "in bed".
+    @discardableResult
+    func enterBedtimeOnLock(sheetIsOpen: Bool) -> Bool {
+        guard BedtimeScreenPolicy.entersOnLock(
+            isPlaying: isPlaying,
+            isCovered: isBedtime || isSmallHours,
+            sheetIsOpen: sheetIsOpen,
+            isNight: NightWindow.contains(now(), calendar: calendar)
+        ) else { return false }
+        return enterBedtime() == .entered
+    }
+
+    /// The two first-time sentences have been on screen for their time.
+    /// They are not shown again on this install.
+    func nightIntroDidShow() {
+        guard showsNightIntro else { return }
+        showsNightIntro = false
+        defaults.set(true, forKey: Self.nightIntroKey)
     }
 
     /// Back to the page, which is the night page from now on (C40).
     func leaveBedtime() {
         guard isBedtime else { return }
         isBedtime = false
+        if showsNightIntro { showsNightIntro = false }
         cancelDimming()
         beginNightSession()
     }
@@ -1541,6 +1570,12 @@ extension MixerModel {
     func debugFailStart() {
         startIfNeeded()
         noteStartFailure()
+    }
+
+    /// Debug builds only: the output in use goes away, as when earbuds are
+    /// taken out. For the reference captures.
+    func debugLoseOutput() {
+        outputLost()
     }
 }
 #endif
