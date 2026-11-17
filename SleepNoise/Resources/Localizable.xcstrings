@@ -2594,6 +2594,366 @@
           }
         }
       }
+    },
+    "ax.horizonte": {
+      "comment": "VoiceOver label of the Horizon, the line that shows the sound",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sound"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonido"
+          }
+        }
+      }
+    },
+    "pagina.estado.silencio": {
+      "comment": "State line and VoiceOver value when nothing sounds",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Silent"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En silencio"
+          }
+        }
+      }
+    },
+    "ax.horizonte.valor.bajo": {
+      "comment": "VoiceOver value of the Horizon, low level",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playing, low level"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonando, nivel bajo"
+          }
+        }
+      }
+    },
+    "ax.horizonte.valor.medio": {
+      "comment": "VoiceOver value of the Horizon, medium level",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playing, medium level"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonando, nivel medio"
+          }
+        }
+      }
+    },
+    "ax.horizonte.valor.alto": {
+      "comment": "VoiceOver value of the Horizon, high level",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playing, high level"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonando, nivel alto"
+          }
+        }
+      }
+    },
+    "ax.accion.pausar": {
+      "comment": "VoiceOver label of the Disc while it sounds",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausar"
+          }
+        }
+      }
+    },
+    "ax.capa": {
+      "comment": "VoiceOver label of a layer row. %1$@ is the layer name, %2$@ its subtitle.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "ax.capa.pista": {
+      "comment": "VoiceOver hint of a layer row",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe up or down to adjust."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desliza arriba o abajo para ajustar."
+          }
+        }
+      }
+    },
+    "ax.capa.pro": {
+      "comment": "VoiceOver label of a Pro layer without access. %1$@ is the layer name, %2$@ its subtitle.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$@, requires Pro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$@, requiere Pro"
+          }
+        }
+      }
+    },
+    "ax.capa.pro.valor": {
+      "comment": "VoiceOver value of a Pro layer without access. %@ is the saved level, 1 to 100.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "silent, saved level %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en silencio, nivel guardado %@"
+          }
+        }
+      }
+    },
+    "ax.capa.pro.pista": {
+      "comment": "VoiceOver hint of a Pro layer without access, by day only",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap to see Pro."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca dos veces para ver Pro."
+          }
+        }
+      }
+    },
+    "ax.accion.silenciar": {
+      "comment": "VoiceOver action of a layer row: level to zero",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mute"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Silenciar"
+          }
+        }
+      }
+    },
+    "ax.accion.maximo": {
+      "comment": "VoiceOver action of a layer row: level to 100",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maximum"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Máximo"
+          }
+        }
+      }
+    },
+    "ax.accion.subir": {
+      "comment": "Accessibility action of a layer row: level up one step",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move up"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subir"
+          }
+        }
+      }
+    },
+    "ax.accion.bajar": {
+      "comment": "Accessibility action of a layer row: level down one step",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move down"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bajar"
+          }
+        }
+      }
+    },
+    "ax.accion.deslizador": {
+      "comment": "Accessibility action of a layer row: show the system slider",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjust with slider"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajuste con deslizador"
+          }
+        }
+      }
+    },
+    "ax.accion.ver_pro": {
+      "comment": "VoiceOver action of a Pro layer without access",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See Pro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver Pro"
+          }
+        }
+      }
+    },
+    "capas.deslizador": {
+      "comment": "VoiceOver label of the system slider of a layer. %@ is the layer name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ level"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nivel de %@"
+          }
+        }
+      }
+    },
+    "comun.pro": {
+      "comment": "State word in small caps on a Pro layer without access",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pro"
+          }
+        }
+      }
+    },
+    "comun.pro.nivel": {
+      "comment": "State word on a Pro layer that keeps a saved level. Argument is 1 to 100.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pro · %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pro · %lld"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
