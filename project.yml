@@ -12,6 +12,12 @@ options:
   groupSortPosition: top
 attributes:
   ORGANIZATIONNAME: cesareme
+# Signing lives outside Git: Config/Signing.xcconfig includes
+# Config/Local.xcconfig when it exists (DEVELOPMENT_TEAM) and nothing when it
+# does not, so the simulator and the CI build the same with or without it.
+configFiles:
+  Debug: Config/Signing.xcconfig
+  Release: Config/Signing.xcconfig
 settings:
   base:
     SWIFT_VERSION: "5.9"

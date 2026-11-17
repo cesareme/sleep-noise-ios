@@ -1,0 +1,9 @@
+// Signing, with nothing of anyone in it.
+//
+// This file is versioned and carries no team, no certificate and no profile.
+// To sign a build for a device or for the App Store, copy
+// Config/Local.xcconfig.example to Config/Local.xcconfig and put your team
+// there. Git ignores that file. Without it this include finds nothing and
+// every build is what it was: the simulator and the CI need no team.
+
+#include? "Local.xcconfig"
