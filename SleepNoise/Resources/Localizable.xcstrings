@@ -2127,6 +2127,24 @@
         }
       }
     },
+    "ruta.seguir_altavoz": {
+      "comment": "Button shown for a minute after the headphones go away: resumes on the iPhone speaker",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep playing on speaker"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seguir por el altavoz"
+          }
+        }
+      }
+    },
     "intent.playSound.title": {
       "comment": "Shortcut title",
       "extractionState": "manual",
