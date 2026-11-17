@@ -1,0 +1,66 @@
+import SwiftUI
+
+/// The bottom bar (03 §4.11): "Mixes", the Disc, and the place of "Night".
+///
+/// Always there, on the page and in the Layers sheet: nothing blocks the
+/// sound. Words in plain ink and the Disc in the middle; no tint, no icon
+/// outside the Disc. The right-hand place stays empty until the Night screen
+/// exists, so nothing moves when it arrives.
+struct PageBar: View {
+    @ObservedObject var model: MixerModel
+    @ObservedObject var timer: SleepTimerController
+    var onMixes: () -> Void
+
+    @Environment(\.nightPhase) private var phase
+    @Environment(\.inkSurface) private var surface
+    @Environment(\.dynamicTypeSize) private var dynamicType
+    @Environment(\.accessibilityShowButtonShapes) private var buttonShapes
+
+    /// Height of the system's own bottom bar, which this one stands in for.
+    static let height: CGFloat = 49
+
+    var body: some View {
+        ZStack {
+            HStack(spacing: 0) {
+                mixes
+                Spacer(minLength: Grid.largeTarget + Grid.inner * 2)
+            }
+            .padding(.horizontal, Grid.margin)
+            // The final fade pulses the glyph by day; at night nothing moves
+            // but the sound.
+            PlayDisc(isPlaying: model.isPlaying, isFading: timer.isFading && !phase.isNight) {
+                model.togglePlayback()
+            }
+        }
+        // The Disc's 64 pt target is taller than the bar and reaches past
+        // it on both sides; the bar itself keeps the system's height.
+        .frame(maxWidth: .infinity)
+        .frame(height: Self.height)
+        .background((surface == .sheet ? Ink.sheet : Ink.background).ignoresSafeArea(edges: .bottom))
+        .overlay(alignment: .top) { Hairline() }
+    }
+
+    private var mixes: some View {
+        Button(action: onMixes) {
+            Group {
+                if dynamicType >= .accessibility4 {
+                    // The word no longer fits beside the Disc.
+                    Image(systemName: "square.stack")
+                        .font(.system(size: 28, weight: .medium))
+                } else {
+                    Text("barra.mezclas")
+                        .step(.bar)
+                        .underline(buttonShapes, color: Ink.primary(phase))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.9)
+                }
+            }
+            .foregroundStyle(Ink.primary(phase))
+            .frame(minHeight: Grid.target)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressedFadeStyle())
+        .accessibilityLabel(Text("barra.mezclas"))
+        .accessibilityIdentifier("openMixes")
+    }
+}

@@ -210,6 +210,7 @@ final class NightAndShortcutTests: XCTestCase {
     func testShortcutsRefuseProRequestsInWordsWithoutThePaywall() throws {
         let model = try makeFreeTierModel()
         let before = model.levels
+        let houseMixBefore = model.activeHouseMix
 
         XCTAssertEqual(model.playSound(.thunder), .needsPro)
         if let minutes = lengthThatNeedsPro {
@@ -221,7 +222,7 @@ final class NightAndShortcutTests: XCTestCase {
         XCTAssertFalse(model.showPaywall)
         XCTAssertFalse(model.isPlaying)
         XCTAssertEqual(model.levels, before)
-        XCTAssertNil(model.activeHouseMix)
+        XCTAssertEqual(model.activeHouseMix, houseMixBefore)
         XCTAssertNil(model.timer.selectedMinutes)
     }
 

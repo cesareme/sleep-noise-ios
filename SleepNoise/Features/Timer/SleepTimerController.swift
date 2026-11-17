@@ -11,6 +11,8 @@ final class SleepTimerController: ObservableObject {
     var onComplete: (@MainActor () -> Void)?
 
     private var endDate: Date?
+    /// When the running timer ends. Nil when none is counting.
+    var endsAt: Date? { isRunning ? endDate : nil }
     private var ticker: Timer?
     private var isRunning = false
     private var didRequestFade = false

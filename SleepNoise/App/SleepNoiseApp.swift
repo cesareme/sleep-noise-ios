@@ -11,12 +11,10 @@ struct SleepNoiseApp: App {
                 // Design gallery, debug builds only: launch with -gallery.
                 SystemGallery(model: root.mixer)
             } else {
-                MixerView(model: root.mixer, purchases: root.purchases)
-                    .tint(Palette.amber)
+                PageView(model: root.mixer, purchases: root.purchases)
             }
             #else
-            MixerView(model: root.mixer, purchases: root.purchases)
-                .tint(Palette.amber)
+            PageView(model: root.mixer, purchases: root.purchases)
             #endif
         }
     }
@@ -30,6 +28,6 @@ private struct PreviewHost: View {
     @StateObject private var root = AppRoot()
 
     var body: some View {
-        MixerView(model: root.mixer, purchases: root.purchases)
+        PageView(model: root.mixer, purchases: root.purchases)
     }
 }

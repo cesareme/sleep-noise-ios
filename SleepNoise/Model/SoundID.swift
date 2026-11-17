@@ -33,21 +33,8 @@ enum SoundID: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    var detailKey: String {
-        switch self {
-        case .white: return "sound.white.detail"
-        case .pink: return "sound.pink.detail"
-        case .brown: return "sound.brown.detail"
-        case .rain: return "sound.rain.detail"
-        case .fan: return "sound.fan.detail"
-        case .ocean: return "sound.ocean.detail"
-        case .thunder: return "sound.thunder.detail"
-        case .campfire: return "sound.campfire.detail"
-        case .brook: return "sound.brook.detail"
-        case .wind: return "sound.wind.detail"
-        case .cabin: return "sound.cabin.detail"
-        }
-    }
+    /// The line of use under the name, in lower case ("on the roof").
+    var detailKey: String { "capas.\(rawValue).detalle" }
 
     var symbolName: String {
         switch self {
