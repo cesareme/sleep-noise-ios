@@ -11,20 +11,39 @@ struct ChannelGenerators {
     var rain: RainTexture
     var fan: FanTexture
     var ocean: OceanTexture
+    var thunder: ThunderTexture
+    var campfire: CampfireTexture
+    var brook: BrookTexture
+    var wind: WindTexture
+    var cabin: CabinTexture
 
-    init(seedSalt: UInt32, sampleRate: Float) {
+    init(seedSalt: UInt32, sampleRate: Float, thunderSchedule: UInt32 = 0) {
         white = WhiteNoise(seed: 0xA341316C ^ seedSalt)
         pink = PinkNoise(seed: 0xC2B2AE35 ^ seedSalt)
         brown = BrownNoise(seed: 0x27BB2EE6 ^ seedSalt)
         rain = RainTexture(seed: 0x5A1F3B91 ^ seedSalt, sampleRate: sampleRate)
         fan = FanTexture(seed: 0x91E10DA5 ^ seedSalt, sampleRate: sampleRate)
         ocean = OceanTexture(seed: 0x3C6EF35F ^ seedSalt, sampleRate: sampleRate)
+        thunder = ThunderTexture(
+            seed: 0x7F4A7C15 ^ seedSalt,
+            sampleRate: sampleRate,
+            scheduleOffset: thunderSchedule
+        )
+        campfire = CampfireTexture(seed: 0x2D8E4B61 ^ seedSalt, sampleRate: sampleRate)
+        brook = BrookTexture(seed: 0xB17C90E3 ^ seedSalt, sampleRate: sampleRate)
+        wind = WindTexture(seed: 0x4C0A6F29 ^ seedSalt, sampleRate: sampleRate)
+        cabin = CabinTexture(seed: 0xE35B18D7 ^ seedSalt, sampleRate: sampleRate)
     }
 
     mutating func prepare(sampleRate: Float) {
         rain.prepare(sampleRate: sampleRate)
         fan.prepare(sampleRate: sampleRate)
         ocean.prepare(sampleRate: sampleRate)
+        thunder.prepare(sampleRate: sampleRate)
+        campfire.prepare(sampleRate: sampleRate)
+        brook.prepare(sampleRate: sampleRate)
+        wind.prepare(sampleRate: sampleRate)
+        cabin.prepare(sampleRate: sampleRate)
     }
 
     /// Generators whose gain has settled at zero are skipped: they cost CPU and
@@ -44,6 +63,11 @@ struct ChannelGenerators {
         if gains.brown > threshold { bed += brown.next() * gains.brown }
         if gains.rain > threshold { bed += rain.next() * gains.rain }
         if gains.fan > threshold { bed += fan.next() * gains.fan }
+        if gains.thunder > threshold { bed += thunder.next() * gains.thunder }
+        if gains.campfire > threshold { bed += campfire.next() * gains.campfire }
+        if gains.brook > threshold { bed += brook.next() * gains.brook }
+        if gains.wind > threshold { bed += wind.next() * gains.wind }
+        if gains.cabin > threshold { bed += cabin.next() * gains.cabin }
         if weight > threshold {
             bed *= 1 - depth * weight * (1 - breath)
         }
@@ -93,10 +117,12 @@ struct RenderState {
     /// Bed modulation depth, smoothed like the weight so a settings change
     /// (0.4 ⇄ 0.2) never steps the beds.
     var breathDepth: Float = 0.4
-    init(sampleRate: Float = 48_000) {
+    /// `thunderSchedule` goes to both channels unchanged: it moves the
+    /// thunder rumbles in time, never one channel against the other.
+    init(sampleRate: Float = 48_000, thunderSchedule: UInt32 = 0) {
         let rate = sampleRate > 1 ? sampleRate : 48_000
-        left = ChannelGenerators(seedSalt: 0, sampleRate: rate)
-        right = ChannelGenerators(seedSalt: 0x6B8B4567, sampleRate: rate)
+        left = ChannelGenerators(seedSalt: 0, sampleRate: rate, thunderSchedule: thunderSchedule)
+        right = ChannelGenerators(seedSalt: 0x6B8B4567, sampleRate: rate, thunderSchedule: thunderSchedule)
         prepare(sampleRate: rate)
     }
 

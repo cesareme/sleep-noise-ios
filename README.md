@@ -2,7 +2,9 @@
 
 Offline sleep-noise synthesizer for iPhone. Every sound is generated on the device with `AVAudioEngine` and an `AVAudioSourceNode`. There are no bundled audio files, no analytics, and no networking of our own. StoreKit is the only system service that contacts Apple, and only when someone loads or buys Pro.
 
-Free includes white, pink, and brown noise, the rain texture, a 15, 30 or 60 minute timer, and one saved mix. Pro (`com.cesareme.sleepnoise.pro`, non-consumable) unlocks fan and ocean, the breathing tide, timers up to 6 hours including a custom length, and unlimited saved mixes. Every install gets a local 7-day trial of everything: no card, no StoreKit product, the clock starts at the first Play and the first-launch card says so.
+Free includes white, pink, and brown noise, the rain texture, a 15, 30 or 60 minute timer, and one saved mix. Pro (`com.cesareme.sleepnoise.pro`, non-consumable) unlocks the rest of the generated sounds (fan, ocean, thunder, campfire, brook and cabin among them), the breathing tide, timers up to 6 hours including a custom length, and unlimited saved mixes. Every install gets a local 7-day trial of everything: no card, no StoreKit product, the clock starts at the first Play and the first-launch card says so.
+
+Siri and the Shortcuts app can play a single sound, start the sleep timer and stop playback, in English and Spanish. A request that needs Pro is answered in words.
 
 ## Requirements
 

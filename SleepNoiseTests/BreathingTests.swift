@@ -585,17 +585,71 @@ final class TrialClockTests: XCTestCase {
     }
 }
 
-/// Copy that reads as a medical or efficacy claim is kept out of the catalog.
+/// Copy that reads as a medical or efficacy claim, and the vocabulary the
+/// copy guide vetoes for mixes, are kept out of both catalogs: the interface
+/// strings and the phrases Siri is trained with.
 final class CopyLintTests: XCTestCase {
+    private static let catalogs = ["Localizable.xcstrings", "AppShortcuts.xcstrings"]
+
+    // The catalogs are compiled away at build time; read the source files.
+    private func catalogURL(_ name: String) -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("SleepNoise/Resources/\(name)")
+    }
+
     func testNoMedicalClaimsInEitherLanguage() throws {
-        // The catalog is compiled away at build time; read the source file.
-        let url = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appendingPathComponent("SleepNoise/Resources/Localizable.xcstrings")
-        let text = try String(contentsOf: url, encoding: .utf8).lowercased()
-        for banned in ["insomn", "ansiedad", "anxiety", "terap", "treat", "cure", "cura ", "coherencia cardíaca", "stay under"] {
-            XCTAssertFalse(text.contains(banned), "catalog contains \"\(banned)\"")
+        for name in Self.catalogs {
+            let text = try String(contentsOf: catalogURL(name), encoding: .utf8).lowercased()
+            for banned in ["insomn", "ansiedad", "anxiety", "terap", "treat", "cure", "cura ", "coherencia cardíaca", "stay under"] {
+                XCTAssertFalse(text.contains(banned), "\(name) contains \"\(banned)\"")
+            }
         }
+    }
+
+    /// A mix is never a "preset", and no mix is named after a promise (deep
+    /// sleep, focus) or after babies. Checked on what people read, language
+    /// by language: keys and comments may keep the word.
+    func testNoVetoedMixVocabularyInEitherLanguage() throws {
+        let vetoed = [
+            "en": ["preset", "deep sleep", "focus", "baby"],
+            "es": ["preset", "preajuste", "profund", "concentraci", "bebé"]
+        ]
+        for name in Self.catalogs {
+            let data = try Data(contentsOf: catalogURL(name))
+            let root = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+            let strings = try XCTUnwrap(root["strings"] as? [String: Any])
+            var checked = 0
+            for (key, entry) in strings {
+                let localizations = (entry as? [String: Any])?["localizations"] as? [String: Any] ?? [:]
+                for (language, words) in vetoed {
+                    for value in Self.values(in: localizations[language]) {
+                        checked += 1
+                        let text = value.lowercased()
+                        for word in words {
+                            XCTAssertFalse(text.contains(word), "\(name) \(key) [\(language)] contains \"\(word)\"")
+                        }
+                    }
+                }
+            }
+            XCTAssertGreaterThan(checked, 5, "\(name) should have been read")
+        }
+    }
+
+    /// Every string under a "value" or "values" key, at any depth.
+    private static func values(in node: Any?) -> [String] {
+        guard let dictionary = node as? [String: Any] else { return [] }
+        var found: [String] = []
+        for (key, child) in dictionary {
+            if key == "value", let text = child as? String {
+                found.append(text)
+            } else if key == "values", let list = child as? [String] {
+                found.append(contentsOf: list)
+            } else {
+                found.append(contentsOf: values(in: child))
+            }
+        }
+        return found
     }
 }

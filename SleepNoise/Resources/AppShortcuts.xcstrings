@@ -1,0 +1,76 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Play ${sound} in ${applicationName}": {
+      "comment": "App Shortcut phrases",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Play ${sound} in ${applicationName}",
+              "Start ${sound} with ${applicationName}"
+            ]
+          }
+        },
+        "es": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Reproduce ${sound} en ${applicationName}",
+              "Pon ${sound} en ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Start sleep timer in ${applicationName}": {
+      "comment": "App Shortcut phrases",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Start sleep timer in ${applicationName}"
+            ]
+          }
+        },
+        "es": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Inicia el temporizador en ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Stop ${applicationName}": {
+      "comment": "App Shortcut phrases",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Stop ${applicationName}",
+              "Pause ${applicationName}"
+            ]
+          }
+        },
+        "es": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Detén ${applicationName}",
+              "Pausa ${applicationName}"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

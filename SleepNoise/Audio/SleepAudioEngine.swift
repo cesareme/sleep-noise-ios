@@ -26,7 +26,9 @@ final class SleepAudioEngine {
 
     init() {
         state = .allocate(capacity: 1)
-        state.initialize(to: RenderState())
+        // Chosen here, on the main thread, once per launch: the thunder does
+        // not rumble at the same seconds every night.
+        state.initialize(to: RenderState(thunderSchedule: UInt32.random(in: 0...UInt32.max)))
         observeConfigurationChanges()
     }
 

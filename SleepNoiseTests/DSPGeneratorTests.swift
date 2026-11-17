@@ -219,7 +219,7 @@ final class FadeCurveTests: XCTestCase {
     func testMixedOutputStaysInsideTheUnitInterval() {
         var state = RenderState(sampleRate: 48_000)
         let command = EngineCommand(
-            gains: SoundGains(white: 1, pink: 1, brown: 1, rain: 1, fan: 1, ocean: 1),
+            gains: .uniform(1),
             envelopeTarget: 1,
             rampSamples: 1,
             generation: 1,
@@ -262,7 +262,7 @@ final class StereoRenderTests: XCTestCase {
     func testChannelsAreDecorrelatedButLevelMatched() {
         var state = RenderState(sampleRate: 48_000)
         let command = EngineCommand(
-            gains: SoundGains(white: 0.5, pink: 0.5, brown: 0.5, rain: 0.5, fan: 0.5, ocean: 0.5),
+            gains: .uniform(0.5),
             envelopeTarget: 1,
             rampSamples: 1,
             generation: 1,
@@ -284,6 +284,61 @@ final class StereoRenderTests: XCTestCase {
         XCTAssertEqual(levelRatio, 1, accuracy: 0.15, "but at the same loudness")
     }
 
+    /// Each sound alone at full gain: it must come out of both channels, the
+    /// channels must carry independent noise, and the left channel must be
+    /// that sound's own generator. A gain wired to no generator fails the
+    /// floor; a gain wired to another sound's generator fails the match.
+    func testEverySoundReachesTheOutputOnItsOwn() {
+        let rate: Float = 48_000
+        let frames = Int(rate) * 2
+        for sound in SoundID.allCases {
+            var gains = SoundGains.zero
+            gains.set(sound, 1)
+            let command = EngineCommand(
+                gains: gains,
+                envelopeTarget: 1,
+                rampSamples: 1,
+                generation: 1,
+                envelopeGeneration: 1
+            )
+            var state = RenderState(sampleRate: rate)
+            var alone = ChannelGenerators(seedSalt: 0, sampleRate: rate)
+            var sll = 0.0, srr = 0.0, slr = 0.0, saa = 0.0, sla = 0.0
+            for _ in 0..<frames {
+                let frame = state.processStereo(command)
+                let reference = Double(next(sound, from: &alone))
+                let l = Double(frame.left)
+                let r = Double(frame.right)
+                sll += l * l
+                srr += r * r
+                slr += l * r
+                saa += reference * reference
+                sla += l * reference
+            }
+            let name = sound.rawValue
+            XCTAssertGreaterThan((sll / Double(frames)).squareRoot(), 0.01, "\(name) is silent on the left")
+            XCTAssertGreaterThan((srr / Double(frames)).squareRoot(), 0.01, "\(name) is silent on the right")
+            XCTAssertLessThan(abs(slr / (sll * srr).squareRoot()), 0.1, "\(name) should be decorrelated in stereo")
+            XCTAssertGreaterThan(sla / (sll * saa).squareRoot(), 0.9, "\(name) should be its own generator")
+        }
+    }
+
+    private func next(_ sound: SoundID, from generators: inout ChannelGenerators) -> Float {
+        switch sound {
+        case .white: return generators.white.next()
+        case .pink: return generators.pink.next()
+        case .brown: return generators.brown.next()
+        case .rain: return generators.rain.next()
+        case .fan: return generators.fan.next()
+        case .ocean: return generators.ocean.next(breath: 0, weight: 0)
+        case .thunder: return generators.thunder.next()
+        case .campfire: return generators.campfire.next()
+        case .brook: return generators.brook.next()
+        case .wind: return generators.wind.next()
+        case .cabin: return generators.cabin.next()
+        }
+    }
+
     func testSilentGainsProduceSilence() {
         var state = RenderState(sampleRate: 48_000)
         let command = EngineCommand(gains: .zero, envelopeTarget: 1, rampSamples: 1, generation: 1, envelopeGeneration: 1)
@@ -292,6 +347,492 @@ final class StereoRenderTests: XCTestCase {
             XCTAssertEqual(frame.left, 0)
             XCTAssertEqual(frame.right, 0)
         }
+    }
+}
+
+final class NewTextureTests: XCTestCase {
+    /// Every texture ends in a clip that turns NaN into silence, so a
+    /// poisoned filter shows up as a tail that went quiet, not as a NaN.
+    func testNewTexturesKeepSoundingAtSeveralSampleRates() {
+        let rates: [Float] = [22_050, 44_100, 48_000, 96_000]
+        var levels: [String: [Float]] = [:]
+        for rate in rates {
+            let rendered = render(sampleRate: rate, seconds: 2)
+            for (name, samples) in rendered {
+                // The last second also holds the first thunder rumble.
+                let tail = rootMeanSquare(Array(samples.suffix(Int(rate))))
+                XCTAssertGreaterThan(tail, 0.02, "\(name) at \(rate) went silent")
+                let rms = rootMeanSquare(samples)
+                XCTAssertGreaterThan(rms, 0.02, "\(name) at \(rate) is silent")
+                XCTAssertLessThan(rms, 0.45, "\(name) at \(rate) is too hot")
+                levels[name, default: []].append(rms)
+            }
+        }
+        for (name, rmsValues) in levels {
+            guard let low = rmsValues.min(), let high = rmsValues.max(), low > 0 else {
+                return XCTFail(name)
+            }
+            XCTAssertLessThan(high / low, 2.5, "\(name) loudness should stay in the same range across sample rates")
+        }
+    }
+
+    func testNewTexturesAreNotCopiesOfEachOther() {
+        let rendered = render(sampleRate: 48_000, seconds: 3)
+        let names = ["thunder", "campfire", "brook", "wind", "cabin"]
+        for left in names {
+            for right in names where right > left {
+                let correlation = correlationOf(rendered[left] ?? [], rendered[right] ?? [])
+                XCTAssertLessThan(abs(correlation), 0.1, "\(left) and \(right) should not be the same signal")
+            }
+        }
+    }
+
+    /// Two seconds, so the mix includes the first thunder rumble. The output
+    /// stage bounds the mix and silences NaN; what can fail is the sound.
+    func testRenderMixOfNewTexturesKeepsSounding() {
+        for rate in [Float(44_100), 48_000] {
+            var state = RenderState(sampleRate: rate)
+            var gains = SoundGains.zero
+            gains.thunder = 0.8
+            gains.campfire = 0.8
+            gains.brook = 0.8
+            gains.wind = 0.8
+            gains.cabin = 0.8
+            let command = EngineCommand(
+                gains: gains,
+                envelopeTarget: 1,
+                rampSamples: 1,
+                generation: 1,
+                envelopeGeneration: 1
+            )
+            var left: [Float] = []
+            var right: [Float] = []
+            for _ in 0..<(Int(rate) * 2) {
+                let frame = state.processStereo(command)
+                left.append(frame.left)
+                right.append(frame.right)
+            }
+            XCTAssertGreaterThan(rootMeanSquare(Array(left.suffix(Int(rate)))), 0.05, "left at \(rate) went silent")
+            XCTAssertGreaterThan(rootMeanSquare(Array(right.suffix(Int(rate)))), 0.05, "right at \(rate) went silent")
+        }
+    }
+
+    private func render(sampleRate: Float, seconds: Int) -> [String: [Float]] {
+        var thunder = ThunderTexture(seed: 0x7F4A7C15, sampleRate: sampleRate)
+        var campfire = CampfireTexture(seed: 0x2D8E4B61, sampleRate: sampleRate)
+        var brook = BrookTexture(seed: 0xB17C90E3, sampleRate: sampleRate)
+        var wind = WindTexture(seed: 0x4C0A6F29, sampleRate: sampleRate)
+        var cabin = CabinTexture(seed: 0xE35B18D7, sampleRate: sampleRate)
+        let count = Int(sampleRate) * seconds
+        var output: [String: [Float]] = [
+            "thunder": [], "campfire": [], "brook": [], "wind": [], "cabin": []
+        ]
+        output["thunder"]?.reserveCapacity(count)
+        output["campfire"]?.reserveCapacity(count)
+        output["brook"]?.reserveCapacity(count)
+        output["wind"]?.reserveCapacity(count)
+        output["cabin"]?.reserveCapacity(count)
+        for _ in 0..<count {
+            output["thunder"]?.append(thunder.next())
+            output["campfire"]?.append(campfire.next())
+            output["brook"]?.append(brook.next())
+            output["wind"]?.append(wind.next())
+            output["cabin"]?.append(cabin.next())
+        }
+        return output
+    }
+
+    private func correlationOf(_ left: [Float], _ right: [Float]) -> Float {
+        let count = min(left.count, right.count)
+        guard count > 1 else { return 0 }
+        var sxy: Float = 0
+        var sxx: Float = 0
+        var syy: Float = 0
+        for index in 0..<count {
+            sxy += left[index] * right[index]
+            sxx += left[index] * left[index]
+            syy += right[index] * right[index]
+        }
+        let denom = sqrt(sxx * syy)
+        if denom < 1e-6 { return 0 }
+        return sxy / denom
+    }
+}
+
+/// Review fixes for the new textures. Each one is pinned by an offline render
+/// long enough to cover the slow part of the texture it measures.
+final class TextureReviewTests: XCTestCase {
+    private static let rate: Float = 48_000
+    private static let thunderSeconds = 40
+
+    /// Forty seconds of both thunder channels, rendered once for the class.
+    private static let thunder: (left: [Float], right: [Float]) = {
+        var left = ThunderTexture(seed: 0x7F4A7C15, sampleRate: rate)
+        var right = ThunderTexture(seed: 0x7F4A7C15 ^ 0x6B8B4567, sampleRate: rate)
+        let count = Int(rate) * thunderSeconds
+        var leftSamples: [Float] = []
+        var rightSamples: [Float] = []
+        leftSamples.reserveCapacity(count)
+        rightSamples.reserveCapacity(count)
+        for _ in 0..<count {
+            leftSamples.append(left.next())
+            rightSamples.append(right.next())
+        }
+        return (leftSamples, rightSamples)
+    }()
+
+    /// Sample index of every rumble onset inside the render, from the same
+    /// schedule the texture follows.
+    private static let rumbleOnsets: [Int] = {
+        var onsets: [Int] = []
+        var sample = Int(ThunderTexture.firstRumbleSeconds * rate)
+        var index = 0
+        while sample < Int(rate) * thunderSeconds {
+            onsets.append(sample)
+            sample += max(1, Int(ThunderTexture.gapSeconds(after: index) * rate))
+            index += 1
+        }
+        return onsets
+    }()
+
+    // MARK: Levels
+
+    func testCampfireBrookAndWindSitWithRainOnTheSlider() {
+        // Twenty seconds: one full cycle of the slowest wind gust and several
+        // of the campfire flicker.
+        let rate = Self.rate
+        let count = Int(rate) * 20
+        var rain = RainTexture(seed: 0x5A1F3B91, sampleRate: rate)
+        var campfire = CampfireTexture(seed: 0x2D8E4B61, sampleRate: rate)
+        var brook = BrookTexture(seed: 0xB17C90E3, sampleRate: rate)
+        var wind = WindTexture(seed: 0x4C0A6F29, sampleRate: rate)
+        let rainLevel = AWeighting.decibels(render(count) { rain.next() }, sampleRate: Double(rate))
+        let levels: [(String, Double)] = [
+            ("campfire", AWeighting.decibels(render(count) { campfire.next() }, sampleRate: Double(rate))),
+            ("brook", AWeighting.decibels(render(count) { brook.next() }, sampleRate: Double(rate))),
+            ("wind", AWeighting.decibels(render(count) { wind.next() }, sampleRate: Double(rate)))
+        ]
+        XCTAssertEqual(rainLevel, -20, accuracy: 1.5, "rain is the reference bed")
+        for (name, level) in levels {
+            // At unity the campfire sat 11 dB(A) under rain and the brook 7.
+            XCTAssertEqual(level, rainLevel, accuracy: 4, "\(name) should sit with rain at the same slider position")
+        }
+    }
+
+    func testWindNeverReachesFullScale() {
+        // Twenty-six seconds reach the top of the strongest gust at every rate.
+        for rate in [Float(22_050), 44_100, 48_000, 96_000] {
+            var wind = WindTexture(seed: 0x4C0A6F29, sampleRate: rate)
+            var peak: Float = 0
+            var aboveKnee = 0
+            let count = Int(rate) * 26
+            for _ in 0..<count {
+                let magnitude = abs(wind.next())
+                if magnitude > 0.6 { aboveKnee += 1 }
+                peak = max(peak, magnitude)
+            }
+            XCTAssertLessThan(peak, 0.97, "wind at \(rate) should stay clear of the hard clip")
+            XCTAssertGreaterThan(peak, 0.3, "wind at \(rate) should still gust")
+            // The peak is measured after the soft clip, which hides how far
+            // the trim is from it. The share of samples it bends does not.
+            if rate >= 44_100 {
+                XCTAssertLessThan(
+                    Double(aboveKnee) / Double(count), 0.005,
+                    "wind at \(rate) should only brush the soft clip"
+                )
+            }
+        }
+    }
+
+    func testCampfireSaturationInsideTheTextureStaysRare() {
+        // The campfire trim drives the texture's own soft clip, before the
+        // slider, so the saturation is the same at every volume. Forty
+        // seconds cover several cycles of the flicker.
+        let rate = Self.rate
+        var campfire = CampfireTexture(seed: 0x2D8E4B61, sampleRate: rate)
+        let count = Int(rate) * 40
+        var aboveKnee = 0
+        for _ in 0..<count where abs(campfire.next()) > 0.6 {
+            aboveKnee += 1
+        }
+        XCTAssertLessThan(Double(aboveKnee) / Double(count), 0.02, "the flame should rarely reach the soft clip")
+    }
+
+    func testPresetsWithTrimmedTexturesStayBelowTheSoftClipKnee() {
+        // The trims must not push a one-tap mix into the saturating part of
+        // the output stage. Ten seconds cover the campfire flicker.
+        let rate = Self.rate
+        for preset in [SoundPreset.campfire, .brook, .nightWind] {
+            var gains = SoundGains.zero
+            for (sound, level) in preset.layers {
+                gains.set(sound, level)
+            }
+            var state = RenderState(sampleRate: rate)
+            let command = EngineCommand(
+                gains: gains,
+                envelopeTarget: 1,
+                rampSamples: 1,
+                generation: 1,
+                envelopeGeneration: 1
+            )
+            let frames = Int(rate) * 10
+            var aboveKnee = 0
+            var peak: Float = 0
+            for _ in 0..<frames {
+                let frame = state.processStereo(command)
+                let magnitude = max(abs(frame.left), abs(frame.right))
+                if magnitude > 0.6 { aboveKnee += 1 }
+                peak = max(peak, magnitude)
+            }
+            XCTAssertLessThan(peak, 0.9, "\(preset.rawValue) should keep headroom")
+            XCTAssertLessThan(Double(aboveKnee) / Double(frames), 0.01, "\(preset.rawValue) should rarely reach the knee")
+        }
+    }
+
+    // MARK: Thunder
+
+    func testThunderScheduleIsAHashNotAConstantStep() {
+        let count = 512
+        let gaps = (0..<count).map { ThunderTexture.gapSeconds(after: $0) }
+        for gap in gaps {
+            XCTAssertGreaterThanOrEqual(gap, 4.5)
+            XCTAssertLessThan(gap, 12.5)
+        }
+        // A constant step alternates long and short gaps (lag-1 correlation
+        // near -0.5) and repeats the pattern every few dozen rumbles.
+        for lag in 1...64 {
+            let correlation = autocorrelation(gaps, lag: lag)
+            XCTAssertLessThan(abs(correlation), 0.2, "gaps repeat at lag \(lag)")
+        }
+        // Spread evenly over the range.
+        var quarters = [0, 0, 0, 0]
+        for gap in gaps {
+            quarters[min(3, Int((gap - 4.5) / 2))] += 1
+        }
+        for quarter in quarters {
+            XCTAssertGreaterThan(quarter, count * 18 / 100)
+            XCTAssertLessThan(quarter, count * 32 / 100)
+        }
+        // The loudness of a rumble says nothing about the gap after it.
+        let loudness = (0..<count).map { ThunderTexture.unit($0, salt: 1) }
+        XCTAssertLessThan(abs(crossCorrelation(loudness, gaps)), 0.2)
+    }
+
+    func testThunderScheduleMovesWithTheLaunchOffset() {
+        let rate = Self.rate
+        let offset = 1_000
+        // The onsets the offset schedule should follow, from the same pure
+        // function read further along.
+        var onsets = [Int(ThunderTexture.firstRumbleSeconds * rate)]
+        var plain = onsets[0]
+        var differs = false
+        for index in 0..<3 {
+            onsets.append(onsets[index] + Int(ThunderTexture.gapSeconds(after: index + offset) * rate))
+            plain += Int(ThunderTexture.gapSeconds(after: index) * rate)
+            if abs(onsets[index + 1] - plain) > Int(rate) / 2 { differs = true }
+        }
+        XCTAssertTrue(differs, "another offset should move the rumbles")
+
+        // Through the render state, which must hand the offset to both
+        // channels: one channel on another schedule would smear the image.
+        var state = RenderState(sampleRate: rate, thunderSchedule: UInt32(offset))
+        var gains = SoundGains.zero
+        gains.thunder = 1
+        let command = EngineCommand(gains: gains, envelopeTarget: 1, rampSamples: 1, generation: 1, envelopeGeneration: 1)
+        let count = onsets[3]
+        var leftSamples: [Float] = []
+        var rightSamples: [Float] = []
+        leftSamples.reserveCapacity(count)
+        rightSamples.reserveCapacity(count)
+        for _ in 0..<count {
+            let frame = state.processStereo(command)
+            leftSamples.append(frame.left)
+            rightSamples.append(frame.right)
+        }
+        let lowLeft = lowBand(leftSamples, sampleRate: rate, hertz: 120)
+        let lowRight = lowBand(rightSamples, sampleRate: rate, hertz: 120)
+        for low in [lowLeft, lowRight] {
+            for index in 0..<3 {
+                let loud = meanPower(low, from: onsets[index] + Int(rate * 0.3), count: Int(rate))
+                let quiet = meanPower(low, from: onsets[index + 1] - Int(rate * 0.5), count: Int(rate * 0.5))
+                XCTAssertGreaterThan(loud, quiet * 3, "rumble \(index) should follow the offset schedule")
+            }
+        }
+    }
+
+    func testThunderKeepsItsScheduleAcrossASampleRateChange() {
+        // A route change (48 kHz to 44.1 kHz) rescales the sample counters of
+        // a running texture. The next rumble must stay where it was in time,
+        // and at the same instant in both channels.
+        var left = ThunderTexture(seed: 0x7F4A7C15, sampleRate: 48_000)
+        var right = ThunderTexture(seed: 0x7F4A7C15 ^ 0x6B8B4567, sampleRate: 48_000)
+        for _ in 0..<(48_000 * 5) {
+            _ = left.next()
+            _ = right.next()
+        }
+        let before = left.secondsUntilNextRumble
+        XCTAssertGreaterThan(before, 1, "the render should stop between two rumbles")
+        left.prepare(sampleRate: 44_100)
+        right.prepare(sampleRate: 44_100)
+        XCTAssertEqual(left.secondsUntilNextRumble, before, accuracy: 0.01)
+        XCTAssertEqual(right.secondsUntilNextRumble, left.secondsUntilNextRumble)
+
+        let rate: Float = 44_100
+        let count = Int(rate) * 20
+        var leftSamples: [Float] = []
+        var rightSamples: [Float] = []
+        leftSamples.reserveCapacity(count)
+        rightSamples.reserveCapacity(count)
+        for _ in 0..<count {
+            leftSamples.append(left.next())
+            rightSamples.append(right.next())
+        }
+        let lowLeft = lowBand(leftSamples, sampleRate: rate, hertz: 120)
+        let lowRight = lowBand(rightSamples, sampleRate: rate, hertz: 120)
+        // The rumble arrives when it was due before the change.
+        let onset = Int(before * rate)
+        let loud = meanPower(lowLeft, from: onset + Int(rate * 0.3), count: Int(rate))
+        let quiet = meanPower(lowLeft, from: onset - Int(rate), count: Int(rate * 0.5))
+        XCTAssertGreaterThan(loud, quiet * 3, "the rumble should arrive when it was due")
+        // And the two channels still share the envelope.
+        let window = Int(rate * 0.5)
+        var leftPower: [Float] = []
+        var rightPower: [Float] = []
+        var start = 0
+        while start + window <= count {
+            leftPower.append(Float(meanPower(lowLeft, from: start, count: window)))
+            rightPower.append(Float(meanPower(lowRight, from: start, count: window)))
+            start += window
+        }
+        XCTAssertGreaterThan(crossCorrelation(leftPower, rightPower), 0.7, "the channels should still strike together")
+    }
+
+    func testThunderHasNoStrikeAtTheStartOfARumble() {
+        let rate = Self.rate
+        // Everything above 6 kHz: the rain hiss lives there all the time, a
+        // strike of white noise would stand well above it for 60 ms.
+        let high = highBand(Self.thunder.left, sampleRate: rate, hertz: 6_000)
+        let window = Int(rate * 0.06)
+        let before = Int(rate * 0.2)
+        var ratios: [Double] = []
+        for onset in Self.rumbleOnsets where onset >= before && onset + window <= high.count {
+            let after = meanPower(high, from: onset, count: window)
+            let floor = meanPower(high, from: onset - before, count: before)
+            ratios.append(after / floor)
+        }
+        XCTAssertGreaterThanOrEqual(ratios.count, 3, "the render should contain several rumbles")
+        for ratio in ratios {
+            XCTAssertLessThan(ratio, 1.5, "a rumble should not start with a burst of bright noise")
+        }
+    }
+
+    func testThunderRumbleSwellsAndDiesAway() {
+        let rate = Self.rate
+        let low = lowBand(Self.thunder.left, sampleRate: rate, hertz: 120)
+        let onsets = Self.rumbleOnsets
+        var tested = 0
+        for index in 0..<(onsets.count - 1) {
+            let onset = onsets[index]
+            let next = onsets[index + 1]
+            let loud = meanPower(low, from: onset + Int(rate * 0.3), count: Int(rate))
+            let quiet = meanPower(low, from: next - Int(rate * 0.5), count: Int(rate * 0.5))
+            // An envelope stuck open, or one that never opens, gives a ratio of one.
+            XCTAssertGreaterThan(loud, quiet * 3, "rumble \(index) should rise and fall back before the next one")
+            tested += 1
+        }
+        XCTAssertGreaterThanOrEqual(tested, 3)
+    }
+
+    func testThunderStrikesInBothChannelsAtOnce() {
+        let rate = Self.rate
+        let left = lowBand(Self.thunder.left, sampleRate: rate, hertz: 120)
+        let right = lowBand(Self.thunder.right, sampleRate: rate, hertz: 120)
+        let window = Int(rate * 0.5)
+        var leftPower: [Float] = []
+        var rightPower: [Float] = []
+        var start = 0
+        while start + window <= left.count {
+            leftPower.append(Float(meanPower(left, from: start, count: window)))
+            rightPower.append(Float(meanPower(right, from: start, count: window)))
+            start += window
+        }
+        XCTAssertGreaterThan(crossCorrelation(leftPower, rightPower), 0.7, "the rumble envelope should be shared")
+        // The noise itself stays independent.
+        XCTAssertLessThan(abs(crossCorrelation(Self.thunder.left, Self.thunder.right)), 0.1)
+    }
+
+    // MARK: Helpers
+
+    private func render(_ count: Int, _ next: () -> Float) -> [Float] {
+        var samples: [Float] = []
+        samples.reserveCapacity(count)
+        for _ in 0..<count {
+            samples.append(next())
+        }
+        return samples
+    }
+
+    /// Two cascaded one-pole lowpasses.
+    private func lowBand(_ samples: [Float], sampleRate: Float, hertz: Float) -> [Float] {
+        let coefficient = OnePole.coefficient(sampleRate: sampleRate, hertz: hertz)
+        var first: Float = 0
+        var second: Float = 0
+        return samples.map { sample in
+            first += coefficient * (sample - first)
+            second += coefficient * (first - second)
+            return second
+        }
+    }
+
+    /// The input minus a one-pole lowpass of itself.
+    private func highBand(_ samples: [Float], sampleRate: Float, hertz: Float) -> [Float] {
+        let coefficient = OnePole.coefficient(sampleRate: sampleRate, hertz: hertz)
+        var low: Float = 0
+        return samples.map { sample in
+            low += coefficient * (sample - low)
+            return sample - low
+        }
+    }
+
+    private func meanPower(_ samples: [Float], from start: Int, count: Int) -> Double {
+        let lower = max(0, start)
+        let upper = min(samples.count, start + count)
+        guard upper > lower else { return 0 }
+        var energy = 0.0
+        for index in lower..<upper {
+            energy += Double(samples[index] * samples[index])
+        }
+        return energy / Double(upper - lower)
+    }
+
+    private func autocorrelation(_ values: [Float], lag: Int) -> Float {
+        crossCorrelation(Array(values.dropLast(lag)), Array(values.dropFirst(lag)))
+    }
+
+    /// Pearson correlation of two equally long series.
+    private func crossCorrelation(_ left: [Float], _ right: [Float]) -> Float {
+        let count = min(left.count, right.count)
+        guard count > 1 else { return 0 }
+        var leftMean = 0.0
+        var rightMean = 0.0
+        for index in 0..<count {
+            leftMean += Double(left[index])
+            rightMean += Double(right[index])
+        }
+        leftMean /= Double(count)
+        rightMean /= Double(count)
+        var sxy = 0.0
+        var sxx = 0.0
+        var syy = 0.0
+        for index in 0..<count {
+            let x = Double(left[index]) - leftMean
+            let y = Double(right[index]) - rightMean
+            sxy += x * y
+            sxx += x * x
+            syy += y * y
+        }
+        let denominator = (sxx * syy).squareRoot()
+        return denominator < 1e-12 ? 0 : Float(sxy / denominator)
     }
 }
 
@@ -312,13 +853,7 @@ extension ParameterMailboxTests {
         let writer = Thread {
             for index in 0..<iterations {
                 let value = Float(index % 1_000) / 1_000
-                var gains = SoundGains.zero
-                gains.white = value
-                gains.pink = value
-                gains.brown = value
-                gains.rain = value
-                gains.fan = value
-                gains.ocean = value
+                let gains = SoundGains.uniform(value)
                 var breath = BreathParameters.off
                 breath.rate = value
                 breath.inhale = value
@@ -345,8 +880,8 @@ extension ParameterMailboxTests {
             last = command
             reads += 1
             let g = command.gains
-            let consistent = g.white == g.pink && g.pink == g.brown && g.brown == g.rain
-                && g.rain == g.fan && g.fan == g.ocean && g.ocean == command.envelopeTarget
+            let gainsMatch = SoundID.allCases.allSatisfy { g.value(for: $0) == g.white }
+            let consistent = gainsMatch && g.white == command.envelopeTarget
                 && Int32((g.white * 1_000).rounded()) == command.rampSamples
                 && command.breath.rate == g.white && command.breath.inhale == g.white
                 && command.breath.weight == g.white

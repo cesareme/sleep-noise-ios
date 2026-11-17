@@ -8,7 +8,12 @@ final class MixerModel: ObservableObject {
     @Published var audioError: String?
     @Published var showPaywall = false
     @Published private(set) var loadedMixName: String?
-    /// A saved mix was loaded with fan or ocean muted because they need Pro.
+    /// Preset last applied, until the person edits a level.
+    @Published private(set) var activePreset: SoundPreset?
+    /// Night screen is covering the interface. Audio keeps running when this
+    /// turns off.
+    @Published private(set) var isBedtime = false
+    /// The loaded mix or preset has layers that are muted because they need Pro.
     @Published private(set) var loadedMixWasStripped = false
     /// Short note under the breathing card ("Ocean raised so you can hear it").
     @Published private(set) var breathingNote: String?
@@ -24,6 +29,8 @@ final class MixerModel: ObservableObject {
     private let defaults: UserDefaults
     private let levelsKey = "sleepnoise.levels.v1"
     private let timerKey = "sleepnoise.timerMinutes.v1"
+    /// Length the timer Shortcut uses when none was asked for or chosen.
+    static let fallbackTimerMinutes = 60
     private var didStart = false
     private var resumeAfterInterruption = false
     private var noteTask: Task<Void, Never>?
@@ -55,6 +62,7 @@ final class MixerModel: ObservableObject {
     func startIfNeeded() {
         guard !didStart else { return }
         didStart = true
+        IntentBridge.attach(self)
         purchases.start()
         installSessionHandlers()
         nowPlaying.install(
@@ -73,6 +81,7 @@ final class MixerModel: ObservableObject {
         levels[sound] = min(1, max(0, value))
         loadedMixName = nil
         loadedMixWasStripped = false
+        activePreset = nil
         if sound == .ocean { oceanBeforeTide = nil }
         persistLevels()
         if isPlaying {
@@ -92,6 +101,7 @@ final class MixerModel: ObservableObject {
     /// interruption, media-services reset). The breathing guide then continues
     /// its window instead of starting a fresh fifteen minutes on someone asleep.
     func play(userInitiated: Bool = true) {
+        startIfNeeded()
         audioError = nil
         resumeAfterInterruption = false
         // The guide publishes before the engine starts, so the first command
@@ -170,23 +180,19 @@ final class MixerModel: ObservableObject {
         return result
     }
 
-    /// Loads a saved mix. Fan and ocean are muted (their levels are kept)
-    /// when they are not included; the mixer shows a note instead of a sheet.
+    /// Loads a saved mix. Pro layers are muted (their levels are kept) when
+    /// they are not included; the mixer shows a note instead of a sheet.
     @discardableResult
     func apply(_ mix: SavedMix) -> Bool {
         var next = Self.defaultLevels()
         for level in mix.levels {
             next[level.sound] = level.value
         }
-        var stripped = false
-        for sound in SoundID.allCases where !AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess) {
-            if (next[sound] ?? 0) > 0.001 {
-                stripped = true
-            }
-        }
+        let stripped = Self.hasMutedLayers(next, hasFullAccess: purchases.hasFullAccess)
         levels = next
         loadedMixName = mix.name
         loadedMixWasStripped = stripped
+        activePreset = nil
         persistLevels()
         if isPlaying {
             engine.updateGains(currentGains())
@@ -196,6 +202,131 @@ final class MixerModel: ObservableObject {
 
     func suggestedMixName() -> String {
         String(format: String(localized: "mixes.defaultNameFormat"), Int64(mixStore.mixes.count + 1))
+    }
+
+    // MARK: Presets, Shortcuts, Night
+
+    /// Shortcuts: replace the mix with a preset and start playback. A preset
+    /// with Pro layers needs full access; without it nothing changes and no
+    /// paywall is raised, because the request may come by voice in the dark.
+    /// The intent answers in words instead. `play()` does the one-time setup,
+    /// so a refused request has no side effects.
+    ///
+    /// Every Shortcut entry point reads the trial clock first: a trial that
+    /// ran out while the app was suspended must not let one more Pro night
+    /// through because the scene has not become active yet.
+    @discardableResult
+    func playPreset(_ preset: SoundPreset) -> IntentOutcome {
+        purchases.refreshAccess(canDowngrade: !isPlaying)
+        switch PresetLibrary.apply(preset, hasFullAccess: purchases.hasFullAccess) {
+        case .needsPro:
+            return .needsPro
+        case .levels(let next):
+            levels = next
+            activePreset = preset
+            loadedMixName = preset.localizedName
+            loadedMixWasStripped = false
+            persistLevels()
+            return startOrUpdate()
+        }
+    }
+
+    /// Shortcuts: play one sound on its own. Same rule as `playPreset`.
+    @discardableResult
+    func playSound(_ sound: SoundID) -> IntentOutcome {
+        purchases.refreshAccess(canDowngrade: !isPlaying)
+        guard AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess) else {
+            return .needsPro
+        }
+        var next = Dictionary(uniqueKeysWithValues: SoundID.allCases.map { ($0, Float(0)) })
+        next[sound] = PresetLibrary.engagedLevel
+        levels = next
+        activePreset = nil
+        loadedMixName = sound.localizedName
+        loadedMixWasStripped = false
+        persistLevels()
+        return startOrUpdate()
+    }
+
+    /// Length the timer Shortcut runs: the one asked for, else the one
+    /// already chosen in the app, else `fallbackTimerMinutes`.
+    func timerMinutes(requested: Int?) -> Int {
+        requested ?? timer.selectedMinutes ?? Self.fallbackTimerMinutes
+    }
+
+    /// Shortcuts: start the timer and the bed. A length outside the allowed
+    /// range, or a Pro length without access, leaves the current timer
+    /// alone, and a silent mix is not started. Only a length that was asked
+    /// for becomes the stored choice; with none, the chosen one (or the
+    /// fallback) runs tonight and the stored choice is not touched.
+    @discardableResult
+    func startTimer(minutes requested: Int?) -> IntentOutcome {
+        if let refusal = armTimer(minutes: requested) { return refusal }
+        if isPlaying { return .started }
+        play()
+        return audioError == nil ? .started : .failed
+    }
+
+    /// Everything `startTimer` does short of starting the engine. Returns the
+    /// refusal, or nil once the timer is set.
+    func armTimer(minutes requested: Int?) -> IntentOutcome? {
+        purchases.refreshAccess(canDowngrade: !isPlaying)
+        let minutes = timerMinutes(requested: requested)
+        guard (1...AccessPolicy.maxTimerMinutes).contains(minutes) else { return .outOfRange }
+        guard AccessPolicy.timerIsIncluded(minutes: minutes, hasFullAccess: purchases.hasFullAccess) else {
+            return .needsPro
+        }
+        if !isPlaying && isSilent { return .nothingToPlay }
+        if requested != nil {
+            selectTimer(minutes: minutes)
+        } else {
+            timer.choose(minutes)
+            if isPlaying { timer.start() }
+        }
+        return nil
+    }
+
+    /// Shortcuts: stop. Also cancels a resume that was waiting for the end of
+    /// an interruption. Reports when there was nothing to stop.
+    func stopFromShortcut() -> IntentOutcome {
+        let wasActive = isPlaying || resumeAfterInterruption
+        pause(resumeLater: false)
+        return wasActive ? .stopped : .nothingPlaying
+    }
+
+    /// Covers the interface with the Night screen, starting the current mix
+    /// if it was paused. Night never chooses, changes or stores a sleep
+    /// timer: a timer the person already chose starts with playback as usual,
+    /// and with none chosen the bed plays until it is stopped. It does not
+    /// start a silent night, and it does not touch brightness or the idle
+    /// timer.
+    @discardableResult
+    func enterBedtime() -> BedtimeEntryOutcome {
+        switch BedtimeScreenPolicy.entry(isPlaying: isPlaying, isSilent: isSilent) {
+        case .nothingToPlay:
+            return .nothingToPlay
+        case .enter(let startsPlayback):
+            if startsPlayback {
+                play()
+            }
+            guard isPlaying else { return .audioFailed }
+            isBedtime = true
+            return .entered
+        }
+    }
+
+    func leaveBedtime() {
+        isBedtime = false
+    }
+
+    private func startOrUpdate() -> IntentOutcome {
+        if isPlaying {
+            engine.updateGains(currentGains())
+            nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
+            return .started
+        }
+        play()
+        return audioError == nil ? .started : .failed
     }
 
     var nowPlayingTitle: String {
@@ -212,8 +343,13 @@ final class MixerModel: ObservableObject {
     /// Access changed (purchase, restore, revocation, trial end applied).
     /// Gains and the breathing guide follow it while playing.
     func refreshEntitledAudio() {
-        if purchases.hasFullAccess {
-            loadedMixWasStripped = false
+        // A mix or preset that was whole during the trial is a stripped one
+        // once the trial ends: say so instead of keeping its name as if
+        // nothing had changed. A Pro preset is no longer the one playing.
+        loadedMixWasStripped = loadedMixName != nil
+            && Self.hasMutedLayers(levels, hasFullAccess: purchases.hasFullAccess)
+        if let preset = activePreset, preset.requiresFullAccess, !purchases.hasFullAccess {
+            activePreset = nil
         }
         guard isPlaying else { return }
         engine.updateGains(currentGains())
@@ -381,6 +517,13 @@ final class MixerModel: ObservableObject {
             }
         }
         return gains
+    }
+
+    /// True when a layer above zero is not included at this access level.
+    static func hasMutedLayers(_ levels: [SoundID: Float], hasFullAccess: Bool) -> Bool {
+        SoundID.allCases.contains { sound in
+            (levels[sound] ?? 0) > 0.001 && !AccessPolicy.soundIsIncluded(sound, hasFullAccess: hasFullAccess)
+        }
     }
 
     private func currentGainsTotal() -> Float {
