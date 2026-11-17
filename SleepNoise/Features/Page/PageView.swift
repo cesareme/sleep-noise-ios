@@ -123,11 +123,23 @@ struct PageView: View {
                     enterNight()
                 }
             }
+            // With text large enough to scroll, the page would pass under
+            // the status bar and be read through the system's clock.
+            .overlay(alignment: .top) {
+                Ink.background
+                    .frame(height: insets.top)
+                    .offset(y: -insets.top)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
             .onChange(of: fits, initial: true) { _, next in
                 capacity = next
                 chooseRows()
             }
         }
+        // The keyboard of the naming alert does not lift the bar over the
+        // rows: nothing changes position (03 §3.7).
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .environment(\.nightPhase, phase)
         // Under Night the Horizon of the page freezes, as under a sheet.
         .environment(\.sheetPresented, presentsSomething || isCovered)
@@ -184,6 +196,16 @@ struct PageView: View {
             if raised {
                 rows = PageLayers.adding(MixerModel.fallbackSound, to: rows, capacity: capacity)
             }
+        }
+        .onChange(of: model.tideOceanRaises) { _, _ in
+            // The ocean the tide raised takes a row when one is free.
+            rows = PageLayers.adding(.ocean, to: rows, capacity: capacity)
+        }
+        .onChange(of: purchases.trialState) { before, after in
+            // The trial started from the Pro sheet over Settings: both
+            // come down, because only the page says so ("trial · 7 nights
+            // left"). Settings would look as if nothing had happened.
+            if let sheet, sheet.closesWhenTrialStarts(from: before, to: after) { self.sheet = nil }
         }
         .onChange(of: sheet) { previous, next in
             if previous == .layers { chooseRows() }
@@ -386,11 +408,17 @@ struct PageView: View {
         if saveNeedsPro {
             // While nothing may be sold the touch does nothing, so no hint
             // offers Pro.
+            // The word "pro" is the second line of the item: inside the
+            // title, the system menu broke the line before its dot.
             Button {
                 beginSave()
             } label: {
-                Text("mezcla.menu.guardar.pro")
+                Text("mezcla.menu.guardar")
+                Text("comun.pro")
             }
+            // Nothing sells now: an item that would do nothing is not
+            // offered as if it did.
+            .disabled(!model.canSell)
             .accessibilityLabel(Text("ax.guardar.pro"))
             .accessibilityHint(model.canSell ? Text("ax.guardar.pro.pista") : Text(verbatim: ""))
         } else {
@@ -530,6 +558,14 @@ enum PageSheet: String, Identifiable {
     /// Layers and Settings put the Pro sheet over themselves and are still
     /// there when it closes. The others step aside for it.
     var presentsPro: Bool { self == .layers || self == .settings }
+
+    /// The trial has just started with this sheet under the Pro sheet.
+    /// Layers stays: its rows open under the finger. Settings says nothing
+    /// of the trial, so it leaves with the Pro sheet and the page is read.
+    func closesWhenTrialStarts(from before: TrialState, to after: TrialState) -> Bool {
+        guard self == .settings, before == .notStarted, case .active = after else { return false }
+        return true
+    }
 }
 
 /// Where things sit (05 §2.0 and §2.13). The Horizon is at a third of the

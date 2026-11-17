@@ -15,6 +15,9 @@ import SwiftUI
 struct TideSheet: View {
     @ObservedObject var model: MixerModel
     @ObservedObject var guide: BreathingGuideController
+    /// Watched for the hour the night ends, which the line of the tide
+    /// never outlasts.
+    @ObservedObject private var timer: SleepTimerController
 
     @Environment(\.nightPhase) private var phase
     @Environment(\.dynamicTypeSize) private var dynamicType
@@ -38,6 +41,12 @@ struct TideSheet: View {
     init(model: MixerModel) {
         self.model = model
         guide = model.breathing
+        timer = model.timer
+    }
+
+    /// When the line says the tide recedes: never after the timer's end.
+    private var recedesAt: Date? {
+        TideSheetText.recedesAt(guideEnd: guide.guideEndsAt, timerEnd: timer.endsAt)
     }
 
     private var isIncluded: Bool { model.breathingIsIncluded }
@@ -175,7 +184,7 @@ struct TideSheet: View {
         TideSheetText.spokenLine(
             status: status,
             chosenRate: settings.breathsPerMinute,
-            recedesAt: guide.guideEndsAt
+            recedesAt: recedesAt
         )
     }
 
@@ -222,8 +231,8 @@ struct TideSheet: View {
                 if showsReceded {
                     Text("marea.retirada")
                 } else {
-                    Text(verbatim: TideSheetText.recedes(status: status, at: guide.guideEndsAt) ?? " ")
-                        .accessibilityHidden(!status.showsWater || guide.guideEndsAt == nil)
+                    Text(verbatim: TideSheetText.recedes(status: status, at: recedesAt) ?? " ")
+                        .accessibilityHidden(!status.showsWater || recedesAt == nil)
                 }
             }
             .step(.secondary)
@@ -321,7 +330,11 @@ struct TideSheet: View {
             ) {
                 Picker(selection: change(\.breathsPerMinute)) {
                     ForEach(TideSheetText.paceOptions(current: settings.breathsPerMinute), id: \.self) { rate in
-                        Text(verbatim: TideSheetText.paceOption(rate)).tag(rate)
+                        // The short name: with its tick, the long one
+                        // breaks in two lines in the system menu.
+                        Text(verbatim: TideSheetText.paceValue(rate))
+                            .accessibilityLabel(Text(verbatim: TideSheetText.paceOption(rate)))
+                            .tag(rate)
                     }
                 } label: {
                     Text("marea.ritmo.fila")

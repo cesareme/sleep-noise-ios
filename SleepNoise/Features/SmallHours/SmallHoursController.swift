@@ -34,6 +34,21 @@ final class SmallHoursController: ObservableObject {
     /// The tide as it was last asked for.
     private(set) var tide = BreathParameters.off
 
+    /// Someone can see the figure: the app is in front. While it is not
+    /// (the screen is off, as it is for most of a session), the minute is
+    /// not something to wake for: the session waits only for the tide, the
+    /// closing fade and its end. Coming back, the figure is read again.
+    var figureIsWatched = true {
+        didSet {
+            guard figureIsWatched != oldValue, isActive, !isPaused else { return }
+            if figureIsWatched {
+                tick()
+            } else {
+                scheduleNext()
+            }
+        }
+    }
+
     /// The tide changes: the engine takes these parameters.
     var onTide: (@MainActor (BreathParameters) -> Void)?
     /// The closing fade begins: silence in this many seconds.
@@ -203,9 +218,11 @@ final class SmallHoursController: ObservableObject {
         let left = recipe.duration - time
         guard left > 0 else { return 0 }
         var next = left
-        // The figure moves when a whole minute is left.
-        let toMinute = left - (left / 60).rounded(.down) * 60
-        next = min(next, toMinute > 0 ? toMinute : 60)
+        if figureIsWatched {
+            // The figure moves when a whole minute is left.
+            let toMinute = left - (left / 60).rounded(.down) * 60
+            next = min(next, toMinute > 0 ? toMinute : 60)
+        }
         switch stage {
         case .guiding: next = min(next, max(0, recipe.tideGuideEnd - time))
         case .dissolving: next = min(next, max(0, recipe.tideDissolveEnd + Self.tideTail - time))

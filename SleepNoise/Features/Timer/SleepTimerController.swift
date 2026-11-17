@@ -172,9 +172,11 @@ final class SleepTimerController: ObservableObject {
                 blanketBegan = now
                 hasDipped = false
                 fade = TimerMath.fadeDuration(totalSeconds: end.timeIntervalSince(now))
-            } else if !hasDipped, dipIsDue(at: now) {
+            } else if !hasDipped, dipIsDue(at: now),
+                      endDate.map({ $0.timeIntervalSince(now) > fade }) ?? false {
                 // It came due while the night was paused: the level is
-                // simply there when the bed rises, without a ramp.
+                // simply there when the bed rises, without a ramp. Not
+                // inside the final fade, where `tick` never dips either.
                 hasDipped = true
             }
         }

@@ -1279,24 +1279,6 @@
         }
       }
     },
-    "mezcla.menu.guardar.pro": {
-      "comment": "Context menu of the mix name when one more saved mix needs Pro.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Save as a mix… · pro"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Guardar como mezcla… · pro"
-          }
-        }
-      }
-    },
     "mezcla.guardar.campo": {
       "comment": "Placeholder of the name field and VoiceOver label of the mix name.",
       "extractionState": "manual",

@@ -87,6 +87,10 @@ struct ProSheet: View {
     private var isLargeText: Bool { dynamicType.isAccessibilitySize }
 
     private static let columnEndID = "pro.columnEnd"
+    /// The strip at the top of the sheet where the system draws its
+    /// grabber. With `columnTop` it is the 24 pt the title sits at.
+    private static let grabberRoom: CGFloat = Grid.unit * 4
+    private static let columnTop: CGFloat = Grid.unit * 6 - grabberRoom
 
     var body: some View {
         let content = self.content
@@ -95,6 +99,11 @@ struct ProSheet: View {
                 column(content)
             }
             .scrollBounceBehavior(.basedOnSize)
+            // The room of the grabber belongs to the sheet, not to the
+            // column: what scrolls is cut under it instead of crossing it.
+            .safeAreaInset(edge: .top, spacing: 0) {
+                Ink.sheet.frame(height: Self.grabberRoom)
+            }
             // Where the column does not fit, the foot cuts it between two
             // lines and nothing says there is more: the system's own
             // indicator shows once as the sheet goes up.
@@ -174,7 +183,7 @@ struct ProSheet: View {
                         .frame(minHeight: titleLine, alignment: .leading)
                 }
             }
-            .padding(.top, Grid.unit * 6)
+            .padding(.top, Self.columnTop)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(verbatim: ProSheetText.spokenTitle(content)))
             .accessibilityAddTraits(.isHeader)

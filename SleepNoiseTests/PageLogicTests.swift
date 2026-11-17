@@ -345,7 +345,7 @@ final class PageLogicTests: XCTestCase {
             "ax.accion.volver.dia", "ax.marea.off.pro", "ax.marea.pista.pro", "ax.prueba.pista",
             "ax.reintentar", "pro.prueba.estado", "pro.prueba.estado.ultima", "pro.prueba.estado.gratis",
             "mezcla.guardar.titulo", "common.save", "common.cancel",
-            "mezcla.menu.guardar.pro", "ax.guardar.pro", "ax.guardar.pro.pista", "marea.oceano.subido",
+            "ax.guardar.pro", "ax.guardar.pro.pista", "marea.oceano.subido",
         ] + SoundID.allCases.flatMap { [$0.nameKey, $0.detailKey] }
         for language in ["en", "es"] {
             let strings = catalog(language)

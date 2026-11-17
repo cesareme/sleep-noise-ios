@@ -10,6 +10,12 @@ import SwiftUI
 /// `-silentOutput` so the engine renders and meters without making a sound,
 /// and `-pageType <size>` to force a Dynamic Type size.
 ///
+/// `-pageClock HH:mm`, without `-pageState`, is a normal launch on the real
+/// preferences whose clock starts at that hour today and runs from there:
+/// the night window, a night that persists and a timer that ends inside
+/// it can be walked through by day. The trial is the real one in the
+/// Keychain and reads that clock too, so use it on a simulator.
+///
 /// The six captures of the store (11 §2.3 to §2.8) are `storePlaying`,
 /// `storeFirstUse`, `storeLayers`, `storeTide`, `storeNight` and
 /// `settingsNotHere`, launched with `-storeShot`, which hides the status
@@ -353,6 +359,25 @@ enum PageArguments {
         value(after: "-pageState").flatMap(PageDebugState.init(rawValue:))
     }
 
+    /// `-pageClock HH:mm`: how far the clock of a normal launch is moved,
+    /// so that it starts at that hour today and runs on. Nil without the
+    /// argument or when it is not an hour.
+    static var clockOffset: TimeInterval? {
+        let real = Date()
+        return value(after: "-pageClock")
+            .flatMap { clockStart($0, on: real, calendar: .current) }
+            .map { $0.timeIntervalSince(real) }
+    }
+
+    /// "23:05" on the day of `day`, or nil for anything that is not an
+    /// hour and a minute of the clock.
+    static func clockStart(_ text: String, on day: Date, calendar: Calendar) -> Date? {
+        let parts = text.split(separator: ":", omittingEmptySubsequences: false)
+        guard parts.count == 2, let hour = Int(parts[0]), let minute = Int(parts[1]),
+              (0...23).contains(hour), (0...59).contains(minute) else { return nil }
+        return calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day)
+    }
+
     static var opensLayers: Bool {
         switch state {
         case .layers, .layersSix, .layersCap, .layersEnd, .nightLayers, .proOfferLayers, .storeLayers:
@@ -564,6 +589,8 @@ enum PageStage {
             _ = trialStorage.createTrial(TrialRecord(
                 startedAt: now.addingTimeInterval(-consumed), lastSeen: now, consumed: consumed
             ))
+            // Started on this install: its end is news here.
+            defaults.set(false, forKey: PurchaseManager.endEvaluatedKey)
         }
         let purchases = PurchaseManager(
             defaults: defaults,

@@ -438,19 +438,36 @@ final class PurchaseManager: ObservableObject {
     }
 
     /// The first time the trial is found over, its note becomes due and the
-    /// count of free sessions starts. Returns whether this was that time.
+    /// count of free sessions starts. Returns whether anything was written.
+    ///
+    /// Only for a trial this install has seen running: `endEvaluatedKey`
+    /// exists from the moment it starts here, or is found running here. The
+    /// record outlives the app in the Keychain and these defaults do not,
+    /// so a reinstall may find a trial that ended long ago with nothing
+    /// said about it. That end is not news: no note, and no "always free".
     @discardableResult
     private static func noteEndOnce(of trial: NightTrial, in defaults: UserDefaults) -> Bool {
-        guard trial.status == .ended, !defaults.bool(forKey: endEvaluatedKey) else { return false }
-        defaults.set(true, forKey: endEvaluatedKey)
-        defaults.set(true, forKey: endNoteKey)
-        defaults.set(0, forKey: freeSessionsKey)
-        return true
+        let isKnown = defaults.object(forKey: endEvaluatedKey) != nil
+        switch trial.status {
+        case .notStarted:
+            return false
+        case .active:
+            guard !isKnown else { return false }
+            defaults.set(false, forKey: endEvaluatedKey)
+            return false
+        case .ended:
+            guard !defaults.bool(forKey: endEvaluatedKey) else { return false }
+            defaults.set(true, forKey: endEvaluatedKey)
+            defaults.set(isKnown, forKey: endNoteKey)
+            defaults.set(isKnown ? 0 : alwaysFreeSessions, forKey: freeSessionsKey)
+            return true
+        }
     }
 
     private func trialChanged(now: Date, canDowngrade: Bool) {
-        if Self.noteEndOnce(of: trial, in: defaults), freeSessionsAfterTrial != 0 {
-            freeSessionsAfterTrial = 0
+        if Self.noteEndOnce(of: trial, in: defaults) {
+            let stored = defaults.integer(forKey: Self.freeSessionsKey)
+            if freeSessionsAfterTrial != stored { freeSessionsAfterTrial = stored }
         }
         let state = Self.state(of: trial, now: now, calendar: calendar)
         if state != trialState { trialState = state }

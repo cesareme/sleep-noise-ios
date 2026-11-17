@@ -357,7 +357,7 @@ Ninguna otra cadena. Ni "Pro", ni "sin océano", ni la hora (opt-in `madrugada.a
       │ desde su nombre.                       │
 ```
 
-Deslizar: "Renombrar" / "Eliminar" del sistema (`comun.renombrar`, `comun.eliminar`; el rojo es del sistema). Cuarta mezcla propia sin Pro (`freeSavedMixLimit` = 3; sin límite con Pro): el menú dice `mezcla.menu.guardar.pro` ("Guardar como mezcla… · pro") y al tocar sube la hoja Pro con la mezcla intacta. Mezclas de la casa (C18): cuatro, receta de niveles, nunca cambian el temporizador; si la receta incluye una textura Pro sin acceso se carga recortada (como una mezcla guardada: `mezcla.nombre.sin`) y no abre la hoja; nombres por problema ("para ronquidos") solo en 1.1 con dato. Guardar encima de una mezcla cuya capa Pro no suena: `mezclas.guardada.sin` ("Guardada sin trueno") 3 s + `mezclas.conservar` ("Conservar el trueno") como botón de texto en la misma línea.
+Deslizar: "Renombrar" / "Eliminar" del sistema (`comun.renombrar`, `comun.eliminar`; el rojo es del sistema). Cuarta mezcla propia sin Pro (`freeSavedMixLimit` = 3; sin límite con Pro): el menú dice `mezcla.menu.guardar` con "pro" (`comun.pro`) en su segunda línea y al tocar sube la hoja Pro con la mezcla intacta; mientras no se vende, el ítem sale desactivado. Mezclas de la casa (C18): cuatro, receta de niveles, nunca cambian el temporizador; si la receta incluye una textura Pro sin acceso se carga recortada (como una mezcla guardada: `mezcla.nombre.sin`) y no abre la hoja; nombres por problema ("para ronquidos") solo en 1.1 con dato. Guardar encima de una mezcla cuya capa Pro no suena: `mezclas.guardada.sin` ("Guardada sin trueno") 3 s + `mezclas.conservar` ("Conservar el trueno") como botón de texto en la misma línea.
 
 ### 2.8 Pro [E5] · hoja `.large`, `hoja` · título = `product.displayName` (C12)
 
@@ -723,7 +723,7 @@ Formato: clave → ES (es-ES; es-419 solo si cambia, en §0.3) → EN (en-US) �
 | `mezcla.nombre.sin` | %@ · sin %@ | %@ · without %@ | título honesto de la mezcla recortada ("Mar y viento · sin Océano"; también para las mezclas de la casa con Pro, C18; la capa en mayúscula inicial, como la escribe 03 §1.3; en la línea de estado va en minúscula: son un nombre y una frase) | 34 |
 | `mezcla.nombre.vacio` | Esta noche | Tonight | nombre por defecto cuando el usuario vacía la mezcla y no hay capas > 0 | 10 |
 | `mezcla.menu.guardar` | Guardar como mezcla… | Save as a mix… | `contextMenu` del nombre | 22 |
-| `mezcla.menu.guardar.pro` | Guardar como mezcla… · pro | Save as a mix… · pro | cuarta mezcla propia sin acceso (`freeSavedMixLimit` 1 → 3; sin límite con Pro); al tocar, hoja Pro de día, mezcla intacta | 28 |
+| `mezcla.menu.guardar.pro` | [retirada, 17-11-2026] | — | cuarta mezcla propia sin acceso: el ítem es `mezcla.menu.guardar` con `comun.pro` ("pro") como segunda línea del menú del sistema; dentro del título, el menú partía la línea antes del punto medio. Al tocar, hoja Pro de día, mezcla intacta; mientras no se vende (21:00 a 07:00) el ítem sale desactivado | — |
 | `mezcla.menu.vaciar` | Vaciar | Clear | `contextMenu`; pone todo a 0 (sin alerta: es reversible con Mezclas) | 8 |
 | `mezcla.guardar.campo` | Nombre de la mezcla | Mix name | placeholder del campo del sistema (precargado con el nombre automático) | 20 |
 | `capas.todas` | Todas las capas | All layers | fila 56 paso 5 `texto`; sin cifra ni chevron (botón por rasgo y por Button Shapes) | 16 |
