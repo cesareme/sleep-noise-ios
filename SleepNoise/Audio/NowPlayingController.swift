@@ -1,8 +1,21 @@
 import Foundation
 import MediaPlayer
 
+/// What the mixer asks of the lock screen. The app has one,
+/// `NowPlayingController`; the tests of the model put a double here.
+protocol NowPlayingControlling: AnyObject {
+    func install(
+        onPlay: @escaping @MainActor () -> Void,
+        onPause: @escaping @MainActor () -> Void,
+        onToggle: @escaping @MainActor () -> Void
+    )
+    func update(isPlaying: Bool, title: String)
+    /// A new night: the elapsed time starts again.
+    func resetElapsed()
+}
+
 /// Lock-screen title plus play/pause. No skip or scrub: this is a bed of noise, not a track.
-final class NowPlayingController {
+final class NowPlayingController: NowPlayingControlling {
     private var installed = false
     private var accumulated: TimeInterval = 0
     private var startedAt: Date?

@@ -347,7 +347,9 @@ final class EngineCommandEnvelopeTests: XCTestCase {
         gainsChange.generation = 4
         _ = midFade.process(gainsChange)
         XCTAssertLessThan(midFade.envelope, partway)
-        XCTAssertEqual(midFade.fadeStep, 1 / 2_000, accuracy: 0.000_000_1)
+        // The same fade, one sample further: it was not started again.
+        XCTAssertEqual(midFade.envelopeRamp.total, 2_000)
+        XCTAssertEqual(midFade.envelopeRamp.done, 501)
     }
 }
 
