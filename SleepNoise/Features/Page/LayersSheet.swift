@@ -67,8 +67,10 @@ struct LayersSheet: View {
             get: { model.showPaywall },
             set: { if !$0 { model.dismissPro() } }
         )) {
-            PaywallView(purchases: purchases, model: model)
-                .onDisappear { purchases.clearNotice() }
+            ProSheet(purchases: purchases, model: model)
+                #if DEBUG
+                .modifier(DebugDynamicType())
+                #endif
         }
     }
 

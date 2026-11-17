@@ -12,6 +12,8 @@ final class ScriptedProStore: ProStore {
     var failsToLoad = false
     /// `loadProduct` and `sync` do not answer until `release()`.
     var hangs = false
+    /// `purchase` does not answer until `release()`: the system sheet is up.
+    var holdsPurchase = false
     var purchaseResult: ProPurchaseResult = .cancelled
     var syncResult: ProSyncResult = .synced
     /// What `currentEntitlement` answers. A purchase that goes through
@@ -45,6 +47,9 @@ final class ScriptedProStore: ProStore {
     func purchase() async -> ProPurchaseResult {
         purchaseCount += 1
         duringPurchase?()
+        if holdsPurchase {
+            await withUnsafeContinuation { waiting.append($0) }
+        }
         if case .purchased(let receipt) = purchaseResult {
             entitlement = .entitled(receipt)
         }
@@ -84,6 +89,7 @@ final class ScriptedProStore: ProStore {
     /// Lets every call that was hanging answer.
     func release() {
         hangs = false
+        holdsPurchase = false
         let held = waiting
         waiting = []
         held.forEach { $0.resume() }

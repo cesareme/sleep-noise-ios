@@ -187,15 +187,17 @@ struct PageView: View {
         }
         .onChange(of: model.showPaywall) { _, asked in
             // The tide and the Mixes sheets do not present the Pro sheet
-            // themselves: they step aside for it.
-            if asked, let sheet, sheet != .layers { self.sheet = nil }
+            // themselves: they step aside for it. Layers and Settings do.
+            if asked, let sheet, !sheet.presentsPro { self.sheet = nil }
         }
         .sheet(item: $sheet) { which in
             sheetContent(which)
         }
         .sheet(isPresented: proBinding(when: sheet == nil)) {
-            PaywallView(purchases: purchases, model: model)
-                .onDisappear { purchases.clearNotice() }
+            ProSheet(purchases: purchases, model: model)
+                #if DEBUG
+                .modifier(DebugDynamicType())
+                #endif
         }
         .mixNaming($naming, model: model) { _ in
             saves += 1
@@ -229,10 +231,19 @@ struct PageView: View {
                 model: model,
                 timer: model.timer,
                 hasFullAccess: purchases.hasFullAccess,
-                note: showsSaved ? Localized.string("mezclas.guardada") : nil
+                note: showsSaved ? Localized.string("mezclas.guardada") : nil,
+                trialNote: trialNote
             )
             .padding(.top, Grid.unit * 2 + 2)
+            if let words = PageTrialNote.footnote(trialNote) {
+                TrialEndedNote(words: words) {
+                    purchases.dismissTrialNote()
+                }
+                .padding(.top, Grid.unit * 3)
+                .transition(.opacity)
+            }
         }
+        .animation(Motion.contentCurve, value: trialNote)
         .padding(.horizontal, Grid.margin)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
@@ -241,6 +252,10 @@ struct PageView: View {
             model.dismissCappedLevelNote()
         }
     }
+
+    /// What the page may say once about the trial right now. Read on every
+    /// draw: the hour decides, and `clock` makes the draw happen.
+    private var trialNote: TrialNote? { clock >= 0 ? model.visibleTrialNote : nil }
 
     private var title: String { PageTitle.text(loadedMixName: model.loadedMixName) }
 
@@ -451,11 +466,20 @@ struct PageView: View {
                 sheet = nil
             } onNight: {
                 enterNight()
+            } onSettings: {
+                // Settings takes the place of Mixes: one sheet at a time.
+                sheet = .settings
             }
             .environment(\.nightPhase, phase)
             #if DEBUG
             .modifier(DebugDynamicType())
             #endif
+        case .settings:
+            SettingsSheet(model: model, purchases: purchases)
+                .environment(\.nightPhase, phase)
+                #if DEBUG
+                .modifier(DebugDynamicType())
+                #endif
         }
     }
 
@@ -491,8 +515,13 @@ enum PageSheet: String, Identifiable {
     case timer
     case tide
     case mixes
+    case settings
 
     var id: String { rawValue }
+
+    /// Layers and Settings put the Pro sheet over themselves and are still
+    /// there when it closes. The others step aside for it.
+    var presentsPro: Bool { self == .layers || self == .settings }
 }
 
 /// Where things sit (05 §2.0 and §2.13). The Horizon is at a third of the
@@ -529,8 +558,10 @@ struct PageMetrics: Equatable {
 // MARK: - Head lines
 
 /// The trial word above the name (05 §2.1): a state word that opens the Pro
-/// sheet. Plain text while nothing may be sold, and gone on the night page.
-/// Its line is always there, so nothing below it moves.
+/// sheet. It exists only while something may be sold: inside the night
+/// window, on the night page and in Small Hours the line is empty, because
+/// nothing sells and nothing speaks of the trial at night (C08). Its line is
+/// always there, so nothing below it moves.
 private struct PageHeaderWord: View {
     @ObservedObject var model: MixerModel
     @ObservedObject var purchases: PurchaseManager
@@ -539,36 +570,44 @@ private struct PageHeaderWord: View {
     @ScaledMetric(relativeTo: .footnote) private var line: CGFloat = 18
 
     private var word: String? {
-        guard !model.isNightSession else { return nil }
-        return PageTrialWord.text(
+        PageTrialWord.text(
             trial: purchases.trialState,
             isPro: purchases.isPro,
-            showsAlwaysFree: purchases.showsAlwaysFree
+            showsAlwaysFree: purchases.showsAlwaysFree,
+            canSell: canSell
         )
+    }
+
+    private var spokenWord: String {
+        PageTrialWord.spoken(
+            trial: purchases.trialState,
+            isPro: purchases.isPro,
+            showsAlwaysFree: purchases.showsAlwaysFree,
+            canSell: canSell
+        ) ?? ""
     }
 
     var body: some View {
         ZStack(alignment: .leading) {
             if let word {
-                if canSell {
-                    Button {
-                        model.offerPro()
-                    } label: {
-                        StateWord(text: word)
-                            .frame(minHeight: Grid.target)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(PressedFadeStyle())
-                    .accessibilityHint(Text("ax.prueba.pista"))
-                    .accessibilityIdentifier("openPaywall")
-                } else {
+                Button {
+                    model.offerPro()
+                } label: {
                     StateWord(text: word)
+                        .frame(minHeight: Grid.target)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(PressedFadeStyle())
+                .accessibilityLabel(Text(verbatim: spokenWord))
+                .accessibilityHint(Text("ax.prueba.pista"))
+                .accessibilityIdentifier("openPro")
+                .transition(.opacity)
             }
         }
         // The touch area is 44 pt; the line it sits on is 18.
         .frame(height: line)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .animation(Motion.contentCurve, value: word)
     }
 }
 
@@ -584,6 +623,9 @@ private struct StatusLine: View {
     /// A word that takes the line for a moment ("Saved"). The error line,
     /// which is a button, is never covered by it.
     var note: String?
+    /// What the page may say once about the trial: the last night takes
+    /// the place of "Silent" until the Play.
+    var trialNote: TrialNote?
 
     @Environment(\.nightPhase) private var phase
     @Environment(\.dynamicTypeSize) private var dynamicType
@@ -620,7 +662,9 @@ private struct StatusLine: View {
 
     var body: some View {
         let status = self.status
-        let text = status.isRetry ? status.text() : note ?? status.text()
+        // The last night of the trial takes the place of "Silent".
+        let lastNight = note == nil ? PageTrialNote.statusLine(trialNote, status: status) : nil
+        let text = status.isRetry ? status.text() : note ?? lastNight ?? status.text()
         let offers = showsSpeakerOffer(status)
         // With larger text the action takes its own room under the words.
         let offerIsInline = dynamicType.isAccessibilitySize
@@ -647,8 +691,9 @@ private struct StatusLine: View {
                 .accessibilityHint(attempt >= 2 ? Text("ax.reintentar") : Text(verbatim: ""))
                 .accessibilityIdentifier("retryAudio")
             } else {
-                words(text)
-                    .lineLimit(dynamicType >= .accessibility3 ? 3 : 2)
+                // Two sentences: one per line, like the error line.
+                words(lastNight == nil ? text : PageStatus.errorLines(text, bindsTail: false))
+                    .lineLimit(lastNight == nil ? (dynamicType >= .accessibility3 ? 3 : 2) : nil)
                     .accessibilityLabel(Text(verbatim: PageStatus.spoken(text)))
                     .accessibilityIdentifier("pageStatus")
             }
@@ -692,6 +737,45 @@ private struct StatusLine: View {
             .multilineTextAlignment(.leading)
             .contentTransition(.opacity)
             .animation(Motion.contentCurve, value: text)
+    }
+}
+
+/// "The trial is over. What you used is still here." and "Got it" under it
+/// (08 §2.4): once, by day and in silence. The action is 22 pt of words in
+/// a 44 pt touch area that reaches into the air around it, so the note
+/// sits above the Horizon and nothing moves when it goes.
+private struct TrialEndedNote: View {
+    var words: String
+    var onDismiss: () -> Void
+
+    @Environment(\.nightPhase) private var phase
+    @Environment(\.dynamicTypeSize) private var dynamicType
+    @ScaledMetric(relativeTo: .body) private var actionLine: CGFloat = 22
+
+    private var actionHeight: CGFloat {
+        Grid.textAction(dynamicType: dynamicType, night: phase.isNight)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Grid.unit) {
+            Text(verbatim: words)
+                .step(.secondary)
+                .foregroundStyle(Ink.secondary(phase))
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("trialEndedNote")
+            // With larger text the action takes its own room.
+            Color.clear
+                .frame(height: dynamicType.isAccessibilitySize ? actionHeight : actionLine)
+                .frame(maxWidth: .infinity)
+                .overlay {
+                    TextAction(title: Localized.string(PageTrialNote.dismissKey), alignment: .leading) {
+                        onDismiss()
+                    }
+                    .padding(.horizontal, -Grid.margin)
+                    .accessibilityIdentifier("trialEndedDismiss")
+                }
+        }
     }
 }
 
