@@ -40,6 +40,7 @@ De la revisión de S-03 (17-11-2026). S-03 solo podía tocar lógica pura, así 
 ### Puertas del reparto antiguo que siguen vivas
 
 - **Temporizador a medida (S-06).** `SleepNoise/Features/Timer/SleepTimerView.swift`, fila "Custom": se bifurca por `hasFullAccess` sin consultar `AccessPolicy`. Sin acceso completo enseña un candado y la cadena `timer.locked`, y `MixerView` abre la hoja Pro al tocarla, a cualquier hora. Contradice C03: el temporizador entero es libre. Arreglo: quitar el candado y la rama `else`, y dejar el Stepper y el botón para todos. Si S-06 sustituye la vista entera, su revisión comprueba que no hereda la bifurcación.
+- **Hecho en S-06 (tarea 2).** `SleepTimerView` se borró entera, con `timer.locked` y el resto de sus cadenas. La hoja nueva (`TimerSheet`) no consulta el acceso en ningún punto y `TimerCatalogTests.testTheWordProDoesNotAppearInTheTimer` vigila que la palabra "pro" no vuelva a sus cadenas.
 - **Respuesta de Siri inalcanzable.** `IntentReply.timerNeedsPro` (`SleepNoise/Intents/SleepIntents.swift`) ya no se alcanza. Al retirarla se van también `intent.timerNeedsProFormat` y el ayudante `lengthThatNeedsPro` de `SleepNoiseTests/PolicyTests.swift`.
 
 ### Cadenas del catálogo que afirman el reparto antiguo
@@ -103,6 +104,7 @@ De la entrega de la página y de Capas (17-11-2026). Quien abra el paquete indic
 ### Lo que la página no hace todavía
 
 - Marea: la banda de 120 pt y la línea de agua, "Se retira a las", y que el interruptor arranque el sonido (S-06). El interruptor arma la Marea como hasta ahora.
+- **S-06 (tarea 2):** el interruptor ya arranca el sonido (`setBreathingEnabled(_:startsSound:)`), y la línea de agua y "Se retira a las" existen en la hoja Marea. **La banda de 120 pt de la página sigue sin hacer**: el Horizonte de la página no cambia con la Marea.
 - Línea 2: "Seguir por el altavoz", "Sonando · al 40", "En pausa · llamada", "· AirPods" y el fin de sesión a los 20 minutos en pausa dependen de cablear `RoutePolicy` e `InterruptionPolicy` (S-06).
 - Menú del nombre: solo "Guardar como mezcla…". Renombrar y Vaciar, con Mezclas (S-06).
 - Descomposición del Horizonte por pulsación larga, TipKit del segundo arrastre, fila Timbre (1.1) y "Enviar informe".
@@ -127,7 +129,9 @@ De la revisión de la página y de Capas (17-11-2026). Lo que sigue no se arregl
 - **Mezclas de la casa.** La hoja Mezclas solo lista las guardadas: "Mar y viento", "Marrón y hoguera" y "Pared" no se cargan desde ninguna pantalla, y "Rosa y lluvia" no se recupera tras la primera edición.
 - **Nombre automático de la mezcla** (`mezcla.nombre.auto.*`, guía §4.2). Al guardar, el campo se precarga con el nombre que la mezcla ya tiene, o con "Esta noche".
 - **La Marea sube el océano a 50** (`MixerModel.tideOceanLevel`) y lo vuelve a bajar si se apaga sin tocarlo. La guía dice 40 y "nunca lo vuelve a bajar". La cadena `marea.oceano.subido` lleva la cifra del modelo.
+- **Hecho en S-06 (tarea 2).** `tideOceanLevel` es 0,4 y la Marea no vuelve a bajar el océano que subió (`oceanBeforeTide` se fue).
 - **Copy heredado en las hojas antiguas**, a borrar al rehacerlas: `common.close` como botón en las cuatro (las hojas Grafito no llevan botón de cerrar), `breath.title` ("Marea respiratoria"; C15: "Marea"), `timer.title` EN ("Sleep timer"), `timer.note` ("se desvanece"), `timer.custom` ("Personalizado"), `mixes.title` ("Mezclas guardadas"). En `SleepTimerView` las ramas del candado, `timer.locked` y `onLocked` están muertas: la página pasa `hasFullAccess: true`.
+- **Hecho en S-06 (tarea 2)** para Temporizador y Marea: se borraron `timer.*` y `breath.*` enteras (`TimerCatalogTests.testTheStringsOfTheOldSheetsAreGone`). `common.close` y `mixes.title` siguen en Mezclas y en la hoja Pro.
 
 ### S-07 (hoja Pro y prueba)
 
@@ -170,3 +174,32 @@ Sin hacer en esta tarea, y de quién es:
 - La Marea sigue subiendo el océano a 50 y la identidad de la mezcla sigue sin sobrevivir al reinicio: son de las tareas de Marea y de Mezclas.
 - Sin verificar en dispositivo: el audio real (rampa del maestro, fundido largo), las interrupciones y los cambios de ruta de verdad, y `CXCallObserver`. Todo lo anterior está probado con dobles y render offline.
 
+### Tarea 2 · Temporizador y Marea (17-11-2026)
+
+Las hojas `TimerSheet` (superficie 8) y `TideSheet` (superficie 6) sustituyen a `SleepTimerView` y `BreathingSettingsView`, que se borraron con sus cadenas. La lógica de presentación es pura y está probada (`TimerSheetText`, `TideStatus`, `TideSheetText`, `TideBreath`). Estados de depuración `-pageState timer…` y `tide…` en `PageDebug.swift`.
+
+- **Temporizador** (C03, C22, C31): dos modos y "Apagado", sin "Aceptar"; la fila es la elección. Sonando, un bloque sobre la lista dice lo que queda como cifra, el fin como hora ("Se funde a las 03:42") y "+15 min". El control del modo (rueda de 5 a 360 en pasos de 5, o el selector de hora del sistema) se abre bajo su fila. La fila de la página dice "Manto · hasta las 07:00" y la línea de estado "Sonando · hasta las 7:00".
+- **Marea** (C24, C59, C06, C08): línea de agua (`TideLine`, 03 §4.3) que lee la misma curva y el mismo ancla que el audio, palabra de estado, "Se retira a las", y cuatro filas: interruptor, Ritmo, Descenso y "Se retira a los". Sin acceso, "pro" junto al título y el interruptor pide la hoja Pro solo fuera de `NightWindow` y de la página nocturna; de noche no pasa nada.
+- **Descenso** (C14, C24): `BreathingSettings.descends`. La guía empieza a 12 por minuto y baja un entero cada 40 s hasta el ritmo elegido; cero parámetros nuevos en el motor (solo cambia `rate`, que ya conserva la fracción del ciclo).
+
+Decisiones tomadas al construir, a confirmar:
+
+- **Tinta de las hojas de noche.** Abiertas desde la página nocturna, Temporizador y Marea toman la tinta única, como Capas, y siguen sobre `hoja`. 07 §2.1 quería el Temporizador siempre en tinta de día y 06 §3.13 la Marea sobre `negro`; manda PLAN-SIMPLE §4.1 (nunca negro sobre negro) y la coherencia con Capas.
+- **Línea bajo la cifra.** Con las claves de la guía, fundiendo se lee "8 min" y debajo "Fundiendo · 8 min", y con Manto "7:00" y debajo "hasta las 7:00 · baja un poco a los 45 min" (lo que pide 07 §2.1.2). La cifra se repite: evitarlo pide dos cadenas que la guía no tiene ("Fundiendo" a secas y una línea propia del Manto).
+- **Las cifras de las cadenas salen del código** (AGENTS §5.2): los 45 minutos de `temporizador.manto.detalle`, el 12 de `marea.ritmo` y el 6 y el 8 de `marea.ritmo.tranquilo*` y `.suave*` son argumentos. La guía los escribe dentro del texto.
+- **"Apagado" no tiene valor en el hueco de control**: la fila queda vacía, con su altura. 07 ponía "toda la noche"; la guía no trae esa cadena.
+- **El menú Ritmo** ofrece los dos nombres ("Tranquilo · 6", "Suave · 8") y, si la línea se arrastró a otro, ese valor. El ajuste exacto es el arrastre de la línea (un entero cada 56 pt) y la acción ajustable de VoiceOver.
+- **"Armada"** (interruptor encendido sin sonar, tras un arranque en frío): la caja de estado queda vacía. "empieza al reproducir" está pendiente de la guía (06 §9).
+- **"Toda la noche"** ya no se ofrece (06 §8): un ajuste guardado con 0 se lee como 30 minutos.
+- **Las ruedas del sistema** llevan la tinta de la fase con `colorMultiply`; la banda de selección es la del sistema.
+
+Sin hacer en esta tarea, y por qué:
+
+- **La banda de 120 pt y la línea de agua en la página** (03 §3.5, 05 §2.3): cambia la geometría de la página para todo el que tiene Marea. Queda para quien cierre la página en S-06.
+- **Paquete I0-8 de 06** (cambios de `main` que la spec pide): la disolución dentro de la ventana (hoy la guía dura la ventana entera y disuelve 120 s después), los 30 s de disolución al apagar a mano (hoy corta con el suavizado del motor), que el interruptor vuelva a apagado solo tras la retirada, y corregir el ancla con `outputLatency`.
+- **Háptica "Mínima"** (C35): 06 la mantiene en 1.0, pero no hay base de Core Haptics en el código. La fila Háptica y su nota no están; entra con Ajustes.
+- **"Qué sabemos ›"**: la pantalla de destino no existe (E5, E7).
+- **`Slider` de pulsación larga sobre la banda** y la fila "Ritmo exacto" para Control por botón.
+- **Rueda de minutos de 5 en 5 en el selector de hora**: el `DatePicker` de SwiftUI no lo ofrece sin tocar la apariencia global.
+- **README**: el párrafo de lo gratis sigue diciendo 15, 30 o 60 minutos; se corrige con la prueba en S-07.
+- Sin verificar en dispositivo: VoiceOver sobre las dos hojas, el arrastre de la línea con un dedo real, la háptica de selección y que la línea de agua vaya con el oleaje (en el simulador el audio se silenció).
