@@ -57,6 +57,7 @@ La página solo cambia cuando el cambio llega a `main`.
 | App Store Connect › URL de soporte | Obligatoria. Puede ser la misma página de privacidad, que lleva el contacto, o la página de incidencias del repositorio |
 | App Store Connect › URL de marketing | Opcional. Se puede dejar vacía |
 | App Store Connect › identificador de la app | El identificador de paquete es el `PRODUCT_BUNDLE_IDENTIFIER` de `project.yml`; el SKU y el Apple ID de la app salen al crearla |
+| App Store Connect › disponibilidad por países | La app enlaza `CallKit` solo para saber si hay una llamada en curso (`AudioSessionObserver`, `CXCallObserver`). Antes de marcar China continental hay que comprobar si esa tienda sigue rechazando las apps que enlazan `CallKit` (`docs/agents/ESTADO.md`, "`CallKit` en China"); no se ha comprobado en este paquete. Si no se comprueba, ese territorio se deja fuera. La compra integrada va a los mismos países que la app |
 | App Store Connect › compra integrada | El precio y Family Sharing (`compra-integrada.md`) |
 | App Store Connect › App Review Information | Nombre, teléfono y correo de contacto para el revisor. No se escriben en el repositorio |
 | App Store Connect › copyright y condición de comerciante en la UE | Ver `privacidad.md` §6 |
@@ -67,7 +68,7 @@ La página solo cambia cuando el cambio llega a `main`.
 | Política de privacidad dentro de la app | Ajustes y la página "Lo que no hay" ya existen (`SettingsSheet`, `WhatIsNotHerePage`), pero la página no lleva ni el texto de la política ni un enlace. Decidir cuál de los dos y con qué título de fila (la guía de copy §0.2 no admite "Política" ni "Privacidad" como título) y encargar el cambio, que es de código y de catálogo. Sin él no se envía (`notas-revision.md`, condición 1) |
 | `AppLinks.authorAddress` y `AppLinks.appStoreID` | Están vacíos. Sin la dirección pública no aparece "Escribir al autor" en Ajustes, y sin el identificador numérico de la app no aparece "Escribir una reseña" en el recibo. Dárselos a quien haga el cambio de código; la dirección es la misma de la política |
 | Hoja Pro › nota bajo "Empezar la prueba · 7 noches" | Si la nota nombra lo que deja de estar disponible al acabar la prueba (`notas-revision.md`, "Riesgo 3.1.1"). Es texto cerrado de la guía y un cambio de catálogo |
-| Sandbox y un iPhone | La compra de verdad, la restauración, Now Playing con la pantalla apagada, el final del temporizador y la reinstalación con la prueba usada (`notas-revision.md`, condiciones 3 y 4) |
+| Sandbox y un iPhone | La compra de verdad, la restauración, Now Playing con la pantalla apagada, el final del temporizador, la pantalla Noche y la reinstalación con la prueba usada (`notas-revision.md`, condiciones 3 y 4). La compra y el inicio de la prueba se prueban en un iPhone o un simulador donde ninguna build haya empezado una prueba, ni la antigua de 7 días: en uno que ya la tuvo, "Empezar la prueba · 7 noches" no vuelve |
 
 ## Antes de enviar: lo que estos textos dan por hecho
 
@@ -81,7 +82,7 @@ Los textos describen la 1.0 de `docs/PLAN-SIMPLE-1.0.md`, y el código de 1.0 (p
 | La política de privacidad dentro de la app | Ya no está en las notas de revisión; `privacidad.md` §1 | **Condición de envío**: la directriz 5.1.1(i) pide la política en el campo de App Store Connect y también dentro de la app. La guía retiró la fila de privacidad de Ajustes (`ajustes.privacidad`) y dejó en su lugar "Lo que no hay": esa página existe (`WhatIsNotHerePage`) y no lleva ni el texto ni un enlace. Tiene que llevar el texto de la política, que es corto, o un enlace a la URL de Pages. Mejor el texto: el enlace saca a la persona de la app y depende de la red. Cuando esté, la frase vuelve a las notas (`notas-revision.md`, condición 1) |
 | "with Family Sharing", "with Family Sharing turned on" | Notas de revisión, nota de la compra | Que el dueño lo active en App Store Connect (`compra-integrada.md`). El fichero de la tienda local ya lo tiene en `true` y la hoja Pro lo dice ("En familia") salvo que la tienda responda lo contrario |
 | Todo lo que las notas dicen de comprar y de restaurar | Notas de revisión, nota de la compra | El sandbox. Los estados de la hoja están cubiertos por tests con la tienda de guion (`ScriptedProStore`); la compra de verdad no se ha hecho nunca (`notas-revision.md`, condición 3) |
-| Now Playing con la pantalla apagada, el final del temporizador y "reinstalar no da otra prueba" | Notas de revisión | Verlo en un iPhone. En código están hechos y con tests (`notas-revision.md`, condición 4) |
+| Now Playing con la pantalla apagada, el final del temporizador, la pantalla Noche (el gesto de volver y lo que hay tras la pantalla de bloqueo de 21:00 a 07:00) y "reinstalar no da otra prueba" | Notas de revisión | Verlo en un iPhone. En código están hechos y con tests (`notas-revision.md`, condición 4) |
 
 Lo que estaba en esta tabla y ya se cumple en el código, con el tipo que lo sostiene:
 
