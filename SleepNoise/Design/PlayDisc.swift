@@ -37,8 +37,6 @@ struct PlayDisc: View {
                 .frame(width: Grid.disc, height: Grid.disc)
         }
         .buttonStyle(DiscStyle())
-        .frame(width: Grid.largeTarget, height: Grid.largeTarget)
-        .contentShape(Circle())
         .sensoryFeedback(.impact(weight: .medium, intensity: 0.7), trigger: playCount) { _, _ in
             MotionGate.allows(phase)
         }
@@ -53,6 +51,9 @@ struct PlayDisc: View {
 
 /// Relief of the Disc: `grafito` with an inner shadow of 1 pt, 2 pt while
 /// pressed. No outer shadow, no gradient, no colour.
+///
+/// The 64 pt target is part of the label, so it is what the button answers
+/// to: a frame put around the button from outside would only move it.
 private struct DiscStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         let depth: CGFloat = configuration.isPressed ? 2 : 1
@@ -64,6 +65,8 @@ private struct DiscStyle: ButtonStyle {
                     )
                 )
             )
+            .frame(width: Grid.largeTarget, height: Grid.largeTarget)
+            .contentShape(Circle())
             .animation(Motion.controlCurve, value: configuration.isPressed)
     }
 }

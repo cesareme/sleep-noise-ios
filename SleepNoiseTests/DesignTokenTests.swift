@@ -150,6 +150,62 @@ final class DesignTokenTests: XCTestCase {
         XCTAssertEqual(Grid.hairline(displayScale: 0), 1)
     }
 
+    func testAccentLinesAreNeverThinnerThanAPointAndAHalf() {
+        // 1.5 pt is four and a half pixels at 3x: rounded up, never down.
+        XCTAssertEqual(Grid.pixelCeil(Grid.accentLine, displayScale: 3), 5.0 / 3, accuracy: 0.0001)
+        XCTAssertEqual(Grid.pixelCeil(Grid.accentLine, displayScale: 2), 1.5, accuracy: 0.0001)
+        XCTAssertEqual(Grid.pixelCeil(Grid.accentLine, displayScale: 1), 2, accuracy: 0.0001)
+        // Whole pixels stay as they are.
+        XCTAssertEqual(Grid.pixelCeil(3, displayScale: 3), 3, accuracy: 0.0001)
+        XCTAssertEqual(Grid.pixelCeil(2, displayScale: 2), 2, accuracy: 0.0001)
+        XCTAssertEqual(Grid.pixelCeil(1.0 / 3, displayScale: 3), 1.0 / 3, accuracy: 0.0001)
+        for scale in [CGFloat(1), 2, 3] {
+            for step in 0...20 {
+                let thickness = SoundLevelScale.thickness(level: Float(step) / 20)
+                let snapped = Grid.pixelCeil(thickness, displayScale: scale)
+                XCTAssertGreaterThanOrEqual(snapped, Grid.accentLine)
+                XCTAssertGreaterThanOrEqual(snapped, thickness - 0.001)
+                XCTAssertLessThan(snapped, thickness + 1 / scale)
+                XCTAssertEqual((snapped * scale).rounded(), snapped * scale, accuracy: 0.0001)
+            }
+        }
+    }
+
+    func testRowsGrowWithTheTextSize() {
+        // 04 §5d, band by band.
+        let regular: [DynamicTypeSize] = [.xSmall, .medium, .large]
+        let larger: [DynamicTypeSize] = [.xLarge, .xxLarge, .xxxLarge]
+        let accessible: [DynamicTypeSize] = [.accessibility1, .accessibility2]
+        let largest: [DynamicTypeSize] = [.accessibility3, .accessibility4, .accessibility5]
+        for size in regular {
+            XCTAssertEqual(Grid.row(subtitle: false, dynamicType: size), 56)
+            XCTAssertEqual(Grid.row(subtitle: true, dynamicType: size), 72)
+            XCTAssertEqual(Grid.primaryAction(dynamicType: size), 64)
+            XCTAssertEqual(Grid.textAction(dynamicType: size, night: false), 44)
+        }
+        for size in larger {
+            XCTAssertEqual(Grid.row(subtitle: false, dynamicType: size), 64)
+            XCTAssertEqual(Grid.row(subtitle: true, dynamicType: size), 80)
+            XCTAssertEqual(Grid.primaryAction(dynamicType: size), 64)
+            XCTAssertEqual(Grid.textAction(dynamicType: size, night: false), 56)
+        }
+        for size in accessible + largest {
+            XCTAssertEqual(Grid.row(subtitle: false, dynamicType: size), 88)
+            XCTAssertEqual(Grid.row(subtitle: true, dynamicType: size), 104)
+            XCTAssertEqual(Grid.primaryAction(dynamicType: size), 80)
+        }
+        for size in accessible {
+            XCTAssertEqual(Grid.textAction(dynamicType: size, night: false), 56)
+        }
+        for size in largest {
+            XCTAssertEqual(Grid.textAction(dynamicType: size, night: false), 64)
+        }
+        // The night page never goes under 64.
+        for size in regular + larger + accessible + largest {
+            XCTAssertEqual(Grid.textAction(dynamicType: size, night: true), 64)
+        }
+    }
+
     func testHorizonSitsAtAThirdOfTheScreen() {
         XCTAssertEqual(Grid.horizonY(fullHeight: 852), 284)
         XCTAssertEqual(Grid.horizonY(fullHeight: 844), 280)

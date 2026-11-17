@@ -5,6 +5,7 @@ import UIKit
 ///
 /// Name and subtitle on one line, the value on the right, and the level line
 /// from margin to margin: 2 pt of ink up to the level, 1 pt of track beyond.
+/// At the accessibility text sizes name, subtitle and value stack on the left.
 /// Dragging sideways anywhere on the row sets the level, relative to where it
 /// was. A tap does nothing: silencing a layer by accident at three in the
 /// morning is the one thing this row must never do.
@@ -28,12 +29,16 @@ struct LevelRule: View {
 
     @Environment(\.indexArbiter) private var arbiter
     @Environment(\.nightPhase) private var phase
+    @Environment(\.fineSliderDismissal) private var dismissal
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
+    @Environment(\.accessibilitySwitchControlEnabled) private var switchControl
 
     @State private var drag = LevelDrag()
     @State private var isDragging = false
     @State private var columnWidth: CGFloat = 353
     @State private var showsSlider = false
     @State private var sliderTouch = 0
+    @State private var sliderIsHeld = false
     @State private var zeroCrossings = 0
     @State private var maxArrivals = 0
 
@@ -60,6 +65,10 @@ struct LevelRule: View {
                     }
                 }
                 .animation(Motion.contentCurve, value: showsSlider)
+                .onChange(of: dismissal) { _, _ in showsSlider = false }
+                .onChange(of: showsSlider) { _, shown in
+                    if !shown { sliderIsHeld = false }
+                }
             // Dead channel: no gesture starts here, so a scroll always has
             // somewhere to begin between two rows.
             Color.clear.frame(height: Grid.layerChannel)
@@ -83,15 +92,23 @@ struct LevelRule: View {
             onColumnWidth: { columnWidth = $0 }
         )
         .overlay {
-            // An included row has no tap at all: a tap does nothing.
+            // An included row has no tap at all: a tap does nothing, except
+            // put the slider away when it is out.
             LevelTouchSurface(
                 adjusts: !isLocked,
-                taps: isLocked && onLockedTap != nil,
+                taps: showsSlider || (isLocked && onLockedTap != nil),
+                coneTangent: LevelDrag.coneTangent(night: phase.isNight),
                 onPanBegan: beginDrag,
                 onPanChanged: moveDrag,
                 onPanEnded: endDrag,
                 onHold: { if !isDragging { showsSlider = true } },
-                onTap: { onLockedTap?() }
+                onTap: {
+                    if showsSlider {
+                        showsSlider = false
+                    } else {
+                        onLockedTap?()
+                    }
+                }
             )
             .accessibilityHidden(true)
         }
@@ -107,7 +124,7 @@ struct LevelRule: View {
 
     // MARK: Gestures
 
-    /// Sideways drag, already past the 30° cone (`LevelTouchSurface`).
+    /// Sideways drag, already inside the cone (`LevelTouchSurface`).
     /// Holding still and then dragging without lifting lands here too: the
     /// slider steps aside and the drag carries on from the current level.
     private func beginDrag() {
@@ -138,28 +155,32 @@ struct LevelRule: View {
     // MARK: Fine slider
 
     /// The system slider takes the place of the level line, centred on it.
-    /// Plain ink, never the accent: it is not "the live thing". It leaves on
-    /// its own five seconds after the last change. With VoiceOver or Switch
-    /// Control running it stays until the row's slider action is used again.
+    /// Plain ink, never the accent: it is not "the live thing".
+    ///
+    /// It leaves five seconds after the finger does, at once with a tap on
+    /// the row, and when the container says so (`fineSliderDismissal`). With
+    /// VoiceOver or Switch Control running nothing times out: it stays until
+    /// the escape gesture on it, or the row's slider action again.
     private var fineSlider: some View {
-        Slider(
-            value: Binding(
+        InkSlider(
+            level: Binding(
                 get: { LevelMath.clamped(level) },
                 set: { next in
                     level = LevelMath.quantized(next)
                     sliderTouch += 1
                 }
             ),
-            in: 0...1
+            isNight: phase.isNight,
+            label: Localized.format("capas.deslizador", name),
+            onHeld: { sliderIsHeld = $0 },
+            onEscape: { showsSlider = false }
         )
-        .tint(Ink.primary(phase))
         .frame(height: Grid.target)
         .padding(.horizontal, Grid.margin)
         .padding(.bottom, -(Grid.target / 2 - Grid.unit * 3))
-        .accessibilityLabel(Text(verbatim: Localized.format("capas.deslizador", name)))
         .transition(.opacity)
-        .task(id: sliderTouch) {
-            guard !UIAccessibility.isVoiceOverRunning, !UIAccessibility.isSwitchControlRunning else { return }
+        .task(id: SliderWatch(touch: sliderTouch, isHeld: sliderIsHeld, isAssisted: voiceOver || switchControl)) {
+            guard !sliderIsHeld, !voiceOver, !switchControl else { return }
             try? await Task.sleep(for: .seconds(LevelRule.sliderDismiss))
             if !Task.isCancelled { showsSlider = false }
         }
@@ -167,6 +188,104 @@ struct LevelRule: View {
 
     /// Seconds the fine slider stays without a finger on it.
     static let sliderDismiss: TimeInterval = 5
+}
+
+/// Everything that restarts the five seconds of the fine slider.
+private struct SliderWatch: Hashable {
+    var touch: Int
+    var isHeld: Bool
+    var isAssisted: Bool
+}
+
+/// The system slider in Grafito inks: thumb and filled track in the text ink
+/// of the phase, the rest of the track in `texto3`. UIKit's, because SwiftUI's
+/// `Slider` only lets the filled part be tinted.
+private struct InkSlider: UIViewRepresentable {
+    @Binding var level: Float
+    var isNight: Bool
+    var label: String
+    /// A finger went down on the slider, or left it.
+    var onHeld: (Bool) -> Void
+    var onEscape: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    func makeUIView(context: Context) -> EscapableSlider {
+        let slider = EscapableSlider()
+        slider.minimumValue = 0
+        slider.maximumValue = 1
+        slider.isContinuous = true
+        let coordinator = context.coordinator
+        slider.addTarget(coordinator, action: #selector(Coordinator.changed(_:)), for: .valueChanged)
+        slider.addTarget(coordinator, action: #selector(Coordinator.down), for: .touchDown)
+        slider.addTarget(
+            coordinator,
+            action: #selector(Coordinator.up),
+            for: [.touchUpInside, .touchUpOutside, .touchCancel]
+        )
+        slider.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        slider.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        return slider
+    }
+
+    func updateUIView(_ slider: EscapableSlider, context: Context) {
+        context.coordinator.slider = self
+        slider.onEscape = onEscape
+        if !slider.isTracking, slider.value != level {
+            slider.value = level
+        }
+        let ink = (isNight ? InkTokens.textNight : InkTokens.text).uiColor
+        slider.thumbTintColor = ink
+        slider.minimumTrackTintColor = ink
+        slider.maximumTrackTintColor = InkTokens.text3.uiColor
+        slider.accessibilityLabel = label
+    }
+
+    final class Coordinator: NSObject {
+        var slider: InkSlider
+
+        init(_ slider: InkSlider) {
+            self.slider = slider
+        }
+
+        @objc func changed(_ sender: UISlider) {
+            slider.level = sender.value
+        }
+
+        @objc func down() {
+            slider.onHeld(true)
+        }
+
+        @objc func up() {
+            slider.onHeld(false)
+        }
+    }
+}
+
+/// A slider VoiceOver can put away with the escape gesture.
+private final class EscapableSlider: UISlider {
+    var onEscape: (() -> Void)?
+
+    override func accessibilityPerformEscape() -> Bool {
+        guard let onEscape else { return false }
+        onEscape()
+        return true
+    }
+}
+
+private struct FineSliderDismissalKey: EnvironmentKey {
+    static let defaultValue = 0
+}
+
+extension EnvironmentValues {
+    /// A counter the container of level rows bumps on a touch outside them
+    /// (the page, the Layers sheet): any row showing its slider puts it away.
+    var fineSliderDismissal: Int {
+        get { self[FineSliderDismissalKey.self] }
+        set { self[FineSliderDismissalKey.self] = newValue }
+    }
 }
 
 /// The drawing of a level row for one state. No gestures and no state of its
@@ -178,7 +297,8 @@ struct LevelRuleFace: View {
         /// A finger is dragging: 3 pt line, `grafito` track, value grown in
         /// place. The line is the accent only if this row owns it.
         case underFinger(accent: Bool)
-        /// The system slider is standing in for the line.
+        /// The system slider is standing in for the line. Name, subtitle and
+        /// value stay as they were.
         case fineSlider
         /// A Pro layer without access: secondary ink, "pro", track only.
         case locked
@@ -192,9 +312,13 @@ struct LevelRuleFace: View {
     var onColumnWidth: (CGFloat) -> Void = { _ in }
 
     @Environment(\.nightPhase) private var phase
+    @Environment(\.dynamicTypeSize) private var dynamicType
     @Environment(\.accessibilityShowButtonShapes) private var buttonShapes
     /// Height of the label line: 22 pt at Large, growing with the text.
     @ScaledMetric(relativeTo: .headline) private var labelLine: CGFloat = 22
+    /// Room for three digits of the value at its largest, under the finger.
+    /// Always kept, so the labels never reflow when the value appears.
+    @ScaledMetric(relativeTo: .headline) private var valueSlot: CGFloat = 36
 
     private var percent: Int { LevelMath.percent(level) }
     private var isLocked: Bool { mode == .locked }
@@ -207,9 +331,12 @@ struct LevelRuleFace: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Grid.unit * 2) {
-            ViewThatFits(in: .horizontal) {
-                inlineLabels
+            // The anatomy depends on the text size alone, never on the level
+            // or on the gesture: nothing may move under a finger.
+            if dynamicType.isAccessibilitySize {
                 stackedLabels
+            } else {
+                inlineLabels
             }
             levelLine
                 .opacity(showsSlider ? 0 : 1)
@@ -230,59 +357,71 @@ struct LevelRuleFace: View {
     }
 
     private var nameColor: Color {
-        if showsSlider { return Ink.text3 }
-        return isLocked ? Ink.secondary(phase) : Ink.primary(phase)
+        isLocked ? Ink.secondary(phase) : Ink.primary(phase)
     }
 
-    private var subtitleColor: Color {
-        showsSlider ? Ink.text3 : Ink.secondary(phase)
+    private var subtitleColor: Color { Ink.secondary(phase) }
+
+    /// Name and subtitle as one paragraph in two steps, so a long pair wraps
+    /// to a second line instead of changing the anatomy of the row.
+    private var label: AttributedString {
+        var name = AttributedString(self.name)
+        name.font = TypeStep.row.font(phase, dynamicType: dynamicType)
+        name.foregroundColor = nameColor
+        var rest = AttributedString(" · " + subtitle)
+        rest.font = TypeStep.secondary.font(phase, dynamicType: dynamicType)
+        rest.foregroundColor = subtitleColor
+        return name + rest
     }
 
+    /// Up to xxxLarge: name and subtitle on the left, the value at the margin.
     private var inlineLabels: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 0) {
-            Text(verbatim: name)
+        HStack(alignment: .firstTextBaseline, spacing: Grid.inner) {
+            Text(label)
                 .step(.row)
-                .foregroundStyle(nameColor)
-            Text(verbatim: " · " + subtitle)
-                .step(.secondary)
-                .foregroundStyle(subtitleColor)
-            Spacer(minLength: Grid.inner)
-            trailing
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            trailing(alignment: .trailing)
         }
-        .lineLimit(1)
         .frame(minHeight: labelLine)
     }
 
-    /// Larger text: the subtitle drops to a line of its own.
+    /// Accessibility sizes: name, subtitle and value in a column on the left,
+    /// the line underneath (03 §4.2).
     private var stackedLabels: some View {
         VStack(alignment: .leading, spacing: Grid.unit) {
-            HStack(alignment: .firstTextBaseline, spacing: 0) {
-                Text(verbatim: name)
-                    .step(.row)
-                    .foregroundStyle(nameColor)
-                Spacer(minLength: Grid.inner)
-                trailing
-            }
-            .frame(minHeight: labelLine)
+            Text(verbatim: name)
+                .step(.row)
+                .foregroundStyle(nameColor)
             Text(verbatim: subtitle)
                 .step(.secondary)
                 .foregroundStyle(subtitleColor)
+            trailing(alignment: .leading)
+                .frame(minHeight: labelLine)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    @ViewBuilder private var trailing: some View {
+    /// The value, or "pro". An included row always keeps the room of its
+    /// value, shown or not; it grows in place, at the margin, never floating
+    /// over the finger.
+    @ViewBuilder
+    private func trailing(alignment: Alignment) -> some View {
         if isLocked {
             Text(verbatim: LevelRuleSpeech(name: name, subtitle: subtitle, level: level, isLocked: true).lockedWord)
                 .step(.stateWord)
                 .foregroundStyle(Ink.secondary(phase))
-        } else if (percent > 0 || isUnderFinger) && !showsSlider {
-            // It grows in place, at the margin, never floating over the
-            // finger; room for three digits so 9 to 10 moves nothing.
+        } else {
+            // From AX3 the value at rest is already the size it has under
+            // the finger (04 §5d).
+            let isLarge = isUnderFinger || dynamicType >= .accessibility3
             Text(verbatim: "\(percent)")
-                .step(isUnderFinger ? .value : .data)
+                .step(isLarge ? .value : .data)
                 .foregroundStyle(isUnderFinger ? Ink.primary(phase) : Ink.secondary(phase))
                 .underline(buttonShapes && !isUnderFinger, color: Ink.secondary(phase))
-                .frame(minWidth: Grid.unit * 9, alignment: .trailing)
+                .lineLimit(1)
+                .frame(minWidth: valueSlot, alignment: alignment)
+                .opacity(percent > 0 || isUnderFinger ? 1 : 0)
         }
     }
 

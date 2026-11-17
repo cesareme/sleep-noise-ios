@@ -50,9 +50,44 @@ enum Grid {
     /// A thumb that settles does not "move": slop of the long press.
     static let longPressSlop: CGFloat = 10
 
+    /// Least height of an editorial row by text size (04 §5d): 56, or 72
+    /// with a subtitle; 64 and 80 from xL to xxxL; 88 and 104 at the
+    /// accessibility sizes. Taller text pushes the row further.
+    static func row(subtitle: Bool, dynamicType: DynamicTypeSize) -> CGFloat {
+        let base = subtitle ? rowSubtitle : row
+        if dynamicType.isAccessibilitySize { return base + 32 }
+        return dynamicType > .large ? base + 8 : base
+    }
+
+    /// Least height of the primary action (04 §5d): 64, and 80 from AX1.
+    static func primaryAction(dynamicType: DynamicTypeSize) -> CGFloat {
+        dynamicType.isAccessibilitySize ? 80 : largeTarget
+    }
+
+    /// Least height of a text action (04 §5d): 44, 56 from xL to AX2 and 64
+    /// from AX3. On the night page it is never under 64.
+    static func textAction(dynamicType: DynamicTypeSize, night: Bool) -> CGFloat {
+        let height: CGFloat
+        if dynamicType >= .accessibility3 {
+            height = 64
+        } else {
+            height = dynamicType > .large ? 56 : target
+        }
+        return night ? max(height, largeTarget) : height
+    }
+
     /// Hairline thickness: one device pixel, 0.5 pt at 2x.
     static func hairline(displayScale: CGFloat) -> CGFloat {
         1 / max(1, displayScale)
+    }
+
+    /// A thickness rounded up to whole device pixels. A line of the accent
+    /// may never be thinner than 1.5 pt, and 1.5 pt is four and a half
+    /// pixels at 3x: left alone it is drawn as four or five depending on
+    /// where it falls. Rounded up it is always five (three at 2x).
+    static func pixelCeil(_ thickness: CGFloat, displayScale: CGFloat) -> CGFloat {
+        let scale = max(1, displayScale)
+        return (thickness * scale - 0.001).rounded(.up) / scale
     }
 
     /// Vertical position of the Horizon on a screen of `fullHeight` points,
@@ -76,7 +111,8 @@ struct Hairline: View {
     var body: some View {
         Rectangle()
             .fill(color ?? Ink.rule(on: surface))
-            .frame(height: thickness ?? Grid.hairline(displayScale: displayScale))
+            .frame(height: thickness.map { Grid.pixelCeil($0, displayScale: displayScale) }
+                ?? Grid.hairline(displayScale: displayScale))
             .frame(maxWidth: .infinity)
             .accessibilityHidden(true)
     }

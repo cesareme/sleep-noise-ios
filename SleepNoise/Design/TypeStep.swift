@@ -152,6 +152,15 @@ enum TypeStep: CaseIterable {
     func scaledLineHeight(for dynamicType: DynamicTypeSize) -> CGFloat {
         lineHeight * scaledSize(for: dynamicType) / size
     }
+
+    /// The font of the step, for the rare text that mixes two steps in one
+    /// paragraph. Everything else calls `.step(_:)`.
+    func font(_ phase: NightPhase, dynamicType: DynamicTypeSize) -> Font {
+        var font = Font.system(size: scaledSize(for: dynamicType), weight: weight(phase))
+        if isSmallCaps { font = font.lowercaseSmallCaps() }
+        if isTabular { font = font.monospacedDigit() }
+        return font
+    }
 }
 
 /// Applies a step: size scaled with its text style, weight by phase, small
@@ -170,12 +179,8 @@ private struct Stepped: ViewModifier {
         let natural = UIFont.systemFont(ofSize: size, weight: weight.uiWeight).lineHeight
         let extra = max(0, step.scaledLineHeight(for: dynamicType) - natural)
 
-        var font = Font.system(size: size, weight: weight)
-        if step.isSmallCaps { font = font.lowercaseSmallCaps() }
-        if step.isTabular { font = font.monospacedDigit() }
-
         return content
-            .font(font)
+            .font(step.font(phase, dynamicType: dynamicType))
             .tracking(size * step.trackingFraction)
             .lineSpacing(extra)
     }

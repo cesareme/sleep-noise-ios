@@ -40,8 +40,8 @@ enum LevelMath {
 /// One drag on a level row (spec 05 §2.6).
 ///
 /// The axis is decided once, on the first movement: within 30° of the
-/// horizontal the row owns the gesture, otherwise the scroll does, and that
-/// does not change until the finger lifts. `LevelTouchSurface` asks `axis`
+/// horizontal (20° on the night page) the row owns the gesture, otherwise
+/// the scroll does, and that does not change until the finger lifts. `LevelTouchSurface` asks `axis`
 /// before its recognizer begins.
 ///
 /// The drag itself is relative: the level moves by the distance travelled,
@@ -58,10 +58,17 @@ struct LevelDrag: Equatable {
 
     /// tan 30°. At exactly 30° the scroll wins: it costs nothing to undo.
     static let coneTangent: CGFloat = 0.577_350_3
+    /// tan 20°: the narrower cone of the night page (04 §2.2), where a hand
+    /// half asleep must scroll rather than change a level.
+    static let nightConeTangent: CGFloat = 0.363_970_2
 
     private var lastX: CGFloat = 0
 
-    static func axis(for movement: CGSize) -> Axis {
+    static func coneTangent(night: Bool) -> CGFloat {
+        night ? nightConeTangent : coneTangent
+    }
+
+    static func axis(for movement: CGSize, coneTangent: CGFloat = LevelDrag.coneTangent) -> Axis {
         abs(movement.height) < abs(movement.width) * coneTangent ? .level : .scroll
     }
 

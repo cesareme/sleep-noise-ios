@@ -99,6 +99,7 @@ enum GalleryArguments {
         switch value(after: "-galleryType") {
         case "xSmall": return .xSmall
         case "large": return .large
+        case "xLarge": return .xLarge
         case "xxxLarge": return .xxxLarge
         case "accessibility1": return .accessibility1
         case "accessibility3": return .accessibility3
@@ -298,6 +299,7 @@ private struct GalleryRows: View {
     @State private var rain: Float = 0.3
     @State private var pink: Float = 0
     @State private var ocean: Float = 0.5
+    @State private var wind: Float = 0.4
     @State private var lockedTaps = 0
 
     private func name(_ sound: SoundID) -> String { sound.localizedName }
@@ -321,6 +323,13 @@ private struct GalleryRows: View {
             GalleryCase(title: "level row · under the finger, night page") {
                 face(.rain, 0.38, .underFinger(accent: true))
                     .environment(\.nightPhase, .nightPage)
+            }
+            GalleryCase(title: "level row · live, night page (20° cone; hold for the slider in one ink)") {
+                LevelRule(id: "gallery.wind", name: name(.wind), subtitle: detail(.wind), level: $wind)
+                    .environment(\.nightPhase, .nightPage)
+            }
+            GalleryCase(title: "level row · slider standing in for the line: labels and value unchanged") {
+                face(.pink, 0.63, .fineSlider)
             }
             GalleryCase(title: "level row · Pro without access, saved level kept · taps \(lockedTaps)") {
                 LevelRule(
@@ -372,7 +381,7 @@ private struct GalleryDisc: View {
                 }
                 .padding(.horizontal, Grid.margin - (Grid.largeTarget - Grid.disc) / 2)
             }
-            GalleryCase(title: "disc · live (press and hold to see the relief deepen)") {
+            GalleryCase(title: "disc · live (the whole 64 pt circle answers; hold to see the relief deepen)") {
                 PlayDisc(isPlaying: isPlaying) { isPlaying.toggle() }
                     .padding(.horizontal, Grid.margin - (Grid.largeTarget - Grid.disc) / 2)
             }
@@ -393,7 +402,7 @@ private struct GalleryDisc: View {
 private struct GalleryActions: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            GalleryCase(title: "primary action · a word between two hairlines, 64 pt") {
+            GalleryCase(title: "primary action · a word between two hairlines, 64 pt (80 from AX1)") {
                 HairlineAction(title: Localized.string("common.save")) {}
             }
             GalleryCase(title: "primary action · disabled, with its reason") {
@@ -406,7 +415,7 @@ private struct GalleryActions: View {
             GalleryCase(title: "primary action · purchase with the price loaded: the only accent border") {
                 HairlineAction(title: "Comprar · {displayPrice}", rules: .accent) {}
             }
-            GalleryCase(title: "text action · secondary, 44 pt") {
+            GalleryCase(title: "text action · secondary, 44 pt (56 from xL, 64 from AX3)") {
                 TextAction(title: "Restaurar compra") {}
             }
             GalleryCase(title: "text action · night page: 64 pt, medium, one ink") {

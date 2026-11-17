@@ -27,9 +27,9 @@ final class DesignSystemTests: XCTestCase {
         XCTAssertEqual(SoundLevelScale.level(rms: rms(-9)), 1, accuracy: 0.001)
         XCTAssertEqual(SoundLevelScale.level(rms: rms(-28.5)), 0.5, accuracy: 0.001)
         XCTAssertEqual(SoundLevelScale.level(rms: 1), 1)
-        XCTAssertEqual(SoundLevelScale.presence(rms: rms(-57)), 0, accuracy: 0.001)
-        XCTAssertEqual(SoundLevelScale.presence(rms: rms(-51)), 1, accuracy: 0.001)
-        XCTAssertEqual(SoundLevelScale.presence(rms: rms(-54)), 0.5, accuracy: 0.001)
+        XCTAssertEqual(SoundLevelScale.presence(rms: rms(-72)), 0, accuracy: 0.001)
+        XCTAssertEqual(SoundLevelScale.presence(rms: rms(-66)), 1, accuracy: 0.001)
+        XCTAssertEqual(SoundLevelScale.presence(rms: rms(-69)), 0.5, accuracy: 0.001)
 
         // Louder is never thinner.
         var previous = SoundLevelScale.thickness(level: SoundLevelScale.level(rms: 0))
@@ -57,21 +57,35 @@ final class DesignSystemTests: XCTestCase {
         }
         var defaultMix = SoundGains.zero
         defaultMix.pink = 0.65
-        var whisper = SoundGains.zero
-        whisper.pink = 0.01
 
         let loud = SoundLevelScale.level(rms: settledRMS(defaultMix))
         XCTAssertGreaterThan(loud, 0.5)
         XCTAssertLessThan(loud, 1)
         XCTAssertEqual(SoundLevelScale.level(rms: settledRMS(.uniform(1))), 1)
-        XCTAssertGreaterThan(SoundLevelScale.presence(rms: settledRMS(whisper)), 0)
         XCTAssertEqual(SoundLevelScale.presence(rms: settledRMS(.zero)), 0)
+
+        // The quietest thing a person can play, one free layer at one
+        // percent, is drawn whole: the 0.6 floor of the opacity holds for
+        // any steady mix, and VoiceOver never calls it silence.
+        for sound in [SoundID.white, .pink, .brown, .rain, .wind] {
+            var whisper = SoundGains.zero
+            whisper.set(sound, 0.01)
+            let rms = settledRMS(whisper)
+            XCTAssertEqual(SoundLevelScale.presence(rms: rms), 1, "\(sound)")
+            XCTAssertEqual(SoundLevelScale.spoken(rms: rms), .low, "\(sound)")
+            XCTAssertEqual(
+                SoundLevelScale.opacity(level: SoundLevelScale.level(rms: rms))
+                    * Double(SoundLevelScale.presence(rms: rms)),
+                SoundLevelScale.minOpacity,
+                "\(sound)"
+            )
+        }
     }
 
     func testSpokenLevelSaysItInWords() {
         func rms(_ decibels: Float) -> Float { powf(10, decibels / 20) }
         XCTAssertEqual(SoundLevelScale.spoken(rms: 0), .silent)
-        XCTAssertEqual(SoundLevelScale.spoken(rms: rms(-60)), .silent)
+        XCTAssertEqual(SoundLevelScale.spoken(rms: rms(-75)), .silent)
         XCTAssertEqual(SoundLevelScale.spoken(rms: rms(-40)), .low)
         XCTAssertEqual(SoundLevelScale.spoken(rms: rms(-28)), .medium)
         XCTAssertEqual(SoundLevelScale.spoken(rms: rms(-15)), .high)
@@ -97,6 +111,64 @@ final class DesignSystemTests: XCTestCase {
         XCTAssertEqual(gate.update(.high, at: 13), .high)
         XCTAssertEqual(gate.update(.high, at: 20), .high)
         XCTAssertEqual(gate.update(.silent, at: 21), .silent)
+    }
+
+    func testSilenceIsNeverHeldBack() {
+        // Pause one second after the level changed: the hold must not keep
+        // "playing" on show, because the line stops ticking right there.
+        var gate = SpokenLevelGate()
+        XCTAssertEqual(gate.update(.medium, at: 10), .medium)
+        XCTAssertEqual(gate.update(.silent, at: 11), .silent)
+        XCTAssertEqual(gate.spoken, .silent)
+
+        // The fall of a pause from "high": medium is taken, low is held
+        // back, silence is not.
+        var falling = SpokenLevelGate()
+        XCTAssertEqual(falling.update(.high, at: 0), .high)
+        XCTAssertEqual(falling.update(.medium, at: 5.2), .medium)
+        XCTAssertEqual(falling.update(.low, at: 5.6), .medium)
+        XCTAssertEqual(falling.update(.silent, at: 6), .silent)
+        // Coming back within the hold is held, as any other change.
+        XCTAssertEqual(falling.update(.high, at: 7), .silent)
+        XCTAssertEqual(falling.update(.high, at: 9), .high)
+    }
+
+    func testTheAccentIsGoneWithinTheStopTimeOnceTheEngineStops() {
+        // Colour means sound (03 §3.7): 1.5 s after the engine stops there
+        // is no line and no accent, from any level, at either refresh rate
+        // and whatever time constant the line was following with.
+        func rms(_ decibels: Float) -> Float { powf(10, decibels / 20) }
+        for reduceMotion in [false, true] {
+            let interval = Motion.horizonInterval(reduceMotion: reduceMotion)
+            let requested = Motion.horizonTau(reduceMotion: reduceMotion)
+            let tau = OutputLevelFollower.tau(requested: requested, isRendering: false)
+            // Full scale, the top of the scale, the default mix.
+            for start in [Float(1), rms(-9), rms(-18)] {
+                // The engine may stop at any moment between two reads.
+                for phase in [0.001, interval / 2, interval] {
+                    var follower = OutputLevelFollower()
+                    _ = follower.follow(start, at: 0, tau: requested)
+                    var time = phase
+                    var value = follower.follow(0, at: time, tau: tau)
+                    var gone: TimeInterval?
+                    while time <= Motion.longest, gone == nil {
+                        if SoundLevelScale.presence(rms: value) == 0 {
+                            gone = time
+                        } else {
+                            time += interval
+                            value = follower.follow(0, at: time, tau: tau)
+                        }
+                    }
+                    let label = "reduce \(reduceMotion) start \(start) phase \(phase)"
+                    XCTAssertNotNil(gone, label)
+                    XCTAssertLessThanOrEqual(gone ?? .infinity, Motion.stop, label)
+                }
+            }
+            // The default mix is a hairline again in under a second.
+            var follower = OutputLevelFollower()
+            _ = follower.follow(rms(-18), at: 0, tau: requested)
+            XCTAssertEqual(SoundLevelScale.presence(rms: follower.follow(0, at: 1, tau: tau)), 0)
+        }
     }
 
     // MARK: One accent per screen
@@ -175,6 +247,57 @@ final class DesignSystemTests: XCTestCase {
         XCTAssertEqual(LevelDrag.axis(for: CGSize(width: 0, height: 12)), .scroll)
         XCTAssertEqual(LevelDrag.axis(for: CGSize(width: 3, height: -40)), .scroll)
         XCTAssertEqual(LevelDrag.axis(for: .zero), .scroll)
+    }
+
+    func testNightPageNarrowsTheConeToTwentyDegrees() {
+        XCTAssertEqual(LevelDrag.coneTangent(night: false), LevelDrag.coneTangent)
+        XCTAssertEqual(LevelDrag.coneTangent(night: true), LevelDrag.nightConeTangent)
+        XCTAssertEqual(LevelDrag.nightConeTangent, CGFloat(tan(20.0 * Double.pi / 180)), accuracy: 0.0001)
+        XCTAssertEqual(LevelDrag.coneTangent, CGFloat(tan(30.0 * Double.pi / 180)), accuracy: 0.0001)
+
+        let night = LevelDrag.nightConeTangent
+        XCTAssertEqual(LevelDrag.axis(for: CGSize(width: 10, height: 0), coneTangent: night), .level)
+        XCTAssertEqual(LevelDrag.axis(for: CGSize(width: -10, height: 3.6), coneTangent: night), .level)
+        // Between 20° and 30°: the level by day, the scroll at night.
+        let slanted = CGSize(width: 10, height: 4.5)
+        XCTAssertEqual(LevelDrag.axis(for: slanted), .level)
+        XCTAssertEqual(LevelDrag.axis(for: slanted, coneTangent: night), .scroll)
+        XCTAssertEqual(LevelDrag.axis(for: CGSize(width: 10, height: 10 * night), coneTangent: night), .scroll)
+    }
+
+    @MainActor
+    func testLevelRowKeepsItsHeightWhateverTheLevelOrTheGesture() {
+        // Nothing may move under a finger: the row measures the same at 0,
+        // above 0, while dragged and with the slider out, at every width a
+        // phone has and at every text size. The Spanish free layer whose
+        // label used to reflow when its value appeared is the sample.
+        func height(_ level: Float, _ mode: LevelRuleFace.Mode, _ size: DynamicTypeSize, _ width: CGFloat) -> CGFloat {
+            let face = LevelRuleFace(
+                name: "Lluvia", subtitle: "Gotas sobre un fondo constante", level: level, mode: mode
+            )
+            .dynamicTypeSize(size)
+            let host = UIHostingController(rootView: face)
+            return host.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude)).height
+        }
+        let sizes: [DynamicTypeSize] = [.large, .xLarge, .xxxLarge, .accessibility1, .accessibility3]
+        for size in sizes {
+            for width in stride(from: CGFloat(320), through: 440, by: 4) {
+                let rest = height(0, .rest, size, width)
+                XCTAssertGreaterThanOrEqual(rest, Grid.layerTouch)
+                let others: [(Float, LevelRuleFace.Mode)] = [
+                    (0.65, .rest), (1, .rest), (0, .underFinger(accent: true)),
+                    (1, .underFinger(accent: true)), (0, .fineSlider), (0.65, .fineSlider),
+                ]
+                for (level, mode) in others {
+                    XCTAssertEqual(
+                        height(level, mode, size, width), rest, accuracy: 0.01,
+                        "\(size) width \(width) level \(level) \(mode)"
+                    )
+                }
+            }
+        }
+        // At Large the pair fits on one line on a 393 pt screen: 56 pt.
+        XCTAssertEqual(height(0.3, .rest, .large, 393), Grid.layerTouch, accuracy: 0.01)
     }
 
     func testDragIsRelativeAndBanksNothingPastTheEnds() {

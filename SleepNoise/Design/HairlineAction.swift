@@ -28,6 +28,7 @@ struct HairlineAction: View {
     var action: () -> Void
 
     @Environment(\.accessibilityShowButtonShapes) private var buttonShapes
+    @Environment(\.dynamicTypeSize) private var dynamicType
 
     private var showsAccent: Bool { rules == .accent && isEnabled }
     private var wordColor: Color { isEnabled ? Ink.text : Ink.text2 }
@@ -41,9 +42,9 @@ struct HairlineAction: View {
                     .underline(buttonShapes, color: wordColor)
                     .multilineTextAlignment(.center)
                     // Air for a title that wraps at large text sizes; at
-                    // Large the row is exactly 64 pt.
+                    // Large the row is exactly 64 pt, and 80 from AX1.
                     .padding(.vertical, Grid.unit * 3)
-                    .frame(maxWidth: .infinity, minHeight: Grid.largeTarget)
+                    .frame(maxWidth: .infinity, minHeight: Grid.primaryAction(dynamicType: dynamicType))
                     .contentTransition(.opacity)
                     .contentShape(Rectangle())
             }

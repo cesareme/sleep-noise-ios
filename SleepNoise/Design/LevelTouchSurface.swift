@@ -16,8 +16,16 @@ import UIKit
 struct LevelTouchSurface: UIViewRepresentable {
     /// Sideways drag and long press. Off for a locked row.
     var adjusts: Bool
-    /// Tap. Only a locked row has one.
+    /// Tap. Only a locked row has one, and a row showing its slider.
     var taps: Bool
+    /// Tangent of the cone a drag must start inside: 30° by day, 20° on the
+    /// night page.
+    ///
+    /// Pending (spike I0-2): 04 §2.2 also asks for 16 pt of travel before a
+    /// night drag begins. The recognizer begins at the system's distance,
+    /// about 10 pt, in every phase; holding it back needs the scroll view's
+    /// own pan to wait for this one, and that is the spike's question.
+    var coneTangent = LevelDrag.coneTangent
     var onPanBegan: () -> Void
     /// Horizontal translation since the touch began, in points.
     var onPanChanged: (CGFloat) -> Void
@@ -105,7 +113,7 @@ struct LevelTouchSurface: UIViewRepresentable {
         }
 
         /// The cone: the pan begins only when the movement so far is within
-        /// 30° of the horizontal. Otherwise it fails and the scroll gets the
+        /// 30° of the horizontal (20° on the night page). Otherwise it fails and the scroll gets the
         /// touch; that is decided once and holds until the finger lifts.
         func gestureRecognizerShouldBegin(_ recognizer: UIGestureRecognizer) -> Bool {
             guard let pan = recognizer as? UIPanGestureRecognizer, pan === self.pan else { return true }
@@ -113,7 +121,10 @@ struct LevelTouchSurface: UIViewRepresentable {
             if movement == .zero {
                 movement = pan.velocity(in: pan.view)
             }
-            return LevelDrag.axis(for: CGSize(width: movement.x, height: movement.y)) == .level
+            return LevelDrag.axis(
+                for: CGSize(width: movement.x, height: movement.y),
+                coneTangent: surface.coneTangent
+            ) == .level
         }
 
         /// The row's own recognizers work together (hold, then drag without

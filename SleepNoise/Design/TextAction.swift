@@ -3,7 +3,8 @@ import SwiftUI
 /// The text action (03 §4.9): the secondary action of a screen.
 ///
 /// A borderless word in step 6 and secondary ink ("Restore purchase", "Not
-/// now"). 44 pt tall; 64 pt on the night page, where it is also Medium.
+/// now"). 44 pt tall, more with larger text; 64 pt on the night page, where
+/// it is also Medium.
 struct TextAction: View {
     var title: String
     var alignment = Alignment.center
@@ -11,6 +12,7 @@ struct TextAction: View {
 
     @Environment(\.nightPhase) private var phase
     @Environment(\.accessibilityShowButtonShapes) private var buttonShapes
+    @Environment(\.dynamicTypeSize) private var dynamicType
 
     var body: some View {
         Button(action: action) {
@@ -20,7 +22,7 @@ struct TextAction: View {
                 .underline(buttonShapes, color: Ink.secondary(phase))
                 .frame(
                     maxWidth: .infinity,
-                    minHeight: phase.isNight ? Grid.largeTarget : Grid.target,
+                    minHeight: Grid.textAction(dynamicType: dynamicType, night: phase.isNight),
                     alignment: alignment
                 )
                 .contentShape(Rectangle())

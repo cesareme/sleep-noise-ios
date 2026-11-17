@@ -10,7 +10,8 @@ import SwiftUI
 /// it steps back to plain ink.
 ///
 /// It reads the engine, not a clock: if the engine goes quiet the line is a
-/// hairline again as soon as the smoothed level gets there, and then the
+/// hairline again as soon as the smoothed level gets there (inside 1.5 s
+/// once the engine stops, see `OutputLevelFollower.stopTau`), and then the
 /// timeline stops, so nothing ticks while nothing sounds.
 struct SoundLine: View {
     /// Smoothed RMS of the output for a time constant in seconds: the
@@ -63,8 +64,14 @@ struct SoundLine: View {
             if sounding { awake = true }
         }
         .onChange(of: isFrozen) { _, frozen in
-            // A frozen line shows no colour, so it must not hold the accent.
-            if frozen { releaseAccent() }
+            // A frozen line shows no colour, so it must not hold the accent,
+            // and it keeps no reading: whatever happens to the sound while
+            // nobody looks, the line is born again from the hairline.
+            if frozen {
+                releaseAccent()
+                rms = 0
+                spokenGate = SpokenLevelGate()
+            }
         }
         .onDisappear {
             releaseAccent()
@@ -87,9 +94,11 @@ struct SoundLine: View {
             }
         } else {
             releaseAccent()
-            // Quiet and not asked to play: nothing left to draw.
+            // Quiet and not asked to play: nothing left to draw, and
+            // nothing left to say.
             if !isSounding {
                 rms = 0
+                spokenGate = SpokenLevelGate()
                 awake = false
             }
         }
@@ -112,8 +121,13 @@ struct SoundLineMark: View {
     var tick: TimeInterval = Motion.horizonInterval
 
     @Environment(\.nightPhase) private var phase
+    @Environment(\.displayScale) private var displayScale
 
     private var level: Float { SoundLevelScale.level(rms: rms) }
+    /// Whole pixels, rounded up: the accent never draws under 1.5 pt.
+    private var thickness: CGFloat {
+        Grid.pixelCeil(SoundLevelScale.thickness(level: level), displayScale: displayScale)
+    }
     private var presence: Float { SoundLevelScale.presence(rms: rms) }
 
     private var color: Color {
@@ -133,11 +147,14 @@ struct SoundLineMark: View {
                     .opacity(isSounding ? 1 : 0)
                     .animation(Motion.stopCurve, value: isSounding)
             } else {
-                // Silence drawn: the hairline is always there, underneath.
+                // Silence drawn: the hairline. It hands over to the sounding
+                // line as that is born, so it never shows through it.
                 Hairline()
+                    .opacity(Double(1 - presence))
+                    .animation(.linear(duration: tick), value: rms)
                 Rectangle()
                     .fill(color)
-                    .frame(height: SoundLevelScale.thickness(level: level))
+                    .frame(height: thickness)
                     .opacity(SoundLevelScale.opacity(level: level) * Double(presence))
                     .animation(.linear(duration: tick), value: rms)
                     .animation(Motion.controlCurve, value: ownsAccent)

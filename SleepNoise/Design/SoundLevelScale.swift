@@ -9,16 +9,22 @@ import CoreGraphics
 /// straight line in dB between two anchors measured on the generators: one
 /// quiet layer sits near −40 dBFS, the default mix near −18, six layers
 /// stacked near −12 and everything at full near −6.
+///
+/// Whatever is audible is drawn whole. The quietest thing the app can play,
+/// one layer at one percent, measures between −52 and −63 dBFS depending on
+/// the texture, so the line is fully there from −66 up and "silence" starts
+/// under −72. The window between the two only shapes the last moment of a
+/// fade; it is never where a steady mix sits.
 enum SoundLevelScale {
     /// RMS, in dBFS, drawn as the thinnest line.
     static let floorDecibels: Float = -48
     /// RMS, in dBFS, drawn as the thickest line.
     static let ceilingDecibels: Float = -9
     /// Under this the engine is silent as far as the eye is concerned.
-    static let silenceDecibels: Float = -57
+    static let silenceDecibels: Float = -72
     /// From here up the line is fully there. Between the two it is born
     /// from, or returns to, the hairline.
-    static let presentDecibels: Float = -51
+    static let presentDecibels: Float = -66
 
     /// Thinnest and thickest sounding line: the accent never goes under 1.5 pt.
     static let minThickness: CGFloat = Grid.accentLine
@@ -99,7 +105,9 @@ struct SpokenLevelGate {
         hold: TimeInterval = Motion.spokenLevelHold
     ) -> SoundLevelScale.Spoken {
         guard next != spoken else { return spoken }
-        if let changedAt, time - changedAt < hold {
+        // Silence is never held back: it cannot chatter, because it ends
+        // the line, and nobody may be told it sounds when it does not.
+        if next != .silent, let changedAt, time - changedAt < hold {
             return spoken
         }
         spoken = next

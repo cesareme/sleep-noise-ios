@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The editorial row (03 §4.7): words on the left, a value or a state on the
-/// right, a hairline from margin to margin. 56 pt, or 72 pt with a subtitle.
+/// right, a hairline from margin to margin. 56 pt, or 72 pt with a subtitle;
+/// taller with larger text (`Grid.row(subtitle:dynamicType:)`).
 ///
 /// No icon, no chevron, no card: the words are the icons. Pressed, the row
 /// shows `grafito` for 200 ms. In a list of options the chosen one carries
@@ -27,6 +28,7 @@ struct EditorialRow: View {
     var action: () -> Void
 
     @Environment(\.nightPhase) private var phase
+    @Environment(\.dynamicTypeSize) private var dynamicType
 
     var body: some View {
         Button(action: action) {
@@ -45,7 +47,7 @@ struct EditorialRow: View {
             }
             .padding(.vertical, Grid.unit * 3)
             .padding(.horizontal, Grid.margin)
-            .frame(minHeight: subtitle == nil ? Grid.row : Grid.rowSubtitle)
+            .frame(minHeight: Grid.row(subtitle: subtitle != nil, dynamicType: dynamicType))
             .contentShape(Rectangle())
         }
         .buttonStyle(PressedReliefStyle())
