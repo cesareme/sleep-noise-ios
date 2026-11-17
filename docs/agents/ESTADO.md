@@ -313,3 +313,27 @@ De la revisión del paquete (audio, modelo, diseño, accesibilidad y producto). 
 - **Dueño:** si "Noche", con la noche ya terminada dentro de `NightWindow`, debe abrir Noche terminada (con "Madrugada · 20 min") en vez de arrancar la mezcla. Hoy Madrugada solo se alcanza con el dedo si Noche ya cubría la página al acabar.
 - **Dueño:** los commits del repo público llevan como autor una dirección de correo real; usar la dirección `noreply` de GitHub de aquí en adelante.
 - **Sin verificar en dispositivo:** todo lo de VoiceOver de esta corrección (foco, marcos, valores), los gestos de borde del sistema sobre Noche, `isIdleTimerDisabled` cargando, el arranque fallido durante una llamada real y el cambio de frecuencia a mitad de un fundido.
+
+## Ajuste final de S-06 (17-11-2026)
+
+De la crítica visual de las capturas. Los cinco hallazgos eran ciertos y se aplicaron; ninguno se rechazó. Tests nuevos en `LineTiesTests.swift`.
+
+### Hecho
+
+- **Madrugada, últimos 5 min.** Bajo la cifra va solo "Se retira" / "Winding down" (`madrugada.retirada.palabra`): la cifra de 72 pt de encima ya dice los minutos. `madrugada.retirada` ("Se retira · %lld min") sale del catálogo; `ax.madrugada.retirada` no cambia. Anotado en la guía 10 (§2.6, T28 y tabla).
+- **Receta de una mezcla.** Ningún segmento se parte por dentro y el punto medio abre el segmento siguiente (`LineTies`): la segunda línea es "· ventilador es Pro", como en la lámina 14. La fila mide 12 + 22 + 2 + 20 por línea de receta + 16: 72 pt con una línea y 92 con dos, medidos en la captura. `lineBox(_:)` da a un texto líneas enteras de la escala.
+- **Línea de agua.** Su posición se redondea al píxel (`Grid.pixelRound`) en la hoja Marea, en la página y en Madrugada. Doce capturas en movimiento: 6 px (5 en Madrugada) de tinta llena, sin filas a medias.
+- **Noche.** La frase de la primera vez se compone una frase por línea (el catálogo no cambia) y "Mantén pulsado para volver" va 8 pt aparte. Las palabras de estado y "Madrugada · 20 min" parten antes del punto medio.
+- **Capturas.** Regeneradas las siete que eran anteriores a la corrección y todas las que tocan estos cambios.
+
+### Decisiones tomadas al ajustar, a confirmar
+
+- **"Se retira" sin cifra se aparta de la letra de C05 y C60**, que fijan `madrugada.retirada` = "Se retira · n min". Se mantiene el estado (palabra y minutos, juntos en pantalla) y se quita la repetición, igual que `temporizador.cabecera.fundiendo`. Si el dueño prefiere la letra, es devolver una clave.
+- **Una línea puede empezar por punto medio** (receta, estados de Noche). Antes la regla era la contraria; manda la maqueta.
+- **El nombre de la fila de Mezclas sube unos 3 pt** (a 12 pt del borde, como `.r72` de la maqueta); las filas editoriales del resto de la app siguen centradas en su alto.
+- **En AX5 la cláusula "ventilador es Pro" puede partir tras el nombre**: entera no cabe en la columna.
+
+### Sin verificar
+
+- La línea de agua en un dispositivo real: a 30 fotogramas por segundo avanza de 2 a 3 px por fotograma; en los extremos del recorrido, donde frena, el paso es de un píxel.
+- Pantallas de 375 pt de ancho: las medidas de la receta se calcularon, no se capturaron.

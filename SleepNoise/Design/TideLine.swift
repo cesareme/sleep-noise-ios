@@ -72,11 +72,18 @@ struct TideLine: View {
 
     /// Where the top of the line sits for a level, with this line's band
     /// and insets.
+    /// On a whole device pixel: the breath is continuous, and a line of
+    /// 2 pt set between two rows of pixels is drawn with a ragged edge. At
+    /// 30 frames a second it travels a few pixels a frame, so the snap is
+    /// not seen as steps.
     private func top(_ level: Float) -> CGFloat {
-        highWaterInset + Self.offset(
-            level: level,
-            band: band - highWaterInset - lowWaterInset,
-            thickness: lineThickness
+        Grid.pixelRound(
+            highWaterInset + Self.offset(
+                level: level,
+                band: band - highWaterInset - lowWaterInset,
+                thickness: lineThickness
+            ),
+            displayScale: displayScale
         )
     }
 

@@ -6,9 +6,9 @@ import SwiftUI
 /// The same full-screen control as Night with another question, and less
 /// on it: the water line of the tide (or the Horizon once the tide has
 /// gone), the minutes left, and "Stop". No hour, on purpose. One ink, no
-/// accent of any kind. For the last five minutes one word, "Winding down ·
-/// n min" (C60). When it ends nothing happens: the screen gives way to the
-/// night page without a sound or a word.
+/// accent of any kind. For the last five minutes the words "Winding down"
+/// under the figure (C60). When it ends nothing happens: the screen gives
+/// way to the night page without a sound or a word.
 ///
 /// It is the fixed recipe for everyone (C05): nothing here knows about
 /// access, the trial or the mix, and nothing is ever sold from it.

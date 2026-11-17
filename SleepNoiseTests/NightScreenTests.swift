@@ -592,10 +592,8 @@ final class SmallHoursStatusTests: XCTestCase {
 
         let winding = SmallHoursStatus.resolve(.init(isPlaying: true, minutesLeft: 4, windingDownMinutes: 4))
         XCTAssertEqual(winding, .windingDown(minutes: 4))
-        XCTAssertEqual(
-            winding.word(localized: { $0 == "madrugada.retirada" ? "winding %lld" : $0 }, locale: posix),
-            "winding 4"
-        )
+        // The minutes are the figure: the words under it do not repeat them.
+        XCTAssertEqual(winding.word(localized: keys, locale: posix), "madrugada.retirada.palabra")
         XCTAssertEqual(
             winding.figure(localized: { $0 == "madrugada.quedan" ? "%lld min" : $0 }, locale: posix),
             "4 min"
@@ -714,7 +712,7 @@ final class NightCatalogTests: XCTestCase {
         "noche.estado.pausa", "noche.estado.sin_sonido", "noche.estado.termino", "noche.primera",
         "noche.volver", "estado.volumen", "estado.pausa.auriculares", "pagina.estado.pausa.llamada",
         "ruta.seguir_altavoz", "comun.mas15", "comun.parar",
-        "madrugada.titulo", "madrugada.estado", "madrugada.quedan", "madrugada.retirada",
+        "madrugada.titulo", "madrugada.estado", "madrugada.quedan", "madrugada.retirada.palabra",
         "ax.noche.pantalla", "ax.noche.valor", "ax.noche.pista", "ax.noche.pista.reanudar",
         "ax.noche.pista.error", "ax.accion.pausar", "ax.accion.reanudar", "ax.accion.volver",
         "ax.anuncio.pagina", "ax.volumen", "ax.altavoz.pista", "ax.mas15", "ax.la.madrugada",

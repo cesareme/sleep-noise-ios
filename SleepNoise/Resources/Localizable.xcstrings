@@ -3240,20 +3240,20 @@
         }
       }
     },
-    "madrugada.retirada": {
-      "comment": "Small Hours, state word of the last minutes, while the sea fades.",
+    "madrugada.retirada.palabra": {
+      "comment": "Small Hours, the words under the figure of minutes during the last minutes, while the sea fades. The figure above already says the minutes.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Winding down · %lld min"
+            "value": "Winding down"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se retira · %lld min"
+            "value": "Se retira"
           }
         }
       }

@@ -102,16 +102,25 @@ struct MixRecipe: Equatable {
         }
     }
 
-    /// The line as it is set. The separator is tied to the segment before
-    /// it, so a line never begins with a dot.
+    /// The line as it is set (mock-up, plate 14). A segment never breaks
+    /// inside ("rain 50", "fan is Pro") and the separator opens the
+    /// segment after it, so a second line reads "· fan is Pro": the
+    /// clause whole, and no line ends with a dot.
+    ///
+    /// `loosePro` is for the largest text size, where the longest clause
+    /// is wider than the column: only its last two words stay together.
     func text(
         namesPro: Bool = true,
+        loosePro: Bool = false,
         soundName: (SoundID) -> String = { $0.localizedName },
         localized: (String) -> String = { Localized.string($0) },
         locale: Locale = .current
     ) -> String {
-        segments(namesPro: namesPro, soundName: soundName, localized: localized, locale: locale)
-            .joined(separator: "\u{00A0}" + localized(Self.separatorKey) + " ")
+        let all = segments(namesPro: namesPro, soundName: soundName, localized: localized, locale: locale)
+        let tied = all.enumerated().map { index, segment in
+            loosePro && index >= layers.count ? LineTies.tail(segment) : LineTies.whole(segment)
+        }
+        return LineTies.joined(tied, separator: localized(Self.separatorKey))
     }
 
     /// What VoiceOver reads: the layers as a list, and "ocean requires Pro"

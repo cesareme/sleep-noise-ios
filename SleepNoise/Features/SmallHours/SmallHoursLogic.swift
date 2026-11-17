@@ -3,10 +3,11 @@ import Foundation
 /// What the Small Hours screen says (03 §5 #11; copy guide §2.6), worked
 /// out without a view.
 ///
-/// A figure that goes down by the minute and, during the last five, one
-/// word: "Winding down · n min" (C60). Nothing else: no hour, no "Pro", no
-/// trial, no name of a mix. Paused, there is no word at all: the figure
-/// stands still and the line is gone. When it ends, nothing is said.
+/// A figure that goes down by the minute and, during the last five, the
+/// words "Winding down" under it (C60): the minutes are the figure, and
+/// the line under it does not say them again. Nothing else: no hour, no
+/// "Pro", no trial, no name of a mix. Paused, there is no word at all: the
+/// figure stands still and the line is gone. When it ends, nothing is said.
 enum SmallHoursStatus: Equatable {
     /// The sea, with or without the tide still guiding.
     case playing(minutes: Int)
@@ -58,8 +59,8 @@ enum SmallHoursStatus: Equatable {
         switch self {
         case .playing, .paused:
             return nil
-        case .windingDown(let minutes):
-            return String(format: localized("madrugada.retirada"), locale: locale, Int64(minutes))
+        case .windingDown:
+            return localized("madrugada.retirada.palabra")
         case .noSound:
             return localized("noche.estado.sin_sonido")
         }

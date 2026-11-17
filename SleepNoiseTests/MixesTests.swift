@@ -76,8 +76,16 @@ final class MixWordsTests: XCTestCase {
         }
         let trimmed = MixRecipe(levels: sea, hasFullAccess: false)
         XCTAssertEqual(trimmed.needsPro, [.ocean])
-        XCTAssertEqual(text(trimmed, english, "en"), "ocean 50\u{00A0}· wind 20\u{00A0}· ocean is Pro")
-        XCTAssertEqual(text(trimmed, spanish, "es"), "océano 50\u{00A0}· viento 20\u{00A0}· océano es Pro")
+        // As it is set: no segment breaks inside and each dot opens the
+        // segment after it, so a second line is "· ocean is Pro", whole.
+        XCTAssertEqual(
+            text(trimmed, english, "en"),
+            "ocean\u{00A0}50 ·\u{00A0}wind\u{00A0}20 ·\u{00A0}ocean\u{00A0}is\u{00A0}Pro"
+        )
+        XCTAssertEqual(
+            text(trimmed, spanish, "es"),
+            "océano\u{00A0}50 ·\u{00A0}viento\u{00A0}20 ·\u{00A0}océano\u{00A0}es\u{00A0}Pro"
+        )
         XCTAssertEqual(
             trimmed.spoken(soundName: { spanish($0.nameKey) }, localized: spanish, locale: Locale(identifier: "es")),
             "océano 50, viento 20, océano requiere Pro"
@@ -86,7 +94,7 @@ final class MixWordsTests: XCTestCase {
         // With access the recipe says nothing about Pro.
         let whole = MixRecipe(levels: sea, hasFullAccess: true)
         XCTAssertEqual(whole.needsPro, [])
-        XCTAssertEqual(text(whole, english, "en"), "ocean 50\u{00A0}· wind 20")
+        XCTAssertEqual(text(whole, english, "en"), "ocean\u{00A0}50 ·\u{00A0}wind\u{00A0}20")
 
         // Two Pro layers: one phrase each, loudest first. The layers keep
         // their levels in the recipe: nothing is dropped from it.

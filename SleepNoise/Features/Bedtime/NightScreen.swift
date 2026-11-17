@@ -130,7 +130,9 @@ struct NightScreen: View {
     }
 
     private func word(_ status: NightStatus) -> some View {
-        let text = status.text()
+        // The dot opens the second line when the words wrap: "Paused" /
+        // "· earbuds", never "Paused ·" / "earbuds".
+        let text = LineTies.dotLeads(status.text())
         return Text(verbatim: text)
             .step(.nightState)
             .monospacedDigit()
@@ -146,9 +148,17 @@ struct NightScreen: View {
     /// The only two sentences of the night, the first time Night is seen:
     /// fixed text, not a tip (C65). They keep their room, so nothing moves
     /// when they go.
+    ///
+    /// One sentence per line, as the copy guide draws them (§2.5), and
+    /// "Hold to go back" a little apart: it is another sentence, not the
+    /// third line of a paragraph.
     private var intro: some View {
-        VStack(spacing: Grid.unit / 2) {
-            Text("noche.primera")
+        VStack(spacing: Grid.unit * 2) {
+            VStack(spacing: Grid.unit / 2) {
+                ForEach(LineTies.sentences(Localized.string("noche.primera")), id: \.self) { sentence in
+                    Text(verbatim: sentence)
+                }
+            }
             Text("noche.volver")
         }
         .step(.body)
@@ -165,7 +175,7 @@ struct NightScreen: View {
     private func slot(_ status: NightStatus) -> some View {
         ZStack {
             if status.isOver {
-                NightAction(title: Localized.format("madrugada.estado", Int64(smallHoursMinutes))) {
+                NightAction(title: LineTies.dotLeads(Localized.format("madrugada.estado", Int64(smallHoursMinutes)))) {
                     model.startSmallHours()
                 }
                 .accessibilityLabel(Text(verbatim: Localized.format("ax.la.madrugada", Int64(smallHoursMinutes))))

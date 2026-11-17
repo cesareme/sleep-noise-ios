@@ -326,6 +326,9 @@ private struct MixRow: View {
         .accessibilityAddTraits(isInert ? .isStaticText : .isButton)
     }
 
+    /// 12 + 22 + 2 + 20 per line of recipe + 16 (mock-up, plate 14): 72 pt
+    /// with a recipe of one line and 92 with two. Every text takes whole
+    /// lines of the scale, so the row stays on the grid however it wraps.
     private var face: some View {
         VStack(alignment: .leading, spacing: Grid.unit / 2) {
             ViewThatFits(in: .horizontal) {
@@ -341,15 +344,17 @@ private struct MixRow: View {
                 }
             }
             // On the night page a recipe never says "is Pro".
-            Text(verbatim: recipe.text(namesPro: !phase.isNight))
+            Text(verbatim: recipe.text(namesPro: !phase.isNight, loosePro: dynamicType >= .accessibility5))
                 .step(.secondary)
                 .monospacedDigit()
                 .foregroundStyle(Ink.secondary(phase))
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
+                .lineBox(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, Grid.unit * 3)
+        .padding(.top, Grid.unit * 3)
+        .padding(.bottom, Grid.unit * 4)
         .padding(.horizontal, Grid.margin)
         .frame(minHeight: Grid.row(subtitle: true, dynamicType: dynamicType))
         .contentShape(Rectangle())
@@ -362,6 +367,7 @@ private struct MixRow: View {
             .lineLimit(dynamicType.isAccessibilitySize ? 2 : 1)
             .minimumScaleFactor(isOwnName ? 0.8 : 1)
             .multilineTextAlignment(.leading)
+            .lineBox(.row)
     }
 
     /// Small caps by day. On the night page a state is never set in small

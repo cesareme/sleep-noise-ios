@@ -90,6 +90,14 @@ enum Grid {
         return (thickness * scale - 0.001).rounded(.up) / scale
     }
 
+    /// A position rounded to the nearest whole device pixel. A line that
+    /// travels (the water line) lands between two rows of pixels almost
+    /// always; left there it is drawn with soft or uneven edges.
+    static func pixelRound(_ position: CGFloat, displayScale: CGFloat) -> CGFloat {
+        let scale = max(1, displayScale)
+        return (position * scale).rounded() / scale
+    }
+
     /// Vertical position of the Horizon on a screen of `fullHeight` points,
     /// measured over the whole screen and snapped to the grid: 284 on 852.
     static func horizonY(fullHeight: CGFloat) -> CGFloat {

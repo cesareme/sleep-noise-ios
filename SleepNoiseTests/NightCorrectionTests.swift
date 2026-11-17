@@ -725,11 +725,11 @@ final class NightDetailTests: XCTestCase {
         }
         let locale = Locale(identifier: "es_ES")
         let name: (SoundID) -> String = { $0.rawValue }
-        XCTAssertTrue(recipe.text(soundName: name, localized: lookup, locale: locale).contains("es Pro"))
+        XCTAssertTrue(recipe.text(soundName: name, localized: lookup, locale: locale).contains("es\u{00A0}Pro"))
         XCTAssertTrue(recipe.spoken(soundName: name, localized: lookup, locale: locale).contains("requiere Pro"))
         let night = recipe.text(namesPro: false, soundName: name, localized: lookup, locale: locale)
         XCTAssertFalse(night.contains("Pro"))
-        XCTAssertTrue(night.contains("ocean 40"), "the layer and its level stay")
+        XCTAssertTrue(night.contains("ocean\u{00A0}40"), "the layer and its level stay")
         XCTAssertEqual(recipe.segments(namesPro: false, soundName: name, localized: lookup, locale: locale).count, 2)
         XCTAssertFalse(recipe.spoken(namesPro: false, soundName: name, localized: lookup, locale: locale).contains("Pro"))
     }
