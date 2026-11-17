@@ -80,11 +80,18 @@ final class AccessPolicyTests: XCTestCase {
 }
 
 final class TimerFormatTests: XCTestCase {
+    /// The final fade is a gain fade of 10 to 15 minutes (C31): a quarter
+    /// of the night, fifteen minutes at most. It used to be 5 to 20 seconds.
     func testFadeWindow() {
-        XCTAssertEqual(TimerMath.fadeDuration(totalSeconds: 15 * 60), 20, accuracy: 0.001)
-        XCTAssertEqual(TimerMath.fadeDuration(totalSeconds: 8 * 60), 20, accuracy: 0.001)
+        XCTAssertEqual(TimerMath.fadeDuration(totalSeconds: 40 * 60), 10 * 60, accuracy: 0.001)
+        XCTAssertEqual(TimerMath.fadeDuration(totalSeconds: 45 * 60), 11.25 * 60, accuracy: 0.001)
+        XCTAssertEqual(TimerMath.fadeDuration(totalSeconds: 60 * 60), 15 * 60, accuracy: 0.001)
+        XCTAssertEqual(TimerMath.fadeDuration(totalSeconds: 360 * 60), 15 * 60, accuracy: 0.001)
+        // A short night cannot spend ten minutes fading: the same quarter.
+        XCTAssertEqual(TimerMath.fadeDuration(totalSeconds: 15 * 60), 225, accuracy: 0.001)
         XCTAssertEqual(TimerMath.fadeDuration(totalSeconds: 60), 15, accuracy: 0.001)
-        XCTAssertEqual(TimerMath.fadeDuration(totalSeconds: 10), 5, accuracy: 0.001)
+        XCTAssertEqual(TimerMath.fadeDuration(totalSeconds: 0), 0)
+        XCTAssertEqual(TimerMath.fadeDuration(totalSeconds: -5), 0)
     }
 
     func testClockFormat() {
@@ -156,7 +163,6 @@ final class MixStoreTests: XCTestCase {
 /// exercised here returns before the audio engine would start.
 @MainActor
 final class NightAndShortcutTests: XCTestCase {
-    private let timerKey = "sleepnoise.timerMinutes.v1"
     private let day0 = Date(timeIntervalSinceReferenceDate: 700_000_000)
 
     private func makeDefaults() throws -> UserDefaults {
@@ -203,8 +209,8 @@ final class NightAndShortcutTests: XCTestCase {
         XCTAssertEqual(model.enterBedtime(), .nothingToPlay)
         XCTAssertFalse(model.isBedtime)
         XCTAssertFalse(model.isPlaying)
-        XCTAssertNil(model.timer.selectedMinutes, "Night does not choose a timer")
-        XCTAssertNil(defaults.object(forKey: timerKey), "and does not store one")
+        XCTAssertEqual(model.timer.choice, .firstUse, "Night does not choose a timer: the first-use one stands")
+        XCTAssertNil(MixerModel.storedTimer(defaults: defaults), "and does not store one")
     }
 
     func testShortcutsRefuseProRequestsInWordsWithoutThePaywall() throws {
@@ -223,7 +229,7 @@ final class NightAndShortcutTests: XCTestCase {
         XCTAssertFalse(model.isPlaying)
         XCTAssertEqual(model.levels, before)
         XCTAssertEqual(model.activeHouseMix, houseMixBefore)
-        XCTAssertNil(model.timer.selectedMinutes)
+        XCTAssertEqual(model.timer.choice, .firstUse, "a refused request leaves the timer alone")
     }
 
     /// The whole timer is free (C03): red if a paid length, or a cap below
@@ -234,11 +240,11 @@ final class NightAndShortcutTests: XCTestCase {
 
         XCTAssertNil(model.armTimer(minutes: 90))
         XCTAssertEqual(model.timer.selectedMinutes, 90)
-        XCTAssertEqual(defaults.object(forKey: timerKey) as? Int, 90)
+        XCTAssertEqual(MixerModel.storedTimer(defaults: defaults), .untilAsleep(90))
 
         model.selectTimer(minutes: AccessPolicy.maxTimerMinutes)
         XCTAssertEqual(model.timer.selectedMinutes, AccessPolicy.maxTimerMinutes)
-        XCTAssertEqual(defaults.object(forKey: timerKey) as? Int, AccessPolicy.maxTimerMinutes)
+        XCTAssertEqual(MixerModel.storedTimer(defaults: defaults), .untilAsleep(AccessPolicy.maxTimerMinutes))
 
         model.clampTimerToEntitlement()
         XCTAssertEqual(model.timer.selectedMinutes, AccessPolicy.maxTimerMinutes)
@@ -287,8 +293,8 @@ final class NightAndShortcutTests: XCTestCase {
         XCTAssertEqual(model.startTimer(minutes: 30), .nothingToPlay)
         XCTAssertEqual(model.startTimer(minutes: nil), .nothingToPlay)
         XCTAssertFalse(model.isPlaying)
-        XCTAssertNil(model.timer.selectedMinutes)
-        XCTAssertNil(defaults.object(forKey: timerKey))
+        XCTAssertEqual(model.timer.choice, .firstUse)
+        XCTAssertNil(MixerModel.storedTimer(defaults: defaults))
 
         // Pro layers that are muted without access do not count as sound.
         model.levels[.ocean] = 0.65
@@ -299,24 +305,35 @@ final class NightAndShortcutTests: XCTestCase {
         let defaults = try makeDefaults()
         let model = try makeFreeTierModel(defaults: defaults)
 
-        // Nothing chosen: the fallback runs tonight and is not stored.
-        XCTAssertEqual(model.timerMinutes(requested: nil), MixerModel.fallbackTimerMinutes)
+        // Nothing chosen: the timer of the first night runs (03 §5 #8), and
+        // nothing is stored for it.
+        XCTAssertEqual(model.timerMinutes(requested: nil), TimerChoice.defaultMinutes)
         XCTAssertNil(model.armTimer(minutes: nil))
-        XCTAssertEqual(model.timer.selectedMinutes, MixerModel.fallbackTimerMinutes)
-        XCTAssertNil(defaults.object(forKey: timerKey))
+        XCTAssertEqual(model.timer.selectedMinutes, TimerChoice.defaultMinutes)
+        XCTAssertNil(MixerModel.storedTimer(defaults: defaults))
+
+        // The timer chosen in the app is not a length (Off, or a blanket):
+        // the fallback runs tonight and the stored choice is not touched.
+        for chosen in [TimerChoice.off, .blanket(hour: 7)] {
+            model.chooseTimer(chosen)
+            XCTAssertEqual(model.timerMinutes(requested: nil), MixerModel.fallbackTimerMinutes)
+            XCTAssertNil(model.armTimer(minutes: nil))
+            XCTAssertEqual(model.timer.selectedMinutes, MixerModel.fallbackTimerMinutes)
+            XCTAssertEqual(MixerModel.storedTimer(defaults: defaults), chosen)
+        }
 
         // A length chosen in the app is the one that runs, and it stays.
         model.selectTimer(minutes: 30)
-        XCTAssertEqual(defaults.object(forKey: timerKey) as? Int, 30)
+        XCTAssertEqual(MixerModel.storedTimer(defaults: defaults)?.untilAsleepMinutes, 30)
         XCTAssertEqual(model.timerMinutes(requested: nil), 30)
         XCTAssertNil(model.armTimer(minutes: nil))
         XCTAssertEqual(model.timer.selectedMinutes, 30)
-        XCTAssertEqual(defaults.object(forKey: timerKey) as? Int, 30)
+        XCTAssertEqual(MixerModel.storedTimer(defaults: defaults)?.untilAsleepMinutes, 30)
 
         // Only a length written into the Shortcut replaces it.
         XCTAssertNil(model.armTimer(minutes: 15))
         XCTAssertEqual(model.timer.selectedMinutes, 15)
-        XCTAssertEqual(defaults.object(forKey: timerKey) as? Int, 15)
+        XCTAssertEqual(MixerModel.storedTimer(defaults: defaults)?.untilAsleepMinutes, 15)
         XCTAssertFalse(model.isPlaying)
     }
 

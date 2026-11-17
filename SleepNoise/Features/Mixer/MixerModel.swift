@@ -5,8 +5,14 @@ import Foundation
 enum PauseCause: Equatable {
     /// The person paused.
     case person
-    /// The system took the output: a call, an alarm, another app.
+    /// The person paused from the headphones or the lock screen while the
+    /// night was playing on headphones (C49).
+    case headphones
+    /// The system took the output: an alarm, Siri, another app. It does not
+    /// say which.
     case system
+    /// A call took the output (`CXCallObserver`, C48).
+    case call
     /// The output went away: earbuds out.
     case lostOutput
 
@@ -14,9 +20,31 @@ enum PauseCause: Equatable {
     var fade: TimeInterval {
         switch self {
         case .person: return PlaybackFade.pause
-        case .system: return PlaybackFade.interruption
+        case .headphones: return RoutePolicy.headphonesPauseFadeOut
+        case .system, .call: return PlaybackFade.interruption
         case .lostOutput: return PlaybackFade.lostOutput
         }
+    }
+}
+
+/// The three things the mixer drives that reach outside the process: the
+/// engine, the audio session and the lock screen. The app passes the real
+/// ones; the tests of the model pass doubles and never open a session.
+struct MixerAudio {
+    var engine: AudioEngineControlling
+    var session: AudioSessionObserving
+    var nowPlaying: NowPlayingControlling
+    /// False for doubles: the model then leaves the store and the Shortcuts
+    /// bridge alone, and starts no timer of its own on the run loop.
+    var isLive: Bool
+
+    static func live() -> MixerAudio {
+        MixerAudio(
+            engine: SleepAudioEngine(),
+            session: AudioSessionObserver(),
+            nowPlaying: NowPlayingController(),
+            isLive: true
+        )
     }
 }
 
@@ -40,6 +68,12 @@ final class MixerModel: ObservableObject {
     nonisolated static let fallbackLevel: Float = 0.4
     /// Where the tide puts a silent ocean so that it can be heard.
     nonisolated static let tideOceanLevel: Float = 0.5
+    /// The lowest the session level goes: the vertical axis of Night turns
+    /// the night down, it does not switch it off in the dark by accident.
+    nonisolated static let minimumSessionLevel: Float = 0.05
+    /// Seconds the level takes to come back when "+15 min" calls the final
+    /// fade off.
+    nonisolated static let fadeReturn: TimeInterval = 3
 
     @Published var levels: [SoundID: Float]
     @Published private(set) var isPlaying = false
@@ -75,26 +109,75 @@ final class MixerModel: ObservableObject {
     @Published private(set) var loadedMixWasStripped = false
     /// Short note under the breathing card ("Ocean raised so you can hear it").
     @Published private(set) var breathingNote: String?
+    /// The Night screen has gone 60 s without a touch and is drawn dimmed
+    /// (C46). Not a state of the night: only how bright it is drawn.
+    @Published private(set) var isBedtimeDimmed = false
+    /// "Keep screen on" (C46). Stored.
+    @Published private(set) var keepScreenOn: KeepScreenOn
+    /// Small Hours is what plays, or is paused: the fixed recipe, not the
+    /// mix (C05). Nothing is sold while it lasts, at any hour.
+    @Published private(set) var isSmallHours = false
+    /// The session level, `minimumSessionLevel` to 1 (C51): the vertical
+    /// axis of Night and Small Hours, and the speaker cap. It belongs to the
+    /// night: a new night starts at 1 and it is never stored. Never the
+    /// system volume.
+    @Published private(set) var sessionLevel: Float = 1
+    /// "Keep playing on speaker" is offered until then (C49). Nil when it
+    /// is not on offer.
+    @Published private(set) var speakerOfferUntil: Date?
+    /// When the last night ended by itself (its timer, a long pause, the
+    /// morning): "Ended at 03:42" on the Night screen. Nil while a night is
+    /// open and after Small Hours, which ends without a word.
+    @Published private(set) var sessionEndedAt: Date?
 
     let purchases: PurchaseManager
     let mixStore: MixStore
     let timer: SleepTimerController
     let breathing: BreathingGuideController
+    let smallHours: SmallHoursController
 
-    private let engine = SleepAudioEngine()
-    private let nowPlaying = NowPlayingController()
-    private let sessionObserver = AudioSessionObserver()
+    private let audio: MixerAudio
+    private var engine: AudioEngineControlling { audio.engine }
+    private var nowPlaying: NowPlayingControlling { audio.nowPlaying }
+    private var sessionObserver: AudioSessionObserving { audio.session }
     private let defaults: UserDefaults
     private let now: () -> Date
     private let calendar: Calendar
     private let levelsKey = "sleepnoise.levels.v1"
-    private let timerKey = "sleepnoise.timerMinutes.v1"
-    /// Length the timer Shortcut uses when none was asked for or chosen.
+    /// Where the timer lived when it was only a length in minutes.
+    nonisolated static let legacyTimerKey = "sleepnoise.timerMinutes.v1"
+    nonisolated static let timerKey = "sleepnoise.timer.v2"
+    nonisolated static let keepScreenOnKey = "sleepnoise.night.keepScreenOn.v1"
+    /// Length the timer Shortcut uses when none was asked for and the timer
+    /// chosen in the app is not a length.
     static let fallbackTimerMinutes = 60
     /// Level of a sound that a Shortcut plays on its own.
     static let soloSoundLevel: Float = 0.65
     private var didStart = false
-    private var resumeAfterInterruption = false
+    /// The timer the person chose, as it is stored. A Shortcut may run
+    /// another one for a night; this comes back when that night is over.
+    private var storedTimer: TimerChoice
+    /// The interruption that is open, if any (`InterruptionPolicy`).
+    private var interruptions: InterruptionTracker
+    /// The night was playing when the open interruption began: silent now,
+    /// but not paused by the person.
+    private var heldByInterruption = false
+    private var callInProgress = false
+    /// When the night went silent. Nil while it plays and once it is over.
+    private var pausedAt: Date?
+    /// When the night was paused because its output went away.
+    private var lostOutputAt: Date?
+    /// The output the night plays on, or played on when it paused.
+    private var sessionRoute: OutputRoute?
+    /// The output that went away, until something plays again: a night
+    /// that ended paused by a lost output still caps the next Play when
+    /// what is left is the iPhone's speaker (C49).
+    private var lostRoute: OutputRoute?
+    private var appIsActive = true
+    private var bedtimeTouchedAt: Date?
+    private var expiryTimer: Timer?
+    private var offerTimer: Timer?
+    private var dimTimer: Timer?
     private var noteTask: Task<Void, Never>?
     /// Ocean level before the tide raised it, restored if the tide is switched
     /// off again before the slider is touched.
@@ -110,17 +193,28 @@ final class MixerModel: ObservableObject {
         mixStore: MixStore? = nil,
         timer: SleepTimerController? = nil,
         breathing: BreathingGuideController? = nil,
+        smallHours: SmallHoursController? = nil,
         defaults: UserDefaults = .standard,
         now: @escaping () -> Date = { Date() },
-        calendar: Calendar = .autoupdatingCurrent
+        calendar: Calendar = .autoupdatingCurrent,
+        audio: MixerAudio? = nil
     ) {
+        let audio = audio ?? .live()
+        self.audio = audio
         self.purchases = purchases
         self.defaults = defaults
         self.now = now
         self.calendar = calendar
         self.mixStore = mixStore ?? MixStore(defaults: defaults)
-        self.timer = timer ?? SleepTimerController()
+        // The timer and Small Hours read the same clock as the model, so a
+        // test (or a staged launch for the captures) moves all three at once.
+        self.timer = timer ?? SleepTimerController(now: now, calendar: calendar, ticks: audio.isLive)
         self.breathing = breathing ?? BreathingGuideController(defaults: defaults)
+        self.smallHours = smallHours ?? SmallHoursController(now: now, ticks: audio.isLive)
+        interruptions = InterruptionTracker(calendar: calendar, now: now)
+        let stored = Self.storedTimer(defaults: defaults)
+        storedTimer = stored ?? .firstUse
+        keepScreenOn = defaults.string(forKey: Self.keepScreenOnKey).flatMap(KeepScreenOn.init) ?? .whileCharging
         if let stored = Self.loadLevels(defaults: defaults, key: levelsKey) {
             levels = stored
         } else {
@@ -135,24 +229,29 @@ final class MixerModel: ObservableObject {
             loadedMixName = load.title(name: mix.localizedName)
             loadedMixWasStripped = load.isTrimmed
         }
-        if let minutes = defaults.object(forKey: timerKey) as? Int,
-           AccessPolicy.timerIsIncluded(minutes: minutes, hasFullAccess: purchases.hasFullAccess) {
-            self.timer.choose(minutes)
-        }
+        // The first night has a timer (03 §5 #8): "Until I sleep", 45
+        // minutes. It is not stored, so it is never taken for a choice.
+        self.timer.choose(storedTimer)
         bindTimer()
         bindBreathing()
+        bindSmallHours()
     }
 
     func startIfNeeded() {
         guard !didStart else { return }
         didStart = true
-        IntentBridge.attach(self)
-        purchases.start()
+        if audio.isLive {
+            IntentBridge.attach(self)
+            purchases.start()
+        }
         installSessionHandlers()
         nowPlaying.install(
             onPlay: { [weak self] in self?.play() },
-            onPause: { [weak self] in self?.pause(resumeLater: false) },
-            onToggle: { [weak self] in self?.togglePlayback() }
+            onPause: { [weak self] in self?.remotePause() },
+            onToggle: { [weak self] in
+                guard let self else { return }
+                if self.isPlaying { self.remotePause() } else { self.play() }
+            }
         )
         nowPlaying.update(isPlaying: false, title: nowPlayingTitle)
     }
@@ -226,7 +325,8 @@ final class MixerModel: ObservableObject {
     /// Whether anything may be sold right now: not inside `NightWindow` and
     /// not on the night page.
     var canSell: Bool {
-        SaleGate.isOpen(at: now(), calendar: calendar, nightSession: isNightSession)
+        // Small Hours never sells, whatever the hour (C05).
+        !isSmallHours && SaleGate.isOpen(at: now(), calendar: calendar, nightSession: isNightSession)
     }
 
     /// Asks for the Pro sheet. At night the request is dropped: nothing
@@ -270,47 +370,120 @@ final class MixerModel: ObservableObject {
 
     func togglePlayback() {
         if isPlaying {
-            pause(resumeLater: false)
+            pause()
         } else {
             play()
         }
     }
 
-    /// `userInitiated` is false when the system brings audio back (end of an
-    /// interruption, media-services reset). The breathing guide then continues
-    /// its window instead of starting a fresh fifteen minutes on someone asleep.
-    func play(userInitiated: Bool = true) {
+    // MARK: Play and pause
+
+    /// Play, asked for by the person: the Disc, the lock screen, the
+    /// headphones, a Shortcut, the Night screen. It resumes the night that
+    /// is paused, or begins a new one when none is open or the pause lasted
+    /// too long (`SessionPause`). Whatever interruption was open is
+    /// forgotten: what the person chose meanwhile wins.
+    func play() {
         startIfNeeded()
+        interruptions.cancel()
+        heldByInterruption = false
+        guard !isPlaying else { return }
         audioError = nil
-        resumeAfterInterruption = false
-        if userInitiated, isSilent {
-            // Nothing would sound: an empty mix, or one whose every layer
-            // needs Pro. The instrument always sounds: the fallback layer
-            // comes up as a real level and the mix keeps its name.
-            writeLevel(Self.fallbackSound, Self.fallbackLevel)
-            isPlayingFallback = true
-        }
-        // The guide publishes before the engine starts, so the first command
-        // the render thread reads already carries the breath (and its epoch),
-        // and before the timer, whose fade callback may release it again.
-        if userInitiated {
-            startBreathingIfEnabled()
-        } else {
-            resumeBreathingIfEnabled()
-        }
-        do {
-            try engine.start(gains: currentGains())
-            isPlaying = true
-            pauseCause = nil
-            startFailures = 0
-            purchases.startTrialIfNeeded()
-            timer.start()
-            nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
-        } catch {
-            endPlayback(engineAction: .none, canDowngrade: true)
-            pauseCause = nil
+        guard startSound(asked: true) else {
+            // Whatever night was open stays as it was, its timer included:
+            // the page says the sound did not start, and the line retries.
+            purchases.refreshAccess(canDowngrade: true)
             noteStartFailure()
+            return
         }
+    }
+
+    /// Every start goes through here: the person's Play (`asked`) and the
+    /// resumes nobody asked for (the end of an interruption, the output
+    /// coming back, a media-services reset). An unasked resume continues the
+    /// tide's window instead of guiding a sleeper again, never raises the
+    /// fallback layer and never changes the session level.
+    @discardableResult
+    private func startSound(asked: Bool, fadeIn requested: TimeInterval? = nil) -> Bool {
+        let now = now()
+        let current = sessionObserver.currentRoute
+        // Whoever resumes unasked has already decided it is the same night:
+        // a call never ends it, however long it was (C48).
+        if asked, !nightIsOpen(at: now) {
+            beginNewNight()
+        }
+        if asked {
+            // Capped only when the output changed to the iPhone's speaker
+            // since the night paused (C49).
+            sessionLevel = RoutePolicy.resumeMaster(
+                pausedOn: sessionRoute ?? lostRoute ?? current,
+                current: current,
+                master: sessionLevel
+            )
+        }
+        let fadeIn: TimeInterval
+        let level: Float
+        if isSmallHours {
+            fadeIn = requested ?? smallHours.recipe.fadeIn
+            if smallHours.isPaused {
+                smallHours.resume(risingOver: fadeIn)
+            } else if !smallHours.isActive {
+                smallHours.begin()
+            }
+            level = smallHours.fadeLevel
+        } else {
+            fadeIn = requested ?? PlaybackFade.start
+            if asked, isSilent {
+                // Nothing would sound: an empty mix, or one whose every
+                // layer needs Pro. The instrument always sounds: the
+                // fallback layer comes up as a real level and the mix keeps
+                // its name.
+                writeLevel(Self.fallbackSound, Self.fallbackLevel)
+                isPlayingFallback = true
+            }
+            // The guide publishes before the engine starts, so the first
+            // command the render thread reads already carries the breath
+            // (and its epoch).
+            if asked {
+                startBreathingIfEnabled()
+            } else {
+                resumeBreathingIfEnabled()
+            }
+            // The timer anchors its dates here and calls nothing back: a
+            // night that resumes inside its final fade rises to where that
+            // fade stands, and the timer asks for the rest of it afterwards.
+            timer.start(risingOver: fadeIn)
+            level = timer.fadeLevel
+        }
+        // With the engine stopped this is not a ramp: the level is there
+        // when the bed rises.
+        engine.setMaster(effectiveMaster, over: 0)
+        do {
+            try engine.start(gains: currentGains(), fadeIn: fadeIn, level: level)
+        } catch {
+            if isSmallHours {
+                smallHours.pause()
+            } else {
+                timer.pause()
+                breathing.end()
+            }
+            return false
+        }
+        isPlaying = true
+        pauseCause = nil
+        pausedAt = nil
+        lostOutputAt = nil
+        lostRoute = nil
+        heldByInterruption = false
+        sessionRoute = current
+        startFailures = 0
+        cancelExpiry()
+        clearSpeakerOffer()
+        if !isSmallHours {
+            purchases.startTrialIfNeeded()
+        }
+        nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
+        return true
     }
 
     /// One more start that did not sound. The page reads the count and says
@@ -320,51 +493,207 @@ final class MixerModel: ObservableObject {
         audioError = String(localized: "pagina.error.inicio")
     }
 
-    /// `cause` decides how long the bed takes to leave: the person's own
-    /// pause is never a cut (`PlaybackFade.pause`); an interruption and a
-    /// lost output have their own, shorter fades.
-    func pause(resumeLater: Bool, cause: PauseCause = .person) {
-        if resumeLater {
-            if isPlaying {
-                resumeAfterInterruption = true
-            }
-        } else {
-            resumeAfterInterruption = false
+    /// Pause, asked for by the person. The bed leaves over the fade of its
+    /// cause: never a cut (`PlaybackFade.pause`), and three seconds when it
+    /// comes from the headphones. It also closes an interruption that was
+    /// holding the night: a stop during a call is not undone when the call
+    /// ends.
+    func pause(cause: PauseCause = .person) {
+        interruptions.cancel()
+        let wasHeld = heldByInterruption
+        heldByInterruption = false
+        if isPlaying {
+            stopSound(cause: cause, fade: cause.fade, held: false)
+        } else if wasHeld {
+            // Silent already, under the interruption: now it is the
+            // person's pause, and a trial that ran out meanwhile applies.
+            pauseCause = cause
+            purchases.refreshAccess(canDowngrade: true)
         }
-        guard isPlaying else { return }
-        // An interruption that intends to resume is not the end of the night:
-        // a trial that ran out meanwhile waits until the session really ends.
-        endPlayback(engineAction: .stop(fadeOut: cause.fade), canDowngrade: !resumeAfterInterruption)
-        pauseCause = cause
     }
 
-    /// The whole timer is free (C03): a length outside its range is not a
-    /// sale, it is ignored.
+    /// Pause from the lock screen or the headphones (C49): on headphones the
+    /// bed takes three seconds to leave, because earbuds send this command
+    /// by themselves when someone falls asleep.
+    func remotePause() {
+        let onHeadphones = sessionObserver.currentRoute != .builtInSpeaker
+        pause(cause: onHeadphones ? .headphones : .person)
+    }
+
+    /// The sound stops and the night stays open. `held`: an interruption
+    /// took it, so it is not the end of the night: a trial that ran out
+    /// meanwhile waits until the session really ends.
+    private func stopSound(cause: PauseCause, fade: TimeInterval, held: Bool) {
+        guard isPlaying else { return }
+        heldByInterruption = held
+        endPlayback(engineAction: .stop(fadeOut: fade), canDowngrade: !held)
+        pauseCause = cause
+        pausedAt = now()
+        scheduleExpiry()
+    }
+
+    // MARK: The night as a session
+
+    /// A night is open while it plays and, once paused, for as long as
+    /// `SessionPause` allows. One rule for every pause.
+    private func nightIsOpen(at now: Date) -> Bool {
+        if isPlaying { return true }
+        guard pauseCause != nil, let pausedAt else { return false }
+        return !SessionPause.isOver(pausedAt: pausedAt, now: now)
+    }
+
+    /// A night that is neither playing nor paused within its twenty
+    /// minutes is over, whether or not anything noticed yet.
+    private func beginNewNight() {
+        cancelExpiry()
+        pauseCause = nil
+        pausedAt = nil
+        heldByInterruption = false
+        sessionRoute = nil
+        lostOutputAt = nil
+        sessionLevel = 1
+        sessionEndedAt = nil
+        timer.reset()
+        nowPlaying.resetElapsed()
+    }
+
+    /// The night is over: its timer ran out, it stayed paused too long, the
+    /// morning ended it, or Small Hours finished. Nothing resumes it. The
+    /// page goes back to silence, not to "Paused".
+    private func closeNight(endedAt: Date?) {
+        cancelExpiry()
+        clearSpeakerOffer()
+        interruptions.cancel()
+        heldByInterruption = false
+        pauseCause = nil
+        pausedAt = nil
+        sessionRoute = nil
+        lostOutputAt = nil
+        timer.reset()
+        // A timer a Shortcut ran for one night gives way to the stored one.
+        if timer.choice != storedTimer { timer.choose(storedTimer) }
+        let wasSmallHours = isSmallHours
+        if wasSmallHours {
+            smallHours.end()
+            engine.setBreathing(.off)
+            isSmallHours = false
+            // Small Hours is a night surface: what is behind it is the
+            // night page, not the Night screen it may have come from.
+            isBedtime = false
+            cancelDimming()
+            beginNightSession()
+        }
+        // When Small Hours ends, nothing is said about it (C60).
+        sessionEndedAt = wasSmallHours ? nil : endedAt
+        nowPlaying.update(isPlaying: false, title: nowPlayingTitle)
+        purchases.refreshAccess(canDowngrade: !isPlaying)
+    }
+
+    /// The session level times what the blanket leaves of it.
+    private var effectiveMaster: Float {
+        sessionLevel * (isSmallHours ? 1 : timer.blanketGain)
+    }
+
+    /// The vertical axis of Night and Small Hours (C51). Smoothed by the
+    /// engine; never the system volume, never stored.
+    func setSessionLevel(_ level: Float) {
+        let next = min(1, max(Self.minimumSessionLevel, level))
+        guard next != sessionLevel else { return }
+        sessionLevel = next
+        engine.setMaster(effectiveMaster, over: 0)
+    }
+
+    // MARK: Timer
+
+    /// The person's choice in the timer sheet: stored, and counting at once
+    /// when the night is playing. The whole timer is free (C03): nothing
+    /// here can ask for Pro.
+    func chooseTimer(_ choice: TimerChoice) {
+        storedTimer = choice
+        if let data = try? JSONEncoder().encode(choice) {
+            defaults.set(data, forKey: Self.timerKey)
+        }
+        defaults.removeObject(forKey: Self.legacyTimerKey)
+        applyTimer(choice)
+    }
+
+    /// Tonight's timer, stored or not.
+    private func applyTimer(_ choice: TimerChoice) {
+        let wasDipped = timer.blanketGain < 1
+        let wasFading = timer.isFading
+        timer.choose(choice)
+        guard isPlaying, !isSmallHours else { return }
+        timer.start(risingOver: Self.fadeReturn)
+        if wasDipped {
+            // The blanket that had eased the level down is gone.
+            engine.setMaster(effectiveMaster, over: TimerMath.blanketDipRamp)
+        }
+        if wasFading || timer.isFading {
+            // A final fade that was under way belonged to the timer that is
+            // gone: the level goes to where the new one stands.
+            engine.fade(to: timer.fadeLevel, over: Self.fadeReturn)
+            if wasFading, !timer.isFading { resumeBreathingIfEnabled() }
+        }
+    }
+
+    /// "Until I sleep" with this length, or no timer. A length outside the
+    /// range is not a sale (C03): it is ignored.
     func selectTimer(minutes: Int?) {
-        if let minutes, !AccessPolicy.timerIsIncluded(minutes: minutes, hasFullAccess: purchases.hasFullAccess) {
+        guard let minutes else {
+            chooseTimer(storedTimer.with(mode: .off))
             return
         }
-        timer.choose(minutes)
-        if let minutes {
-            defaults.set(minutes, forKey: timerKey)
-            if isPlaying {
-                timer.start()
-            }
-        } else {
-            defaults.removeObject(forKey: timerKey)
-        }
+        guard AccessPolicy.timerIsIncluded(minutes: minutes, hasFullAccess: purchases.hasFullAccess) else { return }
+        var choice = storedTimer.with(mode: .untilAsleep)
+        choice.minutes = minutes
+        chooseTimer(choice)
     }
 
-    /// Drops a Pro-only timer if the entitlement is gone, and stops playback
-    /// when that timer was already counting.
+    /// "+15 min" is there to be pressed: a timer is chosen and its count
+    /// exists (running or paused). It never creates one (C47).
+    var canExtendTimer: Bool {
+        !isSmallHours && timer.hasCount
+    }
+
+    /// "+15 min". Free at any hour and without a ceiling. Inside the final
+    /// fade it calls the fade off and the level comes back.
+    @discardableResult
+    func extendTimer() -> Bool {
+        guard canExtendTimer else { return false }
+        return timer.extend()
+    }
+
+    /// The timer has no Pro length any more (C03), so there is nothing to
+    /// take away when access changes. Kept for the page, which still calls
+    /// it; a stored length outside the range is the only thing it drops.
     func clampTimerToEntitlement() {
         guard let minutes = timer.selectedMinutes else { return }
         guard !AccessPolicy.timerIsIncluded(minutes: minutes, hasFullAccess: purchases.hasFullAccess) else { return }
         let wasCounting = timer.remaining != nil
         selectTimer(minutes: nil)
         if wasCounting {
-            pause(resumeLater: false)
+            pause()
         }
+    }
+
+    /// The stored choice, from either format. Nil when the person never
+    /// chose: the first-use timer then stands in.
+    nonisolated static func storedTimer(defaults: UserDefaults) -> TimerChoice? {
+        if let data = defaults.data(forKey: timerKey),
+           let choice = try? JSONDecoder().decode(TimerChoice.self, from: data) {
+            // Through the initialiser, which keeps every field in range.
+            return TimerChoice(
+                mode: choice.mode,
+                minutes: choice.minutes,
+                endHour: choice.endHour,
+                endMinute: choice.endMinute
+            )
+        }
+        if let minutes = defaults.object(forKey: legacyTimerKey) as? Int,
+           (1...AccessPolicy.maxTimerMinutes).contains(minutes) {
+            return .untilAsleep(minutes)
+        }
+        return nil
     }
 
     func saveCurrent(name: String) -> SaveMixResult {
@@ -449,6 +778,7 @@ final class MixerModel: ObservableObject {
     /// left to hear, it does not start a silent night.
     @discardableResult
     func playHouseMix(_ mix: HouseMix) -> IntentOutcome {
+        leaveSmallHoursForTheMix()
         let load = loadHouseMix(mix)
         if isPlaying { return .started }
         if load.isSilent { return .nothingToPlay }
@@ -463,6 +793,7 @@ final class MixerModel: ObservableObject {
     /// no side effects.
     @discardableResult
     func playSound(_ sound: SoundID) -> IntentOutcome {
+        leaveSmallHoursForTheMix()
         purchases.refreshAccess(canDowngrade: !isPlaying)
         guard AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess) else {
             return .needsPro
@@ -484,8 +815,9 @@ final class MixerModel: ObservableObject {
         return startOrUpdate()
     }
 
-    /// Length the timer Shortcut runs: the one asked for, else the one
-    /// already chosen in the app, else `fallbackTimerMinutes`.
+    /// Length the timer Shortcut runs: the one asked for, else the length
+    /// already chosen in the app, else `fallbackTimerMinutes` (the app's
+    /// timer is off, or a blanket).
     func timerMinutes(requested: Int?) -> Int {
         requested ?? timer.selectedMinutes ?? Self.fallbackTimerMinutes
     }
@@ -497,6 +829,7 @@ final class MixerModel: ObservableObject {
     /// fallback) runs tonight and the stored choice is not touched.
     @discardableResult
     func startTimer(minutes requested: Int?) -> IntentOutcome {
+        leaveSmallHoursForTheMix()
         if let refusal = armTimer(minutes: requested) { return refusal }
         if isPlaying { return .started }
         play()
@@ -516,8 +849,11 @@ final class MixerModel: ObservableObject {
         if requested != nil {
             selectTimer(minutes: minutes)
         } else {
-            timer.choose(minutes)
-            if isPlaying { timer.start() }
+            // For tonight only: the stored choice comes back when this
+            // night is over.
+            var tonight = timer.choice.with(mode: .untilAsleep)
+            tonight.minutes = minutes
+            applyTimer(tonight)
         }
         return nil
     }
@@ -525,17 +861,18 @@ final class MixerModel: ObservableObject {
     /// Shortcuts: stop. Also cancels a resume that was waiting for the end of
     /// an interruption. Reports when there was nothing to stop.
     func stopFromShortcut() -> IntentOutcome {
-        let wasActive = isPlaying || resumeAfterInterruption
-        pause(resumeLater: false)
+        let wasActive = isPlaying || heldByInterruption
+        pause()
         return wasActive ? .stopped : .nothingPlaying
     }
 
     /// Covers the interface with the Night screen, starting the current mix
     /// if it was paused. Night never chooses, changes or stores a sleep
-    /// timer: a timer the person already chose starts with playback as usual,
-    /// and with none chosen the bed plays until it is stopped. It does not
-    /// start a silent night, and it does not touch brightness or the idle
-    /// timer.
+    /// timer (C47): the one the person chose starts with playback as usual,
+    /// and "+15 min" only adds to a count that exists. It does not start a
+    /// silent night. The screen is dimmed after 60 s without a touch;
+    /// whether the iPhone stays awake is `bedtimeKeepsScreenAwake`, for the
+    /// view to apply.
     @discardableResult
     func enterBedtime() -> BedtimeEntryOutcome {
         switch BedtimeScreenPolicy.entry(isPlaying: isPlaying, isSilent: isSilent) {
@@ -547,6 +884,9 @@ final class MixerModel: ObservableObject {
             }
             guard isPlaying else { return .audioFailed }
             isBedtime = true
+            // Nothing is sold on the Night screen, at any hour.
+            if showPaywall { showPaywall = false }
+            noteBedtimeTouch()
             return .entered
         }
     }
@@ -555,7 +895,129 @@ final class MixerModel: ObservableObject {
     func leaveBedtime() {
         guard isBedtime else { return }
         isBedtime = false
+        cancelDimming()
         beginNightSession()
+    }
+
+    /// A touch on the Night screen (or on Small Hours): it is drawn at full
+    /// ink again and the 60 s start over.
+    func noteBedtimeTouch() {
+        bedtimeTouchedAt = now()
+        if isBedtimeDimmed { isBedtimeDimmed = false }
+        dimTimer?.invalidate()
+        dimTimer = schedule(after: BedtimeScreenPolicy.dimDelay) { [weak self] in
+            self?.refreshBedtimeDimming()
+        }
+    }
+
+    /// Dims the Night screen once its 60 s are up. Called by its own timer;
+    /// a test moves the clock and calls it.
+    func refreshBedtimeDimming() {
+        guard isBedtime || isSmallHours, let bedtimeTouchedAt else { return }
+        let dimmed = BedtimeScreenPolicy.isDimmed(lastTouch: bedtimeTouchedAt, now: now())
+        if isBedtimeDimmed != dimmed { isBedtimeDimmed = dimmed }
+    }
+
+    private func cancelDimming() {
+        dimTimer?.invalidate()
+        dimTimer = nil
+        bedtimeTouchedAt = nil
+        if isBedtimeDimmed { isBedtimeDimmed = false }
+    }
+
+    /// "Keep screen on" (C46). Stored.
+    func setKeepScreenOn(_ value: KeepScreenOn) {
+        guard keepScreenOn != value else { return }
+        keepScreenOn = value
+        defaults.set(value.rawValue, forKey: Self.keepScreenOnKey)
+    }
+
+    /// Whether the Night screen should hold the iPhone awake right now
+    /// (`isIdleTimerDisabled`). The view asks with the battery state it
+    /// reads; the model never touches the idle timer itself.
+    func bedtimeKeepsScreenAwake(isCharging: Bool) -> Bool {
+        (isBedtime || isSmallHours)
+            && BedtimeScreenPolicy.keepsScreenAwake(keepScreenOn, isCharging: isCharging)
+    }
+
+    // MARK: Small Hours
+
+    /// Starts Small Hours (C05, C27, C60): the fixed recipe, for everyone.
+    /// Whatever night was open is over; the person's mix, its levels and the
+    /// timer they chose are not touched, no trial starts and nothing is
+    /// sold. It never refuses for want of Pro, so the answer is `.started`
+    /// or `.failed`.
+    @discardableResult
+    func startSmallHours() -> IntentOutcome {
+        startIfNeeded()
+        interruptions.cancel()
+        heldByInterruption = false
+        audioError = nil
+        if isSmallHours {
+            // Asked for again: the twenty minutes start over.
+            smallHours.end()
+        } else if isPlaying {
+            // The mix gives way without stopping the engine: the gains
+            // cross over under the same envelope.
+            endPlayback(engineAction: .none, canDowngrade: true)
+        }
+        if !isSmallHours { closeNight(endedAt: nil) }
+        isPlaying = false
+        pauseCause = nil
+        pausedAt = nil
+        isSmallHours = true
+        if showPaywall { showPaywall = false }
+        noteBedtimeTouch()
+        guard startSound(asked: true) else {
+            closeNight(endedAt: nil)
+            noteStartFailure()
+            return .failed
+        }
+        return .started
+    }
+
+    /// The person leaves Small Hours before its end. The sea leaves like
+    /// any pause and the page is the night page.
+    func endSmallHours() {
+        guard isSmallHours else { return }
+        interruptions.cancel()
+        heldByInterruption = false
+        if isPlaying {
+            endPlayback(engineAction: .stop(fadeOut: PlaybackFade.pause), canDowngrade: true)
+        }
+        closeNight(endedAt: nil)
+    }
+
+    /// A request to play the mix (a Shortcut) while Small Hours has the
+    /// engine: the recipe gives way.
+    private func leaveSmallHoursForTheMix() {
+        guard isSmallHours else { return }
+        if isPlaying {
+            endPlayback(engineAction: .none, canDowngrade: true)
+        }
+        closeNight(endedAt: nil)
+    }
+
+    private func bindSmallHours() {
+        smallHours.onTide = { [weak self] parameters in
+            guard let self else { return }
+            // The tide of Small Hours plays for everyone (C05).
+            guard AccessPolicy.breathingIsIncluded(
+                hasFullAccess: self.purchases.hasFullAccess,
+                inSmallHours: true
+            ) else { return }
+            self.engine.setBreathing(parameters)
+        }
+        smallHours.onFade = { [weak self] seconds in
+            self?.engine.fadeOut(over: seconds)
+        }
+        smallHours.onComplete = { [weak self] in
+            guard let self else { return }
+            // When it ends, nothing happens (C60): no sound, no notice.
+            self.engine.stop(fadeOut: 0.05)
+            self.isPlaying = false
+            self.closeNight(endedAt: nil)
+        }
     }
 
     private func startOrUpdate() -> IntentOutcome {
@@ -571,6 +1033,8 @@ final class MixerModel: ObservableObject {
     /// Outside the app the mix goes by the title the page shows, so a
     /// trimmed mix says what is not playing there too.
     var nowPlayingTitle: String {
+        // Small Hours is not the mix: it goes by its own name.
+        if isSmallHours { return Localized.string("madrugada.titulo") }
         if let loadedMixName, !loadedMixName.isEmpty {
             return loadedMixName
         }
@@ -597,6 +1061,8 @@ final class MixerModel: ObservableObject {
         guard isPlaying else { return }
         engine.updateGains(currentGains())
         nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
+        // The tide of Small Hours does not depend on access (C05).
+        guard !isSmallHours else { return }
         if !breathingIsIncluded {
             breathing.end()
         } else if breathing.settings.isEnabled, !breathing.isActive {
@@ -637,7 +1103,8 @@ final class MixerModel: ObservableObject {
             oceanBeforeTide = nil
             writeLevel(.ocean, previous)
         }
-        guard isPlaying else { return }
+        // Small Hours has its own tide: the switch is armed for the mix.
+        guard isPlaying, !isSmallHours else { return }
         if enabled {
             breathing.begin()
         } else {
@@ -702,18 +1169,22 @@ final class MixerModel: ObservableObject {
         case none
     }
 
-    /// Every way playback ends goes through here: user pause, timer
-    /// completion, media-services reset and a failed start. It stops the
-    /// guide, pauses the timer, updates Now Playing and, when the session is
-    /// really over (`canDowngrade`), lets a trial that ran out while the bed
-    /// was playing finally apply.
+    /// Every way the sound stops goes through here: a pause, an
+    /// interruption, the end of the timer, a media-services reset. It stops
+    /// the guide, pauses the timer (or the clock of Small Hours), updates
+    /// Now Playing and, when the session is really over (`canDowngrade`),
+    /// lets a trial that ran out while the bed was playing finally apply.
     private func endPlayback(engineAction: EngineAction, canDowngrade: Bool) {
         if case .stop(let seconds) = engineAction {
             engine.stop(fadeOut: seconds)
         }
         isPlaying = false
-        timer.pause()
-        breathing.end()
+        if isSmallHours {
+            smallHours.pause()
+        } else {
+            timer.pause()
+            breathing.end()
+        }
         nowPlaying.update(isPlaying: false, title: nowPlayingTitle)
         purchases.refreshAccess(canDowngrade: canDowngrade)
     }
@@ -723,60 +1194,303 @@ final class MixerModel: ObservableObject {
             self?.engine.fadeOut(over: seconds)
             self?.breathing.release(over: seconds)
         }
+        timer.onFadeCancelled = { [weak self] in
+            guard let self else { return }
+            // "+15 min" inside the final fade: the level comes back, and the
+            // tide with it if its window is still open.
+            self.engine.fade(to: 1, over: Self.fadeReturn)
+            self.resumeBreathingIfEnabled()
+        }
+        timer.onBlanketDip = { [weak self] _, ramp in
+            guard let self else { return }
+            // The timer has already taken the dip into `blanketGain`.
+            self.engine.setMaster(self.effectiveMaster, over: ramp)
+        }
         timer.onComplete = { [weak self] in
             guard let self else { return }
             self.endPlayback(engineAction: .stop(fadeOut: 0.01), canDowngrade: true)
             // The night is over: the page is silent again, not paused.
-            self.pauseCause = nil
+            self.closeNight(endedAt: self.now())
         }
     }
 
-    /// The output was taken or went away. While playing it is a pause with
-    /// the fade of its cause. During the tail of a pause already under way
-    /// (the person's own lasts 1.5 s) the tail is cut to that same short
-    /// fade, so the rest of it is not heard from the speaker.
-    private func outputTaken(resumeLater: Bool, cause: PauseCause) {
-        let wasPlaying = isPlaying
-        pause(resumeLater: resumeLater, cause: cause)
-        if !wasPlaying, engine.isStopping {
-            engine.stop(fadeOut: cause.fade)
+    // MARK: Interruptions (C48)
+
+    /// The system took the output. While playing it is a pause with a short
+    /// fade and the night is held: `InterruptionPolicy` says what happens
+    /// when it ends. During the tail of a pause already under way (the
+    /// person's own lasts 1.5 s) the tail is cut to that same short fade.
+    private func interruptionBegan(_ kind: InterruptionKind) {
+        if kind == .routeDisconnected {
+            // The system says the output went away. That is `RoutePolicy`'s
+            // to answer: it pauses and makes its offer, and what
+            // `InterruptionPolicy` would say of it (stay paused, over after
+            // twenty minutes) is what a lost output gets anyway. Under an
+            // interruption already open, `outputLost` adds it to the tracker.
+            outputLost()
+            return
         }
+        let wasPlaying = isPlaying
+        let known: InterruptionKind = callInProgress ? .call : kind
+        interruptions.began(known, wasPlaying: wasPlaying)
+        if wasPlaying {
+            stopSound(cause: known == .call ? .call : .system, fade: PlaybackFade.interruption, held: true)
+        } else if engine.isStopping {
+            engine.stop(fadeOut: PlaybackFade.interruption)
+        }
+    }
+
+    /// The interruption is over, or the app is in front again with one that
+    /// never closed. One table decides (`InterruptionPolicy`): outside the
+    /// morning window the night resumes with a three second fade; inside it
+    /// the night is over; a lost output stays paused. A resume still has to
+    /// pass the route gate: never by itself on another output.
+    private func interruptionEnded() {
+        guard interruptions.isOpen else { return }
+        let wasHeld = heldByInterruption
+        let outcome = interruptions.ended(fixedEnd: isSmallHours ? nil : timer.fixedEnd)
+        heldByInterruption = false
+        switch outcome {
+        case .resume(let fadeIn):
+            let current = sessionObserver.currentRoute
+            if wasHeld, !isPlaying,
+               RoutePolicy.mayResumeUnasked(pausedOn: sessionRoute ?? current, current: current) {
+                // If it does not start (something else still holds the
+                // output), the night stays paused and says nothing.
+                startSound(asked: false, fadeIn: fadeIn)
+            }
+        case .endSession:
+            if !isPlaying { closeNight(endedAt: pausedAt) }
+        case .stayPaused:
+            break
+        }
+        if !isPlaying {
+            // Paused after all: a trial that ran out meanwhile applies, and
+            // the twenty minutes of `SessionPause` count from the pause.
+            purchases.refreshAccess(canDowngrade: true)
+            if pausedAt != nil { scheduleExpiry() }
+        }
+    }
+
+    private func callChanged(_ inCall: Bool) {
+        callInProgress = inCall
+        guard inCall, interruptions.isOpen else { return }
+        // The call observer may speak after the interruption began.
+        interruptions.note(.call)
+        if pauseCause == .system { pauseCause = .call }
+    }
+
+    // MARK: Route (C49)
+
+    private func routeState(at now: Date) -> RouteState {
+        let current = sessionObserver.currentRoute
+        return RouteState(
+            isPlaying: isPlaying,
+            sessionRoute: sessionRoute ?? current,
+            currentRoute: current,
+            lostOutputAt: lostOutputAt,
+            appIsActive: appIsActive,
+            master: sessionLevel,
+            heldByInterruption: heldByInterruption
+        )
+    }
+
+    /// The output in use went away. The night pauses with a fade short
+    /// enough not to be heard on the speaker the system falls back to, and
+    /// it never plays again by itself there: "Keep playing on speaker" is
+    /// offered for a minute.
+    private func outputLost() {
+        let now = now()
+        // The system may say it twice (an interruption and a route change).
+        guard isPlaying || lostOutputAt == nil else { return }
+        guard case .pause(let fadeOut, let offerUntil) = RoutePolicy.action(
+            for: .outputLost,
+            state: routeState(at: now),
+            now: now
+        ) else {
+            // Nothing was playing: only the tail of a pause, cut short.
+            if engine.isStopping { engine.stop(fadeOut: PlaybackFade.lostOutput) }
+            return
+        }
+        if interruptions.isOpen { interruptions.note(.routeDisconnected) }
+        lostRoute = sessionRoute
+        if isPlaying {
+            stopSound(cause: .lostOutput, fade: fadeOut, held: false)
+        } else {
+            // Under an open interruption: silent already, and the loss is
+            // remembered. Nothing plays by itself while it is open.
+            pauseCause = .lostOutput
+        }
+        lostOutputAt = now
+        offerSpeaker(until: offerUntil)
+    }
+
+    /// An output appeared. The night resumes unasked only when it is the
+    /// output it was playing on and the app is in front; twenty minutes
+    /// after the loss it is over instead.
+    private func outputAvailable() {
+        let now = now()
+        switch RoutePolicy.action(for: .outputAvailable, state: routeState(at: now), now: now) {
+        case .resume(let fadeIn, _):
+            startSound(asked: false, fadeIn: fadeIn)
+        case .endSession:
+            closeNight(endedAt: pausedAt)
+        case .none, .pause, .startNewSession:
+            routeChanged()
+        }
+    }
+
+    /// The route changed under a night that plays: the engine follows the
+    /// hardware rate and the night is on that output from now on.
+    private func routeChanged() {
+        guard isPlaying else { return }
+        try? engine.retargetSampleRateIfNeeded(gains: currentGains())
+        sessionRoute = sessionObserver.currentRoute
+    }
+
+    /// "Keep playing on speaker": the explicit way on after the output went
+    /// away (C49). It is a Play the person asked for, so the level is capped
+    /// at `RoutePolicy.speakerMasterCap` when the speaker is what is left.
+    func continueOnSpeaker() {
+        play()
+    }
+
+    private func offerSpeaker(until: Date?) {
+        offerTimer?.invalidate()
+        offerTimer = nil
+        if speakerOfferUntil != until { speakerOfferUntil = until }
+        guard let until else { return }
+        offerTimer = schedule(after: until.timeIntervalSince(now())) { [weak self] in
+            self?.refreshSpeakerOffer()
+        }
+    }
+
+    private func clearSpeakerOffer() {
+        offerSpeaker(until: nil)
+    }
+
+    /// Withdraws the offer once its minute is up, or when the speaker is no
+    /// longer what is left. Called by its own timer and when the app comes
+    /// forward; a test moves the clock and calls it.
+    func refreshSpeakerOffer() {
+        guard speakerOfferUntil != nil else { return }
+        let now = now()
+        if !RoutePolicy.speakerOfferIsVisible(state: routeState(at: now), now: now) {
+            clearSpeakerOffer()
+        }
+    }
+
+    // MARK: A pause that lasts (SessionPause)
+
+    private func scheduleExpiry() {
+        cancelExpiry()
+        guard let pausedAt else { return }
+        let wait = SessionPause.longest - now().timeIntervalSince(pausedAt)
+        expiryTimer = schedule(after: max(0, wait)) { [weak self] in
+            self?.expireNightIfOver()
+        }
+    }
+
+    private func cancelExpiry() {
+        expiryTimer?.invalidate()
+        expiryTimer = nil
+    }
+
+    /// A night paused for twenty minutes is over, whatever paused it. An
+    /// interruption that is still open is not judged here: a call never
+    /// ends the night, however long, and `InterruptionPolicy` decides when
+    /// it closes. Called by its own timer and when the app comes forward;
+    /// a test moves the clock and calls it.
+    func expireNightIfOver() {
+        guard !isPlaying, pauseCause != nil, let pausedAt, !interruptions.isOpen else { return }
+        guard SessionPause.isOver(pausedAt: pausedAt, now: now()) else { return }
+        closeNight(endedAt: pausedAt)
+    }
+
+    // MARK: The app comes and goes
+
+    /// The scene became active. An interruption that never got its end is
+    /// closed here, unless something still holds the output; a night that
+    /// stayed paused too long is over; and the night page, which no clock
+    /// ends while it is looked at (C40), gives way once its night is over
+    /// and the app is opened by day.
+    func appDidBecomeActive() {
+        appIsActive = true
+        if interruptions.isOpen, !callInProgress, !sessionObserver.isOtherAudioPlaying {
+            interruptionEnded()
+        }
+        expireNightIfOver()
+        refreshSpeakerOffer()
+        refreshBedtimeDimming()
+        let now = now()
+        if isNightSession, !isBedtime, !isSmallHours, !nightIsOpen(at: now), !heldByInterruption,
+           !NightWindow.contains(now, calendar: calendar) {
+            isNightSession = false
+        }
+        closeSaleIfNight()
+    }
+
+    /// The scene is no longer active: nothing resumes unasked from here.
+    func appDidResignActive() {
+        appIsActive = false
+    }
+
+    /// One-shot on the main run loop. With doubles for audio nothing is
+    /// scheduled: a test moves the clock and calls the refresh itself.
+    private func schedule(after seconds: TimeInterval, _ action: @escaping @MainActor () -> Void) -> Timer? {
+        guard audio.isLive else { return nil }
+        let timer = Timer(timeInterval: max(0, seconds), repeats: false) { _ in
+            MainActor.assumeIsolated {
+                action()
+            }
+        }
+        timer.tolerance = 1
+        RunLoop.main.add(timer, forMode: .common)
+        return timer
     }
 
     private func installSessionHandlers() {
-        sessionObserver.onInterruptionBegan = { [weak self] in
-            self?.outputTaken(resumeLater: true, cause: .system)
+        sessionObserver.onInterruptionBegan = { [weak self] kind in
+            self?.interruptionBegan(kind)
         }
-        sessionObserver.onInterruptionEnded = { [weak self] shouldResume in
-            guard let self else { return }
-            if shouldResume, self.resumeAfterInterruption {
-                self.play(userInitiated: false)
-            } else {
-                // The session is over after all: apply a pending trial end.
-                self.purchases.refreshAccess(canDowngrade: !self.isPlaying)
-            }
-            self.resumeAfterInterruption = false
+        sessionObserver.onInterruptionEnded = { [weak self] in
+            self?.interruptionEnded()
         }
-        sessionObserver.onHeadphonesUnplugged = { [weak self] in
-            self?.outputTaken(resumeLater: false, cause: .lostOutput)
+        sessionObserver.onCallChanged = { [weak self] inCall in
+            self?.callChanged(inCall)
+        }
+        sessionObserver.onOutputLost = { [weak self] in
+            self?.outputLost()
+        }
+        sessionObserver.onOutputAvailable = { [weak self] in
+            self?.outputAvailable()
         }
         sessionObserver.onRouteChange = { [weak self] in
-            guard let self, self.isPlaying else { return }
-            try? self.engine.retargetSampleRateIfNeeded(gains: self.currentGains())
+            self?.routeChanged()
         }
         sessionObserver.onMediaServicesReset = { [weak self] in
             guard let self else { return }
-            let shouldResume = self.isPlaying
+            let wasPlaying = self.isPlaying
             self.engine.invalidateGraph()
-            self.endPlayback(engineAction: .none, canDowngrade: !shouldResume)
-            if shouldResume {
-                self.play(userInitiated: false)
+            guard wasPlaying else { return }
+            // The same night, on a new graph. If it does not come back it
+            // stays paused, and the page says so.
+            self.endPlayback(engineAction: .none, canDowngrade: false)
+            self.pauseCause = .system
+            self.pausedAt = self.now()
+            if !self.startSound(asked: false) {
+                self.purchases.refreshAccess(canDowngrade: true)
+                self.scheduleExpiry()
             }
         }
         sessionObserver.start()
     }
 
     private func currentGains() -> SoundGains {
+        // Small Hours plays its recipe, for everyone: never the mix.
+        if isSmallHours {
+            return smallHours.gains(hasFullAccess: purchases.hasFullAccess)
+        }
         var gains = SoundGains.zero
         for sound in SoundID.allCases {
             let level = levels[sound] ?? 0

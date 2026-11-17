@@ -1,12 +1,5 @@
 import Foundation
 
-enum TimerMath {
-    /// Fade window: a quarter of the timer, clamped to 5...20 seconds.
-    static func fadeDuration(totalSeconds: TimeInterval) -> TimeInterval {
-        min(20, max(5, totalSeconds * 0.25))
-    }
-}
-
 enum TimeFormat {
     static func clock(_ interval: TimeInterval) -> String {
         let total = max(0, Int(interval.rounded(.up)))

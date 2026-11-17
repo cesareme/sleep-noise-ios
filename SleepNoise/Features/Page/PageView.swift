@@ -120,11 +120,16 @@ struct PageView: View {
             #endif
         }
         .onChange(of: scenePhase) { _, next in
-            guard next == .active else { return }
+            guard next == .active else {
+                model.appDidResignActive()
+                return
+            }
             // A trial that ran out is only applied while nothing is playing.
             purchases.refreshAccess(canDowngrade: !model.isPlaying)
-            // A Pro sheet left up before the night does not come back with it.
-            model.closeSaleIfNight()
+            // An interruption that never closed, a night paused too long,
+            // and a Pro sheet left up before the night, which does not come
+            // back with it.
+            model.appDidBecomeActive()
             clock += 1
         }
         .onChange(of: purchases.hasFullAccess) { _, _ in

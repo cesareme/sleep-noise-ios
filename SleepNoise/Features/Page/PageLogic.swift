@@ -89,8 +89,10 @@ enum PageStatus: Equatable {
     /// Play raised the fallback layer because nothing else would sound.
     case playingFallback(SoundID, percent: Int)
     case paused
-    /// Paused because the output went away.
+    /// Paused because the output went away, or from the headphones.
     case pausedHeadphones
+    /// Paused by a call (C48).
+    case pausedCall
     /// The engine did not start. The line is a button that tries again;
     /// `attempt` is 1, 2, or 3 and more.
     case error(attempt: Int)
@@ -130,7 +132,8 @@ enum PageStatus: Equatable {
         }
         if input.startFailures > 0 { return .error(attempt: min(3, input.startFailures)) }
         switch input.pauseCause {
-        case .lostOutput: return .pausedHeadphones
+        case .lostOutput, .headphones: return .pausedHeadphones
+        case .call: return .pausedCall
         case .person, .system: return .paused
         case nil: break
         }
@@ -179,6 +182,8 @@ enum PageStatus: Equatable {
             return localized("pagina.estado.pausa")
         case .pausedHeadphones:
             return localized("estado.pausa.auriculares")
+        case .pausedCall:
+            return localized("pagina.estado.pausa.llamada")
         case .error(let attempt):
             switch attempt {
             case ...1: return localized("pagina.error.inicio")

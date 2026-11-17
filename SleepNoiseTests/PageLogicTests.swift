@@ -141,6 +141,8 @@ final class PageLogicTests: XCTestCase {
         XCTAssertEqual(PageStatus.resolve(Input(pauseCause: .person)), .paused)
         XCTAssertEqual(PageStatus.resolve(Input(pauseCause: .system)), .paused)
         XCTAssertEqual(PageStatus.resolve(Input(pauseCause: .lostOutput)), .pausedHeadphones)
+        XCTAssertEqual(PageStatus.resolve(Input(pauseCause: .headphones)), .pausedHeadphones)
+        XCTAssertEqual(PageStatus.resolve(Input(pauseCause: .call)), .pausedCall)
 
         // The final fade outranks everything; whole minutes, never zero.
         XCTAssertEqual(
@@ -199,6 +201,7 @@ final class PageLogicTests: XCTestCase {
             (.playingFallback(.pink, percent: 40), "Playing · pink at 40", "Sonando · rosa a 40"),
             (.paused, "Paused", "En pausa"),
             (.pausedHeadphones, "Paused · headphones", "En pausa · auriculares"),
+            (.pausedCall, "Paused · call", "En pausa · llamada"),
             (.error(attempt: 1), "Couldn't start the sound. Tap to try again.",
              "No se ha podido iniciar el sonido. Toca para reintentar."),
             (.error(attempt: 2), "If it still won't play, close the app and open it again.",
@@ -324,7 +327,8 @@ final class PageLogicTests: XCTestCase {
             "mezcla.nombre.vacio", "pagina.estado.silencio", "pagina.estado.silencio.pro",
             "pagina.estado.sonando", "pagina.estado.sonando.funde", "pagina.estado.sonando.sin",
             "pagina.estado.sonando.defecto", "pagina.estado.fundiendo", "pagina.estado.pausa",
-            "estado.pausa.auriculares", "pagina.error.inicio", "pagina.error.inicio.2",
+            "estado.pausa.auriculares", "pagina.estado.pausa.llamada", "madrugada.titulo",
+            "pagina.error.inicio", "pagina.error.inicio.2",
             "pagina.error.inicio.3", "capas.todas", "capas.mas", "capas.tope", "barra.mezclas",
             "marea.titulo", "marea.estado.apagada.pro", "marea.estado.guiando.corto",
             "marea.estado.disolviendo", "temporizador.titulo", "temporizador.apagado",

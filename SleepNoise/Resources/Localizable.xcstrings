@@ -3056,6 +3056,42 @@
           }
         }
       }
+    },
+    "pagina.estado.pausa.llamada": {
+      "comment": "State line: paused by a call.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused · call"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En pausa · llamada"
+          }
+        }
+      }
+    },
+    "madrugada.titulo": {
+      "comment": "Name of Small Hours outside its own screen: Now Playing, Siri, Settings.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Small hours"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Madrugada"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
