@@ -12,6 +12,8 @@ import SwiftUI
 enum PageDebugState: String, CaseIterable {
     /// First use: the house mix as it loads, nothing playing.
     case rest
+    /// The same on a new install as it is: nothing bought, no trial.
+    case restFree
     /// Playing the first-use mix: two layers.
     case playingTwo
     /// Playing five layers: three rows and "and 2 more".
@@ -140,23 +142,130 @@ enum PageDebugState: String, CaseIterable {
     /// Back on the speaker, turned down to the cap: "Playing · at 40".
     case pageCapped
 
+    // The trial on the page, by day and in silence.
+    /// The trial has just started: "trial · 7 nights left".
+    case trialNight1
+    /// Two days in: "trial · 5 nights left".
+    case trialNight3
+    /// The last night: the word, and the sentence in the place of the state.
+    case trialNight7
+    /// The day it runs out: no night is left, so no word and no figure.
+    case trialLastDay
+    /// The trial is over: "always free", the note and "Got it".
+    case trialNight8
+    /// The trial running, with the app opened inside the night window:
+    /// the header says nothing.
+    case trialAtNight
+
+    // The Pro sheet over the page.
+    /// A new install: the price, "Start the trial · 7 nights" and the purchase.
+    case proOffer
+    /// The same while something is playing.
+    case proOfferPlaying
+    /// The same over Settings, which stays under it.
+    case proOfferSettings
+    /// The same over Layers, which stays under it.
+    case proOfferLayers
+    /// The trial is running or used up: the purchase alone.
+    case proTrial
+    /// The store has not answered yet: a dash and the purchase disabled.
+    case proLoading
+    /// The store does not answer.
+    case proUnavailable
+    /// The system sheet is up: "Buying…".
+    case proBuying
+    /// Ask to Buy: "Pending".
+    case proPending
+    /// It failed before any payment, or was cancelled.
+    case proFailed
+    /// It could not be confirmed.
+    case proUnconfirmed
+    /// "Looking…": the App Store is being asked.
+    case proRestoring
+    /// Restore found nothing: the longest line.
+    case proNothing
+    /// Just bought: "Thank you", held on screen.
+    case proThanks
+    /// Bought: the receipt.
+    case proReceipt
+    /// The receipt of a purchase shared by the family.
+    case proReceiptFamily
+    /// The receipt with the review link in its place (staged: the app has
+    /// no App Store id yet).
+    case proReceiptReview
+
+    // Settings over the page.
+    /// Without Pro, by day: the price on the Pro row.
+    case settings
+    /// The store has not answered: a dash on the Pro row.
+    case settingsLoading
+    /// Bought: the receipt line on the Pro row.
+    case settingsPro
+    /// Bought through the family.
+    case settingsFamily
+    /// Opened from the night page: one ink, and the Pro row is words.
+    case settingsNight
+    /// "What's not here".
+    case settingsNotHere
+    /// The end of Mixes: "Settings", its last row.
+    case mixesEnd
+
     var opensMixes: Bool {
         switch self {
         case .mixes, .mixesEmpty, .mixesSave, .mixesRename, .mixesDelete, .mixesFourth, .mixesNight,
-             .mixesNightFree:
+             .mixesNightFree, .mixesEnd:
             return true
         default: return false
         }
     }
 
-    /// Staged without access: the trial ran out and nothing was bought.
+    /// The Pro sheet is what the launch shows.
+    var opensPro: Bool {
+        switch self {
+        case .proOffer, .proOfferPlaying, .proOfferSettings, .proOfferLayers, .proTrial, .proLoading,
+             .proUnavailable, .proBuying, .proPending,
+             .proFailed, .proUnconfirmed, .proRestoring, .proNothing, .proThanks, .proReceipt,
+             .proReceiptFamily, .proReceiptReview:
+            return true
+        default: return false
+        }
+    }
+
+    var opensSettings: Bool {
+        switch self {
+        case .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNight, .settingsNotHere,
+             .proOfferSettings:
+            return true
+        default: return false
+        }
+    }
+
+    /// The trial as the stage leaves it: how much of it is used, or nil
+    /// for a launch without one.
+    var trialConsumed: TimeInterval? {
+        let day: TimeInterval = 86_400
+        switch self {
+        case .trialNight1: return 0
+        case .trialNight3, .trialAtNight, .proTrial: return 2 * day
+        case .trialNight7: return 6 * day
+        case .trialLastDay: return 6 * day + 18 * 3_600
+        case .trialNight8: return NightTrial.length + day
+        default: return nil
+        }
+    }
+
+    /// Staged without access: no trial and nothing bought.
     var isFreeTier: Bool {
         switch self {
         case .layersSix, .layersEnd, .tideLocked, .mixes, .mixesRename, .mixesDelete, .mixesFourth, .mixesTrimmed,
-             .mixesTrimmedLong, .mixesNightFree:
+             .mixesTrimmedLong, .mixesNightFree, .mixesEnd, .restFree,
+             .proOffer, .proOfferPlaying, .proOfferSettings, .proOfferLayers, .proLoading, .proUnavailable, .proBuying, .proPending, .proFailed,
+             .proUnconfirmed, .proRestoring, .proNothing, .proThanks,
+             .settings, .settingsLoading, .settingsNight, .settingsNotHere:
             return true
         default:
-            return false
+            // A staged trial is neither Pro nor a new install.
+            return trialConsumed != nil
         }
     }
 
@@ -199,7 +308,9 @@ enum PageDebugState: String, CaseIterable {
     /// Staged in the small hours, on the night page.
     var isNight: Bool {
         switch self {
-        case .night, .nightLayers, .nightTide, .timerNight, .tideNight, .mixesNight, .mixesNightFree: return true
+        case .night, .nightLayers, .nightTide, .timerNight, .tideNight, .mixesNight, .mixesNightFree,
+             .trialAtNight, .settingsNight:
+            return true
         default: return isNightScreen || isSmallHours
         }
     }
@@ -219,7 +330,7 @@ enum PageArguments {
 
     static var opensLayers: Bool {
         switch state {
-        case .layers, .layersSix, .layersCap, .layersEnd, .nightLayers: return true
+        case .layers, .layersSix, .layersCap, .layersEnd, .nightLayers, .proOfferLayers: return true
         default: return false
         }
     }
@@ -231,8 +342,12 @@ enum PageArguments {
         if state.opensTimer { return .timer }
         if state.opensTide { return .tide }
         if state.opensMixes { return .mixes }
+        if state.opensSettings { return .settings }
         return nil
     }
+
+    /// Mixes opens at the end of its content.
+    static var scrollsMixesToEnd: Bool { state == .mixesEnd }
 
     /// The timer sheet opens with the control of its mode unfolded.
     static var opensTimerControl: Bool {
@@ -326,6 +441,9 @@ enum PageStage {
     }
 
     private static let stageClock = Clock()
+    /// The store of the staged launch, for the states that need it moved
+    /// once the sheet is up.
+    private static var stageStore: ScriptedProStore?
 
     /// Midday on a fixed date, or 02:14 the next night, local time.
     static func clock(for state: PageDebugState) -> Date {
@@ -338,16 +456,65 @@ enum PageStage {
         return Calendar.current.date(from: components) ?? Date()
     }
 
+    /// The product a staged launch shows. The app itself never writes a
+    /// name or a price: these stand in for the App Store in the captures.
+    static let stagedProduct = ProProduct(
+        displayName: "SleepNoise Pro",
+        displayPrice: "29,99 €",
+        isFamilyShareable: true
+    )
+
     static func make(_ state: PageDebugState) -> (PurchaseManager, MixerModel) {
         let defaults = UserDefaults(suiteName: suiteName) ?? .standard
         defaults.removePersistentDomain(forName: suiteName)
-        let purchases = PurchaseManager(defaults: defaults)
-        if state.isFreeTier {
-            // The trial ran out long ago and nothing was bought.
-            let start = Date().addingTimeInterval(-30 * 86_400)
-            purchases.startTrialIfNeeded(now: start)
-            purchases.refreshAccess(now: start.addingTimeInterval(8 * 86_400), canDowngrade: true)
+        // A staged launch never touches the Keychain or the App Store: the
+        // trial lives in memory and the store answers what the stage says.
+        // Without access is a new install: no trial, nothing bought. With
+        // access is Pro bought, so the header stays empty.
+        let store = ScriptedProStore(product: stagedProduct)
+        let now = clock(for: state)
+        if !state.isFreeTier {
+            let isShared = state == .proReceiptFamily || state == .settingsFamily
+            // Bought the day before the capture.
+            let receipt = ProReceipt(purchaseDate: now.addingTimeInterval(-86_400), isFamilyShared: isShared)
+            store.entitlement = .entitled(receipt)
+            defaults.set(true, forKey: PurchaseManager.cacheKey)
+            defaults.set(receipt.purchaseDate, forKey: PurchaseManager.purchasedAtKey)
+            defaults.set(receipt.isFamilyShared, forKey: PurchaseManager.familySharedKey)
         }
+        switch state {
+        case .proLoading, .settingsLoading:
+            store.hangs = true
+        case .proUnavailable:
+            store.failsToLoad = true
+        case .proBuying:
+            store.holdsPurchase = true
+        case .proPending:
+            store.purchaseResult = .pending
+        case .proFailed:
+            store.purchaseResult = .failed
+        case .proUnconfirmed:
+            store.purchaseResult = .unconfirmed
+        case .proThanks:
+            store.purchaseResult = .purchased(ProReceipt(purchaseDate: now, isFamilyShared: false))
+        default:
+            break
+        }
+        let trialStorage = InMemoryTrialStorage()
+        if let consumed = state.trialConsumed {
+            // A trial that is used up is found over at this launch, and
+            // its note becomes due.
+            _ = trialStorage.createTrial(TrialRecord(
+                startedAt: now.addingTimeInterval(-consumed), lastSeen: now, consumed: consumed
+            ))
+        }
+        let purchases = PurchaseManager(
+            defaults: defaults,
+            trialStorage: trialStorage,
+            store: store,
+            now: now
+        )
+        stageStore = store
         if state != .nightEnter {
             // Only one capture is the first Night of the install.
             defaults.set(true, forKey: MixerModel.nightIntroKey)
@@ -357,9 +524,14 @@ enum PageStage {
         let model = MixerModel(purchases: purchases, defaults: defaults, now: { clock.date })
 
         switch state {
-        case .rest, .playingTwo, .layers, .error, .error2, .error3, .largeType,
+        case .rest, .restFree, .playingTwo, .layers, .error, .error2, .error3, .largeType,
              .timerRest, .tideRest, .tideLocked, .mixesEmpty, .mixesTrimmed, .mixesTrimmedLong,
              .pageSpeaker, .pageCapped,
+             .trialNight1, .trialNight3, .trialNight7, .trialLastDay, .trialNight8, .trialAtNight,
+             .proOffer, .proOfferPlaying, .proOfferSettings, .proOfferLayers, .proTrial, .proLoading, .proUnavailable, .proBuying, .proPending,
+             .proFailed, .proUnconfirmed, .proRestoring, .proNothing, .proThanks, .proReceipt,
+             .proReceiptFamily, .proReceiptReview,
+             .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNotHere,
              .nightEnter, .nightTimer, .nightDimmed, .nightFading, .nightPaused, .nightSpeaker,
              .nightLevel, .nightEnded, .nightError,
              .smallHours, .smallHoursPlain, .smallHoursWinding, .smallHoursPaused:
@@ -395,7 +567,7 @@ enum PageStage {
             model.beginNightSession()
         case .timer:
             model.selectTimer(minutes: 45)
-        case .nightLayers:
+        case .nightLayers, .settingsNight:
             model.beginNightSession()
         case .tide:
             model.setBreathingEnabled(true)
@@ -410,7 +582,7 @@ enum PageStage {
         case .layersEnd:
             // Thunder was saved at 20 while the trial lasted; it keeps it.
             setLevels(model, [.rain: 0.45, .wind: 0.25, .thunder: 0.2, .pink: 0.3])
-        case .mixes, .mixesRename, .mixesDelete, .mixesNight, .mixesNightFree:
+        case .mixes, .mixesRename, .mixesDelete, .mixesNight, .mixesNightFree, .mixesEnd:
             // The first of the person's mixes is the one that is loaded.
             if let hotel = saveMixes(model, count: 2) {
                 model.apply(hotel)
@@ -467,9 +639,41 @@ enum PageStage {
     static func didAppear(_ model: MixerModel) {
         guard let state = PageArguments.state else { return }
         switch state {
-        case .rest, .layersSix, .layersEnd, .timerRest, .timerHour, .timerLength, .tideRest, .tideLocked,
-             .mixesEmpty:
+        case .rest, .restFree, .layersSix, .layersEnd, .timerRest, .timerHour, .timerLength, .tideRest,
+             .tideLocked, .mixesEmpty,
+             .trialNight1, .trialNight3, .trialNight7, .trialLastDay, .trialNight8, .trialAtNight,
+             .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNight, .settingsNotHere:
             break
+        case .proOffer, .proTrial, .proLoading, .proUnavailable, .proReceipt, .proReceiptFamily,
+             .proReceiptReview:
+            model.offerPro()
+        case .proOfferPlaying:
+            if !model.isPlaying { model.play() }
+            model.offerPro()
+        case .proOfferSettings, .proOfferLayers:
+            Task { @MainActor in
+                // Once the sheet that stays under it is up.
+                try? await Task.sleep(for: .milliseconds(1200))
+                model.offerPro()
+            }
+        case .proBuying, .proPending, .proFailed, .proUnconfirmed, .proThanks:
+            model.offerPro()
+            let purchases = model.purchases
+            Task { @MainActor in
+                // Once the sheet is up and the store has given its price.
+                try? await Task.sleep(for: .milliseconds(1200))
+                await purchases.purchase()
+            }
+        case .proRestoring, .proNothing:
+            model.offerPro()
+            let purchases = model.purchases
+            let holds = state == .proRestoring
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(1200))
+                // "Looking…" lasts for as long as the App Store takes.
+                stageStore?.hangs = holds
+                await purchases.restore()
+            }
         case .mixesTrimmed:
             // "Sea and wind" without access: it plays without the ocean and
             // its name says so. Never a sheet.
@@ -550,7 +754,8 @@ enum PageStage {
         case .playingTwo, .playingFive, .night, .timer, .layers, .layersCap, .largeType,
              .nightLayers, .tide, .nightTide, .timerAsleep, .timerBlanket, .timerNight,
              .tideGuiding, .tideDescent, .tideNight,
-             .mixes, .mixesSave, .mixesRename, .mixesDelete, .mixesFourth, .mixesNight, .mixesNightFree:
+             .mixes, .mixesSave, .mixesRename, .mixesDelete, .mixesFourth, .mixesNight, .mixesNightFree,
+             .mixesEnd:
             if !model.isPlaying { model.play() }
         }
     }

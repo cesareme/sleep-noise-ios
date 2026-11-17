@@ -25,6 +25,15 @@ struct HairlineAction: View {
     var isEnabled = true
     /// A line under the row: why it is disabled, or what happened.
     var note: String?
+    /// The row above another primary row gives up its lower hairline: the
+    /// one between them belongs to the row below (the trial over the
+    /// purchase, whose rules are the accent).
+    var showsBottomRule = true
+    /// What VoiceOver reads instead of the title, its value and its hint.
+    /// Without a hint it reads the note.
+    var spokenTitle: String?
+    var spokenValue: String?
+    var hint: String?
     var action: () -> Void
 
     @Environment(\.accessibilityShowButtonShapes) private var buttonShapes
@@ -52,9 +61,13 @@ struct HairlineAction: View {
             }
             .buttonStyle(PressedFadeStyle())
             .disabled(!isEnabled)
-            .accessibilityHint(Text(verbatim: note ?? ""))
+            .accessibilityLabel(Text(verbatim: spokenTitle ?? title))
+            .accessibilityValue(Text(verbatim: spokenValue ?? ""))
+            .accessibilityHint(Text(verbatim: hint ?? note ?? ""))
             .overlay(alignment: .top) { rule }
-            .overlay(alignment: .bottom) { rule }
+            .overlay(alignment: .bottom) {
+                if showsBottomRule { rule }
+            }
             .animation(Motion.contentCurve, value: showsAccent)
             .animation(Motion.contentCurve, value: title)
 

@@ -127,276 +127,6 @@
         }
       }
     },
-    "paywall.title": {
-      "comment": "Paywall title",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "SleepNoise Pro"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "SleepNoise Pro"
-          }
-        }
-      }
-    },
-    "paywall.subtitle": {
-      "comment": "Paywall subtitle",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Everything for the night, generated on this device."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Todo para la noche, generado en este dispositivo."
-          }
-        }
-      }
-    },
-    "paywall.benefit.textures": {
-      "comment": "Pro benefit title",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "More sounds"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Más sonidos"
-          }
-        }
-      }
-    },
-    "paywall.benefit.textures.detail": {
-      "comment": "Pro benefit detail",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fan, ocean, thunder, campfire, brook and cabin."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ventilador, océano, trueno, hoguera, arroyo y cabina."
-          }
-        }
-      }
-    },
-    "paywall.benefit.mixes": {
-      "comment": "Pro benefit title",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unlimited mixes"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mezclas ilimitadas"
-          }
-        }
-      }
-    },
-    "paywall.benefit.mixes.detail": {
-      "comment": "Pro benefit detail",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Keep a blend for every room and season."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Guarda una mezcla para cada cuarto y cada estación."
-          }
-        }
-      }
-    },
-    "paywall.purchaseFormat": {
-      "comment": "Purchase button. %@ is the localized price.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unlock Pro — %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Desbloquear Pro — %@"
-          }
-        }
-      }
-    },
-    "paywall.purchaseUnavailable": {
-      "comment": "Shown when the product cannot be loaded",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pro is unavailable right now"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pro no está disponible ahora"
-          }
-        }
-      }
-    },
-    "paywall.restore": {
-      "comment": "Restore button",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Restore purchases"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Restaurar compras"
-          }
-        }
-      }
-    },
-    "paywall.active": {
-      "comment": "Shown to people who already purchased",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pro is active on this device."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pro está activo en este dispositivo."
-          }
-        }
-      }
-    },
-    "paywall.restored": {
-      "comment": "Restore succeeded",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pro restored."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pro restaurado."
-          }
-        }
-      }
-    },
-    "paywall.nothingToRestore": {
-      "comment": "Restore found nothing",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No purchases to restore."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No hay compras para restaurar."
-          }
-        }
-      }
-    },
-    "paywall.pending": {
-      "comment": "Ask to Buy",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Purchase is waiting for approval."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La compra está pendiente de aprobación."
-          }
-        }
-      }
-    },
-    "paywall.failed": {
-      "comment": "Purchase error",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The purchase didn't finish."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La compra no se completó."
-          }
-        }
-      }
-    },
-    "paywall.once": {
-      "comment": "Paywall footer",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "One payment. No account. No tracking."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Un solo pago. Sin cuenta. Sin rastreo."
-          }
-        }
-      }
-    },
     "common.cancel": {
       "comment": "Cancel",
       "extractionState": "manual",
@@ -433,24 +163,6 @@
         }
       }
     },
-    "common.close": {
-      "comment": "Close",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Close"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cerrar"
-          }
-        }
-      }
-    },
     "nowplaying.artist": {
       "comment": "Now Playing artist",
       "extractionState": "manual",
@@ -483,209 +195,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld por ciento"
-          }
-        }
-      }
-    },
-    "paywall.benefit.breath": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Breathing tide"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Marea respiratoria"
-          }
-        }
-      }
-    },
-    "paywall.trial.activeFormat": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Last day. Afterwards white, pink, brown, rain, wind and the whole timer stay free, and the mixes you saved are kept; saving more needs Pro."
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld days left. Afterwards white, pink, brown, rain, wind and the whole timer stay free, and the mixes you saved are kept; saving more needs Pro."
-                }
-              }
-            }
-          }
-        },
-        "es": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Último día. Después seguirán gratis blanco, rosa, marrón, lluvia, viento y el temporizador entero, y las mezclas que guardaste se conservan; guardar más necesita Pro."
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Quedan %lld días. Después seguirán gratis blanco, rosa, marrón, lluvia, viento y el temporizador entero, y las mezclas que guardaste se conservan; guardar más necesita Pro."
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "trial.chip.daysFormat": {
-      "comment": "Header chip during the trial.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Trial · last day"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Trial · %lld days"
-                }
-              }
-            }
-          }
-        },
-        "es": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Prueba · último día"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Prueba · %lld días"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "paywall.trial.notStartedFormat": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your %lld days start at the first Play. Afterwards white, pink, brown, rain, wind and the whole timer stay free, and the mixes you saved are kept; saving more needs Pro."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tus %lld días empiezan al primer Reproducir. Después seguirán gratis blanco, rosa, marrón, lluvia, viento y el temporizador entero, y las mezclas que guardaste se conservan; guardar más necesita Pro."
-          }
-        }
-      }
-    },
-    "paywall.trial.endedTitle": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trial over. Free stays free."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Se acabó la prueba. Lo gratis sigue."
-          }
-        }
-      }
-    },
-    "paywall.trial.endedDetail": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "White, pink, brown, rain, wind and the whole timer stay free. Your saved mixes are kept and come back whole with Pro."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Blanco, rosa, marrón, lluvia, viento y el temporizador entero siguen gratis. Tus mezclas guardadas se conservan y vuelven enteras con Pro."
-          }
-        }
-      }
-    },
-    "paywall.keepFormat": {
-      "comment": "Purchase button during the trial. Argument is the localized price.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Keep everything — %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Quédate con todo — %@"
-          }
-        }
-      }
-    },
-    "paywall.benefit.breath.detail": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The waves pace a slow breath, then let go."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "El oleaje marca una respiración lenta y luego suelta."
-          }
-        }
-      }
-    },
-    "paywall.trial.titleFormat": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld days of everything, no card"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld días con todo, sin tarjeta"
           }
         }
       }
@@ -4292,6 +3801,1134 @@
           "stringUnit": {
             "state": "translated",
             "value": "Baja un poco a los %lld min"
+          }
+        }
+      }
+    },
+    "pro.prueba.empezar": {
+      "comment": "Pro sheet: the only way the trial starts (C07).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start the trial · 7 nights"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empezar la prueba · 7 noches"
+          }
+        }
+      }
+    },
+    "pro.prueba.estado": {
+      "comment": "Page header while the trial runs. Small caps: lower case. The figure comes from the trial.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "trial · 1 night left"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "trial · %lld nights left"
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "prueba · queda 1 noche"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "prueba · quedan %lld noches"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pro.prueba.estado.ultima": {
+      "comment": "Page header on the last night of the trial.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "trial · last night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "prueba · última noche"
+          }
+        }
+      }
+    },
+    "pro.prueba.estado.gratis": {
+      "comment": "Page header for the first sessions after the trial.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "always free"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "gratis siempre"
+          }
+        }
+      }
+    },
+    "pro.comprar": {
+      "comment": "Pro sheet: the purchase. %@ is the price as StoreKit gives it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buy · %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comprar · %@"
+          }
+        }
+      }
+    },
+    "pro.comprar.sin_precio": {
+      "comment": "Pro sheet: the purchase while there is no product.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buy"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comprar"
+          }
+        }
+      }
+    },
+    "pro.restaurar": {
+      "comment": "Pro sheet: restore.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore purchase"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurar compra"
+          }
+        }
+      }
+    },
+    "pro.gracias": {
+      "comment": "Pro sheet: bought or restored.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thank you. Everything's open."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gracias. Todo abierto."
+          }
+        }
+      }
+    },
+    "pro.fallo": {
+      "comment": "Pro sheet: cancelled, or failed before any payment.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't complete. Nothing was charged."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se ha podido completar. No se ha cobrado nada."
+          }
+        }
+      }
+    },
+    "pro.fallo.sin_confirmar": {
+      "comment": "Pro sheet: the purchase could not be confirmed.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't confirm. If the App Store charged you, Restore purchase opens it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se ha podido confirmar. Si App Store te ha cobrado, Restaurar compra lo abre."
+          }
+        }
+      }
+    },
+    "pro.pendiente": {
+      "comment": "Pro sheet: Ask to Buy, waiting for approval.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for family approval. It will open on its own."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pendiente de aprobación familiar. Se abrirá solo cuando llegue."
+          }
+        }
+      }
+    },
+    "pro.sin_tienda": {
+      "comment": "Pro sheet: the store does not answer, with sound playing.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The store isn't responding. Nothing changes: it keeps playing."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La tienda no responde. Nada cambia: sigue sonando."
+          }
+        }
+      }
+    },
+    "pro.sin_tienda.silencio": {
+      "comment": "Pro sheet: the store does not answer, in silence.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The store isn't responding. Nothing changes."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La tienda no responde. Nada cambia."
+          }
+        }
+      }
+    },
+    "pro.restaurar.no": {
+      "comment": "Pro sheet: nothing to restore.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No purchase found for this Apple Account. If you bought with another one, sign in with it in the App Store."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay ninguna compra con esta cuenta de Apple. Si la hiciste con otra, inicia sesión con ella en App Store."
+          }
+        }
+      }
+    },
+    "pro.precio.cargando": {
+      "comment": "Pro sheet and Settings: in the place of the price until the store answers.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "—"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "—"
+          }
+        }
+      }
+    },
+    "pro.una_vez": {
+      "comment": "Pro sheet: under the price. The payment model, always there.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Once."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una vez."
+          }
+        }
+      }
+    },
+    "pro.precio": {
+      "comment": "Settings, Pro row, and VoiceOver: %@ is the price as the App Store gives it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · Once."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · Una vez."
+          }
+        }
+      }
+    },
+    "pro.pie": {
+      "comment": "Pro sheet: the headline under the price.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One payment. Forever, on every iPhone you own."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un solo pago. Para siempre, en todos tus iPhone."
+          }
+        }
+      }
+    },
+    "pro.con": {
+      "comment": "Pro sheet: section header in small caps.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "with pro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "con pro"
+          }
+        }
+      }
+    },
+    "pro.incluye.texturas": {
+      "comment": "Pro sheet, first row of \"with pro\". Never a count.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All textures"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todas las texturas"
+          }
+        }
+      }
+    },
+    "pro.incluye.texturas.detalle": {
+      "comment": "Pro sheet: the Pro textures by name, under \"All textures\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocean, fan, thunder, campfire, brook and cabin"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Océano, ventilador, trueno, hoguera, arroyo y cabina"
+          }
+        }
+      }
+    },
+    "pro.incluye.marea": {
+      "comment": "Pro sheet, row of \"with pro\": the tide.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tide"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marea"
+          }
+        }
+      }
+    },
+    "pro.incluye.mezclas": {
+      "comment": "Pro sheet, row of \"with pro\": saved mixes without a limit.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlimited mixes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mezclas sin límite"
+          }
+        }
+      }
+    },
+    "pro.familia": {
+      "comment": "Pro sheet, last row of \"with pro\": Family Sharing.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With your family"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En familia"
+          }
+        }
+      }
+    },
+    "pro.gratis": {
+      "comment": "Pro sheet: section header in small caps.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "always free"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "gratis siempre"
+          }
+        }
+      }
+    },
+    "pro.gratis.lista": {
+      "comment": "Pro sheet: what is free for good. The count of mixes is AccessPolicy.freeSavedMixLimit.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "White, pink, brown, rain and wind · the whole timer · three mixes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blanco, rosa, marrón, lluvia y viento · todo el temporizador · tres mezclas"
+          }
+        }
+      }
+    },
+    "pro.prueba.empezar.nota": {
+      "comment": "Pro sheet: what the trial is, in the column at the largest text sizes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lasts seven nights. Nothing is charged and no card is asked. When it ends, free stays free and your mixes are kept."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dura siete noches. No se cobra nada ni se pide tarjeta. Al acabar, lo gratis sigue gratis y tus mezclas se conservan."
+          }
+        }
+      }
+    },
+    "pro.comprando": {
+      "comment": "Pro sheet: the purchase action while the App Store works.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buying…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comprando…"
+          }
+        }
+      }
+    },
+    "pro.buscando": {
+      "comment": "Pro sheet: the restore action while the App Store is asked.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looking…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buscando…"
+          }
+        }
+      }
+    },
+    "pro.pendiente.boton": {
+      "comment": "Pro sheet: the purchase action while a purchase waits for approval.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pending"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pendiente"
+          }
+        }
+      }
+    },
+    "pro.resena": {
+      "comment": "Pro sheet, bought: the one link to the App Store review page.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write a review"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escribir una reseña"
+          }
+        }
+      }
+    },
+    "pro.ajustes.gracias": {
+      "comment": "Settings row and header of the receipt. %1$@ is the product name from the App Store, %2$@ the purchase date.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · thank you · %2$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · gracias · %2$@"
+          }
+        }
+      }
+    },
+    "pro.ajustes.familia": {
+      "comment": "Suffix of the receipt line when Pro comes through Family Sharing.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· with your family"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· en familia"
+          }
+        }
+      }
+    },
+    "comun.ahora_no": {
+      "comment": "Pro sheet: closes it and nothing else.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not now"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ahora no"
+          }
+        }
+      }
+    },
+    "comun.entendido": {
+      "comment": "Under the one-time note about the trial on the page.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Got it"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entendido"
+          }
+        }
+      }
+    },
+    "prueba.ultima": {
+      "comment": "Page, last night of the trial, by day and in silence: in the place of the state line until Play.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last night with everything. Tomorrow, free stays free."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Última noche con todo. Mañana, lo gratis sigue gratis."
+          }
+        }
+      }
+    },
+    "prueba.terminada": {
+      "comment": "Page, once, by day and in silence, after the trial ended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The trial is over. What you used is still here."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La prueba terminó. Lo que usaste sigue aquí."
+          }
+        }
+      }
+    },
+    "ax.prueba.cabecera": {
+      "comment": "VoiceOver label of the trial word on the page.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Trial, one night left"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Trial, %lld nights left"
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Prueba, queda una noche"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Prueba, quedan %lld noches"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ajustes.titulo": {
+      "comment": "Title of Settings and last row of Mixes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustes"
+          }
+        }
+      }
+    },
+    "ajustes.seccion.noche": {
+      "comment": "Settings: section header in small caps.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "noche"
+          }
+        }
+      }
+    },
+    "ajustes.pantalla": {
+      "comment": "Settings: whether the Night screen keeps the iPhone awake.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep screen on"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantener encendida"
+          }
+        }
+      }
+    },
+    "ajustes.pantalla.carga": {
+      "comment": "Keep screen on: the default.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "While charging"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mientras carga"
+          }
+        }
+      }
+    },
+    "ajustes.pantalla.siempre": {
+      "comment": "Keep screen on: always.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siempre"
+          }
+        }
+      }
+    },
+    "ajustes.pantalla.nunca": {
+      "comment": "Keep screen on: never.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Never"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nunca"
+          }
+        }
+      }
+    },
+    "ajustes.seccion.pro": {
+      "comment": "Settings: section header in small caps.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pro"
+          }
+        }
+      }
+    },
+    "ajustes.seccion.sobre": {
+      "comment": "Settings: section header in small caps. %@ is the name of the app.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "about %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sobre %@"
+          }
+        }
+      }
+    },
+    "ajustes.autor": {
+      "comment": "Settings: opens the person's mail, addressed to the author.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write to the author"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escribir al autor"
+          }
+        }
+      }
+    },
+    "lo_que_no_hay.titulo": {
+      "comment": "Settings row and title of its page.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What's not here"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lo que no hay"
+          }
+        }
+      }
+    },
+    "lo_que_no_hay.pie": {
+      "comment": "Footer of the Pro sheet, of Settings and of \"What's not here\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No subscription. No account. No tracking."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin suscripción. Sin cuenta. Sin rastreo."
+          }
+        }
+      }
+    },
+    "lo_que_no_hay.lista": {
+      "comment": "\"What's not here\": one fact per line, split at \" · \".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No subscription · No account · No tracking · No ads · No score · No streak · No tutorial"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin suscripción · Sin cuenta · Sin rastreo · Sin anuncios · Sin puntuación · Sin racha · Sin tutorial"
+          }
+        }
+      }
+    },
+    "lo_que_no_hay.resena": {
+      "comment": "\"What's not here\": written as a fact of today.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We won't ask you to rate it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No te pediremos que la valores."
+          }
+        }
+      }
+    },
+    "ax.comprar": {
+      "comment": "VoiceOver label of the purchase. %1$@ is the product name, %2$@ the price, both from the App Store.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buy %1$@, %2$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comprar %1$@, %2$@"
+          }
+        }
+      }
+    },
+    "ax.comprar.pista": {
+      "comment": "VoiceOver hint of the purchase.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One payment. Opens the App Store confirmation."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un solo pago. Abre la confirmación de App Store."
+          }
+        }
+      }
+    },
+    "ax.comprar.sin_precio": {
+      "comment": "VoiceOver label of the purchase while there is no price. %@ is the product name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buy %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comprar %@"
+          }
+        }
+      }
+    },
+    "ax.comprar.sin_precio.valor": {
+      "comment": "VoiceOver value of the purchase and of the price while there is none.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "price unavailable"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "precio no disponible"
+          }
+        }
+      }
+    },
+    "ax.comprar.sin_precio.pista": {
+      "comment": "VoiceOver hint of the purchase while the store does not answer.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The store isn't responding."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La tienda no responde."
+          }
+        }
+      }
+    },
+    "ax.prueba.empezar": {
+      "comment": "VoiceOver label of \"Start the trial · 7 nights\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start the seven-night trial"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empezar la prueba de siete noches"
+          }
+        }
+      }
+    },
+    "ax.prueba.empezar.pista": {
+      "comment": "VoiceOver hint of \"Start the trial · 7 nights\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing is charged and no card is asked."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se cobra nada ni se pide tarjeta."
+          }
+        }
+      }
+    },
+    "ax.resena.pista": {
+      "comment": "VoiceOver hint of \"Write a review\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the App Store."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre App Store."
+          }
+        }
+      }
+    },
+    "ax.autor.pista": {
+      "comment": "VoiceOver hint of \"Write to the author\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens your mail."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre tu correo."
           }
         }
       }

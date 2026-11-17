@@ -463,7 +463,7 @@ private struct GallerySheetSample: View {
 }
 
 #Preview("Gallery") {
-    let purchases = PurchaseManager()
+    let purchases = PurchaseManager(trialStorage: InMemoryTrialStorage(), store: ScriptedProStore())
     return SystemGallery(model: MixerModel(purchases: purchases))
 }
 #endif

@@ -28,8 +28,9 @@ Do these before submitting 1.0. The implementation in this repo does not replace
 ### Identity and binary
 
 - [ ] App ID `com.cesareme.sleepnoise` with In-App Purchase enabled.
-- [ ] Non-consumable `com.cesareme.sleepnoise.pro` created in App Store Connect, priced, and localized in English and Spanish. The display name and description should match the paywall (breathing tide, fan and ocean, unlimited mixes, timers past 60 minutes and custom). No StoreKit introductory offer and no subscription; the 7-day full-access period is a local flag disclosed on first launch, never call it a free trial in the IAP description.
-- [ ] A screenshot of the paywall uploaded for the in-app purchase review.
+- [ ] Non-consumable `com.cesareme.sleepnoise.pro` created in App Store Connect, priced, shared with the family, and localized in English and Spanish. The display name and description are the ones of `SleepNoise/Resources/SleepNoise.storekit` and match the Pro sheet: every texture (ocean, fan, thunder, campfire, brook and cabin), the tide and unlimited mixes. The timer is free in full and is not part of Pro. No StoreKit introductory offer and no subscription: the seven-night trial is local, starts only with "Start the trial · 7 nights" in the Pro sheet and involves no transaction, so the IAP description never calls it a free trial.
+- [ ] Fill `AppLinks.appStoreID` and `AppLinks.authorAddress` (`SleepNoise/Features/Pro/ProSheetLogic.swift`) once the app exists in App Store Connect and there is a public address. While they are empty the app shows neither "Write a review" on the receipt nor "Write to the author" in Settings, and nothing fails to warn about it. Capture Settings and the receipt again with both in place.
+- [ ] A screenshot of the Pro sheet uploaded for the in-app purchase review.
 - [ ] Version and build numbers match `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`.
 - [ ] Archive with a distribution certificate. Confirm `PrivacyInfo.xcprivacy` is inside the bundle.
 - [ ] Export compliance: the app sets `ITSAppUsesNonExemptEncryption` to false (HTTPS via StoreKit only, no custom crypto).
@@ -52,8 +53,8 @@ Do these before submitting 1.0. The implementation in this repo does not replace
 ### Review notes
 
 - [ ] Tell App Review that background audio is the product: a person presses Play and the noise continues with the screen locked. The app does not start audio by itself and does not play silence to stay resident.
-- [ ] Point at the Restore purchases button and the local `.storekit` file if they ask how to test Pro. Give a sandbox account only if they are not using StoreKit Testing.
-- [ ] Explain the trial: fresh installs get 7 days of everything, locally, with no transaction; the first-launch card states the duration, what stays free and the price. The header chip opens the paywall, where Pro can be bought at any time. To see the free tier, press Play once, stop, set the device date forward 8 days and bring the app back to the foreground while nothing is playing (a reinstall starts a new trial). There is no hidden switch.
+- [ ] Say where the purchase is and when: the Pro sheet only opens between 07:00 and 21:00 on the device's clock, by design (nothing is sold at night). By day it opens from **Mixes → Settings → Pro**, from the tide switch and from any Pro layer in **All layers**. "Restore purchase" is in that sheet. A reviewer whose device is inside the night window sees the Pro rows and no way in: say so in the notes, and see the open decision about restoring at night in `docs/agents/ESTADO.md`. Give a sandbox account only if they are not using StoreKit Testing.
+- [ ] Explain the trial: a fresh install is the free tier. Seven nights of everything start only when the person taps "Start the trial · 7 nights" in the Pro sheet, locally, with no transaction and no card; the line under the buttons states how long it lasts, that nothing is charged and what stays when it ends. Pro can be bought at any time from the same sheet. The trial is evaluated when a sound session starts: to see it end, start it, set the device date forward 8 days and press Play. Its state lives in the Keychain, so it runs once per device and a reinstall does not start a new one. There is no hidden switch.
 - [ ] Breathing tide is a sound feature, not a health feature: it paces the swell of the ocean to a slow breath. No HealthKit, no claims.
 - [ ] Mention that the Ring/Silent switch does not mute playback, because the session category is `.playback`.
 

@@ -82,6 +82,10 @@ final class MixerModel: ObservableObject {
     /// The Pro sheet is asked for. Only `offerPro()` raises it, and never at
     /// night.
     @Published private(set) var showPaywall = false
+    /// Goes up when the hour crosses a border of the night window with the
+    /// app open. Nothing reads its value: publishing it is what makes the
+    /// views read `canSell` again.
+    @Published private(set) var saleClock = 0
     /// Paused, and why. Nil at rest and once a night has ended.
     @Published private(set) var pauseCause: PauseCause?
     /// Starts that failed in a row, for the ladder of the error line.
@@ -201,6 +205,7 @@ final class MixerModel: ObservableObject {
     private var offerTimer: Timer?
     private var dimTimer: Timer?
     private var noteTask: Task<Void, Never>?
+    private var nightWindowWatch: Task<Void, Never>?
     /// The levels the loaded mix came with. Its title is worked out from
     /// these, not from the live levels, which the tide may have raised.
     private var loadedMixRecipe: [SoundID: Float]?
@@ -265,6 +270,7 @@ final class MixerModel: ObservableObject {
         bindTimer()
         bindBreathing()
         bindSmallHours()
+        bindAccess()
     }
 
     func startIfNeeded() {
@@ -278,6 +284,7 @@ final class MixerModel: ObservableObject {
             // never edits their list would never register any.
             SleepNoiseShortcuts.updateAppShortcutParameters()
         }
+        watchNightWindow()
         installSessionHandlers()
         nowPlaying.install(
             onPlay: { [weak self] in self?.play() },
@@ -371,12 +378,63 @@ final class MixerModel: ObservableObject {
     }
 
     /// A Pro sheet that was already up when the night began comes down: the
-    /// gate is not only for new requests. Called when the app comes forward
-    /// and when the night page begins.
+    /// gate is not only for new requests. Called when the app comes forward,
+    /// when the night page begins and when the hour reaches the night
+    /// window with the app open (`nightWindowChanged()`).
+    ///
+    /// A purchase that is already with the App Store is not pulled from
+    /// under its confirmation: the sheet waits for it and comes down after.
     func closeSaleIfNight() {
-        if showPaywall, !canSell {
+        if showPaywall, !canSell, purchases.activity != .purchasing {
             showPaywall = false
         }
+    }
+
+    /// "Buy" in the Pro sheet. It passes the same gate as the sheet itself:
+    /// a sheet left open until the night begins sells nothing, it comes
+    /// down in silence. A purchase begun by day is seen through.
+    func purchasePro() async {
+        guard canSell else {
+            closeSaleIfNight()
+            return
+        }
+        await purchases.purchase()
+        if !purchases.isPro {
+            // Not bought, and the night may have begun meanwhile.
+            closeSaleIfNight()
+        }
+    }
+
+    /// The hour crossed a border of the night window with the app open.
+    /// Whatever is drawn from `canSell` (the word of the trial, its note,
+    /// the price in Settings) is drawn again, and a Pro sheet that was up
+    /// comes down.
+    func nightWindowChanged() {
+        saleClock += 1
+        closeSaleIfNight()
+    }
+
+    /// Wakes once at the next border of the night window, and again at the
+    /// one after, for as long as the app is in front. Nothing else redraws
+    /// a page that is open and still when the clock reaches 21:00.
+    private func watchNightWindow() {
+        nightWindowWatch?.cancel()
+        guard audio.isLive else { return }
+        nightWindowWatch = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let wait = self?.secondsToNightWindowBorder() else { return }
+                try? await Task.sleep(for: .seconds(wait))
+                guard !Task.isCancelled else { return }
+                self?.nightWindowChanged()
+            }
+        }
+    }
+
+    private func secondsToNightWindowBorder() -> TimeInterval {
+        let now = now()
+        let border = NightWindow.nextBorder(after: now, calendar: calendar)
+        // Half a second past it, so the hour has changed on waking.
+        return max(1, border.timeIntervalSince(now) + 0.5)
     }
 
     /// The page keeps one ink from now on (C40). Called when the person
@@ -418,9 +476,9 @@ final class MixerModel: ObservableObject {
     /// too long (`SessionPause`). Whatever interruption was open is
     /// forgotten: what the person chose meanwhile wins.
     ///
-    /// `startsTrial` is false for a Shortcut: a trial never begins from an
-    /// intent (AGENTS §5.7).
-    func play(startsTrial: Bool = true) {
+    /// Play never starts the trial, from the Disc or from a Shortcut: only
+    /// "Start the trial" in the Pro sheet does (`startTrial()`, C07).
+    func play() {
         startIfNeeded()
         // Kept until the start is known to work: a Play that fails during a
         // call must not cost the night the resume that call owes it (C48).
@@ -436,13 +494,13 @@ final class MixerModel: ObservableObject {
             // the mix, in a new night.
             closeNight(endedAt: nil)
         }
-        guard startSound(asked: true, startsTrial: startsTrial) else {
+        guard startSound(asked: true) else {
             // Whatever night was open stays as it was, its timer and its
             // interruption included: the page says the sound did not start,
             // and the line retries.
             interruptions = open
             heldByInterruption = wasHeld
-            purchases.refreshAccess(canDowngrade: true)
+            purchases.applyAccess(canDowngrade: true)
             noteStartFailure()
             return
         }
@@ -456,15 +514,28 @@ final class MixerModel: ObservableObject {
     @discardableResult
     private func startSound(
         asked: Bool,
-        fadeIn requested: TimeInterval? = nil,
-        startsTrial: Bool = true
+        fadeIn requested: TimeInterval? = nil
     ) -> Bool {
         let now = now()
         let current = sessionObserver.currentRoute
         // Whoever resumes unasked has already decided it is the same night:
         // a call never ends it, however long it was (C48).
+        if asked, !isSmallHours {
+            // What the page was saying about the trial until this Play.
+            purchases.playWasAsked(now: now)
+        }
+        var isNewNight = false
         if asked, !nightIsOpen(at: now) {
             beginNewNight()
+            // The one moment the trial is evaluated: a new night starts
+            // (C07). Not a resume inside the same night, which keeps what
+            // it had, and not Small Hours, which plays for everyone. A
+            // trial that ran out ends here, before anything sounds: the mix
+            // plays trimmed from its first sample and nothing is said.
+            if !isSmallHours {
+                purchases.evaluateTrialAtSessionStart(now: now)
+                isNewNight = true
+            }
         }
         var capped = false
         if asked {
@@ -530,6 +601,11 @@ final class MixerModel: ObservableObject {
             }
             return false
         }
+        if isNewNight {
+            // Only now is it a session: one that did not sound uses up
+            // none of the seven that say "always free".
+            purchases.sessionDidStart()
+        }
         isPlaying = true
         pauseCause = nil
         pausedAt = nil
@@ -543,11 +619,6 @@ final class MixerModel: ObservableObject {
         clearSpeakerOffer()
         let note = capped ? NightAxis.percent(sessionLevel) : nil
         if cappedLevelNote != note { cappedLevelNote = note }
-        // Only a Play the person asked for may begin the trial: a night
-        // that comes back by itself after a call never does.
-        if asked, !isSmallHours, startsTrial {
-            purchases.startTrialIfNeeded()
-        }
         nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
         return true
     }
@@ -572,9 +643,9 @@ final class MixerModel: ObservableObject {
             stopSound(cause: cause, fade: cause.fade, held: false)
         } else if wasHeld {
             // Silent already, under the interruption: now it is the
-            // person's pause, and a trial that ran out meanwhile applies.
+            // person's pause, and access lost meanwhile applies.
             pauseCause = cause
-            purchases.refreshAccess(canDowngrade: true)
+            purchases.applyAccess(canDowngrade: true)
         }
     }
 
@@ -603,8 +674,8 @@ final class MixerModel: ObservableObject {
     }
 
     /// The sound stops and the night stays open. `held`: an interruption
-    /// took it, so it is not the end of the night: a trial that ran out
-    /// meanwhile waits until the session really ends.
+    /// took it, so it is not the end of the night: access lost meanwhile
+    /// waits until the session really ends.
     private func stopSound(cause: PauseCause, fade: TimeInterval, held: Bool) {
         guard isPlaying else { return }
         dismissCappedLevelNote()
@@ -669,7 +740,7 @@ final class MixerModel: ObservableObject {
         // When Small Hours ends, nothing is said about it (C60).
         sessionEndedAt = wasSmallHours ? nil : endedAt
         nowPlaying.update(isPlaying: false, title: nowPlayingTitle)
-        purchases.refreshAccess(canDowngrade: !isPlaying)
+        purchases.applyAccess(canDowngrade: !isPlaying)
     }
 
     /// The session level times what the blanket leaves of it.
@@ -1039,12 +1110,12 @@ final class MixerModel: ObservableObject {
     /// its Pro layers keep their levels, stay muted, and the name says what
     /// it plays without.
     ///
-    /// Every entry point that can start a night reads the trial clock first:
-    /// a trial that ran out while the app was suspended must not let one more
-    /// Pro night through because the scene has not become active yet.
+    /// A trial that ran out and has not been evaluated yet still loads the
+    /// mix whole here. The Play that follows starts a new night, evaluates
+    /// the trial and trims the mix before anything sounds
+    /// (`accessDidChange()`).
     @discardableResult
     func loadHouseMix(_ mix: HouseMix) -> MixLoad {
-        purchases.refreshAccess(canDowngrade: !isPlaying)
         let load = mix.load(hasFullAccess: purchases.hasFullAccess)
         levels = load.levels
         setLoadedMix(.house(mix), name: mix.localizedName, load: load)
@@ -1063,7 +1134,7 @@ final class MixerModel: ObservableObject {
     /// sounds). It never raises the Pro sheet and never touches the timer
     /// (C18).
     @discardableResult
-    func playMix(_ reference: MixReference, startsTrial: Bool = true) -> IntentOutcome {
+    func playMix(_ reference: MixReference) -> IntentOutcome {
         switch reference {
         case .house(let mix):
             leaveSmallHoursForTheMix()
@@ -1071,11 +1142,10 @@ final class MixerModel: ObservableObject {
         case .saved(let id):
             guard let mix = mixStore.mix(id) else { return .notFound }
             leaveSmallHoursForTheMix()
-            purchases.refreshAccess(canDowngrade: !isPlaying)
             apply(mix)
         }
         if isPlaying { return .started }
-        play(startsTrial: startsTrial)
+        play()
         return isPlaying ? .started : .failed
     }
 
@@ -1090,16 +1160,15 @@ final class MixerModel: ObservableObject {
         // "Play my last mix" is the mix: Small Hours gives way to it,
         // playing or paused, like every other request for the mix.
         leaveSmallHoursForTheMix()
-        purchases.refreshAccess(canDowngrade: !isPlaying)
         if isPlaying { return .started }
-        play(startsTrial: false)
+        play()
         return isPlaying ? .started : .failed
     }
 
     /// Shortcuts: load a mix by name and play it.
     @discardableResult
     func playMixFromShortcut(_ reference: MixReference) -> IntentOutcome {
-        playMix(reference, startsTrial: false)
+        playMix(reference)
     }
 
     /// Shortcuts: set the timer the way its sheet does. The mode is stored,
@@ -1109,7 +1178,6 @@ final class MixerModel: ObservableObject {
     /// rest; "Off" only sets it.
     @discardableResult
     func setTimerFromShortcut(mode: TimerMode, minutes: Int? = nil) -> IntentOutcome {
-        purchases.refreshAccess(canDowngrade: !isPlaying)
         var choice = storedTimer.with(mode: mode)
         if mode == .untilAsleep, let minutes {
             // Through the initialiser, which keeps the length in range.
@@ -1127,7 +1195,7 @@ final class MixerModel: ObservableObject {
         leaveSmallHoursForTheMix()
         chooseTimer(choice)
         if isPlaying { return .started }
-        play(startsTrial: false)
+        play()
         return isPlaying ? .started : .failed
     }
 
@@ -1341,7 +1409,46 @@ final class MixerModel: ObservableObject {
         currentGainsTotal() <= 0.001
     }
 
-    /// Access changed (purchase, restore, revocation, trial end applied).
+    /// The mixer tells the store when the bed is sounding, and hears from it
+    /// when access changes: no view has to pass that on.
+    private func bindAccess() {
+        purchases.isSoundPlaying = { [weak self] in self?.isPlaying ?? false }
+        purchases.onAccessChange = { [weak self] in self?.accessDidChange() }
+    }
+
+    /// Access changed: bought, restored, the trial started, or lost once
+    /// nothing was sounding. Nothing stored is written: the levels, the
+    /// saved mixes and the tide's switch stay as they were (C23). What
+    /// changes is what may sound and what the page says about it.
+    private func accessDidChange() {
+        clampTimerToEntitlement()
+        refreshEntitledAudio()
+    }
+
+    // MARK: The trial
+
+    /// "Start the trial · 7 nights": the only way the trial begins (C07).
+    /// It goes through the same gate as the Pro sheet, so nothing happens
+    /// at night, on the night page or in Small Hours. When it starts, the
+    /// sheet comes down and what was waiting for Pro is heard at once.
+    @discardableResult
+    func startTrial() -> TrialStartResult {
+        guard canSell else { return .closedAtNight }
+        let result = purchases.startTrial(now: now(), calendar: calendar)
+        if result == .started, showPaywall {
+            showPaywall = false
+        }
+        return result
+    }
+
+    /// The paragraph about the trial the page may show right now: by day,
+    /// on the day page and in silence. At night it waits (08 §2.4).
+    var visibleTrialNote: TrialNote? {
+        guard canSell, !isPlaying, !isBedtime else { return nil }
+        return purchases.trialNote
+    }
+
+    /// Access changed (purchase, restore, revocation, trial start or end).
     /// Gains and the breathing guide follow it while playing.
     func refreshEntitledAudio() {
         // A mix that was whole during the trial is a stripped one once the
@@ -1476,7 +1583,7 @@ final class MixerModel: ObservableObject {
     /// interruption, the end of the timer, a media-services reset. It stops
     /// the guide, pauses the timer (or the clock of Small Hours), updates
     /// Now Playing and, when the session is really over (`canDowngrade`),
-    /// lets a trial that ran out while the bed was playing finally apply.
+    /// lets access that was lost while the bed was playing finally apply.
     private func endPlayback(engineAction: EngineAction, canDowngrade: Bool) {
         if case .stop(let seconds) = engineAction {
             engine.stop(fadeOut: seconds)
@@ -1489,7 +1596,7 @@ final class MixerModel: ObservableObject {
             breathing.end()
         }
         nowPlaying.update(isPlaying: false, title: nowPlayingTitle)
-        purchases.refreshAccess(canDowngrade: canDowngrade)
+        purchases.applyAccess(canDowngrade: canDowngrade)
     }
 
     private func bindTimer() {
@@ -1568,9 +1675,9 @@ final class MixerModel: ObservableObject {
             break
         }
         if !isPlaying {
-            // Paused after all: a trial that ran out meanwhile applies, and
-            // the twenty minutes of `SessionPause` count from the pause.
-            purchases.refreshAccess(canDowngrade: true)
+            // Paused after all: access lost meanwhile applies, and the
+            // twenty minutes of `SessionPause` count from the pause.
+            purchases.applyAccess(canDowngrade: true)
             if pausedAt != nil { scheduleExpiry() }
         }
     }
@@ -1722,6 +1829,14 @@ final class MixerModel: ObservableObject {
     /// and the app is opened by day.
     func appDidBecomeActive() {
         appIsActive = true
+        // The clock is sampled between sessions; the trial's answer still
+        // changes only at the next session start.
+        purchases.observeClock(now: now())
+        purchases.applyAccess(canDowngrade: !isPlaying)
+        if audio.isLive {
+            // The price is asked for again, so the Pro sheet opens with it.
+            Task { [purchases] in await purchases.refresh() }
+        }
         if interruptions.isOpen, !callInProgress, !sessionObserver.isOtherAudioPlaying {
             interruptionEnded()
         }
@@ -1742,6 +1857,7 @@ final class MixerModel: ObservableObject {
             forgetLostRouteIfStale(at: now)
         }
         closeSaleIfNight()
+        watchNightWindow()
     }
 
     /// The scene is no longer active: nothing resumes unasked from here.
@@ -1793,7 +1909,7 @@ final class MixerModel: ObservableObject {
             self.pauseCause = .system
             self.pausedAt = self.now()
             if !self.startSound(asked: false) {
-                self.purchases.refreshAccess(canDowngrade: true)
+                self.purchases.applyAccess(canDowngrade: true)
                 self.scheduleExpiry()
             }
         }

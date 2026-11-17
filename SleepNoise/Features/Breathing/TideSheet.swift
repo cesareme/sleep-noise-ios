@@ -413,8 +413,7 @@ struct TideSheet: View {
         .accessibilityIdentifier(identifier)
     }
 
-    /// A row whose value opens the system's menu. The whole row is the
-    /// target; the value and its chevron are secondary ink, never a tint.
+    /// A setting of the tide with a few options, in the system's menu.
     private func menuRow<Options: View>(
         title: String,
         value: String,
@@ -422,54 +421,13 @@ struct TideSheet: View {
         identifier: String,
         @ViewBuilder options: () -> Options
     ) -> some View {
-        Menu {
-            options()
-                .pickerStyle(.inline)
-                .labelsHidden()
-        } label: {
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: Grid.inner) {
-                    menuTitle(title)
-                    Spacer(minLength: 0)
-                    menuValue(value)
-                }
-                // Larger text: the value drops under the name.
-                VStack(alignment: .leading, spacing: Grid.unit) {
-                    menuTitle(title)
-                    menuValue(value)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(.vertical, Grid.unit * 3)
-            .padding(.horizontal, Grid.margin)
-            .frame(minHeight: Grid.row(subtitle: false, dynamicType: dynamicType))
-            .contentShape(Rectangle())
-        }
-        .overlay(alignment: .bottom) {
-            Hairline().padding(.horizontal, Grid.margin)
-        }
-        .accessibilityLabel(Text(verbatim: Localized.string(title)))
-        .accessibilityValue(Text(verbatim: PageStatus.spoken(spokenValue)))
+        MenuRow(
+            title: Localized.string(title),
+            value: value,
+            spokenValue: PageStatus.spoken(spokenValue),
+            options: options
+        )
         .accessibilityIdentifier(identifier)
-    }
-
-    private func menuTitle(_ key: String) -> some View {
-        Text(verbatim: Localized.string(key))
-            .step(.row)
-            .foregroundStyle(Ink.primary(phase))
-    }
-
-    private func menuValue(_ value: String) -> some View {
-        HStack(spacing: Grid.unit) {
-            Text(verbatim: value)
-                .step(.body)
-                .monospacedDigit()
-            Image(systemName: "chevron.up.chevron.down")
-                .font(.footnote.weight(.medium))
-                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                .accessibilityHidden(true)
-        }
-        .foregroundStyle(Ink.secondary(phase))
     }
 }
 

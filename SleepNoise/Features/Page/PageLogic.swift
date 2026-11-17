@@ -235,24 +235,103 @@ enum PageStatus: Equatable {
     }
 }
 
-/// The header of the page while the current trial lasts.
+/// The header of the page: the trial as a state word (08 §2.4).
 ///
-/// It appears only once the trial has begun (05 §2.1, C07): the first
-/// screen of a new install says nothing about a trial, and nothing after it
-/// ends. Until the seven-night trial is wired, this is the seven-day trial
-/// the app has today, said with the words it already had. It is never shown
-/// on the night page and it is plain text whenever nothing may be sold.
+/// It appears only once the trial has begun (C07): the first screen of a
+/// new install says nothing about a trial. While it runs it says how many
+/// nights are left, and "last night" on the last one. On the day the trial
+/// runs out no night is left, so there is no figure and no word. After it,
+/// "always free" for the first free sessions, then nothing. Bought: nothing.
+/// It is shown only while something may be sold: never inside the night
+/// window, on the night page or in Small Hours (C08). The page passes
+/// `MixerModel.canSell`.
 enum PageTrialWord {
+    static let nightsLeftKey = "pro.prueba.estado"
+    static let lastNightKey = "pro.prueba.estado.ultima"
+    static let alwaysFreeKey = "pro.prueba.estado.gratis"
+
     static func text(
         trial: TrialState,
         isPro: Bool,
+        showsAlwaysFree: Bool = false,
+        canSell: Bool = true,
         localized: (String) -> String = { Localized.string($0) },
         locale: Locale = .current
     ) -> String? {
-        guard !isPro else { return nil }
-        guard case .active(let days) = trial else { return nil }
-        let words = String.localizedStringWithFormat(localized("trial.chip.daysFormat"), days)
+        guard !isPro, canSell else { return nil }
+        let words: String
+        switch trial {
+        case .notStarted:
+            return nil
+        case .active(let nights) where nights >= 2:
+            words = String.localizedStringWithFormat(localized(nightsLeftKey), nights)
+        case .active(let nights) where nights == 1:
+            words = localized(lastNightKey)
+        case .active:
+            return nil
+        case .ended:
+            guard showsAlwaysFree else { return nil }
+            words = localized(alwaysFreeKey)
+        }
         // State words are small caps: written in lower case.
         return words.lowercased(with: locale)
+    }
+
+    static let spokenNightsLeftKey = "ax.prueba.cabecera"
+
+    /// What VoiceOver reads: the figure in a sentence of its own ("Trial,
+    /// five nights left") and the separators as pauses.
+    static func spoken(
+        trial: TrialState,
+        isPro: Bool,
+        showsAlwaysFree: Bool = false,
+        canSell: Bool = true,
+        localized: (String) -> String = { Localized.string($0) },
+        locale: Locale = .current
+    ) -> String? {
+        guard let text = text(
+            trial: trial,
+            isPro: isPro,
+            showsAlwaysFree: showsAlwaysFree,
+            canSell: canSell,
+            localized: localized,
+            locale: locale
+        ) else { return nil }
+        if case .active(let nights) = trial, nights >= 2 {
+            return String.localizedStringWithFormat(localized(spokenNightsLeftKey), nights)
+        }
+        return PageStatus.spoken(text)
+    }
+}
+
+/// The two things the page says once about the trial (08 §2.4), by day and
+/// in silence, never at night: the model decides when (`visibleTrialNote`).
+///
+/// The last night is a sentence in the place of the state line, until the
+/// Play. The end is a note under the state line with "Got it". Neither is a
+/// sheet, a notification or a count.
+enum PageTrialNote {
+    static let lastNightKey = "prueba.ultima"
+    static let endedKey = "prueba.terminada"
+    static let dismissKey = "comun.entendido"
+
+    /// The sentence that takes the state line. Only "Silent" gives way to
+    /// it: a pause, an error or a mix that would not sound say what they
+    /// have to say first.
+    static func statusLine(
+        _ note: TrialNote?,
+        status: PageStatus,
+        localized: (String) -> String = { Localized.string($0) }
+    ) -> String? {
+        guard note == .lastNight, status == .silent else { return nil }
+        return localized(lastNightKey)
+    }
+
+    /// The note under the state line, with its "Got it".
+    static func footnote(
+        _ note: TrialNote?,
+        localized: (String) -> String = { Localized.string($0) }
+    ) -> String? {
+        note == .ended ? localized(endedKey) : nil
     }
 }

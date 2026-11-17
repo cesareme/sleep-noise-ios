@@ -173,16 +173,14 @@ final class NightAndShortcutTests: XCTestCase {
         return defaults
     }
 
-    /// The trial ran out days ago and nothing was bought.
+    /// The running trial is found over at the next session start.
     private func expire(_ purchases: PurchaseManager) {
-        purchases.startTrialIfNeeded(now: day0)
-        purchases.refreshAccess(now: day0.addingTimeInterval(8 * 86_400), canDowngrade: true)
+        purchases.expireTrial(startedAt: day0)
     }
 
     private func makeFreeTierModel(defaults: UserDefaults? = nil) throws -> MixerModel {
         let defaults = try defaults ?? makeDefaults()
-        let purchases = PurchaseManager(defaults: defaults, now: day0)
-        expire(purchases)
+        let purchases = PurchaseManager.onDoubles(defaults: defaults, access: .trialEnded, now: day0)
         XCTAssertFalse(purchases.hasFullAccess)
         return MixerModel(purchases: purchases, defaults: defaults)
     }
@@ -231,7 +229,7 @@ final class NightAndShortcutTests: XCTestCase {
 
     func testAMixLoadedDuringTheTrialIsMarkedStrippedWhenItEnds() throws {
         let defaults = try makeDefaults()
-        let purchases = PurchaseManager(defaults: defaults, now: day0)
+        let purchases = PurchaseManager.onDoubles(defaults: defaults, access: .trial, now: day0)
         let model = MixerModel(purchases: purchases, defaults: defaults)
         let mix = SavedMix(
             id: UUID(),

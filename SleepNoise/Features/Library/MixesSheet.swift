@@ -25,24 +25,31 @@ struct MixesSheet: View {
     var onLoaded: () -> Void
     /// "Night" on the bar: the caller closes this sheet first.
     var onNight: () -> Void
+    /// "Settings", the last row: the caller puts Settings in this place.
+    var onSettings: () -> Void
 
     @Environment(\.nightPhase) private var phase
+    @Environment(\.dynamicTypeSize) private var dynamicType
     /// The box of a section header: 18 pt at Large.
     @ScaledMetric(relativeTo: .footnote) private var headerLine: CGFloat = 18
     @State private var naming = MixNaming()
     @State private var deleting: SavedMix?
 
+    private static let contentID = "mixes.content"
+
     init(
         model: MixerModel,
         purchases: PurchaseManager,
         onLoaded: @escaping () -> Void,
-        onNight: @escaping () -> Void
+        onNight: @escaping () -> Void,
+        onSettings: @escaping () -> Void
     ) {
         self.model = model
         store = model.mixStore
         self.purchases = purchases
         self.onLoaded = onLoaded
         self.onNight = onNight
+        self.onSettings = onSettings
     }
 
     private var list: MixesList {
@@ -61,33 +68,46 @@ struct MixesSheet: View {
         let canSell = model.canSell
         VStack(spacing: 0) {
             SheetHeader(title: Localized.string("mezclas.titulo"))
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    header("mezclas.seccion.tuyas")
-                        .padding(.top, Grid.inner)
-                    if let live = list.live {
-                        liveRow(live, canSell: canSell)
-                    }
-                    ForEach(list.yours) { row in
-                        savedRow(row, in: list)
-                    }
-                    if list.showsEmptyNote {
-                        emptyNote
-                    }
-                    header("mezclas.seccion.casa")
-                        .padding(.top, Grid.group)
-                    ForEach(list.house) { row in
-                        MixRow(
-                            name: row.name,
-                            recipe: row.recipe,
-                            stateWord: row.isSounding ? Localized.string("mezclas.sonando") : nil
-                        ) {
-                            load(row.reference)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        header("mezclas.seccion.tuyas")
+                            .padding(.top, Grid.inner)
+                        if let live = list.live {
+                            liveRow(live, canSell: canSell)
                         }
-                        .accessibilityIdentifier("mix.\(row.id)")
+                        ForEach(list.yours) { row in
+                            savedRow(row, in: list)
+                        }
+                        if list.showsEmptyNote {
+                            emptyNote
+                        }
+                        header("mezclas.seccion.casa")
+                            .padding(.top, Grid.group)
+                        ForEach(list.house) { row in
+                            MixRow(
+                                name: row.name,
+                                recipe: row.recipe,
+                                stateWord: row.isSounding ? Localized.string("mezclas.sonando") : nil
+                            ) {
+                                load(row.reference)
+                            }
+                            .accessibilityIdentifier("mix.\(row.id)")
+                        }
+                        settingsRow
+                            .padding(.top, Grid.group)
+                    }
+                    .padding(.bottom, Grid.group)
+                    .id(Self.contentID)
+                }
+                #if DEBUG
+                .onAppear {
+                    // Reference capture of the end of the sheet.
+                    if PageArguments.scrollsMixesToEnd {
+                        proxy.scrollTo(Self.contentID, anchor: .bottom)
                     }
                 }
-                .padding(.bottom, Grid.group)
+                #endif
             }
             PageBar(model: model, timer: model.timer, onMixes: nil, onNight: onNight)
         }
@@ -134,6 +154,30 @@ struct MixesSheet: View {
             .padding(.horizontal, Grid.margin)
             .padding(.bottom, Grid.unit + 2)
             .accessibilityAddTraits(.isHeader)
+    }
+
+    /// "Settings" (08 §2.1): the last row and the only way in, in secondary
+    /// ink and apart from the mixes, because it is a way out and not a mix.
+    /// Words, not an icon.
+    private var settingsRow: some View {
+        Button(action: onSettings) {
+            Text("ajustes.titulo")
+                .step(.body)
+                .foregroundStyle(Ink.secondary(phase))
+                .padding(.vertical, Grid.unit * 3)
+                .padding(.horizontal, Grid.margin)
+                .frame(
+                    maxWidth: .infinity,
+                    minHeight: max(
+                        Grid.row(subtitle: false, dynamicType: dynamicType),
+                        Grid.textAction(dynamicType: dynamicType, night: phase.isNight)
+                    ),
+                    alignment: .leading
+                )
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(PressedReliefStyle())
+        .accessibilityIdentifier("openSettings")
     }
 
     /// The live mix. Its touch saves it; the fourth without access says

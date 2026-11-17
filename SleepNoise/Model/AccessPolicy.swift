@@ -13,7 +13,8 @@ import Foundation
 /// One carve-out: in Small Hours the fixed recipe, low ocean with the tide,
 /// plays for everyone and sells nothing.
 ///
-/// `hasFullAccess` is `PurchaseManager.hasFullAccess`: purchased OR trial active.
+/// `hasFullAccess` is `PurchaseManager.hasFullAccess`: purchased, or the
+/// seven-night trial as its last evaluation left it.
 enum AccessPolicy {
     static let proProductID = "com.cesareme.sleepnoise.pro"
     /// The sounds of the free tier (C04). Sounds are added, never removed.
@@ -21,7 +22,6 @@ enum AccessPolicy {
     static let freeSavedMixLimit = 3
     /// Technical ceiling of the timer, the same for everyone.
     static let maxTimerMinutes = 360
-    static let trialDays = 7
 
     static func soundIsIncluded(_ sound: SoundID, hasFullAccess: Bool) -> Bool {
         hasFullAccess || freeSounds.contains(sound)

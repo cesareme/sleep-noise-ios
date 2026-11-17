@@ -30,6 +30,9 @@ struct EditorialRow: View {
     /// The words step back to secondary ink: the option that means "none"
     /// while it is not the chosen one ("Off").
     var isQuiet = false
+    /// The row is words: no touch, no relief, no button trait. What cannot
+    /// be done right now is not offered (the Pro row of Settings at night).
+    var isInert = false
     var rule = Rule.bottom
     var action: () -> Void
 
@@ -37,26 +40,16 @@ struct EditorialRow: View {
     @Environment(\.dynamicTypeSize) private var dynamicType
 
     var body: some View {
-        Button(action: action) {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .center, spacing: Grid.inner) {
-                    labels
-                    Spacer(minLength: 0)
-                    trailing
+        Group {
+            if isInert {
+                content
+            } else {
+                Button(action: action) {
+                    content.contentShape(Rectangle())
                 }
-                // Larger text: the value drops under the words.
-                VStack(alignment: .leading, spacing: Grid.unit) {
-                    labels
-                    trailing
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .buttonStyle(PressedReliefStyle())
             }
-            .padding(.vertical, Grid.unit * 3)
-            .padding(.horizontal, Grid.margin)
-            .frame(minHeight: Grid.row(subtitle: subtitle != nil, dynamicType: dynamicType))
-            .contentShape(Rectangle())
         }
-        .buttonStyle(PressedReliefStyle())
         .overlay(alignment: rule == .top ? .top : .bottom) {
             if rule != .none {
                 Hairline().padding(.horizontal, Grid.margin)
@@ -64,6 +57,25 @@ struct EditorialRow: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private var content: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .center, spacing: Grid.inner) {
+                labels
+                Spacer(minLength: 0)
+                trailing
+            }
+            // Larger text: the value drops under the words.
+            VStack(alignment: .leading, spacing: Grid.unit) {
+                labels
+                trailing
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.vertical, Grid.unit * 3)
+        .padding(.horizontal, Grid.margin)
+        .frame(minHeight: Grid.row(subtitle: subtitle != nil, dynamicType: dynamicType))
     }
 
     private var labels: some View {
