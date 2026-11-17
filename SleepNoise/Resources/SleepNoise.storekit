@@ -5,17 +5,17 @@
   ],
   "products" : [
     {
-      "displayPrice" : "4.99",
-      "familyShareable" : false,
+      "displayPrice" : "29.99",
+      "familyShareable" : true,
       "internalID" : "SLEEPNOISEPRO",
       "localizations" : [
         {
-          "description" : "Breathing tide, fan and ocean, timers past 60 minutes and custom, unlimited saved mixes.",
+          "description" : "All textures, the Tide and unlimited mixes. One payment, with your family.",
           "displayName" : "SleepNoise Pro",
           "locale" : "en_US"
         },
         {
-          "description" : "Marea respiratoria, ventilador y océano, temporizadores de más de 60 minutos y a medida, mezclas ilimitadas.",
+          "description" : "Todas las texturas, la Marea y mezclas sin límite. Un solo pago, en familia.",
           "displayName" : "SleepNoise Pro",
           "locale" : "es_ES"
         }

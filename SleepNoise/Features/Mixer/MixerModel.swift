@@ -463,6 +463,10 @@ final class MixerModel: ObservableObject {
         let current = sessionObserver.currentRoute
         // Whoever resumes unasked has already decided it is the same night:
         // a call never ends it, however long it was (C48).
+        if asked, !isSmallHours {
+            // What the page was saying about the trial until this Play.
+            purchases.playWasAsked(now: now)
+        }
         if asked, !nightIsOpen(at: now) {
             beginNewNight()
             // The one moment the trial is evaluated: a new night starts

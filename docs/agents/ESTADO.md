@@ -65,6 +65,8 @@ S-04 retiró las que vivían en la pantalla antigua (`trial.intro.*`, `trial.end
 
 ### Condiciones para cablear `NightTrial` (S-07)
 
+**Hecho en S-07 (tarea 1):** las seis están resueltas; el detalle está en "Lo que S-07 lleva hecho", al final.
+
 - **La cifra de "quedan n noches" no se enseña sin cerrar con el dueño la pregunta 08 §9.3.** `nightsRemaining` ancla hoy cada noche al día en que empezó (hasta las 07:00 sigue siendo la noche anterior), así que la cifra ya no baja a medianoche. Queda un defecto: el día en que la prueba se agota el suelo devuelve 1 ("última noche") aunque esa noche el arranque de sesión ya la dé por terminada. `testNightsRemainingWithADaytimeStart` lo deja escrito. Propuesta de la revisión: contar los comienzos de noche (21:00) que quedan antes del fin; el último día da 0 y la interfaz dice que la prueba termina hoy o no muestra cifra.
 - `start(now:)` no se ofrece ni se llama dentro de `NightWindow`, y el paso a `.ended` no se anuncia de noche. Son contratos del comentario del tipo: la función no los comprueba.
 - `start(now:)` devuelve `false` y no da acceso si el registro no se puede crear. La interfaz necesita un estado para ese caso.
@@ -99,6 +101,8 @@ De la entrega de la página y de Capas (17-11-2026). Quien abra el paquete indic
 - **Hecho en S-06 (cimientos): qué es "la sesión".** La noche es la sesión de audio: va del Play hasta que acaba sola (fin del temporizador, 20 minutos en pausa por `SessionPause`, la ventana de la mañana o el fin de Madrugada). No se guarda: tras un reinicio no suena nada y no hay sesión. La página nocturna dura hasta que la persona toca el nombre o hasta que la app pasa a primer plano de día (fuera de `NightWindow`) con esa noche ya terminada; mientras se mira no la cambia ningún reloj (`MixerModel.appDidBecomeActive()`, tests en `BedtimeModelTests`). A confirmar por el dueño.
 
 ### Prueba (S-07)
+
+**Hecho en S-07 (tarea 1):** la prueba ya no empieza con Play. La cabecera usa `pro.prueba.estado*` en noches; los renglones de la nota de una vez tienen modelo (`MixerModel.visibleTrialNote`) y les falta la vista.
 
 - La cabecera de la página está vacía hasta que la prueba empieza (05 §2.1, C07) y enseña después la prueba de 7 días de hoy con la cadena del chip antiguo (`trial.chip.daysFormat`), como palabra de estado. La tarjeta de bienvenida y la de "prueba terminada" se fueron con la pantalla antigua: la prueba sigue empezando con Play hasta S-07, y ahora solo lo dice la hoja Pro.
 - Los renglones de la nota de una vez (noche 7 y noche 8) no se construyeron: dependen de `NightTrial`. La cabecera tiene su renglón fijo.
@@ -337,3 +341,30 @@ De la crítica visual de las capturas. Los cinco hallazgos eran ciertos y se apl
 
 - La línea de agua en un dispositivo real: a 30 fotogramas por segundo avanza de 2 a 3 px por fotograma; en los extremos del recorrido, donde frena, el paso es de un píxel.
 - Pantallas de 375 pt de ancho: las medidas de la receta se calcularon, no se capturaron.
+
+## Lo que S-07 lleva hecho
+
+### Tarea 1 · Modelo y tienda (17-11-2026)
+
+Sin vistas nuevas. La hoja Pro antigua (`PaywallView`) sigue compilando sobre el modelo nuevo, con el botón "Empezar la prueba · 7 noches" y las líneas de resultado de la guía; la tarea siguiente la rehace.
+
+- **La prueba es `NightTrial`.** `TrialClock` y `AccessPolicy.trialDays` se borraron. Empieza solo con `MixerModel.startTrial()`, que pasa por la misma puerta que la hoja Pro (`canSell`): de noche, en la página nocturna y en Madrugada no hace nada. `play()` ya no tiene `startsTrial`: ningún Play ni ningún Atajo la empieza.
+- **Se evalúa al empezar una noche nueva** (`startSound`, cuando `nightIsOpen` es falso) y en ningún otro arranque: ni al volver de una interrupción, ni al reanudar una pausa de menos de 20 minutos, ni en Madrugada. El reloj se muestrea al lanzar y al volver a primer plano (`observeClock`), sin cambiar la respuesta.
+- **Una instalación nueva es el nivel gratuito.** Antes tenía todo abierto hasta el primer Play. Las capturas de referencia se escenifican con Pro comprado (cabecera vacía, todo abierto), no con una instalación nueva: la primera pantalla real enseña la Marea como "pro". A revisar en S-08.
+- **Migración** (`LegacyTrial`): la prueba antigua que había empezado pasa al Keychain tal cual estaba, con el tiempo consumido; la que seguía en curso llega a su propio fin y la agotada sigue agotada. En los dos casos cuenta como usada. La que nunca empezó no deja nada.
+- **Cifra de noches** (08 §9.3, a confirmar por el dueño): noches que no han terminado y empiezan (21:00) antes del fin, con tope 7. La noche en curso cuenta hasta las 07:00. El día en que la prueba se agota la cifra es 0 y la cabecera no enseña nada: no hay cadena aprobada para "termina hoy".
+- **Lectura fallida del Keychain:** se reintenta al volver a primer plano, al empezar una noche y al tocar "Empezar la prueba" (`NightTrial.reloadIfMissing`).
+- **Degradación sin escritura:** al terminar la prueba no se toca ni la mezcla, ni las mezclas guardadas, ni el interruptor de la Marea (test `testTheTrialEndsAtTheNextNightAndWritesNothing`). El modelo se entera solo del cambio de acceso (`PurchaseManager.onAccessChange`); la página ya no lo reenvía.
+- **Una revocación (reembolso, fin de En familia) con el sonido puesto espera a que pare.** Antes cortaba en el acto.
+- **Tienda detrás de `ProStore`.** `AppStoreProStore` es StoreKit 2; `ScriptedProStore` (solo DEBUG) es el doble de los tests y de los arranques escenificados. Estados: `productState` (cargando, cargado, no disponible), `activity` (comprando, restaurando), `isPurchasePending`, `notice` (nueve líneas) y `receipt` (fecha y En familia). Topes propios: 8 s para el producto y 10 s para restaurar; lo que llega tarde se aplica igual.
+- **`SleepNoise.storekit`:** 29,99, Family Sharing, descripciones nuevas. Es solo la tienda local: el precio real sale de App Store Connect.
+- **Cadenas:** fuera `trial.chip.daysFormat`, `paywall.trial.*`, `paywall.keepFormat`, `paywall.purchaseFormat`, `paywall.purchaseUnavailable`, `paywall.restore*`, `paywall.nothingToRestore`, `paywall.pending` y `paywall.failed`. Dentro, de la guía 10: `pro.prueba.empezar`, `pro.prueba.estado` (plural), `.ultima`, `.gratis`, `pro.comprar`, `pro.comprar.sin_precio`, `pro.restaurar`, `pro.gracias`, `pro.fallo`, `pro.fallo.sin_confirmar`, `pro.pendiente`, `pro.sin_tienda`, `pro.sin_tienda.silencio` y `pro.restaurar.no`. Siguen en la hoja antigua, hasta que se rehaga: `paywall.title`, `paywall.subtitle`, `paywall.benefit.*`, `paywall.active`, `paywall.once` y `common.close`.
+- **README:** corregidos el párrafo de la prueba y los pasos de la tienda local.
+
+### Lo que queda sin hacer o sin verificar
+
+- **StoreKitTest no funciona aquí.** `SKTestSession` se crea, pero cada orden falla con `SKInternalErrorDomain Code=3` bajo `xcodebuild test` en el simulador (iOS 26.5), con los dos inicializadores. Los estados de la tienda se prueban con el doble. `AppStoreProStore` solo tiene test de su tabla de errores: la compra, Pedir para comprar, el reembolso y En familia reales quedan para el sandbox del dueño.
+- **La compra o la prueba "que se oyen" entran con el suavizado normal del motor**, no con el fundido de 800 ms de 08 §2.3: pide una rampa por capa en `EngineCommand` (hilo de audio). Tampoco se guarda qué capa abrió la hoja para subirla al empezar la prueba.
+- **Nota de "La prueba terminó":** muere con "Entendido" o con el siguiente Play de día. La tercera salida de 08 §2.4 ("la siguiente apertura de día") no está.
+- **"Gratis siempre" solo existe tras la prueba**, siete sesiones (guía 10 §2 y este fichero). 08 §2.4 la pone también en una instalación nueva; no se ha hecho, para no cambiar la primera pantalla. A decidir.
+- **Vistas:** hoja Pro en Grafito, recibo, fila Pro de Ajustes, los dos párrafos de la página y el estado "Pendiente" del botón.

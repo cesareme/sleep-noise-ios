@@ -341,14 +341,6 @@ final class PurchaseManager: ObservableObject {
     func evaluateTrialAtSessionStart(now: Date) {
         trial.reloadIfMissing()
         let before = trial.status
-        let isDay = !NightWindow.contains(now, calendar: calendar)
-        // Notes that were on the page until this Play.
-        if trialNote == .lastNight {
-            defaults.set(true, forKey: Self.lastNightNoteKey)
-        }
-        if trialNote == .ended, isDay {
-            defaults.set(false, forKey: Self.endNoteKey)
-        }
         trial.evaluateAtSessionStart(now: now)
         if before == .active, trial.status == .ended {
             defaults.set(true, forKey: Self.endNoteKey)
@@ -358,6 +350,21 @@ final class PurchaseManager: ObservableObject {
             setFreeSessions(freeSessionsAfterTrial + 1)
         }
         trialChanged(now: now, canDowngrade: !isSoundPlaying())
+    }
+
+    /// The person pressed Play: a paragraph that was on the page until
+    /// then is gone for good. One that could not be on the page, because it
+    /// is night, stays due. The mixer calls this before it starts the
+    /// sound, and so before the trial is evaluated.
+    func playWasAsked(now: Date) {
+        switch trialNote {
+        case .lastNight:
+            dismissTrialNote()
+        case .ended:
+            if !NightWindow.contains(now, calendar: calendar) { dismissTrialNote() }
+        case nil:
+            break
+        }
     }
 
     /// "Got it" under the paragraph, or the paragraph has been read.

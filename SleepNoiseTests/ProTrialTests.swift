@@ -239,6 +239,23 @@ final class ProTrialTests: XCTestCase {
         XCTAssertEqual(model.startTrial(), .alreadyUsed, "it does not run twice")
     }
 
+    /// Red if the paragraph of the end is lost because the trial ended on a
+    /// Play by day (it was not on the page yet), or outlives the next one.
+    func testTheEndIsSaidAfterTheSessionThatFoundItAndDiesWithTheNextPlay() throws {
+        let night = try NightHarness(at: time(12), access: .trial)
+        night.jump(to: time(day: 25, 10))
+        night.model.play()
+        XCTAssertEqual(night.purchases.trialState, .ended)
+        XCTAssertNil(night.model.visibleTrialNote, "only in silence")
+        night.model.pause()
+        XCTAssertEqual(night.model.visibleTrialNote, .ended)
+        night.model.play()
+        night.model.pause()
+        XCTAssertNil(night.model.visibleTrialNote, "it died with the Play")
+        XCTAssertNil(night.purchases.trialNote)
+        XCTAssertFalse(night.defaults.bool(forKey: PurchaseManager.endNoteKey))
+    }
+
     /// Red if buying after the trial does not bring back, whole and at
     /// their levels, what the end of the trial left waiting.
     func testBuyingBringsBackWhatTheTrialLeftWaiting() async throws {

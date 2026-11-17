@@ -27,8 +27,8 @@ SleepNoise/Audio      SleepAudioEngine, CommandDesk, sesión, observador, Now Pl
 SleepNoise/Audio/DSP  EngineCommand, ParameterMailbox, AtomicBridge, RenderState,
                       SampleRamp, SoundGains, generadores y filtros
 SleepNoise/Design     Grafito: tokens, componentes, galería (-gallery)
-SleepNoise/Model      SoundID, AccessPolicy, TrialClock
-SleepNoise/StoreKit   PurchaseManager
+SleepNoise/Model      SoundID, AccessPolicy, NightTrial (prueba de 7 noches, Keychain)
+SleepNoise/StoreKit   PurchaseManager, ProStore (AppStoreProStore; doble ScriptedProStore)
 SleepNoise/Features   Page (página y Capas), Mixer (MixerModel), Timer, Breathing,
                       Bedtime, SmallHours, Library, Paywall
 SleepNoise/Intents    los cinco Atajos

@@ -2,7 +2,7 @@
 
 Offline sleep-noise synthesizer for iPhone. Every sound is generated on the device with `AVAudioEngine` and an `AVAudioSourceNode`. There are no bundled audio files, no analytics, and no networking of our own. StoreKit is the only system service that contacts Apple, and only when someone loads or buys Pro.
 
-Free includes white, pink, and brown noise, the rain and wind textures, the whole sleep timer ("Until I sleep" with a fade at the end, or "Blanket" until an hour of the clock), and three saved mixes. Pro (`com.cesareme.sleepnoise.pro`, non-consumable) unlocks the rest of the generated sounds (fan, ocean, thunder, campfire, brook and cabin), the breathing tide, and unlimited saved mixes. Every install gets a local 7-day trial of everything: no card, no StoreKit product, the clock starts at the first Play and the first-launch card says so.
+Free includes white, pink, and brown noise, the rain and wind textures, the whole sleep timer ("Until I sleep" with a fade at the end, or "Blanket" until an hour of the clock), and three saved mixes. Pro (`com.cesareme.sleepnoise.pro`, non-consumable) unlocks the rest of the generated sounds (fan, ocean, thunder, campfire, brook and cabin), the breathing tide, and unlimited saved mixes. A local seven-night trial of everything starts only from the Pro sheet ("Start the trial · 7 nights"), never with Play and never from a Shortcut: no card, no StoreKit product. Its state lives in the Keychain, it is evaluated when a night starts and never in the middle of one, and when it ends nothing saved is lost or rewritten.
 
 Siri and the Shortcuts app have five actions, in English and Spanish: play the last mix, pause, play a mix by name, set the timer, and Small Hours (twenty quiet minutes of low sea for whoever wakes in the night). None of them sells anything or starts the trial: what needs Pro without access simply does not sound.
 
@@ -53,9 +53,9 @@ The scheme loads `SleepNoise/Resources/SleepNoise.storekit`, so a Run from Xcode
 
 1. Run the app from Xcode.
 2. Tap **Pro**, then the purchase button. The local transaction completes immediately.
-3. Fan, ocean, custom timers, and extra mixes should unlock.
+3. Fan, ocean, the tide and a fourth saved mix should open.
 4. Use **Debug → StoreKit → Manage Transactions** to delete the transaction and return to the free tier.
-5. Tap **Restore purchases**. With the transaction deleted, the app reports that there is nothing to restore. Buy again, then Restore on a fresh launch should turn Pro back on while the transaction still exists.
+5. Tap **Restore purchase**. With the transaction deleted, the app reports that there is nothing to restore. Buy again, then Restore on a fresh launch should turn Pro back on while the transaction still exists.
 6. The configuration’s storefront defaults to the US. Change it in Xcode’s StoreKit editor (or the transaction manager) to try the Spanish product localization (`es_ES`).
 
 A TestFlight or App Store build ignores this file and uses App Store Connect.

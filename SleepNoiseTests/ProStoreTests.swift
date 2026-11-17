@@ -357,6 +357,41 @@ final class ProStoreTests: XCTestCase {
         XCTAssertNil(purchases.notice)
     }
 
+    // MARK: The local store
+
+    /// `SleepNoise.storekit` is the store of a Run from Xcode. Red if it
+    /// stops being one non-consumable shared with the family, drifts from
+    /// the product the app asks for, or its descriptions carry a figure or
+    /// a claim of the old split (timers, a count of sounds).
+    func testTheLocalStoreSellsOneFamilySharedProductAndClaimsNothingOld() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("SleepNoise/Resources/SleepNoise.storekit")
+        let root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        let products = try XCTUnwrap(root["products"] as? [[String: Any]])
+        XCTAssertEqual(products.count, 1)
+        XCTAssertEqual((root["subscriptionGroups"] as? [Any])?.count, 0, "no subscription, ever")
+        let pro = try XCTUnwrap(products.first)
+        XCTAssertEqual(pro["productID"] as? String, AccessPolicy.proProductID)
+        XCTAssertEqual(pro["type"] as? String, "NonConsumable")
+        XCTAssertEqual(pro["familyShareable"] as? Bool, true)
+
+        let localizations = try XCTUnwrap(pro["localizations"] as? [[String: String]])
+        XCTAssertEqual(Set(localizations.compactMap { $0["locale"] }), ["en_US", "es_ES"])
+        for localization in localizations {
+            let locale = localization["locale"] ?? "?"
+            let name = try XCTUnwrap(localization["displayName"])
+            let description = try XCTUnwrap(localization["description"])
+            XCTAssertFalse(name.isEmpty, locale)
+            XCTAssertFalse(description.isEmpty, locale)
+            XCTAssertNil(description.rangeOfCharacter(from: .decimalDigits), "\(locale): no figure")
+            for old in ["timer", "temporizador", "60", "custom", "medida", "respiratoria", "breathing"] {
+                XCTAssertFalse(description.lowercased().contains(old), "\(locale): \(old)")
+            }
+        }
+    }
+
     // MARK: The adapter
 
     /// Red if an error that can follow the payment is reported as "nothing
