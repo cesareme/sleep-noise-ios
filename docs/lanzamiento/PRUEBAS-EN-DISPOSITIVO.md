@@ -16,8 +16,8 @@ Tiempo: unas 3 horas repartidas, más una noche.
 | 6 | Atajos por voz, en español y en inglés | 30 min | Cualquiera |
 | 7 | VoiceOver | 30 min | Cualquiera |
 | 8 | Compra: comprar, restaurar, pendiente, reembolso, En familia | 1 h | Xcode con tienda local, y sandbox |
-| 9 | Prueba de 7 noches avanzando la fecha | 30 min | Uno sin Pro, en un iPhone que no la haya empezado |
-| 10 | Actualización desde una instalación antigua | 30 min | Dos builds, lanzados desde Xcode |
+| 9 | Prueba de 7 noches avanzando la fecha | 30 min | Uno sin Pro, con el llavero limpio: un iPhone que nunca la haya empezado (ver el apartado 9) |
+| 10 | Actualización desde una instalación antigua | 30 min | Dos builds, lanzados desde Xcode. Los pasos 1 a 10, el 11 y el 12 piden cada uno un llavero limpio (ver el apartado 10) |
 
 ## 0. Antes de empezar
 
@@ -26,8 +26,8 @@ Tiempo: unas 3 horas repartidas, más una noche.
 | Cómo | Tienda | Depuración | Para qué |
 |---|---|---|---|
 | Lanzada **desde Xcode** con el esquema tal cual | La local (`SleepNoise.storekit`): compras de mentira, se borran y se reembolsan desde Xcode | Sí | Pruebas 8 (parte local) y 10 |
-| Lanzada desde Xcode **sin** configuración de StoreKit (en el esquema, Run, Options, StoreKit Configuration: ninguna; *comprobar en la pantalla*) | Sandbox: el producto real de App Store Connect, sin cobrar | Sí | Prueba 8 (parte sandbox). El esquema lo genera XcodeGen: el cambio se pierde al regenerar |
-| Instalada desde **TestFlight** | Sandbox | No | Todo lo demás; es lo más parecido a la tienda |
+| Lanzada desde Xcode **sin** configuración de StoreKit (en el esquema, Run, Options, StoreKit Configuration: ninguna; *comprobar en la pantalla*) | Sandbox: el producto real de App Store Connect, sin cobrar, con la cuenta de sandbox puesta en los ajustes del iPhone | Sí | Prueba 8 (parte sandbox). El esquema lo genera XcodeGen: el cambio se pierde al regenerar |
+| Instalada desde **TestFlight** | Sandbox, pero con la **cuenta de Apple real** del iPhone (la de Contenido y compras), no con la de sandbox | No | Todo lo demás; es lo más parecido a la tienda. Antes de comprar con este build, lee 8.B |
 
 **Dos avisos:**
 
@@ -52,11 +52,11 @@ Son dos medidas, porque se estorban: con el iPhone enchufado al Mac, el porcenta
 |---|---|---|---|
 | 1 | Carga el iPhone al 100 % y desenchúfalo. Apunta la hora y el porcentaje | | |
 | 2 | Pon tu despertador real del iPhone, como cada día | | |
-| 3 | Carga la mezcla con la que dormirías, temporizador en **Manto** hasta una hora posterior a tu despertador, volumen de mesilla. Play | Suena; la página dice "Sonando · hasta las …" | |
+| 3 | Carga la mezcla con la que dormirías, temporizador en **Manto** con el fin **entre 1 y 59 minutos después** de tu despertador (despertador a las 07:00, Manto hasta las 07:30), volumen de mesilla. Play | Suena; la página dice "Sonando · hasta las …" | |
 | 4 | Bloquea el iPhone | Sigue sonando. Al encender la pantalla, de noche, está Noche (prueba 4) | |
 | 5 | Si puedes, deja otro dispositivo **grabando el sonido de la habitación** toda la noche (una nota de voz en otro teléfono, o el micrófono del Mac). Es la única forma de saber si hubo un corte mientras dormías | En la forma de onda se ve un nivel continuo, un escalón suave hacia abajo a los 45 minutos (la bajada del Manto, 6 dB en un minuto) y ningún hueco | |
 | 6 | Duerme. Si te despiertas, anota la hora y si sonaba | | |
-| 7 | Cuando suene el despertador | El despertador se oye; SleepNoise calla. Al apagarlo, SleepNoise **no vuelve**: entre las 05:00 y las 11:00, o desde una hora antes del fin del Manto, una interrupción da la noche por terminada | |
+| 7 | Cuando suene el despertador | El despertador se oye; SleepNoise calla. Al apagarlo, SleepNoise **no vuelve**: con Manto, desde una hora antes de su fin una interrupción da la noche por terminada. La franja de 05:00 a 11:00 solo rige sin Manto: si el fin del Manto queda a más de una hora del despertador, SleepNoise vuelve tras la alarma (prueba 2, paso 14) | |
 | 8 | Apunta hora y porcentaje de batería | Ver la nota de abajo | |
 | 9 | Abre la app | No se ha cerrado sola durante la noche: Noche dice "Terminó a las …" con la hora del despertador o la del Manto | |
 | 10 | Ajustes del iPhone, Batería: mira la parte de SleepNoise y su tiempo en segundo plano | Tiempo en segundo plano cercano a las horas dormidas | |
@@ -82,7 +82,7 @@ Si quieres toda la noche con el Mac, repite 1.B dejándolo grabar; el Mac no deb
 
 ## 2. Interrupciones
 
-Regla del código, para leer la tabla: una interrupción **fuera de la mañana** se reanuda sola con una subida de 3 segundos, siempre por la misma salida por la que sonaba; una llamada nunca termina la noche, dure lo que dure; cualquier otra cosa que la tenga en pausa 20 minutos la termina. **De 05:00 a 11:00**, o desde una hora antes del fin del Manto, ninguna interrupción se reanuda: se supone que es tu despertador.
+Regla del código, para leer la tabla: una interrupción **fuera de la mañana** se reanuda sola con una subida de 3 segundos, siempre por la misma salida por la que sonaba; una llamada nunca termina la noche, dure lo que dure; cualquier otra cosa que la tenga en pausa 20 minutos la termina. **De 05:00 a 11:00** ninguna interrupción se reanuda: se supone que es tu despertador. **Con Manto** esa franja no cuenta: la sustituye la última hora antes de su fin (pasos 14 y 15).
 
 El sistema no le dice a la app qué la interrumpió, salvo las llamadas. Por eso la hora manda.
 
@@ -253,7 +253,7 @@ Las herramientas están en Xcode: el gestor de transacciones (menú Debug, Store
 | 9 | Borra la transacción y toca "Restaurar compra" | "Buscando…" y después el aviso de que no hay ninguna compra con esa cuenta | |
 | 10 | Activa **pedir para comprar** en el editor del `.storekit`. Toca Comprar | El botón dice "Pendiente" y la línea de abajo, que está pendiente de aprobación y que se abrirá solo. Nada se abre todavía | |
 | 11 | En el gestor de transacciones, **aprueba** | Pro se abre solo, sin tocar nada | |
-| 12 | Repite el 10 y **rechaza** | Sigue sin Pro; el estado pendiente desaparece. Apunta qué dice la hoja | |
+| 12 | Repite el 10 y **rechaza** | Sigue sin Pro, y el botón **sigue en "Pendiente"**, sin poder comprar, hasta que cierres la app del todo y la abras: la tienda no avisa de un rechazo y la app solo retira ese estado cuando Pro se abre (`DECISIONES.md`, D-53). Tras relanzar, el botón vuelve a "Comprar · precio". Apunta qué dice la hoja | |
 | 13 | Repite el 10, cierra la app, aprueba y abre la app | Arranca ya con Pro | |
 | 14 | Activa las **compras interrumpidas** o un fallo de compra, si el editor lo ofrece | "No se ha podido completar. No se ha cobrado nada." | |
 | 15 | Cambia el país de la tienda a España en el editor | La descripción y el precio salen en su versión española | |
@@ -264,9 +264,11 @@ Las herramientas están en Xcode: el gestor de transacciones (menú Debug, Store
 
 Antes: el producto del paso 6 de `GUIA.md` existe, el acuerdo de apps de pago está activo, y has creado en App Store Connect una o dos **cuentas de prueba de sandbox** (Usuarios y acceso, Sandbox; *comprobar en la pantalla*). En el iPhone, la cuenta de sandbox se pone en Ajustes (en el apartado de desarrollador o en el de App Store, según la versión de iOS; *comprobar en la pantalla*). Nunca inicies sesión con una cuenta de sandbox como cuenta principal del iPhone. Las contraseñas las escribes tú.
 
+**Con qué build.** Con el lanzado **desde Xcode sin configuración de StoreKit** (tabla del apartado 0): ese compra con la cuenta de sandbox. Un build de **TestFlight** no: compra con la cuenta de Apple real del iPhone, la de Contenido y compras. No se cobra, pero la compra queda unida a tu cuenta en el entorno de pruebas, y App Store Connect solo borra el historial de las cuentas de sandbox (*comprobar en la pantalla*): Pro te saldría ya comprado en cada build de TestFlight, y dejarían de valer los pasos 4, 5, 6 y 10 de esta tabla y el "sin Pro" de la prueba 9. Para usar un build de TestFlight con la cuenta de sandbox, la ayuda de App Store Connect ("Testing subscriptions and In-App Purchases in TestFlight") pide **cerrar antes la sesión de tu cuenta en Contenido y compras** y entrar después con la de sandbox en los ajustes de desarrollador. Vuelve a iniciar sesión con tu cuenta al terminar.
+
 | # | Paso | Esperado | Resultado |
 |---|---|---|---|
-| 1 | Con un build de TestFlight, o lanzado desde Xcode sin configuración de StoreKit: abre la hoja Pro | El precio es el **real**, en euros, y el nombre es el de App Store Connect. Si sale "—" y "La tienda no responde", falta el acuerdo, el producto no está listo o no hay red | |
+| 1 | Con el build lanzado desde Xcode sin configuración de StoreKit (o uno de TestFlight con la sesión de Contenido y compras cerrada, como se explica arriba): abre la hoja Pro | El precio es el **real**, en euros, y el nombre es el de App Store Connect. Si sale "—" y "La tienda no responde", falta el acuerdo, el producto no está listo o no hay red | |
 | 2 | Con el iPhone en inglés, la misma hoja | Nombre y precio con formato inglés | |
 | 3 | Comprar, con la cuenta de sandbox | No se cobra nada. "Gracias. Todo abierto." | |
 | 4 | Borra la app, reinstala y toca "Restaurar compra" | Puede pedir la contraseña de la cuenta. "Buscando…" dura lo que tarde; Pro vuelve | |
@@ -277,17 +279,17 @@ Antes: el producto del paso 6 de `GUIA.md` existe, el acuerdo de apps de pago es
 | 9 | **En familia.** Si App Store Connect deja agrupar cuentas de sandbox en una familia (*comprobar en la pantalla*): compra con una y abre la app con la otra en otro iPhone | El segundo iPhone tiene Pro sin comprar, y su recibo añade "en familia" | |
 | 10 | Saca a la segunda cuenta de la familia, o borra el historial de compras de la primera desde App Store Connect | El segundo iPhone pierde Pro, sin perder mezclas ni niveles | |
 | 11 | En el recibo, "Escribir una reseña" | Solo aparece si `AppLinks.appStoreID` está relleno. Antes de publicar, la página de la tienda puede no existir | |
-| 12 | Durante la revisión de Apple no puedes mirar, pero sí repetir esto con el build exacto que envías | Los pasos 1, 3 y 4 pasan | |
+| 12 | Durante la revisión de Apple no puedes mirar, pero sí repetir esto con el build exacto que envías, el de TestFlight, con la sesión de Contenido y compras cerrada y la cuenta de sandbox | Los pasos 1, 3 y 4 pasan | |
 
 Si en sandbox no hay forma de probar **pedir para comprar** o el **reembolso**, valen los de 8.A y se declara así en `docs/agents/ESTADO.md`.
 
 ## 9. Prueba de 7 noches avanzando la fecha
 
-**Léelo entero antes de tocar nada.** El registro de la prueba vive en el llavero del iPhone y sobrevive a borrar la app: en un iPhone real, "Empezar la prueba" se puede pulsar **una sola vez**, salvo que borres todo el contenido del iPhone (`DECISIONES.md`, D-47). Si tienes un iPhone secundario, usa ese.
+**Léelo entero antes de tocar nada.** El registro de la prueba vive en el llavero del iPhone y sobrevive a borrar la app: en un iPhone real, "Empezar la prueba" se puede pulsar **una sola vez**, salvo que borres todo el contenido del iPhone (`DECISIONES.md`, D-47). Si tienes un iPhone secundario, usa ese. Ese mismo registro manda también en la prueba 10: si vas a hacer las dos en un solo iPhone, lee antes el orden que da el apartado 10.
 
 Cambiar la fecha a mano (Ajustes, General, Fecha y hora, sin ajuste automático) descoloca otras apps mientras dura: mensajes, códigos de verificación, certificados. Hazlo seguido y **vuelve a poner el ajuste automático al terminar**.
 
-Cómo cuenta la app: la prueba empieza solo con su botón, de día. Se evalúa al **empezar una noche nueva** (un Play con la noche anterior ya cerrada), nunca en mitad de una. La cifra de la cabecera son las noches que todavía empiezan (a las 21:00) antes del fin, con tope 7. De 21:00 a 07:00 la cabecera no dice nada.
+Cómo cuenta la app: la prueba empieza solo con su botón, de día. Se evalúa al **empezar una noche nueva** (un Play con la noche anterior ya cerrada), nunca en mitad de una. Abrir la app sin Play cuenta el tiempo pasado y lo guarda, pero no cambia nada a la vista: el cambio llega con el siguiente Play o la siguiente vez que la app arranca desde cero. La cifra de la cabecera son las noches que todavía empiezan (a las 21:00) antes del fin, con tope 7. De 21:00 a 07:00 la cabecera no dice nada.
 
 | # | Paso | Esperado | Resultado |
 |---|---|---|---|
@@ -300,8 +302,8 @@ Cómo cuenta la app: la prueba empieza solo con su botón, de día. Se evalúa a
 | 7 | Avanza la fecha dos días, a las 12:00, y abre la app | "prueba · quedan 5 noches". Apunta la cifra exacta que veas | |
 | 8 | Avanza hasta el día 7 (seis días después de empezar), a las 12:00 | "prueba · última noche". Con la app en silencio, en el sitio de "En silencio": "Última noche con todo. Mañana, lo gratis sigue gratis." Desaparece con el Play y no vuelve | |
 | 9 | Avanza al día 8, a las 10:00 (antes de la hora a la que empezaste) | La cabecera está **vacía**: no queda ninguna noche, aunque todo sigue abierto hasta la hora en que empezaste. Es el caso de `DECISIONES.md`, D-23: apunta si echas en falta un aviso | |
-| 10 | Avanza al día 9, a las 12:00. Abre la app **sin** pulsar Play | La prueba ya consta como terminada, porque venció entre dos aperturas: la Marea vuelve a leerse "pro" y aparece "La prueba terminó. Lo que usaste sigue aquí." con "Entendido" | |
-| 11 | Pulsa Play | Suena solo lo gratuito. Océano y hoguera conservan su nivel como "pro · N" y no suenan. La nota se va con el Play o con "Entendido" | |
+| 10 | Avanza al día 9, a las 12:00. Abre la app **sin** pulsar Play | Todavía **nada cambia**: la cabecera sigue vacía y todo sigue abierto, la Marea sin "pro". Esta apertura solo anota el tiempo pasado | |
+| 11 | Cierra la app **del todo** (quítala del selector de apps), ábrela, mira y después pulsa Play | Al abrir, la prueba ya consta como terminada: la Marea vuelve a leerse "pro" y aparece "La prueba terminó. Lo que usaste sigue aquí." con "Entendido". Con el Play suena solo lo gratuito: océano y hoguera conservan su nivel como "pro · N" y no suenan. La nota se va con el Play o con "Entendido". La otra vía, si en el paso 10 pulsas Play sin cerrar la app: suena solo lo gratuito y la nota sale al parar | |
 | 12 | Mira las mezclas guardadas | Están las cinco. Las que llevan capas de Pro se cargan recortadas. No puedes guardar una nueva por encima de tres | |
 | 13 | Mira la cabecera en los días siguientes | "gratis siempre" durante siete arranques de sonido, y luego nada | |
 | 14 | Abre la hoja Pro | Ya **no** ofrece la prueba. Comprar y Restaurar siguen | |
@@ -309,7 +311,7 @@ Cómo cuenta la app: la prueba empieza solo con su botón, de día. Se evalúa a
 | 16 | Compra Pro (tienda local o sandbox) | Todo vuelve, con los niveles que tenías | |
 | 17 | Vuelve a poner la fecha automática | | |
 
-Tres casos más, si te queda un segundo iPhone sin estrenar:
+Tres casos más. El 18 y el 19 empiezan la prueba, así que cada uno pide otro llavero limpio: otro iPhone sin estrenar, o lo que dice el apartado 10.
 
 | # | Paso | Esperado | Resultado |
 |---|---|---|---|
@@ -325,6 +327,14 @@ El caso duro es el salto desde la primera versión del repositorio (la que se fu
 
 Preparación, que puede hacer Claude: una copia de trabajo aparte en ese commit, generar el proyecto y lanzarlo en tu iPhone con el **mismo identificador de paquete y el mismo equipo**, para que el build nuevo se instale encima y no al lado.
 
+**El llavero manda, y no se borra con la app.** El build nuevo guarda la prueba en el llavero del iPhone, y un registro que ya esté allí gana a la prueba antigua: la app se queda con el del llavero y descarta la otra. Por eso los pasos 1 a 10, el paso 11 y el paso 12 piden **cada uno un llavero limpio**, igual que la prueba 9, y borrar la app en el paso 1 no lo limpia. En un solo iPhone:
+
+- Haz primero el **paso 11**, que no deja registro mientras no pulses "Empezar la prueba".
+- Después cabe **una** de estas tres: la prueba 9, los pasos 1 a 10 o el paso 12. Elige los pasos 1 a 10, que son el caso duro.
+- Las otras dos, en otro iPhone sin estrenar; o en el simulador, que se limpia con Device, Erase All Content and Settings (*comprobar en la pantalla*) y cuya fecha es la del Mac, así que avanzarla es cambiar la del Mac; o en el mismo iPhone cuando exista el borrado de depuración de `DECISIONES.md`, D-47. Para hacer las tres en un solo iPhone, D-47 es un requisito.
+
+Si te saltas este orden lo verás enseguida: después de la prueba 9, el paso 8 enseña una prueba ya terminada en vez de la antigua, y el paso 11 no ofrece "Empezar la prueba".
+
 | # | Paso | Esperado | Resultado |
 |---|---|---|---|
 | 1 | Borra la app del iPhone. Instala el build antiguo desde Xcode | | |
@@ -337,8 +347,8 @@ Preparación, que puede hacer Claude: una copia de trabajo aparte en ese commit,
 | 8 | Mira la cabecera, de día | La prueba antigua sigue como estaba, con el tiempo que llevaba gastado, contada ahora en noches | |
 | 9 | Abre la hoja Pro | **No** ofrece "Empezar la prueba": la antigua cuenta como usada | |
 | 10 | Avanza la fecha ocho días y pulsa Play | Termina como en la prueba 9 | |
-| 11 | Repite 1 a 3 **sin pulsar Play** en el antiguo | Es una instalación nueva: la hoja Pro sí ofrece la prueba | |
-| 12 | Repite 1 a 3 con la prueba antigua **ya agotada** (avanza la fecha en el antiguo) | Sigue agotada, sin prueba nueva y sin la nota "La prueba terminó" | |
+| 11 | **Hazlo antes que los demás** (ver arriba). Repite 1 a 3 **sin pulsar Play** en el antiguo | Es una instalación nueva: la hoja Pro sí ofrece la prueba. No la empieces: gastarías el llavero | |
+| 12 | Con el llavero limpio (ver arriba), repite 1 a 3 con la prueba antigua **ya agotada** (avanza la fecha en el antiguo) | Sigue agotada, sin prueba nueva y sin la nota "La prueba terminó" | |
 | 13 | Con Pro comprado en el antiguo (tienda local) | Sigue con Pro | |
 | 14 | Abre la app Atajos | Los cinco Atajos nuevos están; los antiguos no dejan restos que fallen | |
 

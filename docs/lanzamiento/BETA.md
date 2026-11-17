@@ -2,7 +2,7 @@
 
 Fecha: 17-11-2026. Textos listos para copiar: la invitación, lo que va en los campos de TestFlight, qué probar cada noche y el formulario de comentarios. Todo en español y en inglés. El paso a paso de TestFlight está en `GUIA.md` §12.
 
-Plan: entre diez y quince personas (familia, amigos, equipo), cinco noches seguidas, en la semana 4.
+Plan: entre diez y quince personas (familia, amigos, equipo), cinco noches seguidas, en la semana 4. Para enviar a revisión el 11-12-2026 las cinco noches no caben dentro de esa semana: el build tiene que estar subido y enviado a la revisión de beta hacia el 02-12-2026 (`GUIA.md` §12).
 
 ## 1. Antes de invitar
 
@@ -10,7 +10,8 @@ Plan: entre diez y quince personas (familia, amigos, equipo), cinco noches segui
 - [ ] **Dónde recoges las respuestas.** Un documento tuyo, fuera del repositorio. Al repositorio solo llegan resumidas y sin nombres.
 - [ ] **Qué dirección das.** La de contacto de la app, la misma de la política de privacidad. Donde abajo pone `[dirección de contacto]`, va esa. No se escribe en este fichero.
 - [ ] **Qué build.** Uno con `AppLinks` relleno y con la compra probada en sandbox (`PRUEBAS-EN-DISPOSITIVO.md` §8). Si la hoja Pro dice que la tienda no responde, los probadores no podrán probar Pro.
-- [ ] **Qué deben saber y no es obvio**, y por eso va en la invitación: en TestFlight comprar no cuesta dinero; la hoja Pro solo se abre de día; la prueba de 7 noches se empieza una sola vez; el build caduca.
+- [ ] **Qué deben saber y no es obvio**, y por eso va en la invitación: en TestFlight comprar no cuesta dinero, y esa compra no pasa a la versión de la tienda; la hoja Pro solo se abre de día; la prueba de 7 noches se empieza una sola vez; el build caduca.
+- [ ] **La prueba de 7 noches se gasta en la beta.** Su registro vive en el llavero del iPhone, que la versión de TestFlight y la de la tienda comparten y que no se borra con la app: quien la empiece en la beta ya no la tendrá en la versión de la tienda, en ese iPhone. La invitación lo dice. Si prefieres que tus probadores la conserven, pídeles que no la empiecen: la compra de la beta ya lo abre todo (`DECISIONES.md`, D-54).
 
 Estos textos pasan las listas de palabras de `docs/design/10-GUIA-DE-COPY.md` §0.5, con una sola coincidencia, que la guía admite ("Lock Screen"), y no prometen nada sobre el sueño ni la salud. Tampoco cuentan texturas. Si los cambias, mantén eso.
 
@@ -33,9 +34,9 @@ Cómo instalarla:
 3. Pulsa Instalar. Necesitas iOS 17 o posterior.
 
 Tres cosas que conviene saber:
-- La app tiene una compra, Pro. En esta versión de prueba comprar no cuesta dinero: no se cobra nada. Pruébala sin miedo.
+- La app tiene una compra, Pro. En esta versión de prueba comprar no cuesta dinero: no se cobra nada. Esa compra vale solo aquí: no pasa a la versión de la tienda.
 - La app no vende nada de noche. La pantalla de Pro solo se abre entre las 07:00 y las 21:00.
-- Hay una prueba de 7 noches con todo abierto. Se empieza una sola vez, desde esa misma pantalla.
+- Hay una prueba de 7 noches con todo abierto. Se empieza una sola vez, desde esa misma pantalla. Si la empiezas aquí, queda usada en este iPhone: en la versión de la tienda no volverá a salir.
 
 Qué te pido: que duermas con ella cinco noches y que al final me contestes unas pocas preguntas. Te las mando el quinto día. Si algo falla antes, cuéntamelo en el momento: en TestFlight, una captura de pantalla te deja enviarla con un comentario, o escríbeme a [dirección de contacto].
 
@@ -59,9 +60,9 @@ How to install it:
 3. Tap Install. You need iOS 17 or later.
 
 Three things worth knowing:
-- The app has one purchase, Pro. In this test version buying costs nothing: you are not charged. Go ahead and try it.
+- The app has one purchase, Pro. In this test version buying costs nothing: you are not charged. That purchase counts only here: it does not carry over to the App Store version.
 - The app sells nothing at night. The Pro screen only opens between 07:00 and 21:00.
-- There is a 7-night trial with everything open. It starts only once, from that same screen.
+- There is a 7-night trial with everything open. It starts only once, from that same screen. If you start it here, it is used up on this iPhone: the App Store version will not show it again.
 
 What I am asking: sleep with it for five nights and answer a few questions at the end. I will send them on day five. If something goes wrong before that, tell me right away: in TestFlight, taking a screenshot lets you send it with a comment, or write to [contact address].
 

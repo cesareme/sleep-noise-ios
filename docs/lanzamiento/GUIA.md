@@ -14,6 +14,7 @@ Documentos hermanos, en esta misma carpeta:
 ## Cómo leer esta guía
 
 - **Estado al escribirla.** El código se leyó en el commit `80ebd1b` (623 tests), que lleva la hoja Pro y la prueba de 7 noches (paquete S-07). La rama `main` todavía no lo tiene. El paquete S-08 (catálogo de cadenas, capturas y firma local) estaba en curso, con cambios sin confirmar: lo que esta guía dice de `Config/` y de `scripts/screenshots.sh` sale de ahí y puede cambiar antes de llegar a `main`. Donde un paso depende de algo que aún no está en `main`, lo dice.
+- **Ningún plazo de Apple está garantizado.** Lo que esta guía dice de aprobaciones, procesado de builds, revisión de la beta, revisión de la tienda y aparición de la ficha es orientación: Apple no se compromete a ninguno. Cuenta con margen.
 - **Las pantallas de Apple y de GitHub cambian.** Los nombres de menús se dan como orientación. Donde pone *comprobar en la pantalla*, manda lo que leas allí, no esta guía.
 - **Nada personal en el repositorio.** El repositorio es público. El identificador de equipo, los datos del banco, tu teléfono y los correos de los probadores no se escriben en ningún fichero versionado, ni en un commit, ni en un PR. El último apartado lo resume.
 - **"Claude después"** es lo que puedes pedirle a Claude Code en el Mac una vez hecho tu paso. Claude no entra en tus cuentas, no acepta contratos, no escribe contraseñas ni datos de pago y no pulsa "enviar" por ti: eso es tuyo.
@@ -31,16 +32,16 @@ Documentos hermanos, en esta misma carpeta:
 | 7 | Política de privacidad en GitHub Pages | 30 min | Minutos | 3 |
 | 8 | Identificador de la app y dirección de contacto en `AppLinks` | 10 min | No | 4 |
 | 9 | Rellenar la ficha desde `docs/store/` | 1 h 30 min | No | 4, 6 y 7 |
-| 10 | Escucha y pruebas en tu iPhone | 3 h y una noche | No | 2 |
-| 11 | Subir un build a TestFlight con Xcode | 45 min la primera vez | Hasta 1 h de procesado | 2 y 4 |
-| 12 | Beta de 5 noches | 2 h de gestión | Revisión de la beta: en torno a un día | 11 |
+| 10 | Escucha y pruebas en tu iPhone | 3 h y una noche | No | 2; la compra en sandbox (prueba 8.B), además 5 y 6 |
+| 11 | Subir un build a TestFlight con Xcode | 45 min la primera vez | Procesado: de minutos a horas | 2 y 4 |
+| 12 | Beta de 5 noches | 2 h de gestión | Revisión de la beta: sin plazo fijo, a menudo en torno a un día | 5, 6, 8, 10 y 11 |
 | 13 | Envío a revisión | 1 h | Revisión de Apple: de uno a varios días | Todo lo anterior |
 | 14 | Si Apple rechaza | Según el caso | Sí | 13 |
 | 15 | Publicación y después | 30 min | No | 13 |
 
 Total tuyo: entre tres y cuatro días repartidos en cuatro semanas, como prevé `docs/PLAN-SIMPLE-1.0.md` §6. Los pasos 1 y 5 tienen esperas que no controlas: empiézalos el primer día.
 
-Fechas del plan: nombre definitivo el 04-12-2026, envío a revisión como tarde el viernes 11-12-2026.
+Fechas del plan: nombre definitivo el 04-12-2026, envío a revisión como tarde el viernes 11-12-2026. Para llegar a esa fecha, el build de la beta tiene que estar subido y en revisión de beta hacia el miércoles 02-12-2026: la cuenta está en el paso 12.
 
 ---
 
@@ -83,9 +84,10 @@ Qué haces tú:
 - [ ] En el Terminal, dentro de la carpeta del repositorio, copia la plantilla: `cp Config/Local.xcconfig.example Config/Local.xcconfig`.
 - [ ] Abre `Config/Local.xcconfig` y sustituye el valor de ejemplo por tu Team ID.
 - [ ] Ejecuta `git status`. **`Config/Local.xcconfig` no debe aparecer.** Si aparece, para y avisa: falta la línea en `.gitignore`.
-- [ ] `xcodegen generate` y abre `SleepNoise.xcodeproj`. En el target **SleepNoise**, pestaña *Signing & Capabilities*, el equipo ya debe estar elegido, sin errores en rojo.
 - [ ] Conecta el iPhone por cable, acéptalo como dispositivo de confianza y, en el iPhone, activa el **modo de desarrollador** (Ajustes, Privacidad y seguridad; pide reiniciar; *comprobar en la pantalla*).
-- [ ] Elige tu iPhone como destino y pulsa Run. La primera vez Xcode registra el dispositivo y el identificador de la app en tu cuenta.
+- [ ] `xcodegen generate`, abre `SleepNoise.xcodeproj` y elige **tu iPhone como destino**.
+- [ ] En el target **SleepNoise**, pestaña *Signing & Capabilities*, el equipo ya debe estar elegido. Con una cuenta recién creada, sin ningún dispositivo registrado, Xcode no puede crear el perfil y enseña un error en rojo mientras no haya un iPhone conectado y elegido: ese error es el esperado y se va cuando el dispositivo queda registrado (*comprobar en la pantalla*). Con tu iPhone ya como destino no debe quedar ninguno.
+- [ ] Pulsa Run. La primera vez Xcode registra el dispositivo y el identificador de la app en tu cuenta.
 
 Si necesitas probar en el iPhone **antes** de que S-08 esté en `main`: genera el proyecto, elige el equipo a mano en *Signing & Capabilities* y pulsa Run. Vale, pero se pierde en cada regeneración.
 
@@ -106,16 +108,17 @@ Tiempo: 20 minutos.
 Qué haces tú, en GitHub, en los ajustes del repositorio (Settings, apartado Branches o Rules; GitHub tiene dos interfaces para lo mismo, *comprobar en la pantalla*):
 
 - [ ] Crea una regla para la rama `main` que exija **pull request antes de fusionar**.
+- [ ] En esa opción, deja las **aprobaciones requeridas en 0**. La interfaz clásica las trae en 1 al marcarla (*comprobar en la pantalla*), y GitHub no deja que nadie apruebe su propio PR. Todos los PR de este repositorio salen de tu cuenta, también los que abre y fusiona Claude: con 1 aprobación y la regla aplicada a los administradores, en `main` no se podría fusionar nada. Por lo mismo, no marques la revisión de propietarios de código (Code Owners) mientras no haya una segunda cuenta que revise (`DECISIONES.md`, D-45). La revisión entre agentes de `AGENTS.md` §6 sigue haciéndose; lo que no puede ser es una aprobación de GitHub.
 - [ ] En la misma regla, exige que pasen las comprobaciones de estado y marca como obligatoria la que se llama **`verify`**. Es el nombre del trabajo de `.github/workflows/ci.yml`; si alguien lo renombra, hay que actualizar la regla. Para que GitHub te deje elegirla, la CI tiene que haberse ejecutado al menos una vez.
 - [ ] Impide los push forzados y el borrado de la rama.
 - [ ] Decide si la regla se aplica también a los administradores. Recomendado: sí.
-- [ ] En los ajustes de tu cuenta de GitHub, apartado Emails, activa la opción de mantener privado tu correo y copia la dirección `noreply` que GitHub te da. Configúrala en tu Mac con `git config user.email` dentro del repositorio. Los commits que ya existen conservan la dirección anterior: ver `DECISIONES.md`, D-44.
+- [ ] En los ajustes de tu cuenta de GitHub, apartado Emails, activa la opción de mantener privado tu correo y copia la dirección `noreply` que GitHub te da. Configúrala en tu Mac con `git config user.email` dentro del repositorio. Los commits que ya están en GitHub conservan la dirección anterior: ver `DECISIONES.md`, D-44. Los que aún no has subido se pueden corregir antes del push, una vez configurada la dirección nueva: `git commit --amend --reset-author --no-edit` para el último, o `git rebase --exec 'git commit --amend --reset-author --no-edit' main` para todos los de la rama. La rama que trae esta guía está en ese caso: sus commits se hicieron con la dirección que había configurada.
 
-Hecho cuando: un push directo a `main` es rechazado y un PR con la CI en rojo no se puede fusionar.
+Hecho cuando: un push directo a `main` es rechazado, un PR con la CI en rojo no se puede fusionar y un PR tuyo con la CI en verde sí.
 
 Claude después:
 
-- Añadir `.github/CODEOWNERS` para `scripts/`, `.github/` y `project.yml`, pendiente desde S-01: hoy la CI avisa cuando un PR toca la puerta, pero no lo impide.
+- Añadir `.github/CODEOWNERS` para `scripts/`, `.github/` y `project.yml`, pendiente desde S-01, solo si decides tener una segunda cuenta que revise (`DECISIONES.md`, D-45). Hoy la CI avisa cuando un PR toca la puerta, pero no lo impide; con una sola cuenta, el fichero tampoco impide nada y, exigido en la regla, lo bloquea todo.
 
 ## 4. Crear la ficha y comprobar el nombre
 
@@ -228,7 +231,7 @@ Qué haces tú, en App Store Connect, en el orden de `docs/store/README.md`:
 - [ ] **Clasificación por edades:** `privacidad.md` §2. Resultado esperado: la más baja.
 - [ ] **Categoría** principal y secundaria: `privacidad.md` §4.
 - [ ] **Derechos de contenido** y **cumplimiento de exportación:** `privacidad.md` §3 y §5.
-- [ ] **Precio y disponibilidad de la app:** gratuita; países en los que se vende.
+- [ ] **Precio y disponibilidad de la app:** gratuita; países en los que se vende. Antes de marcarlos todos, mira `DECISIONES.md`, D-51: la app enlaza `CallKit` y China continental queda fuera mientras no se compruebe que esa tienda lo admite.
 - [ ] **Página de la versión 1.0, en inglés:** nombre, subtítulo, texto promocional, descripción y palabras clave de `docs/store/ficha-en.md`.
 - [ ] **Añade la localización española** y pega `docs/store/ficha-es.md`.
 - [ ] **URL de privacidad:** la del paso 7. **URL de soporte:** obligatoria; puede ser la misma.
@@ -248,7 +251,7 @@ Claude después:
 Tiempo: unas 3 horas y una noche.
 
 - [ ] `ESCUCHA.md`: una hora con auriculares y otra por el altavoz. El resultado es un sí, un no o un "retocar" por textura. **La textura que no pase no entra en 1.0** y hay que quitarla de la ficha, de las notas y de la captura de Capas.
-- [ ] `PRUEBAS-EN-DISPOSITIVO.md`: la noche entera, las interrupciones, los auriculares, los Atajos, la pantalla de bloqueo, la compra en sandbox, la prueba de 7 noches y la actualización.
+- [ ] `PRUEBAS-EN-DISPOSITIVO.md`: la noche entera, las interrupciones, los auriculares, los Atajos, la pantalla de bloqueo, la compra en sandbox, la prueba de 7 noches y la actualización. La compra en sandbox necesita el acuerdo activo (paso 5) y el producto creado (paso 6); lo demás solo necesita el paso 2.
 
 Hecho cuando: las dos tablas están rellenas y cada "no" tiene dueño.
 
@@ -277,7 +280,7 @@ Lo que cambia en un build de TestFlight frente a uno lanzado desde Xcode:
 
 - Los estados de depuración (`-pageState`, `-gallery`) **no existen**: solo se compilan en modo Debug.
 - La tienda local (`SleepNoise.storekit`) **no se usa**: el producto y el precio salen de App Store Connect. Si el paso 5 o el 6 no están terminados, la hoja Pro dirá que la tienda no responde.
-- Las compras en TestFlight no se cobran.
+- Las compras en TestFlight no se cobran. Se hacen con la cuenta de Apple del iPhone, no con una de sandbox, y no pasan a la versión de la tienda. Antes de comprar tú con un build de TestFlight, lee `PRUEBAS-EN-DISPOSITIVO.md` §8.B: esa compra te dejaría Pro fijo en los builds de prueba.
 
 Hecho cuando: el build está en la pestaña TestFlight sin avisos y lo instalas en tu iPhone desde la app TestFlight.
 
@@ -290,6 +293,10 @@ Claude después:
 ## 12. Beta de 5 noches
 
 Tiempo: 2 horas de gestión, repartidas en una semana. Textos en `BETA.md`.
+
+Antes: el acuerdo activo y el producto creado (pasos 5 y 6), `AppLinks` relleno (paso 8), tus pruebas hechas con la compra en sandbox incluida (paso 10) y el build en TestFlight (paso 11). Es lo que pide `BETA.md` §1.
+
+Cuándo: el plan pone la beta en la semana 4 (07-12 al 11-12) y el envío el viernes 11-12. Dentro de esa semana no cabe: la revisión de la beta, cinco noches, uno o dos días de correcciones y un build nuevo suman más de cinco días. Para enviar el 11-12, los probadores tienen que empezar hacia el viernes 04-12 y el build tiene que estar subido y enviado a la revisión de beta hacia el miércoles 02-12. Es una cuenta de esta guía, no una fecha del plan. Si el 02-12 no hay build, o la beta se acorta o el envío pasa a la segunda fecha (`DECISIONES.md`, D-03).
 
 Qué haces tú, en App Store Connect, pestaña TestFlight:
 

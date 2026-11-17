@@ -13,7 +13,7 @@ Cómo leerla:
 - **Fichero que cambia.** Dónde se escribe la decisión. Los cambios de código los hace Claude por PR.
 - Para responder basta con el identificador y una palabra: "D-08: a".
 
-Recuento: 12 condiciones de envío, 3 con fecha, 7 de ficha, 16 de producto e interfaz, 8 de proceso, 4 surgidas al escribir esta guía y un bloque de confirmaciones.
+Recuento: 13 condiciones de envío, 3 con fecha, 7 de ficha, 17 de producto e interfaz, 8 de proceso, 6 surgidas al escribir esta guía y un bloque de 36 confirmaciones. Los identificadores no se renumeran: lo añadido en la corrección de esta guía lleva los números siguientes (D-51 a D-54, C-25 a C-36) y está en el apartado que le toca.
 
 ---
 
@@ -43,6 +43,7 @@ Sin cerrar estas, no se envía a revisión.
 | D-13 | **Compra real en sandbox**: comprar, restaurar, pendiente de aprobación, reembolso y En familia. Nada de eso se ha ejecutado contra StoreKit | Hacer `PRUEBAS-EN-DISPOSITIVO.md` §8 antes de la beta *(fuente: ESTADO, S-07, "sin verificar")* | No hay respuesta por defecto: es una prueba, no una opinión | Ninguno si pasa; `SleepNoise/StoreKit/` si falla |
 | D-14 | **Una noche entera** en tu iPhone, con medida de energía | Hacer `PRUEBAS-EN-DISPOSITIVO.md` §1 en la semana 2 *(fuente: plan §2 y §6)* | No hay respuesta por defecto | Ninguno si pasa |
 | D-15 | **Recorrido con VoiceOver real.** Etiquetas, valores y foco están puestos y probados por lógica; nadie ha recorrido las pantallas con VoiceOver encendido | Un recorrido de 30 minutos antes de la beta *(fuente: ESTADO, "sin verificar" de S-06 y S-07)* | Se envía sin haberlo oído | Vistas y cadenas `ax.*` si falla |
+| D-51 | **China continental.** La app enlaza `CallKit` (`CXCallObserver`, para distinguir una llamada de cualquier otra interrupción), y ESTADO pide comprobar, antes de publicar allí, si esa tienda sigue rechazando las apps que lo enlazan | Dejar China continental fuera de los países de la 1.0 y añadirla cuando esté comprobado *(fuente: ESTADO, S-06 tarea 1, pide la comprobación; excluirla mientras tanto es de la guía)* | No hay respuesta por defecto: marcar todos los países sin comprobarlo expone el envío a un rechazo o a una retirada en esa tienda | Solo App Store Connect (`GUIA.md` §9); `SleepNoise/Audio/AudioSessionObserver.swift` si hubiera que quitar `CallKit` |
 
 ## 3. Ficha de la tienda
 
@@ -52,7 +53,7 @@ Sin cerrar estas, no se envía a revisión.
 | D-17 | **Subtítulo inglés "Pay once." y captura 1 con "Un solo pago." y "sin tarjeta"**, o los textos de reserva. La directriz 2.3.7 no quiere precios ni condiciones en nombre, subtítulo y capturas | Mantener y tener la reserva lista para un rechazo *(fuente: `docs/store/README.md`)* | Se quedan los de la guía y C57 | `docs/store/ficha-en.md`, `ficha-es.md` |
 | D-18 | **Enmienda del tercer párrafo de la descripción**, que dice qué añade Pro (directriz 2.3.2) | Aceptarla: las capturas 3 y 4 enseñan cosas de Pro *(guía)* | Se queda el texto de la guía de copy, sin la enmienda | `docs/store/ficha-*.md` y guía de copy §5e.15 |
 | D-19 | **URL de soporte**: la misma página de privacidad o la página de incidencias del repositorio | La de privacidad, que lleva el contacto *(fuente: `docs/store/README.md`)* | La de privacidad | Solo App Store Connect |
-| D-20 | **Capturas de la página**: escenificadas con Pro comprado (cabecera vacía, todo abierto) o como una instalación nueva, donde la Marea se lee "pro" | Instalación nueva para la captura 2, "el primer uso", que es lo que la persona verá *(guía; ESTADO lo deja "a revisar en S-08")* | Siguen escenificadas con Pro | Test de capturas de S-08 |
+| D-20 | **Capturas de la página**: escenificadas con Pro comprado (cabecera vacía, todo abierto) o como una instalación nueva, donde la Marea se lee "pro" | Instalación nueva para la captura 2, "el primer uso", que es lo que la persona verá *(guía; ESTADO lo deja "a revisar en S-08")*. S-08, en curso, ya la hace así en su copia de trabajo (`02-first-use` con el estado `restFree`): falta tu sí | Se queda como S-08 la deje: la captura 2 como instalación nueva, con la Marea en "Apagada · pro" | `scripts/screenshots.sh` (S-08) |
 | D-21 | **Abrir también la ficha "Spanish (Mexico)"** | No en 1.0: la app lleva una sola localización `es` *(guía)* | No se abre | `docs/store/ficha-es.md`, apartado final |
 | D-22 | **Vídeo de vista previa** | Fuera de 1.0 *(fuente: plan §4.3 fila 28)* | Fuera | Ninguno |
 
@@ -78,10 +79,11 @@ Salvo que se diga otra cosa, ninguna bloquea el envío.
 | D-36 | **Audio aplazado sin paquete.** (a) Arrastrar el nivel en Noche durante el minuto en que el Manto baja termina esa bajada en 50 ms. (b) El paso de la mezcla a Madrugada cruza en 20 ms, sin fundido cruzado | Escucharlo en `ESCUCHA.md` §6, §7 y §9; corregir en 1.0 solo lo que se oiga *(guía)* | Pasa a 1.0.1 | `SleepNoise/Audio/` (un campo nuevo en `EngineCommand`) |
 | D-37 | **La compra o la prueba "que se oyen"**: al comprar o empezar la prueba, la capa entra con el suavizado normal y no con el fundido de 800 ms de la spec 08 §2.3 | Dejarlo para después de 1.0 *(guía)* | Se queda | `SleepNoise/Audio/` |
 | D-38 | **Hoguera: "brasas, sin chasquidos".** La línea de uso promete que no hay chasquidos y la textura lleva unos pocos | Decidir en la escucha: o se retoca el sonido o se cambia la línea *(guía)* | Se queda la contradicción a la vista de quien escuche | `SleepNoise/Audio/DSP/CampfireTexture.swift` o la cadena `capas.campfire.detalle` |
+| D-52 | **Noche terminada, por la mañana.** Hoy la mañana nunca quita la pantalla Noche: quien abre la app a las 08:00 con Noche delante ve "Terminó a las 23:45" y "Madrugada · 20 min", y al salir llega a la página nocturna. La spec 07 la fundía sola a la página de día | Decidirlo tras la noche real (`PRUEBAS-EN-DISPOSITIVO.md` §1.A, paso 9): si por la mañana te estorba, que se funda sola a la página de día *(guía; ESTADO, S-06 tarea 3: "a decidir por el dueño")* | Se queda como está | `SleepNoise/Features/Mixer/MixerModel.swift` y su test |
 
 ## 5. Confirmaciones en bloque
 
-Decisiones que el integrador tomó al construir y marcó "a confirmar". Ninguna necesita respuesta: **si no dices nada, se quedan como están**. Léelas una vez con la app delante y marca solo la que quieras cambiar.
+Decisiones que el integrador tomó al construir y marcó "a confirmar". Ninguna necesita respuesta: **si no dices nada, se quedan como están**. Léelas una vez con la app delante y marca solo la que quieras cambiar. De la C-25 en adelante son las de las tareas 1 a 4 de S-06. No se repiten aquí las que ESTADO ya da por corregidas ni las que solo dicen que una cifra sale del código.
 
 | Id | Qué se hizo | Dónde |
 |---|---|---|
@@ -109,6 +111,18 @@ Decisiones que el integrador tomó al construir y marcó "a confirmar". Ninguna 
 | C-22 | La nota "La prueba terminó" se va con "Entendido" o con el siguiente Play de día; la tercera salida de la spec no está | `PageLogic.swift` |
 | C-23 | Una revocación (reembolso, salida de En familia) con el sonido puesto espera a que pare | `PurchaseManager.swift` |
 | C-24 | Rechazado en la revisión y no hecho: "Volver a la página" primero en VoiceOver, una pista para "Noche" con la mezcla parada, "desplegado / plegado" en la fila Duración y la tinta del valor central de las ruedas | ESTADO, corrección de S-06 |
+| C-25 | El fundido final de "Hasta dormirme" dura un cuarto de la duración, con techo de 15 minutos: 10 minutos a los 40, 15 desde una hora | `TimerChoice.swift` |
+| C-26 | La bajada del Manto (6 dB a los 45 minutos) se hace en un minuto de rampa | `SleepTimerController.swift` |
+| C-27 | "+15 min" en Manto suma a la hora de fin de esa noche, sin tocar la hora elegida | `SleepTimerController.swift` |
+| C-28 | El nivel de la noche tiene un suelo de 0,05: el arrastre en Noche baja el sonido, no lo apaga | `MixerModel.swift` |
+| C-29 | Una interrupción que el sistema nunca da por acabada se cierra al volver la app a primer plano, salvo que haya una llamada en curso u otra app sonando | `MixerModel.swift` |
+| C-30 | Temporizador y Marea, abiertas desde la página nocturna, toman la tinta única y siguen sobre `hoja`, como Capas (va con D-31) | `TimerSheet.swift`, `TideSheet.swift` |
+| C-31 | En el Temporizador la línea bajo la cifra repite la cifra ("8 min" y "Fundiendo · 8 min"), y "Apagado" deja vacío su hueco de control: evitarlo pide cadenas que la guía de copy no tiene | `TimerSheetLogic.swift` |
+| C-32 | Marea: el menú Ritmo ofrece los dos nombres y, si lo arrastraste a otro, ese valor; encendida sin sonar, la caja de estado queda vacía; "Toda la noche" ya no se ofrece y un ajuste guardado así se lee como 30 minutos | `TideSheetLogic.swift` |
+| C-33 | Noche: la entrada sola al bloquear ocurre solo de 21:00 a 07:00, sonando y sin hoja delante; la pulsación larga no vibra; las dos frases de la primera vez duran 4 s y no salen desde AX3; la cifra de Madrugada va a 72 pt | `NightScreen.swift`, `NightLogic.swift` |
+| C-34 | Mezclas es una hoja, como Capas; la fila "Esta noche" guarda al tocarla; el campo de guardar llega con el nombre automático y no se evita repetir un nombre; dos capas de Pro en una receta se dicen una a una | `MixesSheet.swift`, `MixesLogic.swift` |
+| C-35 | El Atajo del temporizador guarda el modo, como la hoja, y ya no vale "solo por esta noche"; "Apagado" no arranca el sonido; el Atajo de una capa sola se retiró | `SleepIntents.swift` |
+| C-36 | Cadenas que no están en la guía de copy y que nadie ha aprobado: `noche.estado.termino` ("Terminó a las…"), `ax.noche.pista.reanudar`, `ax.madrugada.pista.reanudar`, `mezcla.guardar.titulo` y las `atajo.*` | `Localizable.xcstrings`; guía de copy §5e si las apruebas |
 
 ## 6. Proceso
 
@@ -120,7 +134,7 @@ Decisiones que el integrador tomó al construir y marcó "a confirmar". Ninguna 
 | D-42 | **Un segundo lector, solo lectura**, para los PR de audio y de StoreKit | Sí *(fuente: plan §10)* | Un solo revisor | `docs/PLAN-SIMPLE-1.0.md` §3 |
 | D-43 | **Reconciliar las specs 05 y 07.** Se propuso antes de S-04, que ya está integrado | Darla por superada para 1.0; reconciliarlas cuando se abra 1.1 *(guía)* | Siguen sin reconciliar; manda la reconciliación | `docs/design/05-*.md`, `07-*.md` |
 | D-44 | **Correo en los commits.** El repositorio público lleva como autor una dirección real | La dirección `noreply` de GitHub de aquí en adelante. Reescribir la historia ya publicada es otra decisión, con coste: cambia todos los identificadores de commit *(fuente: ESTADO, corrección de S-06; lo de la historia es de la guía)* | Los commits nuevos siguen saliendo con la dirección actual | Configuración local de Git; ninguno del repositorio |
-| D-45 | **`CODEOWNERS`** para `scripts/`, `.github/` y `project.yml`, al proteger `main` | Sí *(fuente: ESTADO, notas de S-01)* | La CI avisa pero no impide | `.github/CODEOWNERS` |
+| D-45 | **`CODEOWNERS`** para `scripts/`, `.github/` y `project.yml`, al proteger `main`. El fichero solo impide algo si la regla exige la revisión de los propietarios, y esa revisión es una aprobación de otra cuenta: hoy todos los PR salen de una sola cuenta de GitHub y nadie aprueba su propio PR | Solo si hay una **segunda cuenta** que revise. Mientras no la haya, aprobaciones requeridas en 0 y sin revisión de propietarios obligatoria (`GUIA.md` §3) *(fuente: ESTADO, notas de S-01, lo proponía sin condición; la condición es de la guía)* | La CI avisa pero no impide | `.github/CODEOWNERS` y la regla de `main` en GitHub |
 | D-50 | **Cursor.** El plan §6 te pedía confirmar su plan el 17-11, y reparte en él los paquetes S-03, S-05 y S-09. Las ramas de esos tres paquetes llevan el prefijo `claude/`: los hizo Claude | Decir si Cursor sigue en el reparto. Si no, anotar en el plan quién hace de revisor distinto del autor, que es una regla que se mantiene (plan §1) *(guía)* | El plan y la práctica siguen sin coincidir | `docs/PLAN-SIMPLE-1.0.md` §3 y §5, `AGENTS.md` §7 |
 
 ## 7. Surgidas al escribir esta guía
@@ -130,9 +144,11 @@ No están en los tres documentos de origen. Se anotan aquí para que no se pierd
 | Id | Decisión | Recomendación | Si no decides | Fichero que cambia |
 |---|---|---|---|---|
 | D-46 | **Qué publica GitHub Pages.** Con el ajuste simple se publica toda la carpeta `docs/`, también esta | Publicar solo `privacy/`, y añadir `lanzamiento` a la lista de exclusiones si se usa esa vía | No se activa Pages, y sin URL de privacidad no se envía | `docs/_config.yml` o un flujo en `.github/workflows/` |
-| D-47 | **Poder repetir la prueba de 7 noches en un build de depuración.** El registro vive en el llavero y sobrevive a borrar la app: en un iPhone real el ensayo solo se puede hacer una vez | Un argumento de lanzamiento, solo en Debug, que borre el registro | Un ensayo por iPhone | `SleepNoise/Model/KeychainTrialStorage.swift`, `PageDebug.swift` |
+| D-47 | **Poder repetir la prueba de 7 noches en un build de depuración.** El registro vive en el llavero y sobrevive a borrar la app: en un iPhone real el ensayo solo se puede hacer una vez. Además manda sobre la prueba antigua, así que `PRUEBAS-EN-DISPOSITIVO.md` §9, §10 pasos 1 a 10 y §10 paso 12 piden cada uno un llavero limpio | Un argumento de lanzamiento, solo en Debug, que borre el registro al arrancar, antes de leer nada. Construirlo **antes** de las pruebas 9 y 10: con un solo iPhone es un requisito para hacerlas enteras | Un ensayo por iPhone: una sola de esas tres pruebas; las otras, en otro iPhone o en el simulador | `SleepNoise/Model/KeychainTrialStorage.swift`, `PageDebug.swift` |
 | D-48 | **Vendedor**: persona o empresa, y condición de comerciante en la UE, que hace públicos unos datos de contacto | Decidirlo antes de inscribirte; no se cambia con facilidad | No hay respuesta por defecto | Ninguno del repositorio |
 | D-49 | **Publicación al aprobarse**: manual o automática | Manual, para elegir el día | Lo que App Store Connect traiga marcado | Ninguno |
+| D-53 | **Una compra pendiente que se rechaza deja el botón en "Pendiente".** La tienda no avisa de un rechazo y la app solo retira ese estado cuando Pro se abre: hasta cerrar la app del todo y abrirla no se puede volver a comprar (`PRUEBAS-EN-DISPOSITIVO.md` §8.A, paso 12) | Corregirlo en S-11: que "Pendiente" no impida volver a pedir la compra, por ejemplo retirándolo al cerrar la hoja o al volver la app a primer plano | Se queda: quien vea rechazada su petición tiene que cerrar la app para pedirla otra vez | `SleepNoise/StoreKit/PurchaseManager.swift`, `SleepNoise/Features/Pro/ProSheetLogic.swift` |
+| D-54 | **La beta gasta la prueba de 7 noches de los probadores.** TestFlight y la tienda comparten el llavero: quien empiece la prueba en la beta no la tendrá en la versión de la tienda, en ese iPhone. Y la compra de la beta no pasa a la tienda | Decirlo en la invitación, como ya hace `BETA.md` §2, y no pedir a nadie que empiece la prueba en la beta | La invitación lo avisa y cada probador decide | `docs/lanzamiento/BETA.md` |
 
 ---
 
@@ -184,6 +200,7 @@ Para que nadie las reabra por despiste.
 | Amanecer acústico | 2.0 | C36 |
 | Rampa propia para la bajada del Manto; fundido cruzado entre mezclas; fundido de 800 ms al comprar | Sin versión: 1.0.1 si se oyen (D-36, D-37) | ESTADO |
 | Semilla por arranque y test de autocorrelación | Sin versión (D-11) | `docs/store/README.md` |
+| Paquete I0-8 de la Marea (spec 06): disolución dentro de la ventana, 30 s de disolución al apagarla a mano, interruptor que vuelve solo a apagado tras la retirada y ancla corregida con la latencia de salida | Sin versión | ESTADO, S-06 tarea 2 |
 | "Guardar en «…»", descomposición del Horizonte por pulsación larga | Sin versión | ESTADO, S-04 y S-06 |
 | Cuentas, anuncios, analítica, red propia, bibliotecas de terceros, grabaciones de audio, petición de reseña del sistema | Nunca | `AGENTS.md` §5.11; `docs/ROADMAP.md` |
 | Candados, insignias, cápsulas, degradados, sombras, luna y estrellas, iconos de sonido | Nunca | `AGENTS.md` §5.10 |
