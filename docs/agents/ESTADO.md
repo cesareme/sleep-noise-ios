@@ -106,9 +106,9 @@ De la entrega de la página y de Capas (17-11-2026). Quien abra el paquete indic
 ### Lo que la página no hace todavía
 
 - Marea: la banda de 120 pt y la línea de agua, "Se retira a las", y que el interruptor arranque el sonido (S-06). El interruptor arma la Marea como hasta ahora.
-- **S-06 (tarea 2):** el interruptor ya arranca el sonido (`setBreathingEnabled(_:startsSound:)`), y la línea de agua y "Se retira a las" existen en la hoja Marea. **La banda de 120 pt de la página sigue sin hacer**: el Horizonte de la página no cambia con la Marea.
+- **S-06 (tarea 2):** el interruptor ya arranca el sonido (`setBreathingEnabled(_:startsSound:)`), y la línea de agua y "Se retira a las" existen en la hoja Marea. **La banda de 120 pt de la página sigue sin hacer**: el Horizonte de la página no cambia con la Marea. **Hecha en la corrección de S-06** (ver el final de este fichero).
 - Línea 2: "Seguir por el altavoz", "Sonando · al 40", "En pausa · llamada", "· AirPods" y el fin de sesión a los 20 minutos en pausa dependen de cablear `RoutePolicy` e `InterruptionPolicy` (S-06).
-- **S-06 (tarea 3):** "Seguir por el altavoz" y "Sonando · al 40" existen en Noche. **La segunda línea de la página sigue sin hacer**: en la página, tras perder los auriculares, la línea de estado dice "En pausa · auriculares" y el Disco reanuda con la misma regla del 40, pero no hay botón de texto ni nota del nivel. Pide el sitio reservado de 64 pt de la cabecera (guía §2.1), que la página no tiene, y un dato nuevo en el modelo ("capado hasta el primer toque").
+- **S-06 (tarea 3):** "Seguir por el altavoz" y "Sonando · al 40" existen en Noche. **La segunda línea de la página sigue sin hacer**: en la página, tras perder los auriculares, la línea de estado dice "En pausa · auriculares" y el Disco reanuda con la misma regla del 40, pero no hay botón de texto ni nota del nivel. Pide el sitio reservado de 64 pt de la cabecera (guía §2.1), que la página no tiene, y un dato nuevo en el modelo ("capado hasta el primer toque"). **Hecha en la corrección de S-06**, sobre la segunda línea de las dos que la línea de estado ya reservaba.
 - Menú del nombre: solo "Guardar como mezcla…". Renombrar y Vaciar, con Mezclas (S-06).
 - **S-06 (tarea 4):** el menú del nombre lleva "Guardar como mezcla…", "Renombrar" (si la cargada es una mezcla propia) y "Vaciar", solo de día: en la página nocturna la pulsación larga no hace nada (08 §2.2). "Guardar en «…»" no está.
 - Descomposición del Horizonte por pulsación larga, TipKit del segundo arrastre, fila Timbre (1.1) y "Enviar informe".
@@ -121,7 +121,7 @@ De la revisión de la página y de Capas (17-11-2026). Lo que sigue no se arregl
 ### Preguntas al dueño
 
 - **Fondo de Capas de noche.** Abierta desde la página nocturna, Capas cambia toda la tinta (título incluido), pero la hoja entera en `#1C1C1E` enciende la pantalla. 03 §4.10 la quería negra por eso; PLAN-SIMPLE §4.1 prohíbe hojas negras sobre negro. ¿Capas sobre `negro` solo de noche?
-- **Pomo del interruptor de Marea.** 03 §4.12 y 04 §9 #14 cierran "Toggle del sistema con `.tint(texto)`", y así está. En iOS 26 el pomo es una píldora blanca de unos 37 × 23 pt: lo más luminoso de la página nocturna, y encendido queda blanco sobre pista `texto`. Se mantiene el del sistema como coste aceptado; la alternativa es un `ToggleStyle` propio dibujado con tokens. Capturas `page-tide` y `page-nightTide`.
+- **Pomo del interruptor de Marea.** *Cerrada en la corrección de S-06: `GrafitoToggleStyle`, dibujado con tokens.* 03 §4.12 y 04 §9 #14 cierran "Toggle del sistema con `.tint(texto)`", y así está. En iOS 26 el pomo es una píldora blanca de unos 37 × 23 pt: lo más luminoso de la página nocturna, y encendido queda blanco sobre pista `texto`. Se mantiene el del sistema como coste aceptado; la alternativa es un `ToggleStyle` propio dibujado con tokens. Capturas `page-tide` y `page-nightTide`.
 - **Tope de seis (C19) fuera de `setLevel`.** La Marea ya no sube el océano si suenan seis. Quedan dos vías: (a) quien recupera el acceso con capas Pro guardadas a nivel puede pasar a sonar con más de seis; (b) una mezcla guardada, o los niveles de una versión anterior, con más de seis se cargan enteros. Hace falta una sola regla en un solo sitio. Propuesta de la revisión: `currentGains()` deja sonar las seis capas incluidas más altas y las demás conservan su nivel sin sonar, como una capa Pro sin acceso.
 - **"Requiere Pro" de noche con VoiceOver.** La guía 10 §3 dice que en la página nocturna no existe "requiere Pro"; su tabla 5b solo dice "de noche sin pista". Se aplicó la regla: en la página nocturna una fila Pro se lee como cualquier otra, con el valor "en silencio, nivel guardado N", y el interruptor de Marea dice solo que está apagado. Confirmar.
 - **Dos contradicciones de la guía 10**, a cerrar antes del lint de S-08: `temporizador.estado.dormirme` en inglés ("Until I sleep · %lld min", §5e) casa con la lista negra EN de la propia guía (`until I sleep`); y "y n más" (`capas.mas`) es paso 5 en la guía y paso 9 en 05 §2.1. Se siguió 05: paso 9, como dato.
@@ -225,8 +225,8 @@ Decisiones tomadas al construir, a confirmar:
 - **Sin háptica en la pulsación larga.** 03 §3.8 la pide (`.impact(.light, 0.4)`); C35 y `MotionGate` dicen que de noche nada vibra. Manda la reconciliación.
 - **Las frases de primera vez duran 4 s** (guía T25), no los 10 s de 07, y se omiten desde AX3 (están en la pista de VoiceOver).
 - **La cifra de Madrugada va a 72 pt en y 396** (03 §3.4, 07 y la maqueta). La guía §2.6 la pone a 56 pt en y 332, donde pisa la banda de la línea de agua.
-- **La hora lleva el sufijo del sistema** donde la región usa 12 h (guía §2.5: "2:14 AM"); 07 lo quitaba.
-- **Atenuada = tinta al 50 %** (`BedtimeScreenPolicy.dimmedOpacity`): ninguna spec da la cifra. Volver la app a primer plano cuenta como un toque.
+- **La hora lleva el sufijo del sistema** donde la región usa 12 h (guía §2.5: "2:14 AM"); 07 lo quitaba. *Corregido: la cifra va sin sufijo; las frases lo conservan.*
+- **Atenuada = tinta al 50 %** (`BedtimeScreenPolicy.dimmedOpacity`): ninguna spec da la cifra. *Corregido a 0,6 (3,3:1), el suelo de 03 §3.7; 0,8 con Aumentar contraste.* Volver la app a primer plano cuenta como un toque.
 - **Entrada al bloquear solo dentro de `NightWindow`** (21:00–07:00): 07 decía 20:00–09:00 y C40 deja una sola constante. Sin código de bloqueo el sistema no avisa, y no se usa `scenePhase == .background` porque no distingue bloquear de salir de la app.
 - **Los 20, los 40 y los minutos salen del código**: `madrugada.estado` y `ax.la.madrugada` reciben la duración de la receta y `ax.altavoz.pista` el tope de `RoutePolicy`.
 - **La regla del nivel** dibuja su recorrido entero en `trazo` y el nivel en `texto-noche`; 07 solo describe "longitud llena = nivel".
@@ -274,3 +274,42 @@ Sin hacer en esta tarea, y por qué:
 - **`PlayLayer`, `ExtendTimer`, `Toggle` y `CurrentState`** (C43): fuera de los cinco de PLAN-SIMPLE.
 - **README**: sigue describiendo los atajos y el reparto antiguos; se corrige con S-07.
 - Sin verificar en dispositivo: Siri y la app Atajos (frases, entidad, sinónimos, desambiguación), la pantalla de bloqueo ("En directo", título, controles), VoiceOver sobre la hoja y la háptica de guardar. En el simulador se comprobó a mano cargar una mezcla, el menú del nombre, "Vaciar", el menú de una fila y eliminar.
+
+## Corrección de S-06 (17-11-2026)
+
+De la revisión del paquete (audio, modelo, diseño, accesibilidad y producto). Lo cierto y mayor se arregló; lo menor y barato, también. Tests nuevos en `NightCorrectionTests.swift` y en los ficheros de cada superficie.
+
+### Hecho
+
+- **Motor.** Las decisiones de control (querido o no, qué parada sigue pendiente, longitud de la rampa del maestro, arranque desde silencio) viven en `EngineControl`, que usan `SleepAudioEngine` y el motor offline de los tests: ya no hay copia. Un arranque que falla (sesión, grafo o motor) no deja reinicio pendiente y devuelve la sesión. El cambio de frecuencia no vuelve a pedir ningún fundido: `SampleRamp.rescale(by:)` conserva valor, destino y segundos restantes (regla 4.8). El peso de la Marea se disuelve con un `SampleRamp` lineal (regla 4.5): con paso en `Float` se quedaba en 1 a partir de 700 s.
+- **Sin actividad periódica** (03 §3.7): el temporizador y Madrugada esperan con un único temporizador de un disparo al siguiente hecho (bajada del Manto, inicio del fundido, minuto de "Fundiendo", fin). `remaining` no se publica: se lee. La hoja y la fila releen los minutos con un `TimelineView` solo mientras están en pantalla. La palabra "inhala / exhala" monta su línea de tiempo solo las tres primeras respiraciones.
+- **Modelo.** Play fallido durante una llamada conserva la interrupción (C48); una reanudación no pedida no arranca la prueba; "+15 min" devuelve el nivel aunque el fundido no se hubiera vuelto a pedir; Madrugada en pausa más de 20 min cede a la mezcla y el Atajo "última mezcla" sale de Madrugada; el relevo a Madrugada mueve el maestro en sus 3 s; el tope de 0,4 caduca con su noche (6 h, o al abrir de día con la noche cerrada); quien venía sin temporizador sigue en "Apagado" (marca `sleepnoise.timer.firstUse.v1`); la mezcla del primer uso conserva su nombre tras reiniciar; Noche solo mantiene la pantalla mientras hay una noche abierta; los Atajos con mezcla se registran en cada arranque; la guía de la Marea usa el reloj del modelo.
+- **Página.** La línea de agua de la Marea (06 §2.4, 05 §2.3): banda de 120 pt (96 en pantalla corta) que crece hacia arriba desde el borde inferior de la banda del Horizonte, sobre aire que ya estaba; nada se recoloca con o sin Marea. "Seguir por el altavoz" en la segunda línea de estado durante su minuto y "Sonando · al 40" tras reanudar capado, hasta el primer toque (C49). El título recortado nunca se corta en la capa: entero, luego hasta 0,7 de escala, y solo si aún no cabe, el nombre a secas.
+- **Hojas.** Temporizador: el bloque de cabecera se decide al abrir y no aparece ni desaparece con la hoja abierta; abre en grande cuando lo lleva; la línea bajo la cifra no repite la cifra (`temporizador.cabecera.fundiendo`, `temporizador.cabecera.manto`, esta solo mientras la bajada está por venir); las dos ruedas, en la columna y al mismo ancho. Marea: la palabra de estado ya no se mueve entre "guiando" y "disolviendo". Mezclas: de noche ninguna receta dice "es Pro" ni "requiere Pro"; la fila "Esta noche" es texto de noche; eliminar es una alerta con "Cancelar".
+- **Noche.** Reloj sin AM/PM; atenuado a 0,6; un dedo que nace a menos de 32 pt del borde superior o inferior no es nivel ni toque; un gesto que el sistema se lleva devuelve el nivel y quita la regla; el elemento "Volumen" de VoiceOver mide 44 × 200; la hora hablada se relee cada minuto; el foco entra en la pantalla al cubrir la página y vuelve al nombre al salir; el escape funciona desde cualquier elemento.
+- **Resto.** `AccentColor` es `texto` y está declarado en `project.yml` (el cursor de las alertas ya no es azul); plurales de `comun.min.quedan`; `ax.nombre.pista` con el texto de la guía; README (temporizador, mezclas, viento y los cinco Atajos); la mezcla de ejemplo "Siesta de agosto" pasa a "Verano con ventana".
+
+### Decisiones tomadas al corregir, a confirmar
+
+- **"Auriculares" solo cuando lo dice el sistema.** AirPlay, coche y HDMI son "En pausa" a secas. Bluetooth no distingue auriculares de altavoz: cuenta como auriculares.
+- **`ax.agua.valor` se retira** y `ax.temporizador.valor` pasa a "%1$@, %2$@" (modo y minutos con el plural de `ax.anuncio.quedan`). Anotado en la guía 10.
+- **La línea de agua de la página** no reserva nada por acceso (crece sobre aire) y no se dibuja con tamaños de accesibilidad, donde el Horizonte va pegado a la línea de estado. La palabra "inhala / exhala" de la página no se hizo.
+- **El título recortado baja hasta 0,7** (05 §2.1 decía que los nombres de la app no escalan; no está reconciliada).
+- **La cabecera del Temporizador no aparece al elegir un modo con la hoja abierta**: la hora se lee detrás, en la página.
+- **El maestro al arrancar** se pide con el tiempo de subida (0,8 s o 3 s); con el motor parado sigue siendo una muestra.
+
+### Rechazado
+
+- **"Volver a la página" primero en el orden de VoiceOver**: la guía 10 §5b lo fija quinto y último; 07 no está reconciliada.
+- **Pista de "Noche" con la mezcla parada**: la guía no trae la cadena.
+- **"Desplegado / plegado" en la fila Duración**: se quitó el rasgo `.isSelected`; la guía no trae esas cadenas.
+- **Tinta del valor central de las ruedas**: es la rueda del sistema multiplicada por la tinta; igualarla pide una rueda propia.
+
+### Aplazado
+
+- **Audio, sin paquete asignado.** (a) Nivel de sesión y bajada del Manto comparten una rampa: un arrastre en Noche durante el minuto de la bajada la termina en 50 ms. Pide un campo nuevo en `EngineCommand` (regla 4.9). (b) El relevo de mezcla a Madrugada cruza las ganancias con el suavizado de 20 ms; va con el fundido cruzado de 1,5 s entre mezclas.
+- **Condición de publicación (dispositivo real, dueño): `AudioPlaybackIntent` y `openAppWhenRun = false`** en los cuatro Atajos que hoy abren la app. No se cambia sin probarlo con el iPhone bloqueado.
+- **S-08 (capturas):** `-pageState nightSpeaker` en AX3 en una pantalla de 667 pt (posible solape de "Seguir por el altavoz" con el estado en dos líneas); el simulador asignado aquí es un iPhone 17 Pro.
+- **Dueño:** si "Noche", con la noche ya terminada dentro de `NightWindow`, debe abrir Noche terminada (con "Madrugada · 20 min") en vez de arrancar la mezcla. Hoy Madrugada solo se alcanza con el dedo si Noche ya cubría la página al acabar.
+- **Dueño:** los commits del repo público llevan como autor una dirección de correo real; usar la dirección `noreply` de GitHub de aquí en adelante.
+- **Sin verificar en dispositivo:** todo lo de VoiceOver de esta corrección (foco, marcos, valores), los gestos de borde del sistema sobre Noche, `isIdleTimerDisabled` cargando, el arranque fallido durante una llamada real y el cambio de frecuencia a mitad de un fundido.

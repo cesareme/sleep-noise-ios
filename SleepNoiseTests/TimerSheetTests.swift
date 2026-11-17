@@ -149,7 +149,7 @@ final class TimerSheetTextTests: XCTestCase {
         )))
         XCTAssertEqual(asleep, .paused(minutes: 38))
         XCTAssertEqual(figure(asleep), "En pausa")
-        XCTAssertEqual(line(asleep), "quedan 38 min")
+        XCTAssertEqual(line(asleep), "Quedan 38 min", "a line of its own begins with a capital")
 
         let blanket = try XCTUnwrap(TimerSheetText.head(.init(
             choice: .blanket(hour: 7), remaining: 999, hasCount: true, fixedEnd: time(7)

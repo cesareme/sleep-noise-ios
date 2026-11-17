@@ -98,6 +98,7 @@ struct MixesSheet: View {
             // Reference captures of the two alerts, once the sheet is up.
             try? await Task.sleep(for: .milliseconds(900))
             if let staged = MixesArguments.naming(model) { naming = staged }
+            if let staged = MixesArguments.deleting(model) { deleting = staged }
         }
         #endif
         .mixNaming($naming, model: model) { _ in

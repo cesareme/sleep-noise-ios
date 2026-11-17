@@ -241,7 +241,9 @@ struct TideSheet: View {
     /// only for those three breaths and only while the scene is active, so
     /// nothing ticks behind a locked screen (03 §3.7).
     private func breathWord(isGuiding: Bool) -> some View {
-        ZStack(alignment: .trailing) {
+        // On the right of the state word; under it, at its edge, when the
+        // text is large.
+        ZStack(alignment: dynamicType.isAccessibilitySize ? .leading : .trailing) {
             Group {
                 Text("marea.fase.inhala")
                 Text("marea.fase.exhala")

@@ -93,7 +93,7 @@ Siete entradas; el resto hereda es-ES. No cambia la voz (tú), no cambian los no
 | `mezcla.casa.marron_hoguera` | Marrón y hoguera | Marrón y fogata | idem |
 | Ficha de App Store, primera línea de la descripción (§5e.15; sin clave: no se compila) | SleepNoise fabrica en tu iPhone… | SleepNoise genera en tu iPhone… | "fabricar" suena industrial en LatAm; "generar" es neutro y es lo que dicen las reseñas |
 
-Números y horas: `Text(.time)` y `DateFormatter` del sistema. es-ES: 24 h, "03:42"; es-419 y en-US: según la región del iPhone, "3:42 a. m." / "3:42 AM" (el sufijo lo pinta el sistema dentro de la cifra con `Date.FormatStyle`; la app no compila "am" / "pm"). Decimales: "29,99 €" (es-ES, es-419 con €), "$29.99" (en-US), "MX$ 599" (es-MX): siempre `Product.displayPrice`, nunca una cifra escrita a mano. Signo de minutos: "min" sin punto en los tres idiomas; "m" solo en la Isla Dinámica.
+Números y horas: `Text(.time)` y `DateFormatter` del sistema. es-ES: 24 h, "03:42"; es-419 y en-US: según la región del iPhone, "3:42 a. m." / "3:42 AM" (el sufijo lo pinta el sistema dentro de la frase con `Date.FormatStyle`; la app no compila "am" / "pm"). **Excepción (corrección de S-06, 17-11-2026): la hora como cifra de paso 1** (el reloj de Noche a 72 y la hora del Manto a 56 en la hoja del Temporizador) va sin sufijo, "2:14", como en 07 §2.2.2 y la maqueta; las frases ("Se funde a las 2:59 AM", "hasta las 7:00 AM", la fila Hora) lo conservan. Decimales: "29,99 €" (es-ES, es-419 con €), "$29.99" (en-US), "MX$ 599" (es-MX): siempre `Product.displayPrice`, nunca una cifra escrita a mano. Signo de minutos: "min" sin punto en los tres idiomas; "m" solo en la Isla Dinámica.
 
 ### 0.4 Lista negra 1 · Lo que no se afirma (cerrada; informe §5.2 y brief §7.2)
 
@@ -304,7 +304,7 @@ El temporizador es entero libre (C03): la palabra "pro" no aparece en ninguna du
  y
  0    ┌─────────────────────────────────────────┐ sin barra de estado
  284  │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │ horizonte 2 pt texto-noche (continuo = suena; ausente = pausa)
- 332  │                03:07                    │ hora del sistema, paso 1 · 72/80 Display Regular texto-noche (es-ES 24 h; 12 h donde la región lo pida, con el sufijo que pinta el sistema)
+ 332  │                03:07                    │ hora del sistema, paso 1 · 72/80 Display Regular texto-noche (es-ES 24 h; 12 h donde la región lo pida, **sin sufijo**: la cifra es "2:14", nunca "2:14 AM"; corrección de S-06)
  428  │        Se funde a las 03:42             │ [noche.estado.funde] paso 3 · 22/28 Medium texto-noche
  472  │  (primera vez, 4 s) Puedes apagar la    │ [noche.primera] paso 6 Medium texto-noche
       │  pantalla. El sonido sigue.             │
@@ -1114,11 +1114,13 @@ Sin columna Máx.: VoiceOver no mide. Las etiquetas que son la propia cadena vis
 | `ax.marea.off.pro` | Desactivada, requiere Pro | Off, requires Pro | sin acceso |
 | `ax.marea.pista` | Toca dos veces para encenderla; el sonido arranca. | Double-tap to turn it on; the sound starts. | pista con acceso, en silencio |
 | `ax.marea.pista.pro` | Toca dos veces para ver Pro. | Double-tap to see Pro. | pista sin acceso, solo de día (C06) |
-| `ax.agua.valor` | %@, %lld por minuto, se retira en %lld minutos | %@, %lld per minute, recedes in %lld minutes | valor de la línea de agua; `%@` = inhala / exhala |
+| `ax.agua.valor` | [retirada en la corrección de S-06: la fase y los minutos caducaban entre dos dibujos] | — | el valor de la línea de agua se compone con `marea.ritmo.exacto` y `marea.retira.hora`: "6 por minuto, Se retira a las 23:27" |
 | `ax.agua.pista` | Desliza arriba o abajo para cambiar el ritmo. | Swipe up or down to change the pace. | pista de la línea de agua |
 | `ax.sabemos.pista` | Abre la pantalla de evidencia. | Opens the evidence screen. | pista del enlace "Qué sabemos ›" |
 | `ax.haptica.pista` | De noche nunca vibra. | Never at night. | pista de la fila Háptica (C35) |
-| `ax.temporizador.valor` | %@, quedan %lld minutos | %@, %lld minutes left | valor de la fila Temporizador sonando (`%@` = modo) |
+| `ax.temporizador.valor` | %1$@, %2$@ | %1$@, %2$@ | valor de la fila Temporizador sonando: el modo y los minutos tal como los dice `ax.anuncio.quedan` (plural: "Queda 1 minuto"); corrección de S-06 |
+| `temporizador.cabecera.fundiendo` | Fundiendo | Fading | hoja del Temporizador, línea bajo la cifra de minutos durante el fundido: no repite la cifra (corrección de S-06) |
+| `temporizador.cabecera.manto` | Baja un poco a los %lld min | Eases down after %lld min | hoja del Temporizador, línea bajo la hora del Manto, solo mientras la bajada está por venir; después, nada (corrección de S-06) |
 | `ax.escudo.pro` | [retirada por C03] | — | el temporizador es libre |
 | `ax.escudo.pro.pista` | [retirada por C03] | — | idem |
 | `ax.duracion.pista` | Desliza arriba o abajo. | Swipe up or down. | pista de la rueda Duración (sin "requiere Pro", C03) |

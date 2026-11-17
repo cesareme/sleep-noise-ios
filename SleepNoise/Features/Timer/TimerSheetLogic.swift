@@ -121,13 +121,18 @@ enum TimerSheetText {
         case .pausedBlanket(let end):
             // The figure says "Paused": the line says the hour, which a
             // pause does not move.
-            let words = String(format: localized("noche.estado.hasta"), time(end))
-            return words.prefix(1).capitalized(with: locale) + words.dropFirst()
+            return sentence(String(format: localized("noche.estado.hasta"), time(end)), locale: locale)
         case .fading:
             return localized("temporizador.cabecera.fundiendo")
         case .paused(let minutes):
-            return String.localizedStringWithFormat(localized("comun.min.quedan"), minutes)
+            return sentence(String.localizedStringWithFormat(localized("comun.min.quedan"), minutes), locale: locale)
         }
+    }
+
+    /// A phrase the catalog writes for the middle of a line ("until 7:00",
+    /// "38 min left"), set as a line of its own: with a capital.
+    static func sentence(_ words: String, locale: Locale = .current) -> String {
+        words.prefix(1).capitalized(with: locale) + words.dropFirst()
     }
 
     /// What VoiceOver reads for the block: figure and line as one phrase.

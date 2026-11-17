@@ -122,6 +122,8 @@ enum PageDebugState: String, CaseIterable {
     case mixesSave
     /// The alert that renames a saved mix.
     case mixesRename
+    /// The alert that asks before a saved mix is deleted.
+    case mixesDelete
     /// Three saved and no access: the live mix says "pro".
     case mixesFourth
     /// Opened from the night page: one ink.
@@ -140,7 +142,8 @@ enum PageDebugState: String, CaseIterable {
 
     var opensMixes: Bool {
         switch self {
-        case .mixes, .mixesEmpty, .mixesSave, .mixesRename, .mixesFourth, .mixesNight, .mixesNightFree:
+        case .mixes, .mixesEmpty, .mixesSave, .mixesRename, .mixesDelete, .mixesFourth, .mixesNight,
+             .mixesNightFree:
             return true
         default: return false
         }
@@ -149,7 +152,7 @@ enum PageDebugState: String, CaseIterable {
     /// Staged without access: the trial ran out and nothing was bought.
     var isFreeTier: Bool {
         switch self {
-        case .layersSix, .layersEnd, .tideLocked, .mixes, .mixesRename, .mixesFourth, .mixesTrimmed,
+        case .layersSix, .layersEnd, .tideLocked, .mixes, .mixesRename, .mixesDelete, .mixesFourth, .mixesTrimmed,
              .mixesTrimmedLong, .mixesNightFree:
             return true
         default:
@@ -277,6 +280,12 @@ enum MixesArguments {
         }
         return naming
     }
+
+    /// The mix a capture asks to delete, or nil.
+    @MainActor
+    static func deleting(_ model: MixerModel) -> SavedMix? {
+        PageArguments.state == .mixesDelete ? model.mixStore.mixes.first : nil
+    }
 }
 
 /// What a staged Night screen needs to know about its own capture.
@@ -401,7 +410,7 @@ enum PageStage {
         case .layersEnd:
             // Thunder was saved at 20 while the trial lasted; it keeps it.
             setLevels(model, [.rain: 0.45, .wind: 0.25, .thunder: 0.2, .pink: 0.3])
-        case .mixes, .mixesRename, .mixesNight, .mixesNightFree:
+        case .mixes, .mixesRename, .mixesDelete, .mixesNight, .mixesNightFree:
             // The first of the person's mixes is the one that is loaded.
             if let hotel = saveMixes(model, count: 2) {
                 model.apply(hotel)
@@ -541,7 +550,7 @@ enum PageStage {
         case .playingTwo, .playingFive, .night, .timer, .layers, .layersCap, .largeType,
              .nightLayers, .tide, .nightTide, .timerAsleep, .timerBlanket, .timerNight,
              .tideGuiding, .tideDescent, .tideNight,
-             .mixes, .mixesSave, .mixesRename, .mixesFourth, .mixesNight, .mixesNightFree:
+             .mixes, .mixesSave, .mixesRename, .mixesDelete, .mixesFourth, .mixesNight, .mixesNightFree:
             if !model.isPlaying { model.play() }
         }
     }

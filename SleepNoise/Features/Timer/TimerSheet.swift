@@ -119,8 +119,11 @@ struct TimerSheet: View {
             MotionGate.allows(phase)
         }
         .onAppear {
-            // Larger text does not fit the half sheet.
-            if dynamicType >= .xLarge { detent = .large }
+            // Read once more as the sheet comes up (a night may have begun
+            // between its being built and its being shown) and never again.
+            showsHead = model.canExtendTimer
+            // Larger text does not fit the half sheet, nor does the block.
+            if showsHead || dynamicType >= .xLarge { detent = .large }
         }
         .accessibilityAction(.magicTap) { model.togglePlayback() }
     }

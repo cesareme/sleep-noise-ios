@@ -103,6 +103,8 @@ final class BreathingGuideController: ObservableObject {
     private var descentStart: Date?
     /// When the dissolve the guide began by itself is over.
     private var dissolveEndsAt: Date?
+    /// The guide's clock minus the wall clock, when the anchor was set.
+    private var displayOffset: TimeInterval = 0
     private var epoch: UInt32 = 0
     private var ticker: Timer?
     private let defaults: UserDefaults
@@ -255,15 +257,17 @@ final class BreathingGuideController: ObservableObject {
             let elapsedCycles = now.timeIntervalSince(anchor) * Double(lastPublished.rate)
             let fraction = elapsedCycles - elapsedCycles.rounded(.down)
             self.anchor = now.addingTimeInterval(-fraction / newRate)
+            displayOffset = clock().timeIntervalSince(Date())
         }
         guidingRate = rate
     }
 
     /// A date of the display's own clock (a `TimelineView`) on the clock of
-    /// the guide. The same instant in the app; apart only when a staged
-    /// launch pins the clock.
+    /// the guide. The same instant in the app. They are apart only when a
+    /// staged launch pins the clock: the breath then runs from the anchor
+    /// in real time, so the line of a capture still moves.
     func onGuideClock(_ date: Date) -> Date {
-        date.addingTimeInterval(clock().timeIntervalSince(Date()))
+        date.addingTimeInterval(displayOffset)
     }
 
     /// The sleep timer is fading the whole bed out: let the tide go with it so
@@ -303,6 +307,7 @@ final class BreathingGuideController: ObservableObject {
         epoch &+= 1
         if epoch == 0 { epoch = 1 }
         anchor = now
+        displayOffset = clock().timeIntervalSince(Date())
         phase = .guiding
         guidingRate = scheduledRate(now: now)
         publish(parameters(weight: 1, dissolve: 0))
