@@ -37,7 +37,16 @@ struct LayerRow: View {
             ),
             isLocked: isLocked,
             channelNote: showsCap ? Localized.string("capas.tope") : nil,
-            onLockedTap: canSell ? { model.offerPro() } : nil
+            onLockedTap: canSell ? { model.offerPro() } : nil,
+            // The levels go to disk when the finger leaves, not on every
+            // sample of the drag.
+            onDragActive: { active in
+                if active {
+                    model.beginLevelGesture()
+                } else {
+                    model.endLevelGesture()
+                }
+            }
         )
         .task(id: capHits) {
             guard capHits > 0 else { return }

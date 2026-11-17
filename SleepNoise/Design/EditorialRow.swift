@@ -20,6 +20,9 @@ struct EditorialRow: View {
     var subtitle: String?
     /// Value or state on the right, in secondary ink.
     var value: String?
+    /// The value is a datum ("and 2 more"), not a setting: step 9, tabular
+    /// figures, like the level of a row (05 §2.1).
+    var valueIsDatum = false
     /// A state word in small caps on the right ("pro").
     var stateWord: String?
     /// The chosen option of a list.
@@ -84,7 +87,7 @@ struct EditorialRow: View {
                 .accessibilityHidden(true)
         } else if let value {
             Text(verbatim: value)
-                .step(.secondary)
+                .step(valueIsDatum ? .data : .secondary)
                 .foregroundStyle(Ink.secondary(phase))
                 .multilineTextAlignment(.trailing)
         }
@@ -93,9 +96,11 @@ struct EditorialRow: View {
 
 /// Pressed: `grafito` behind the whole row for 200 ms, square corners.
 private struct PressedReliefStyle: ButtonStyle {
+    @Environment(\.inkSurface) private var surface
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .background(Ink.relief.opacity(configuration.isPressed ? 1 : 0))
+            .background(Ink.relief(on: surface).opacity(configuration.isPressed ? 1 : 0))
             .animation(Motion.controlCurve, value: configuration.isPressed)
     }
 }

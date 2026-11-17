@@ -38,6 +38,8 @@ final class MixerModel: ObservableObject {
     /// sounds.
     nonisolated static let fallbackSound = SoundID.pink
     nonisolated static let fallbackLevel: Float = 0.4
+    /// Where the tide puts a silent ocean so that it can be heard.
+    nonisolated static let tideOceanLevel: Float = 0.5
 
     @Published var levels: [SoundID: Float]
     @Published private(set) var isPlaying = false
@@ -100,6 +102,8 @@ final class MixerModel: ObservableObject {
     /// The levels the loaded mix came with. Its title is worked out from
     /// these, not from the live levels, which the tide may have raised.
     private var loadedMixRecipe: [SoundID: Float]?
+    /// Level rows with a finger on them right now.
+    private var liveLevelGestures = 0
 
     init(
         purchases: PurchaseManager,
@@ -108,7 +112,7 @@ final class MixerModel: ObservableObject {
         breathing: BreathingGuideController? = nil,
         defaults: UserDefaults = .standard,
         now: @escaping () -> Date = { Date() },
-        calendar: Calendar = .current
+        calendar: Calendar = .autoupdatingCurrent
     ) {
         self.purchases = purchases
         self.defaults = defaults
@@ -163,24 +167,49 @@ final class MixerModel: ObservableObject {
             return .needsPro
         }
         let next = min(1, max(0, value))
-        let wasSounding = (levels[sound] ?? 0) > MixLoad.audibleThreshold
-        if !wasSounding, next > MixLoad.audibleThreshold,
+        let current = levels[sound] ?? 0
+        if current <= MixLoad.audibleThreshold, next > MixLoad.audibleThreshold,
            soundingLayers.count >= Self.maxSimultaneousLayers {
             return .capReached
         }
+        // Nothing changed (a drag that came back, a refused seventh layer
+        // let go at zero): the mix keeps its name.
+        guard next != current else { return .applied }
         levels[sound] = next
-        isPlayingFallback = false
-        loadedMixName = nil
+        // A drag writes here on every sample: only what really changes is
+        // published.
+        let hadName = loadedMixName != nil
+        if isPlayingFallback { isPlayingFallback = false }
+        if hadName { loadedMixName = nil }
         loadedMixBaseName = nil
         loadedMixRecipe = nil
-        loadedMixWasStripped = false
-        activeHouseMix = nil
+        if loadedMixWasStripped { loadedMixWasStripped = false }
+        if activeHouseMix != nil { activeHouseMix = nil }
         if sound == .ocean { oceanBeforeTide = nil }
-        persistLevels()
+        if liveLevelGestures == 0 {
+            persistLevels()
+        }
         if isPlaying {
             engine.updateGains(currentGains())
+            // The lock screen follows the page: once, not on every sample.
+            if hadName {
+                nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
+            }
         }
         return .applied
+    }
+
+    /// A finger went down on a level row. While it is there the levels are
+    /// not written to disk; they are when it leaves.
+    func beginLevelGesture() {
+        liveLevelGestures += 1
+    }
+
+    func endLevelGesture() {
+        liveLevelGestures = max(0, liveLevelGestures - 1)
+        if liveLevelGestures == 0 {
+            persistLevels()
+        }
     }
 
     /// The layers that sound: above zero and included at this access level.
@@ -211,10 +240,20 @@ final class MixerModel: ObservableObject {
         showPaywall = false
     }
 
+    /// A Pro sheet that was already up when the night began comes down: the
+    /// gate is not only for new requests. Called when the app comes forward
+    /// and when the night page begins.
+    func closeSaleIfNight() {
+        if showPaywall, !canSell {
+            showPaywall = false
+        }
+    }
+
     /// The page keeps one ink from now on (C40). Called when the person
     /// comes back from the Night screen.
     func beginNightSession() {
         isNightSession = true
+        closeSaleIfNight()
     }
 
     /// The deliberate way out of the night page: a tap on the name.
@@ -299,9 +338,10 @@ final class MixerModel: ObservableObject {
         pauseCause = cause
     }
 
+    /// The whole timer is free (C03): a length outside its range is not a
+    /// sale, it is ignored.
     func selectTimer(minutes: Int?) {
         if let minutes, !AccessPolicy.timerIsIncluded(minutes: minutes, hasFullAccess: purchases.hasFullAccess) {
-            offerPro()
             return
         }
         timer.choose(minutes)
@@ -335,6 +375,9 @@ final class MixerModel: ObservableObject {
             loadedMixBaseName = mix.name
             loadedMixRecipe = levels
             loadedMixWasStripped = false
+            if isPlaying {
+                nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
+            }
         case .needsPro:
             offerPro()
         case .emptyName:
@@ -362,10 +405,6 @@ final class MixerModel: ObservableObject {
             nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
         }
         return load.isTrimmed
-    }
-
-    func suggestedMixName() -> String {
-        MixStore.defaultName(mixStore.mixes.count + 1)
     }
 
     /// Every whole replacement of `levels` by a mix ends here: the title
@@ -572,7 +611,9 @@ final class MixerModel: ObservableObject {
     }
 
     /// Switches the tide on or off. Takes effect at once when playing. Turning
-    /// it on with the ocean silent raises the ocean so the tide can be heard.
+    /// it on with the ocean silent raises the ocean so the tide can be heard,
+    /// unless six layers already sound: the cap is a rule of the model, so
+    /// the tide is armed and the ocean stays where it was.
     func setBreathingEnabled(_ enabled: Bool) {
         if enabled, !breathingIsIncluded {
             offerPro()
@@ -581,10 +622,18 @@ final class MixerModel: ObservableObject {
         guard breathing.settings.isEnabled != enabled else { return }
         breathing.settings.isEnabled = enabled
         if enabled, (levels[.ocean] ?? 0) < 0.05 {
-            oceanBeforeTide = levels[.ocean] ?? 0
-            writeLevel(.ocean, 0.5)
-            showBreathingNote(String(localized: "breath.oceanRaised"))
-        } else if !enabled, let previous = oceanBeforeTide, abs((levels[.ocean] ?? 0) - 0.5) < 0.001 {
+            if !soundingLayers.contains(.ocean), soundingLayers.count >= Self.maxSimultaneousLayers {
+                showBreathingNote(String(localized: "capas.tope"))
+            } else {
+                oceanBeforeTide = levels[.ocean] ?? 0
+                writeLevel(.ocean, Self.tideOceanLevel)
+                showBreathingNote(String(
+                    format: String(localized: "marea.oceano.subido"),
+                    Int64((Self.tideOceanLevel * 100).rounded())
+                ))
+            }
+        } else if !enabled, let previous = oceanBeforeTide,
+                  abs((levels[.ocean] ?? 0) - Self.tideOceanLevel) < 0.001 {
             oceanBeforeTide = nil
             writeLevel(.ocean, previous)
         }
@@ -682,9 +731,21 @@ final class MixerModel: ObservableObject {
         }
     }
 
+    /// The output was taken or went away. While playing it is a pause with
+    /// the fade of its cause. During the tail of a pause already under way
+    /// (the person's own lasts 1.5 s) the tail is cut to that same short
+    /// fade, so the rest of it is not heard from the speaker.
+    private func outputTaken(resumeLater: Bool, cause: PauseCause) {
+        let wasPlaying = isPlaying
+        pause(resumeLater: resumeLater, cause: cause)
+        if !wasPlaying, engine.isStopping {
+            engine.stop(fadeOut: cause.fade)
+        }
+    }
+
     private func installSessionHandlers() {
         sessionObserver.onInterruptionBegan = { [weak self] in
-            self?.pause(resumeLater: true, cause: .system)
+            self?.outputTaken(resumeLater: true, cause: .system)
         }
         sessionObserver.onInterruptionEnded = { [weak self] shouldResume in
             guard let self else { return }
@@ -697,7 +758,7 @@ final class MixerModel: ObservableObject {
             self.resumeAfterInterruption = false
         }
         sessionObserver.onHeadphonesUnplugged = { [weak self] in
-            self?.pause(resumeLater: false, cause: .lostOutput)
+            self?.outputTaken(resumeLater: false, cause: .lostOutput)
         }
         sessionObserver.onRouteChange = { [weak self] in
             guard let self, self.isPlaying else { return }

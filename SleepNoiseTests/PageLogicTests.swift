@@ -230,16 +230,16 @@ final class PageLogicTests: XCTestCase {
     // MARK: Trial word
 
     func testTrialWordSaysTheTrialTheAppHasToday() {
-        for (language, notStarted, five, last) in [
-            ("en", "7-day trial", "trial · 5 days", "trial · last day"),
-            ("es", "prueba de 7 días", "prueba · 5 días", "prueba · último día"),
+        for (language, five, last) in [
+            ("en", "trial · 5 days", "trial · last day"),
+            ("es", "prueba · 5 días", "prueba · último día"),
         ] {
             let strings = catalog(language)
             let locale = Locale(identifier: language)
             func word(_ trial: TrialState, isPro: Bool = false) -> String? {
                 PageTrialWord.text(trial: trial, isPro: isPro, localized: strings, locale: locale)
             }
-            XCTAssertEqual(word(.notStarted), notStarted, language)
+            XCTAssertNil(word(.notStarted), "the first screen says nothing about a trial")
             XCTAssertEqual(word(.active(daysRemaining: 5)), five, language)
             XCTAssertEqual(word(.active(daysRemaining: 1)), last, language)
             XCTAssertNil(word(.ended), "after the trial the header is empty")
@@ -284,8 +284,39 @@ final class PageLogicTests: XCTestCase {
         XCTAssertEqual(ocean.label, "Océano, oleaje lento, requiere Pro")
         XCTAssertEqual(ocean.value, "en silencio, nivel guardado 50")
         XCTAssertEqual(ocean.lockedWord, "pro · 50")
+        // On the night page nothing says "requires Pro": the row is named
+        // like any other and its value still says it is silent.
+        ocean.namesPro = false
+        XCTAssertEqual(ocean.label, "Océano, oleaje lento")
+        XCTAssertEqual(ocean.value, "en silencio, nivel guardado 50")
+        ocean.namesPro = true
         ocean.isLocked = false
         XCTAssertEqual(ocean.value, "50 por ciento")
+    }
+
+    // MARK: Error line
+
+    func testTheErrorLineIsOneSentencePerLineAndNeverLeavesAWordAlone() {
+        for language in ["en", "es"] {
+            let strings = catalog(language)
+            // First failure: two sentences, one per line.
+            let first = PageStatus.errorLines(strings("pagina.error.inicio"))
+            XCTAssertEqual(first.components(separatedBy: "\n").count, 2, language)
+            XCTAssertFalse(first.contains(". "), language)
+            // The next ones are one long sentence: its last three words stay
+            // together, so no line is a single word.
+            for key in ["pagina.error.inicio.2", "pagina.error.inicio.3"] {
+                let text = strings(key)
+                let set = PageStatus.errorLines(text)
+                XCTAssertFalse(set.contains("\n"), key)
+                XCTAssertEqual(set.components(separatedBy: "\u{00A0}").count, 3, "\(key) in \(language)")
+                XCTAssertEqual(set.replacingOccurrences(of: "\u{00A0}", with: " "), text, "same words")
+                // At the accessibility sizes three words may not fit a line.
+                XCTAssertEqual(PageStatus.errorLines(text, bindsTail: false), text)
+            }
+        }
+        XCTAssertEqual(PageStatus.errorLines("One. Two."), "One.\nTwo.")
+        XCTAssertEqual(PageStatus.errorLines("Too short here"), "Too short here")
     }
 
     func testEveryPageStringExistsInBothLanguages() {
@@ -301,8 +332,9 @@ final class PageLogicTests: XCTestCase {
             "capas.titulo", "capas.seccion.colores", "capas.seccion.camas", "capas.nota", "capas.cero",
             "ax.mas.pista", "ax.nombre.pista", "ax.nombre.pista.noche", "ax.accion.guardar",
             "ax.accion.volver.dia", "ax.marea.off.pro", "ax.marea.pista.pro", "ax.prueba.pista",
-            "ax.reintentar", "trial.chip.notStartedFormat", "trial.chip.daysFormat",
-            "mixes.save.title", "mixes.save.message", "common.save", "common.cancel",
+            "ax.reintentar", "trial.chip.daysFormat",
+            "mixes.save.title", "common.save", "common.cancel",
+            "mezcla.menu.guardar.pro", "ax.guardar.pro", "ax.guardar.pro.pista", "marea.oceano.subido",
         ] + SoundID.allCases.flatMap { [$0.nameKey, $0.detailKey] }
         for language in ["en", "es"] {
             let strings = catalog(language)
@@ -511,7 +543,6 @@ final class PageModelTests: XCTestCase {
             ("a Pro layer", { XCTAssertEqual($0.setLevel(.thunder, 0.5), .needsPro) }),
             ("the tide", { $0.setBreathingEnabled(true) }),
             ("one mix too many", { XCTAssertEqual($0.saveCurrent(name: "One more"), .needsPro) }),
-            ("a timer out of range", { $0.selectTimer(minutes: AccessPolicy.maxTimerMinutes + 1) }),
         ]
 
         for (name, path) in paths {
@@ -559,6 +590,139 @@ final class PageModelTests: XCTestCase {
         XCTAssertTrue(model.canSell)
         model.offerPro()
         XCTAssertTrue(model.showPaywall)
+    }
+
+    /// The whole timer is free (C03): no length sells anything, at any hour.
+    func testTheTimerNeverOpensTheProSheet() throws {
+        let clock = Clock(time(12))
+        let model = try makeModel(free: true, clock: clock)
+        for hour in [12, 23] {
+            clock.now = time(hour)
+            model.selectTimer(minutes: AccessPolicy.maxTimerMinutes)
+            XCTAssertEqual(model.timer.selectedMinutes, AccessPolicy.maxTimerMinutes)
+            // Out of range: ignored, and the choice stays.
+            model.selectTimer(minutes: AccessPolicy.maxTimerMinutes + 1)
+            model.selectTimer(minutes: 0)
+            XCTAssertEqual(model.timer.selectedMinutes, AccessPolicy.maxTimerMinutes)
+            XCTAssertFalse(model.showPaywall, "hour \(hour)")
+            model.selectTimer(minutes: nil)
+            XCTAssertNil(model.timer.selectedMinutes)
+        }
+    }
+
+    /// The gate is not only for new requests: a sheet that was up before
+    /// 21:00 does not stay up into the night.
+    func testAProSheetLeftUpComesDownWhenTheNightBegins() throws {
+        let clock = Clock(time(20, 59))
+        let model = try makeModel(free: true, clock: clock)
+        model.offerPro()
+        XCTAssertTrue(model.showPaywall)
+        model.closeSaleIfNight()
+        XCTAssertTrue(model.showPaywall, "still day: it stays")
+
+        clock.now = time(21)
+        model.closeSaleIfNight()
+        XCTAssertFalse(model.showPaywall)
+
+        // The night page closes it too, at any hour.
+        clock.now = time(12)
+        model.offerPro()
+        XCTAssertTrue(model.showPaywall)
+        model.beginNightSession()
+        XCTAssertFalse(model.showPaywall)
+    }
+
+    // MARK: A level that did not change
+
+    func testALevelWrittenAsItWasKeepsTheNameOfTheMix() throws {
+        let model = try makeModel(free: false, clock: Clock(time(12)))
+        for sound in [SoundID.wind, .ocean, .brown, .thunder] {
+            XCTAssertEqual(model.setLevel(sound, 0.3), .applied)
+        }
+        guard case .saved = model.saveCurrent(name: "Six") else { return XCTFail("saved") }
+        XCTAssertEqual(model.loadedMixName, "Six")
+
+        // A seventh row dragged and let go: refused, then written back at
+        // zero by the end of the drag. Nothing changed, so the name stays.
+        XCTAssertEqual(model.setLevel(.campfire, 0.4), .capReached)
+        XCTAssertEqual(model.setLevel(.campfire, 0), .applied)
+        XCTAssertEqual(model.loadedMixName, "Six")
+        // A drag that comes back to where it started.
+        XCTAssertEqual(model.setLevel(.ocean, 0.3), .applied)
+        XCTAssertEqual(model.loadedMixName, "Six")
+        XCTAssertEqual(model.loadedMixBaseName, "Six")
+
+        // The house mix of the first use keeps its identity the same way.
+        let fresh = try makeModel(free: false, clock: Clock(time(12)))
+        let rain = try XCTUnwrap(fresh.levels[.rain])
+        XCTAssertEqual(fresh.setLevel(.rain, rain), .applied)
+        XCTAssertEqual(fresh.setLevel(.campfire, 0), .applied)
+        XCTAssertEqual(fresh.activeHouseMix, .pinkAndRain)
+        XCTAssertEqual(fresh.loadedMixName, HouseMix.pinkAndRain.localizedName)
+        // A real change still makes it "Tonight".
+        XCTAssertEqual(fresh.setLevel(.rain, rain / 2), .applied)
+        XCTAssertNil(fresh.loadedMixName)
+        XCTAssertNil(fresh.activeHouseMix)
+    }
+
+    // MARK: Six at once, the tide included
+
+    func testTheTideDoesNotAddASeventhLayer() throws {
+        let model = try makeModel(free: false, clock: Clock(time(12)))
+        // Six layers and the ocean silent.
+        for sound in [SoundID.wind, .white, .brown, .thunder] {
+            XCTAssertEqual(model.setLevel(sound, 0.3), .applied)
+        }
+        XCTAssertEqual(model.soundingLayers.count, MixerModel.maxSimultaneousLayers)
+        XCTAssertEqual(model.levels[.ocean], 0)
+
+        model.setBreathingEnabled(true)
+        XCTAssertTrue(model.breathing.settings.isEnabled, "the tide is armed")
+        XCTAssertEqual(model.levels[.ocean], 0, "the ocean is not raised over the cap")
+        XCTAssertEqual(model.soundingLayers.count, MixerModel.maxSimultaneousLayers)
+        XCTAssertEqual(model.breathingNote, Localized.string("capas.tope"))
+        model.setBreathingEnabled(false)
+        XCTAssertEqual(model.levels[.ocean], 0)
+
+        // With room for it the ocean comes up to the tide's level, and the
+        // note says the number the model used.
+        XCTAssertEqual(model.setLevel(.thunder, 0), .applied)
+        model.setBreathingEnabled(true)
+        XCTAssertEqual(model.levels[.ocean], MixerModel.tideOceanLevel)
+        XCTAssertEqual(model.soundingLayers.count, MixerModel.maxSimultaneousLayers)
+        let percent = Int64((MixerModel.tideOceanLevel * 100).rounded())
+        XCTAssertEqual(model.breathingNote, Localized.format("marea.oceano.subido", percent))
+        XCTAssertTrue(model.breathingNote?.contains("\(percent)") == true)
+        // Switched off before the level is touched: the ocean goes back.
+        model.setBreathingEnabled(false)
+        XCTAssertEqual(model.levels[.ocean], 0)
+    }
+
+    // MARK: Levels on disk
+
+    func testLevelsAreWrittenWhenTheFingerLeavesNotOnEverySample() throws {
+        let defaults = try makeDefaults()
+        let model = try makeModel(free: false, clock: Clock(time(12)), defaults: defaults)
+        func storedRain() -> Float? {
+            MixerModel(purchases: model.purchases, defaults: defaults).levels[.rain]
+        }
+        let first = try XCTUnwrap(storedRain())
+
+        model.beginLevelGesture()
+        XCTAssertEqual(model.setLevel(.rain, 0.11), .applied)
+        XCTAssertEqual(model.setLevel(.rain, 0.12), .applied)
+        XCTAssertEqual(model.levels[.rain], 0.12, "the level itself moves at once")
+        XCTAssertEqual(storedRain(), first, "nothing on disk while the finger is down")
+        model.endLevelGesture()
+        XCTAssertEqual(storedRain(), 0.12)
+
+        // Without a gesture (VoiceOver, the fine slider) every write is kept.
+        XCTAssertEqual(model.setLevel(.rain, 0.5), .applied)
+        XCTAssertEqual(storedRain(), 0.5)
+        // An end without a beginning does no harm.
+        model.endLevelGesture()
+        XCTAssertEqual(model.setLevel(.rain, 0.6), .applied)
+        XCTAssertEqual(storedRain(), 0.6)
     }
 
     func testLeavingNightOnlyCountsAfterEnteringIt() throws {

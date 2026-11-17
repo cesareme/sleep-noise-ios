@@ -52,19 +52,35 @@ struct PlayDisc: View {
 /// Relief of the Disc: `grafito` with an inner shadow of 1 pt, 2 pt while
 /// pressed. No outer shadow, no gradient, no colour.
 ///
+/// On a sheet the body is `negro` (`Ink.relief(on:)`), where a black inner
+/// shadow would not show: the edge is a `trazo-hoja` line along the bottom
+/// instead. With "Increase Contrast" the Disc also carries a 1 pt ring in
+/// the hairline of its surface.
+///
 /// The 64 pt target is part of the label, so it is what the button answers
 /// to: a frame put around the button from outside would only move it.
 private struct DiscStyle: ButtonStyle {
+    @Environment(\.inkSurface) private var surface
+    @Environment(\.colorSchemeContrast) private var contrast
+
     func makeBody(configuration: Configuration) -> some View {
         let depth: CGFloat = configuration.isPressed ? 2 : 1
+        let onSheet = surface == .sheet
         configuration.label
             .background(
                 Circle().fill(
-                    Ink.relief.shadow(
-                        .inner(color: Ink.background.opacity(0.6), radius: depth / 2, x: 0, y: depth)
+                    Ink.relief(on: surface).shadow(
+                        onSheet
+                            ? .inner(color: Ink.ruleSheet, radius: 0, x: 0, y: -depth)
+                            : .inner(color: Ink.background.opacity(0.6), radius: depth / 2, x: 0, y: depth)
                     )
                 )
             )
+            .overlay {
+                if contrast == .increased {
+                    Circle().strokeBorder(Ink.rule(on: surface), lineWidth: 1)
+                }
+            }
             .frame(width: Grid.largeTarget, height: Grid.largeTarget)
             .contentShape(Circle())
             .animation(Motion.controlCurve, value: configuration.isPressed)

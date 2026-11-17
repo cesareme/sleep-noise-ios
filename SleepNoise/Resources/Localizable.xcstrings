@@ -1,24 +1,6 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "app.name": {
-      "comment": "App name",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "SleepNoise"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "SleepNoise"
-          }
-        }
-      }
-    },
     "sound.white": {
       "comment": "White noise name",
       "extractionState": "manual",
@@ -325,24 +307,6 @@
         }
       }
     },
-    "mixes.save.message": {
-      "comment": "Save dialog message",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Name this blend."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ponle nombre a esta mezcla."
-          }
-        }
-      }
-    },
     "mixes.defaultNameFormat": {
       "comment": "Default name. Argument is a number.",
       "extractionState": "manual",
@@ -465,42 +429,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Guarda una mezcla para cada cuarto y cada estación."
-          }
-        }
-      }
-    },
-    "paywall.benefit.timer": {
-      "comment": "Pro benefit title",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Timers past 60 minutes"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Más de 60 minutos de temporizador"
-          }
-        }
-      }
-    },
-    "paywall.benefit.timer.detail": {
-      "comment": "Pro benefit detail",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "90 minutes, custom, up to six hours."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "90 minutos, a medida, hasta seis horas."
           }
         }
       }
@@ -903,13 +831,13 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Last day. Afterwards white, pink, brown, rain and a 60-minute timer stay free, and the mixes you saved are kept; saving more needs Pro."
+                  "value": "Last day. Afterwards white, pink, brown, rain, wind and the whole timer stay free, and the mixes you saved are kept; saving more needs Pro."
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld days left. Afterwards white, pink, brown, rain and a 60-minute timer stay free, and the mixes you saved are kept; saving more needs Pro."
+                  "value": "%lld days left. Afterwards white, pink, brown, rain, wind and the whole timer stay free, and the mixes you saved are kept; saving more needs Pro."
                 }
               }
             }
@@ -921,13 +849,13 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Último día. Después seguirán gratis blanco, rosa, marrón, lluvia y el temporizador de 60 minutos, y las mezclas que guardaste se conservan; guardar más necesita Pro."
+                  "value": "Último día. Después seguirán gratis blanco, rosa, marrón, lluvia, viento y el temporizador entero, y las mezclas que guardaste se conservan; guardar más necesita Pro."
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Quedan %lld días. Después seguirán gratis blanco, rosa, marrón, lluvia y el temporizador de 60 minutos, y las mezclas que guardaste se conservan; guardar más necesita Pro."
+                  "value": "Quedan %lld días. Después seguirán gratis blanco, rosa, marrón, lluvia, viento y el temporizador entero, y las mezclas que guardaste se conservan; guardar más necesita Pro."
                 }
               }
             }
@@ -965,23 +893,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Si te falta el aire, elige un ritmo más rápido o respira a tu ritmo."
-          }
-        }
-      }
-    },
-    "breath.oceanRaised": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ocean raised so you can hear the tide."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Océano activado para que oigas la marea."
           }
         }
       }
@@ -1034,13 +945,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your %lld days start at the first Play. Afterwards white, pink, brown, rain and a 60-minute timer stay free, and the mixes you saved are kept; saving more needs Pro."
+            "value": "Your %lld days start at the first Play. Afterwards white, pink, brown, rain, wind and the whole timer stay free, and the mixes you saved are kept; saving more needs Pro."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tus %lld días empiezan al primer Reproducir. Después seguirán gratis blanco, rosa, marrón, lluvia y el temporizador de 60 minutos, y las mezclas que guardaste se conservan; guardar más necesita Pro."
+            "value": "Tus %lld días empiezan al primer Reproducir. Después seguirán gratis blanco, rosa, marrón, lluvia, viento y el temporizador entero, y las mezclas que guardaste se conservan; guardar más necesita Pro."
           }
         }
       }
@@ -1068,13 +979,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "White, pink, brown, rain and the 60-minute timer stay free. Your saved mixes are kept and come back whole with Pro."
+            "value": "White, pink, brown, rain, wind and the whole timer stay free. Your saved mixes are kept and come back whole with Pro."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Blanco, rosa, marrón, lluvia y el temporizador de 60 minutos siguen gratis. Tus mezclas guardadas se conservan y vuelven enteras con Pro."
+            "value": "Blanco, rosa, marrón, lluvia, viento y el temporizador entero siguen gratis. Tus mezclas guardadas se conservan y vuelven enteras con Pro."
           }
         }
       }
@@ -1110,24 +1021,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "El oleaje marca una respiración lenta y luego suelta."
-          }
-        }
-      }
-    },
-    "trial.chip.notStartedFormat": {
-      "comment": "Header chip before the first Play. Argument is the trial length in days.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld-day trial"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Prueba de %lld días"
           }
         }
       }
@@ -2552,6 +2445,24 @@
         }
       }
     },
+    "marea.oceano.subido": {
+      "comment": "Note under the tide for four seconds when switching it on raised a silent ocean. The number is the level.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocean raised to %lld so you can hear the tide."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Océano subido a %lld para oír la marea."
+          }
+        }
+      }
+    },
     "temporizador.titulo": {
       "comment": "Name of the timer row on the page.",
       "extractionState": "manual",
@@ -2620,6 +2531,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Guardar como mezcla…"
+          }
+        }
+      }
+    },
+    "mezcla.menu.guardar.pro": {
+      "comment": "Context menu of the mix name when one more saved mix needs Pro.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save as a mix… · pro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar como mezcla… · pro"
           }
         }
       }
@@ -2998,6 +2927,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "Guardar como mezcla"
+          }
+        }
+      }
+    },
+    "ax.guardar.pro": {
+      "comment": "VoiceOver label of saving when one more saved mix needs Pro.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save as a mix, requires Pro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar como mezcla, requiere Pro"
+          }
+        }
+      }
+    },
+    "ax.guardar.pro.pista": {
+      "comment": "VoiceOver hint of saving when one more saved mix needs Pro. By day only.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap to see Pro. The mix doesn't change."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca dos veces para ver Pro. La mezcla no cambia."
           }
         }
       }

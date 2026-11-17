@@ -32,6 +32,8 @@ struct PageView: View {
     /// Bumped when the app comes forward, so what depends on the hour (what
     /// may be sold) is read again.
     @State private var clock = 0
+    /// Height of the name's line: 34 pt at Large.
+    @ScaledMetric(relativeTo: .title) private var nameLine: CGFloat = 34
 
     init(model: MixerModel, purchases: PurchaseManager) {
         self.model = model
@@ -56,13 +58,18 @@ struct PageView: View {
                 isLargestSizes: dynamicType >= .accessibility3
             )
             let shown = Array(rows.prefix(fits))
+            // From the first accessibility size the Horizon is no longer at
+            // a third of the screen: it sits 24 pt under the state line, so
+            // the rows below it stay on screen (05 §5d).
+            let isLargeText = dynamicType.isAccessibilitySize
             // Read on every draw; `clock` only makes the draw happen.
             let canSell = clock >= 0 && model.canSell
 
             ScrollView {
                 VStack(spacing: 0) {
                     head(metrics: metrics, canSell: canSell)
-                        .frame(minHeight: metrics.headHeight, alignment: .top)
+                        .frame(minHeight: isLargeText ? nil : metrics.headHeight, alignment: .top)
+                        .padding(.bottom, isLargeText ? Grid.unit * 6 : 0)
                     SoundLine(isSounding: model.isPlaying) { tau in
                         model.outputLevel(tau: tau)
                     }
@@ -71,6 +78,7 @@ struct PageView: View {
                     EditorialRow(
                         title: Localized.string("capas.todas"),
                         value: allLayersValue(shown),
+                        valueIsDatum: true,
                         rule: .top
                     ) {
                         sheet = .layers
@@ -115,6 +123,8 @@ struct PageView: View {
             guard next == .active else { return }
             // A trial that ran out is only applied while nothing is playing.
             purchases.refreshAccess(canDowngrade: !model.isPlaying)
+            // A Pro sheet left up before the night does not come back with it.
+            model.closeSaleIfNight()
             clock += 1
         }
         .onChange(of: purchases.hasFullAccess) { _, _ in
@@ -151,12 +161,7 @@ struct PageView: View {
                 _ = model.saveCurrent(name: draftName)
             }
             Button("common.cancel", role: .cancel) {}
-        } message: {
-            Text("mixes.save.message")
         }
-        #if DEBUG
-        .modifier(DebugDynamicType())
-        #endif
     }
 
     // MARK: Head
@@ -187,8 +192,20 @@ struct PageView: View {
         model.loadedMixName != nil && model.activeHouseMix == nil && !model.loadedMixWasStripped
     }
 
+    /// A fourth mix without access: the menu says so before the touch.
+    private var saveNeedsPro: Bool {
+        !AccessPolicy.canSave(
+            existingCount: model.mixStore.mixes.count,
+            hasFullAccess: purchases.hasFullAccess
+        )
+    }
+
     private var name: some View {
-        Text(verbatim: title)
+        // The tap on the name is the one way out of the night page: its
+        // touch area is 64 pt there, taken from the air above and below, so
+        // nothing moves.
+        let reach = model.isNightSession ? max(0, (Grid.largeTarget - nameLine) / 2) : 0
+        return Text(verbatim: title)
             .step(.name)
             .foregroundStyle(Ink.primary(phase))
             .lineLimit(dynamicType.isAccessibilitySize ? 2 : 1)
@@ -197,17 +214,30 @@ struct PageView: View {
             .contentTransition(.opacity)
             .animation(Motion.contentCurve, value: title)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, reach)
             .contentShape(Rectangle())
+            .padding(.vertical, -reach)
             .onTapGesture {
                 // By day a tap on the name does nothing. On the night page
                 // it is the deliberate way back to the day page.
                 if model.isNightSession { model.endNightSession() }
             }
             .contextMenu {
-                Button {
-                    beginSave()
-                } label: {
-                    Text("mezcla.menu.guardar")
+                if saveNeedsPro {
+                    // At night the touch does nothing, so no hint offers Pro.
+                    Button {
+                        beginSave()
+                    } label: {
+                        Text("mezcla.menu.guardar.pro")
+                    }
+                    .accessibilityLabel(Text("ax.guardar.pro"))
+                    .accessibilityHint(model.canSell ? Text("ax.guardar.pro.pista") : Text(verbatim: ""))
+                } else {
+                    Button {
+                        beginSave()
+                    } label: {
+                        Text("mezcla.menu.guardar")
+                    }
                 }
             }
             .accessibilityElement(children: .ignore)
@@ -215,8 +245,21 @@ struct PageView: View {
             .accessibilityValue(Text(verbatim: PageStatus.spoken(title)))
             .accessibilityHint(Text(model.isNightSession ? "ax.nombre.pista.noche" : "ax.nombre.pista"))
             .accessibilityAddTraits(model.isNightSession ? .isButton : .isHeader)
-            .accessibilityAction(named: Text("ax.accion.guardar")) { beginSave() }
-            .accessibilityAction(named: Text("ax.accion.volver.dia")) { model.endNightSession() }
+            .accessibilityActions {
+                Button {
+                    beginSave()
+                } label: {
+                    Text(saveNeedsPro ? "ax.guardar.pro" : "ax.accion.guardar")
+                }
+                // The way back exists only on the night page (05 §5b).
+                if model.isNightSession {
+                    Button {
+                        model.endNightSession()
+                    } label: {
+                        Text("ax.accion.volver.dia")
+                    }
+                }
+            }
             .accessibilityIdentifier("mixName")
     }
 
@@ -301,7 +344,8 @@ struct PageView: View {
             model.offerPro()
             return
         }
-        draftName = model.suggestedMixName()
+        // The field starts from the name the mix already has.
+        draftName = model.loadedMixBaseName ?? title
         showsSave = true
     }
 }
@@ -396,6 +440,7 @@ private struct StatusLine: View {
     let hasFullAccess: Bool
 
     @Environment(\.nightPhase) private var phase
+    @Environment(\.dynamicTypeSize) private var dynamicType
     @Environment(\.accessibilityShowButtonShapes) private var buttonShapes
     @ScaledMetric(relativeTo: .subheadline) private var twoLines: CGFloat = 40
 
@@ -418,22 +463,30 @@ private struct StatusLine: View {
         let status = self.status
         let text = status.text()
         Group {
-            if status.isRetry {
+            if case .error(let attempt) = status {
                 Button {
                     model.togglePlayback()
                 } label: {
-                    words(text)
+                    // One sentence per line; the largest sizes take the
+                    // lines they need, the button grows with them.
+                    words(PageStatus.errorLines(text, bindsTail: !dynamicType.isAccessibilitySize))
                         .underline(buttonShapes, color: Ink.secondary(phase))
-                        .lineLimit(3)
+                        .lineLimit(dynamicType >= .accessibility3 ? nil : 3)
                         .frame(maxWidth: .infinity, minHeight: Grid.target, alignment: .topLeading)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(PressedFadeStyle())
-                .accessibilityLabel(Text("ax.reintentar"))
+                // The first failure has its own label. From the second on
+                // the words on screen say what to do, so they are the label
+                // and "try again" is the hint.
+                .accessibilityLabel(
+                    attempt >= 2 ? Text(verbatim: PageStatus.spoken(text)) : Text("ax.reintentar")
+                )
+                .accessibilityHint(attempt >= 2 ? Text("ax.reintentar") : Text(verbatim: ""))
                 .accessibilityIdentifier("retryAudio")
             } else {
                 words(text)
-                    .lineLimit(2)
+                    .lineLimit(dynamicType >= .accessibility3 ? 3 : 2)
                     .accessibilityLabel(Text(verbatim: PageStatus.spoken(text)))
                     .accessibilityIdentifier("pageStatus")
             }
@@ -441,8 +494,12 @@ private struct StatusLine: View {
         .frame(maxWidth: .infinity, minHeight: twoLines, alignment: .topLeading)
         .onChange(of: model.startFailures) { _, failures in
             // A start that failed was caused by a touch: it may be spoken.
+            // High priority, so it is not lost under VoiceOver reading the
+            // Disc that was just activated.
             if failures > 0 {
-                AccessibilityNotification.Announcement(PageStatus.spoken(self.status.text())).post()
+                var announcement = AttributedString(PageStatus.spoken(self.status.text()))
+                announcement.accessibilitySpeechAnnouncementPriority = .high
+                AccessibilityNotification.Announcement(announcement).post()
             }
         }
     }
@@ -473,9 +530,19 @@ private struct TideRow: View {
 
     @Environment(\.nightPhase) private var phase
     @Environment(\.dynamicTypeSize) private var dynamicType
+    /// Height of the name's line: 22 pt at Large.
+    @ScaledMetric(relativeTo: .headline) private var nameLine: CGFloat = 22
 
     private var isIncluded: Bool { model.breathingIsIncluded }
     private var isOn: Bool { guide.settings.isEnabled && isIncluded }
+
+    /// How far the system toggle draws past its own frame on the trailing
+    /// side: 2 pt on iOS 26 (measured: 63 pt drawn, ending 2 pt beyond the
+    /// frame), nothing before. Taken back so its edge is the column's.
+    private static var toggleOverhang: CGFloat {
+        if #available(iOS 26, *) { return 2 }
+        return 0
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: Grid.inner) {
@@ -494,8 +561,12 @@ private struct TideRow: View {
             .accessibilityIdentifier("openTide")
             toggle
                 .accessibilityIdentifier("tideToggle")
-                // The system toggle is 31 pt tall: centred on the name's line.
-                .padding(.top, -Grid.unit - 0.5)
+                // Centred on the name's line whatever the system's toggle
+                // measures (31 pt on iOS 17, 28 pt on iOS 26): its box is
+                // that line.
+                .fixedSize()
+                .frame(height: nameLine)
+                .padding(.trailing, Self.toggleOverhang)
         }
         .padding(.top, Grid.unit * 3)
         .padding(.bottom, Grid.unit * 2)
@@ -519,8 +590,10 @@ private struct TideRow: View {
 
     /// With access the system says on or off. Without it the toggle says
     /// why it stays off, and only offers Pro while something may be sold.
+    /// On the night page nothing says "requires Pro" (copy guide §3): the
+    /// toggle just says it is off.
     @ViewBuilder private var toggle: some View {
-        if isIncluded {
+        if isIncluded || phase.isNight {
             plainToggle
         } else if canSell {
             plainToggle

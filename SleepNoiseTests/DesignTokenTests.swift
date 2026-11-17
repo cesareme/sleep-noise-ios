@@ -72,6 +72,28 @@ final class DesignTokenTests: XCTestCase {
         XCTAssertEqual(Ink.rule(on: .black), Ink.rule)
     }
 
+    func testTheReliefShowsOnBothSurfaces() {
+        // `grafito` on `hoja` is 1.01:1: on a sheet the relief is `negro`.
+        XCTAssertEqual(Ink.relief(on: .black), Ink.relief)
+        XCTAssertEqual(Ink.relief(on: .sheet), Ink.background)
+        func luminance(_ hex: UInt32) -> Double {
+            func channel(_ value: UInt32) -> Double {
+                let unit = Double(value & 0xFF) / 255
+                return unit <= 0.039_28 ? unit / 12.92 : pow((unit + 0.055) / 1.055, 2.4)
+            }
+            return 0.2126 * channel(hex >> 16) + 0.7152 * channel(hex >> 8) + 0.0722 * channel(hex)
+        }
+        func ratio(_ one: UInt32, _ other: UInt32) -> Double {
+            let (high, low) = (max(luminance(one), luminance(other)), min(luminance(one), luminance(other)))
+            return (high + 0.05) / (low + 0.05)
+        }
+        let onBlack = ratio(InkTokens.relief.hex, InkTokens.background.hex)
+        let onSheet = ratio(InkTokens.background.hex, InkTokens.sheet.hex)
+        XCTAssertGreaterThan(onBlack, 1.2)
+        XCTAssertGreaterThan(onSheet, 1.2)
+        XCTAssertLessThan(ratio(InkTokens.relief.hex, InkTokens.sheet.hex), 1.05, "why grafito is not used there")
+    }
+
     // MARK: Type
 
     func testTypeScaleHasNineStepsWithTheirSizes() {
@@ -123,6 +145,9 @@ final class DesignTokenTests: XCTestCase {
             }
         }
         XCTAssertEqual(TypeStep.row.weight(.day), .semibold)
+        // A sheet title is Semibold by day and Medium at night (03 §3.4).
+        XCTAssertEqual(TypeStep.header.weight(.day), .semibold)
+        XCTAssertEqual(TypeStep.header.weight(.nightPage), .medium)
         XCTAssertEqual(TypeStep.body.weight(.day), .regular)
         XCTAssertTrue(TypeStep.data.isTabular)
         XCTAssertTrue(TypeStep.value.isTabular)

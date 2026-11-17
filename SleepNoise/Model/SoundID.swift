@@ -36,22 +36,6 @@ enum SoundID: String, Codable, CaseIterable, Identifiable {
     /// The line of use under the name, in lower case ("on the roof").
     var detailKey: String { "capas.\(rawValue).detalle" }
 
-    var symbolName: String {
-        switch self {
-        case .white: return "waveform"
-        case .pink: return "waveform.path"
-        case .brown: return "speaker.wave.1.fill"
-        case .rain: return "cloud.rain.fill"
-        case .fan: return "fan.fill"
-        case .ocean: return "water.waves"
-        case .thunder: return "cloud.bolt.fill"
-        case .campfire: return "flame.fill"
-        case .brook: return "drop.fill"
-        case .wind: return "wind"
-        case .cabin: return "airplane"
-        }
-    }
-
     var localizedName: String {
         String(localized: String.LocalizationValue(stringLiteral: nameKey))
     }

@@ -19,6 +19,8 @@ struct LayersSheet: View {
     var onMixes: () -> Void
 
     @Environment(\.nightPhase) private var phase
+    /// The box of a section header: 18 pt at Large (05 §2.7).
+    @ScaledMetric(relativeTo: .footnote) private var headerLine: CGFloat = 18
     @State private var arbiter = IndexArbiter()
     @State private var sliderDismissal = 0
 
@@ -34,7 +36,7 @@ struct LayersSheet: View {
                     section("capas.seccion.colores", PageLayers.colors, canSell: canSell)
                         .padding(.top, Grid.inner)
                     section("capas.seccion.camas", PageLayers.beds, canSell: canSell)
-                        .padding(.top, Grid.group - Grid.layerChannel)
+                        .padding(.top, Grid.group)
                     notes
                 }
                 .padding(.bottom, Grid.group)
@@ -60,6 +62,7 @@ struct LayersSheet: View {
             Text(verbatim: Localized.string(titleKey))
                 .step(.stateWord)
                 .foregroundStyle(Ink.secondary(phase))
+                .frame(minHeight: headerLine)
                 .padding(.horizontal, Grid.margin)
                 .padding(.bottom, Grid.unit + 2)
                 .accessibilityAddTraits(.isHeader)

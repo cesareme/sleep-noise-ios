@@ -29,8 +29,17 @@ enum PageDebugState: String, CaseIterable {
     case layersCap
     /// The engine did not start.
     case error
+    /// It did not start twice, and three times: the next rungs of the line.
+    case error2
+    case error3
     /// The page at an accessibility text size.
     case largeType
+    /// The Layers sheet opened from the night page: one ink, title included.
+    case nightLayers
+    /// Playing with the tide on, by day.
+    case tide
+    /// The night page with the tide on.
+    case nightTide
 }
 
 enum PageArguments {
@@ -47,7 +56,7 @@ enum PageArguments {
 
     static var opensLayers: Bool {
         switch state {
-        case .layers, .layersSix, .layersCap: return true
+        case .layers, .layersSix, .layersCap, .nightLayers: return true
         default: return false
         }
     }
@@ -66,6 +75,7 @@ enum PageArguments {
         case "accessibility1": return .accessibility1
         case "accessibility2": return .accessibility2
         case "accessibility3": return .accessibility3
+        case "accessibility4": return .accessibility4
         case "accessibility5": return .accessibility5
         default: return state == .largeType ? .accessibility2 : nil
         }
@@ -94,8 +104,9 @@ enum PageStage {
         components.year = 2026
         components.month = 11
         components.day = 17
-        components.hour = state == .night ? 2 : 12
-        components.minute = state == .night ? 14 : 0
+        let isNight = state == .night || state == .nightLayers || state == .nightTide
+        components.hour = isNight ? 2 : 12
+        components.minute = isNight ? 14 : 0
         return Calendar.current.date(from: components) ?? Date()
     }
 
@@ -113,7 +124,7 @@ enum PageStage {
         let model = MixerModel(purchases: purchases, defaults: defaults, now: { pinned })
 
         switch state {
-        case .rest, .playingTwo, .layers, .error, .largeType:
+        case .rest, .playingTwo, .layers, .error, .error2, .error3, .largeType:
             break
         case .playingFive:
             setLevels(model, [.rain: 0.45, .wind: 0.25, .ocean: 0.5, .pink: 0.3, .brown: 0.2])
@@ -122,6 +133,13 @@ enum PageStage {
             model.beginNightSession()
         case .timer:
             model.selectTimer(minutes: 45)
+        case .nightLayers:
+            model.beginNightSession()
+        case .tide:
+            model.setBreathingEnabled(true)
+        case .nightTide:
+            model.setBreathingEnabled(true)
+            model.beginNightSession()
         case .layersSix:
             // Ocean was saved at 50 while the trial lasted; it keeps it.
             setLevels(model, [.rain: 0.45, .wind: 0.25, .ocean: 0.5, .white: 0.15, .pink: 0.3, .brown: 0.2])
@@ -150,7 +168,12 @@ enum PageStage {
             break
         case .error:
             model.debugFailStart()
-        case .playingTwo, .playingFive, .night, .timer, .layers, .layersCap, .largeType:
+        case .error2:
+            for _ in 0..<2 { model.debugFailStart() }
+        case .error3:
+            for _ in 0..<3 { model.debugFailStart() }
+        case .playingTwo, .playingFive, .night, .timer, .layers, .layersCap, .largeType,
+             .nightLayers, .tide, .nightTide:
             if !model.isPlaying { model.play() }
         }
     }

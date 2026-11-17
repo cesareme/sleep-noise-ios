@@ -4,7 +4,6 @@ import SwiftUI
 /// mixes and Pro). The page and the Layers sheet use `Ink`.
 enum Palette {
     static let background = Color(red: 0.055, green: 0.067, blue: 0.078)
-    static let ink = Color(red: 0.09, green: 0.11, blue: 0.13)
     static let card = Color(red: 0.122, green: 0.137, blue: 0.153)
     static let amber = Color(red: 0.922, green: 0.722, blue: 0.451)
     static let mist = Color(red: 0.655, green: 0.745, blue: 0.753)

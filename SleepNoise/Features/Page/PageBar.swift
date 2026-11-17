@@ -56,7 +56,7 @@ struct PageBar: View {
                 }
             }
             .foregroundStyle(Ink.primary(phase))
-            .frame(minHeight: Grid.target)
+            .frame(minWidth: Grid.target, minHeight: Grid.target, alignment: .leading)
             .contentShape(Rectangle())
         }
         .buttonStyle(PressedFadeStyle())

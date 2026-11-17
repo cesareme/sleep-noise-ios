@@ -25,15 +25,18 @@ struct GrafitoSheet<Content: View>: View {
     }
 }
 
-/// Title of a sheet: step 3, 20 pt from the edge, over a hairline.
+/// Title of a sheet: step 3, 20 pt from the edge, over a hairline. A sheet
+/// opened from the night page takes its one ink, title included.
 struct SheetHeader: View {
     var title: String
+
+    @Environment(\.nightPhase) private var phase
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(verbatim: title)
                 .step(.header)
-                .foregroundStyle(Ink.text)
+                .foregroundStyle(Ink.primary(phase))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, Grid.margin)
                 .padding(.top, Grid.unit * 6)

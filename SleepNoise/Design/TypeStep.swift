@@ -106,7 +106,10 @@ enum TypeStep: CaseIterable {
             return .regular
         case .name, .nightState, .nightAction, .value, .bar, .data, .stateWord:
             return .medium
-        case .header, .row:
+        case .header:
+            // Step 3 is Medium at night (03 §3.4).
+            return phase.isNight ? .medium : .semibold
+        case .row:
             return .semibold
         case .body, .reading, .secondary, .note:
             return phase.isNight ? .medium : .regular

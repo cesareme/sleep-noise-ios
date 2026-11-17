@@ -192,14 +192,31 @@ enum PageStatus: Equatable {
     static func spoken(_ text: String) -> String {
         text.replacingOccurrences(of: " · ", with: ", ")
     }
+
+    /// The error line as it is set (05 §2.12): one sentence per line. A
+    /// single long sentence keeps its last three words together instead, so
+    /// the second line is never one word on its own. `bindsTail` is off at
+    /// the accessibility text sizes, where three words may not fit a line.
+    static func errorLines(_ text: String, bindsTail: Bool = true) -> String {
+        if let stop = text.range(of: ". ") {
+            return text.replacingCharacters(in: stop, with: ".\n")
+        }
+        guard bindsTail else { return text }
+        var words = text.split(separator: " ", omittingEmptySubsequences: false).map(String.init)
+        guard words.count > 4 else { return text }
+        let tail = words.suffix(3).joined(separator: "\u{00A0}")
+        words.removeLast(3)
+        return (words + [tail]).joined(separator: " ")
+    }
 }
 
 /// The header of the page while the current trial lasts.
 ///
-/// Until the seven-night trial is wired, this is the seven-day trial the app
-/// has today, said with the words it already had. It is the one way to the
-/// Pro sheet while everything is open, so it stays; it is never shown on the
-/// night page and it is plain text whenever nothing may be sold.
+/// It appears only once the trial has begun (05 §2.1, C07): the first
+/// screen of a new install says nothing about a trial, and nothing after it
+/// ends. Until the seven-night trial is wired, this is the seven-day trial
+/// the app has today, said with the words it already had. It is never shown
+/// on the night page and it is plain text whenever nothing may be sold.
 enum PageTrialWord {
     static func text(
         trial: TrialState,
@@ -208,17 +225,8 @@ enum PageTrialWord {
         locale: Locale = .current
     ) -> String? {
         guard !isPro else { return nil }
-        let words: String
-        switch trial {
-        case .notStarted:
-            words = String(
-                format: localized("trial.chip.notStartedFormat"), locale: locale, Int64(AccessPolicy.trialDays)
-            )
-        case .active(let days):
-            words = String.localizedStringWithFormat(localized("trial.chip.daysFormat"), days)
-        case .ended:
-            return nil
-        }
+        guard case .active(let days) = trial else { return nil }
+        let words = String.localizedStringWithFormat(localized("trial.chip.daysFormat"), days)
         // State words are small caps: written in lower case.
         return words.lowercased(with: locale)
     }

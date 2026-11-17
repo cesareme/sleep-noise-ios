@@ -87,11 +87,14 @@ struct LevelRuleSpeech: Equatable {
     var subtitle: String
     var level: Float
     var isLocked = false
+    /// Off on the night page, where nothing says "requires Pro".
+    var namesPro = true
     var bundle: Bundle = .main
 
-    /// "Rain, drops on a steady bed"; with ", requires Pro" when locked.
+    /// "Rain, drops on a steady bed"; with ", requires Pro" when locked,
+    /// except on the night page.
     var label: String {
-        Localized.format(isLocked ? "ax.capa.pro" : "ax.capa", bundle: bundle, name, subtitle)
+        Localized.format(isLocked && namesPro ? "ax.capa.pro" : "ax.capa", bundle: bundle, name, subtitle)
     }
 
     /// "65 percent". A locked layer does not sound: "Silent", or

@@ -29,6 +29,9 @@ struct LevelRule: View {
     var channelNote: String?
     /// Tap on a locked row. Nil means the tap does nothing (night).
     var onLockedTap: (() -> Void)?
+    /// A drag began (true) or ended (false). The end comes after the last
+    /// level is written.
+    var onDragActive: ((Bool) -> Void)?
 
     @Environment(\.indexArbiter) private var arbiter
     @Environment(\.nightPhase) private var phase
@@ -45,8 +48,12 @@ struct LevelRule: View {
     @State private var zeroCrossings = 0
     @State private var maxArrivals = 0
 
+    /// On the night page nothing says "requires Pro" (copy guide §3): a
+    /// locked row is named like any other and its value says it is silent.
     private var speech: LevelRuleSpeech {
-        LevelRuleSpeech(name: name, subtitle: subtitle, level: level, isLocked: isLocked)
+        LevelRuleSpeech(
+            name: name, subtitle: subtitle, level: level, isLocked: isLocked, namesPro: !phase.isNight
+        )
     }
 
     var body: some View {
@@ -72,6 +79,8 @@ struct LevelRule: View {
                 .onChange(of: showsSlider) { _, shown in
                     if !shown { sliderIsHeld = false }
                 }
+                // A row taken away with a finger on it still ends its drag.
+                .onDisappear { endDrag() }
             // Dead channel: no gesture starts here, so a scroll always has
             // somewhere to begin between two rows.
             channel
@@ -146,10 +155,13 @@ struct LevelRule: View {
     /// Holding still and then dragging without lifting lands here too: the
     /// slider steps aside and the drag carries on from the current level.
     private func beginDrag() {
+        // One beginning per drag, so every one has its end.
+        let wasDragging = isDragging
         drag = LevelDrag()
         isDragging = true
         showsSlider = false
         arbiter.claim(.finger(id))
+        if !wasDragging { onDragActive?(true) }
     }
 
     private func moveDrag(_ translationX: CGFloat) {
@@ -168,6 +180,7 @@ struct LevelRule: View {
         arbiter.release(.finger(id))
         // Whole percents are what is kept.
         level = LevelMath.quantized(level)
+        onDragActive?(false)
     }
 
     // MARK: Fine slider
@@ -330,6 +343,7 @@ struct LevelRuleFace: View {
     var onColumnWidth: (CGFloat) -> Void = { _ in }
 
     @Environment(\.nightPhase) private var phase
+    @Environment(\.inkSurface) private var surface
     @Environment(\.dynamicTypeSize) private var dynamicType
     @Environment(\.accessibilityShowButtonShapes) private var buttonShapes
     /// Height of the label line: 22 pt at Large, growing with the text.
@@ -367,7 +381,7 @@ struct LevelRuleFace: View {
             // The only transient fill of the system: it lasts as long as the
             // gesture and has square corners.
             Rectangle()
-                .fill(Ink.relief)
+                .fill(Ink.relief(on: surface))
                 .padding(.vertical, 6)
                 .padding(.horizontal, Grid.margin)
                 .opacity(isUnderFinger ? 1 : 0)

@@ -55,6 +55,7 @@ enum InkTokens {
     /// `hoja`: background of modal sheets, "another room". Never black on black.
     static let sheet = InkToken(0x1C1C1E)
     /// `grafito`: the only relief, the Disc and the track under a finger.
+    /// On a sheet the relief is `negro` (`Ink.relief(on:)`).
     static let relief = InkToken(0x1E1D1B)
     /// `trazo`: hairline on black.
     static let rule = InkToken(0x2A2A2E, highContrast: 0x3A3836)
@@ -106,6 +107,13 @@ enum Ink {
 
     static func accent(_ phase: NightPhase) -> Color {
         phase.isNight ? indexNight : index
+    }
+
+    /// The relief for the surface a view sits on: `grafito` on black. On a
+    /// sheet `grafito` cannot be told from `hoja` (1.01:1), so the relief
+    /// there is `negro`: the same step of contrast (1.23:1) and no new hex.
+    static func relief(on surface: InkSurface) -> Color {
+        surface == .sheet ? background : relief
     }
 
     /// Hairline colour for the surface a view sits on.
