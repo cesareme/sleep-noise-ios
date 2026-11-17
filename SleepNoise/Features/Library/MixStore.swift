@@ -51,9 +51,33 @@ final class MixStore: ObservableObject {
         persist()
     }
 
-    /// The name a mix gets when it has none: "Mix 3".
-    static func defaultName(_ position: Int) -> String {
-        String(format: String(localized: "mixes.defaultNameFormat"), Int64(position))
+    /// Gives a mix another name. A name left empty changes nothing. Returns
+    /// the name as it was stored, or nil when nothing changed.
+    @discardableResult
+    func rename(_ id: UUID, to name: String) -> String? {
+        let trimmed = MixCodec.cleanName(name)
+        guard !trimmed.isEmpty, let index = mixes.firstIndex(where: { $0.id == id }),
+              mixes[index].name != trimmed
+        else { return nil }
+        mixes[index].name = trimmed
+        persist()
+        return trimmed
+    }
+
+    /// Moves a mix one place up (`-1`) or down (`1`) the list. At either end
+    /// it stays where it is.
+    @discardableResult
+    func move(_ id: UUID, by offset: Int) -> Bool {
+        guard let index = mixes.firstIndex(where: { $0.id == id }) else { return false }
+        let target = index + offset
+        guard target != index, mixes.indices.contains(target) else { return false }
+        mixes.swapAt(index, target)
+        persist()
+        return true
+    }
+
+    func mix(_ id: UUID) -> SavedMix? {
+        mixes.first { $0.id == id }
     }
 
     private func load() {
@@ -74,13 +98,13 @@ final class MixStore: ObservableObject {
         persist()
     }
 
-    /// A stored mix whose name came back empty is kept and given the default
-    /// name, counting from the oldest end of the list.
+    /// A stored mix whose name came back empty is kept and named after its
+    /// layers, the way a save names a mix that was given no name.
     private func named(_ mixes: [SavedMix]) -> [SavedMix] {
-        mixes.enumerated().map { index, mix in
+        mixes.map { mix in
             guard mix.name.isEmpty else { return mix }
             var named = mix
-            named.name = Self.defaultName(mixes.count - index)
+            named.name = MixCodec.cleanName(MixAutoName.name(levels: mix.levelsBySound))
             return named
         }
     }

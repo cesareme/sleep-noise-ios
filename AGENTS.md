@@ -22,15 +22,16 @@ SN_SIM='<tu simulador>' scripts/verify.sh
 ## 3. Mapa
 
 ```
-SleepNoise/App        AppRoot, Theme
-SleepNoise/Audio      SleepAudioEngine, sesión, observador, Now Playing
+SleepNoise/App        AppRoot
+SleepNoise/Audio      SleepAudioEngine, CommandDesk, sesión, observador, Now Playing
 SleepNoise/Audio/DSP  EngineCommand, ParameterMailbox, AtomicBridge, RenderState,
-                      SoundGains, generadores y filtros
+                      SampleRamp, SoundGains, generadores y filtros
 SleepNoise/Design     Grafito: tokens, componentes, galería (-gallery)
 SleepNoise/Model      SoundID, AccessPolicy, TrialClock
 SleepNoise/StoreKit   PurchaseManager
 SleepNoise/Features   Page (página y Capas), Mixer (MixerModel), Timer, Breathing,
-                      Library, Paywall
+                      Bedtime, SmallHours, Library, Paywall
+SleepNoise/Intents    los cinco Atajos
 SleepNoise/Resources  Localizable.xcstrings, Info.plist, entitlements, .storekit
 SleepNoiseTests       XCTest (Spectrum.swift para tests espectrales)
 ```
@@ -47,7 +48,7 @@ El callback de render solo lee el buzón y ejecuta `RenderState.processStereo`.
 6. Coeficientes (`expf`) en `prepare()`. `prepare()` y `resetForFreshStart()` solo con el motor parado.
 7. Salida acotada: `softClip`, NaN a silencio, `flushDenormal`. Con ganancia cero el generador se salta.
 8. Reconstruir el grafo o cambiar la frecuencia de muestreo no reinicia un fundido en curso.
-9. Un campo nuevo en `EngineCommand` toca cuatro sitios: el struct, `RenderState`, `SleepAudioEngine.publishCurrent` y el test de desgarro (`ParameterMailboxTests.testConcurrentReadsNeverTear`), que debe escribirlo y comprobarlo.
+9. Un campo nuevo en `EngineCommand` toca cuatro sitios: el struct, `RenderState`, `CommandDesk.command` y el test de desgarro (`ParameterMailboxTests.testConcurrentReadsNeverTear`), que debe escribirlo y comprobarlo.
 10. Una textura es un struct puro en su fichero, con `init(seed:)`, `prepare(sampleRate:)` y `next()`, más sus tests.
 
 **Un solo escritor en `SleepNoise/Audio/`.** En 1.0 es Claude, y nunca con dos ramas de audio abiertas a la vez.
@@ -79,7 +80,7 @@ El callback de render solo lee el buzón y ejecuta `RenderState.processStereo`.
 ## 7. Cursor
 
 - Hace lógica pura en **ficheros nuevos** con tests en ficheros nuevos, textos de la ficha y documentación. Solo `import Foundation` (o `Security` si el brief lo pide).
-- No toca: `SleepNoise/Audio/`, `MixerModel.swift`, vistas (`*View.swift`, `AppRoot`, `Theme`), `PurchaseManager.swift`, `project.yml`, `Info.plist`, entitlements, `Localizable.xcstrings`, `scripts/`, `.github/` ni este fichero. Tampoco App Intents, StoreKit ni widgets. Un fichero existente solo si el brief lo lista.
+- No toca: `SleepNoise/Audio/`, `MixerModel.swift`, vistas (`*View.swift`, `AppRoot`), `PurchaseManager.swift`, `project.yml`, `Info.plist`, entitlements, `Localizable.xcstrings`, `scripts/`, `.github/` ni este fichero. Tampoco App Intents, StoreKit ni widgets. Un fichero existente solo si el brief lo lista.
 - Abre el PR con un push; un segundo push solo para corregir un fallo de CI. Si la CI falla dos veces, el paquete pasa a Claude.
 - En los tests, nada de `Date()`, `Calendar.current`, `TimeZone.current` ni `Locale.current`: todo inyectado.
 

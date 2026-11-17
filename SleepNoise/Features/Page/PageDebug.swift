@@ -43,6 +43,166 @@ enum PageDebugState: String, CaseIterable {
     case tide
     /// The night page with the tide on.
     case nightTide
+
+    // The timer sheet over the page.
+    /// First use, nothing playing: "Until I sleep", 45 minutes.
+    case timerRest
+    /// "Until I sleep" counting.
+    case timerAsleep
+    /// A blanket until seven.
+    case timerBlanket
+    /// Inside the final fade.
+    case timerFading
+    /// Paused with time left.
+    case timerPaused
+    /// The wheel of lengths open.
+    case timerLength
+    /// The time picker of the blanket open.
+    case timerHour
+    /// Opened from the night page: one ink.
+    case timerNight
+
+    // The tide sheet over the page.
+    /// Off, with access.
+    case tideRest
+    /// Guiding at the pace chosen.
+    case tideGuiding
+    /// Guiding with "Descent": it begins at twelve a minute.
+    case tideDescent
+    /// Letting go.
+    case tideDissolving
+    /// Without access: "pro" beside the title.
+    case tideLocked
+    /// Opened from the night page: one ink.
+    case tideNight
+
+    // The Night screen over the page.
+    /// The first time: the two sentences, held on screen.
+    case nightEnter
+    /// "Until I sleep" counting: "+15 min" in its place.
+    case nightTimer
+    /// 60 s without a touch: drawn dimmed.
+    case nightDimmed
+    /// "Keep screen on · Always": awake, and dimmed after its minute.
+    case nightKeepOn
+    /// A blanket until seven.
+    case nightBlanket
+    /// No timer: the place of "+15 min" is empty.
+    case nightPlain
+    /// Inside the final fade.
+    case nightFading
+    /// Paused by a touch.
+    case nightPaused
+    /// The earbuds went away: "Keep playing on speaker" above "+15 min".
+    case nightSpeaker
+    /// Under a finger on the vertical axis: the rule and "Playing · at 40".
+    case nightLevel
+    /// The timer ran out: "Small hours" in the place of "+15 min".
+    case nightEnded
+    /// The sound did not start again.
+    case nightError
+
+    // Small Hours over the page.
+    /// The first minutes: the tide guides, the water line moves.
+    case smallHours
+    /// The tide has gone: the plain sea and the Horizon.
+    case smallHoursPlain
+    /// The last minutes: "Winding down".
+    case smallHoursWinding
+    /// Paused by a touch.
+    case smallHoursPaused
+
+    // The Mixes sheet over the page.
+    /// Without access: two saved mixes, the first one loaded and sounding,
+    /// and the four of the house.
+    case mixes
+    /// Nothing saved: the sentence in the place of "yours".
+    case mixesEmpty
+    /// The alert that saves the live mix, with its name already in.
+    case mixesSave
+    /// The alert that renames a saved mix.
+    case mixesRename
+    /// The alert that asks before a saved mix is deleted.
+    case mixesDelete
+    /// Three saved and no access: the live mix says "pro".
+    case mixesFourth
+    /// Opened from the night page: one ink.
+    case mixesNight
+    /// Opened from the night page without access: no recipe says "is Pro".
+    case mixesNightFree
+    /// The page after loading a house mix with a Pro layer, without access.
+    case mixesTrimmed
+    /// The same with the longest title of the house: "Brown and fire".
+    case mixesTrimmedLong
+    /// The earbuds went away on the page: "Keep playing on speaker" on the
+    /// second line of the state.
+    case pageSpeaker
+    /// Back on the speaker, turned down to the cap: "Playing · at 40".
+    case pageCapped
+
+    var opensMixes: Bool {
+        switch self {
+        case .mixes, .mixesEmpty, .mixesSave, .mixesRename, .mixesDelete, .mixesFourth, .mixesNight,
+             .mixesNightFree:
+            return true
+        default: return false
+        }
+    }
+
+    /// Staged without access: the trial ran out and nothing was bought.
+    var isFreeTier: Bool {
+        switch self {
+        case .layersSix, .layersEnd, .tideLocked, .mixes, .mixesRename, .mixesDelete, .mixesFourth, .mixesTrimmed,
+             .mixesTrimmedLong, .mixesNightFree:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// The Night screen is what the launch shows.
+    var isNightScreen: Bool {
+        switch self {
+        case .nightEnter, .nightTimer, .nightDimmed, .nightKeepOn, .nightBlanket, .nightPlain,
+             .nightFading, .nightPaused, .nightSpeaker, .nightLevel, .nightEnded, .nightError:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Small Hours is what the launch shows.
+    var isSmallHours: Bool {
+        switch self {
+        case .smallHours, .smallHoursPlain, .smallHoursWinding, .smallHoursPaused: return true
+        default: return false
+        }
+    }
+
+    var opensTimer: Bool {
+        switch self {
+        case .timerRest, .timerAsleep, .timerBlanket, .timerFading, .timerPaused, .timerLength,
+             .timerHour, .timerNight:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var opensTide: Bool {
+        switch self {
+        case .tideRest, .tideGuiding, .tideDescent, .tideDissolving, .tideLocked, .tideNight: return true
+        default: return false
+        }
+    }
+
+    /// Staged in the small hours, on the night page.
+    var isNight: Bool {
+        switch self {
+        case .night, .nightLayers, .nightTide, .timerNight, .tideNight, .mixesNight, .mixesNightFree: return true
+        default: return isNightScreen || isSmallHours
+        }
+    }
 }
 
 enum PageArguments {
@@ -62,6 +222,21 @@ enum PageArguments {
         case .layers, .layersSix, .layersCap, .layersEnd, .nightLayers: return true
         default: return false
         }
+    }
+
+    /// The sheet a staged launch opens over the page.
+    static var initialSheet: PageSheet? {
+        guard let state else { return nil }
+        if opensLayers { return .layers }
+        if state.opensTimer { return .timer }
+        if state.opensTide { return .tide }
+        if state.opensMixes { return .mixes }
+        return nil
+    }
+
+    /// The timer sheet opens with the control of its mode unfolded.
+    static var opensTimerControl: Bool {
+        state == .timerLength || state == .timerHour
     }
 
     /// Layers opens at the end of its content.
@@ -88,6 +263,46 @@ enum PageArguments {
     }
 }
 
+/// What a staged Mixes sheet opens over itself.
+enum MixesArguments {
+    /// The alert a capture asks for, or nil.
+    @MainActor
+    static func naming(_ model: MixerModel) -> MixNaming? {
+        var naming = MixNaming()
+        switch PageArguments.state {
+        case .mixesSave:
+            naming.beginSave(model)
+        case .mixesRename:
+            guard let mix = model.mixStore.mixes.first else { return nil }
+            naming.beginRename(mix)
+        default:
+            return nil
+        }
+        return naming
+    }
+
+    /// The mix a capture asks to delete, or nil.
+    @MainActor
+    static func deleting(_ model: MixerModel) -> SavedMix? {
+        PageArguments.state == .mixesDelete ? model.mixStore.mixes.first : nil
+    }
+}
+
+/// What a staged Night screen needs to know about its own capture.
+enum NightArguments {
+    /// The rule of the level and its note stay up without a finger.
+    static var showsLevelRule: Bool { PageArguments.state == .nightLevel }
+    /// The two first-time sentences do not count their seconds.
+    static var holdsIntro: Bool { PageArguments.state == .nightEnter }
+
+    /// Writes what Night asked of the idle timer to the console of a
+    /// staged launch: a capture cannot show whether the screen will sleep.
+    static func note(screenAwake: Bool) {
+        guard let state = PageArguments.state, state.isNightScreen || state.isSmallHours else { return }
+        print("night.screenAwake=\(screenAwake)")
+    }
+}
+
 /// Forces the text size a capture asks for; otherwise the system's.
 struct DebugDynamicType: ViewModifier {
     func body(content: Content) -> some View {
@@ -104,15 +319,22 @@ struct DebugDynamicType: ViewModifier {
 enum PageStage {
     static let suiteName = "sleepnoise.debug.page"
 
+    /// The clock a staged launch runs on. It stands still unless a state
+    /// moves it (to land inside the final fade of the timer).
+    final class Clock: @unchecked Sendable {
+        var date = Date()
+    }
+
+    private static let stageClock = Clock()
+
     /// Midday on a fixed date, or 02:14 the next night, local time.
     static func clock(for state: PageDebugState) -> Date {
         var components = DateComponents()
         components.year = 2026
         components.month = 11
         components.day = 17
-        let isNight = state == .night || state == .nightLayers || state == .nightTide
-        components.hour = isNight ? 2 : 12
-        components.minute = isNight ? 14 : 0
+        components.hour = state.isNight ? 2 : 12
+        components.minute = state.isNight ? 14 : 0
         return Calendar.current.date(from: components) ?? Date()
     }
 
@@ -120,18 +342,52 @@ enum PageStage {
         let defaults = UserDefaults(suiteName: suiteName) ?? .standard
         defaults.removePersistentDomain(forName: suiteName)
         let purchases = PurchaseManager(defaults: defaults)
-        if state == .layersSix || state == .layersEnd {
+        if state.isFreeTier {
             // The trial ran out long ago and nothing was bought.
             let start = Date().addingTimeInterval(-30 * 86_400)
             purchases.startTrialIfNeeded(now: start)
             purchases.refreshAccess(now: start.addingTimeInterval(8 * 86_400), canDowngrade: true)
         }
-        let pinned = clock(for: state)
-        let model = MixerModel(purchases: purchases, defaults: defaults, now: { pinned })
+        if state != .nightEnter {
+            // Only one capture is the first Night of the install.
+            defaults.set(true, forKey: MixerModel.nightIntroKey)
+        }
+        let clock = stageClock
+        clock.date = Self.clock(for: state)
+        let model = MixerModel(purchases: purchases, defaults: defaults, now: { clock.date })
 
         switch state {
-        case .rest, .playingTwo, .layers, .error, .error2, .error3, .largeType:
+        case .rest, .playingTwo, .layers, .error, .error2, .error3, .largeType,
+             .timerRest, .tideRest, .tideLocked, .mixesEmpty, .mixesTrimmed, .mixesTrimmedLong,
+             .pageSpeaker, .pageCapped,
+             .nightEnter, .nightTimer, .nightDimmed, .nightFading, .nightPaused, .nightSpeaker,
+             .nightLevel, .nightEnded, .nightError,
+             .smallHours, .smallHoursPlain, .smallHoursWinding, .smallHoursPaused:
+            // Night shows the timer of the first use: 45 minutes.
             break
+        case .nightKeepOn:
+            model.setKeepScreenOn(.always)
+        case .nightBlanket:
+            model.chooseTimer(.blanket(hour: TimerChoice.defaultEndHour))
+        case .nightPlain:
+            model.chooseTimer(TimerChoice.firstUse.with(mode: .off))
+        case .timerAsleep, .timerFading, .timerPaused, .timerLength:
+            model.chooseTimer(.untilAsleep(TimerChoice.defaultMinutes))
+        case .timerBlanket, .timerHour:
+            model.chooseTimer(.blanket(hour: TimerChoice.defaultEndHour))
+        case .timerNight:
+            model.chooseTimer(.untilAsleep(90))
+            model.beginNightSession()
+        case .tideGuiding, .tideDissolving:
+            model.setBreathingEnabled(true)
+        case .tideDescent:
+            var settings = model.breathing.settings
+            settings.descends = true
+            model.updateBreathing(settings)
+            model.setBreathingEnabled(true)
+        case .tideNight:
+            model.setBreathingEnabled(true)
+            model.beginNightSession()
         case .playingFive:
             setLevels(model, [.rain: 0.45, .wind: 0.25, .ocean: 0.5, .pink: 0.3, .brown: 0.2])
         case .night:
@@ -154,27 +410,137 @@ enum PageStage {
         case .layersEnd:
             // Thunder was saved at 20 while the trial lasted; it keeps it.
             setLevels(model, [.rain: 0.45, .wind: 0.25, .thunder: 0.2, .pink: 0.3])
+        case .mixes, .mixesRename, .mixesDelete, .mixesNight, .mixesNightFree:
+            // The first of the person's mixes is the one that is loaded.
+            if let hotel = saveMixes(model, count: 2) {
+                model.apply(hotel)
+            }
+            if state == .mixesNight || state == .mixesNightFree { model.beginNightSession() }
+        case .mixesSave:
+            setLevels(model, [.rain: 0.45, .wind: 0.25, .pink: 0.3])
+        case .mixesFourth:
+            saveMixes(model, count: AccessPolicy.freeSavedMixLimit)
+            setLevels(model, [.rain: 0.45, .wind: 0.25, .pink: 0.3])
         }
         return (purchases, model)
+    }
+
+    /// Mixes saved while the trial lasted, as a person would name them: the
+    /// second one keeps a Pro layer. Returns the first of the list.
+    @discardableResult
+    private static func saveMixes(_ model: MixerModel, count: Int) -> SavedMix? {
+        let mixes: [(String, [SoundID: Float])] = [
+            ("Hotel", [.rain: 0.45, .brown: 0.3]),
+            ("Ventilador y lluvia", [.rain: 0.5, .fan: 0.3, .brown: 0.2]),
+            ("Verano con ventana", [.wind: 0.35, .white: 0.15]),
+        ]
+        // A save goes to the top of the list: the last one saved is first.
+        for (name, levels) in mixes.prefix(count).reversed() {
+            _ = model.mixStore.save(name: name, levels: levels, hasFullAccess: true)
+        }
+        return model.mixStore.mixes.first
     }
 
     /// Lays the levels down as an edited mix ("Tonight"). Written straight
     /// into the model: a Pro layer keeps a level here without asking for
     /// the Pro sheet.
     private static func setLevels(_ model: MixerModel, _ levels: [SoundID: Float]) {
+        // One real edit first: the mix loses the name it loaded with. A
+        // level written as it was is not an edit, so this one always moves.
+        model.setLevel(.rain, (model.levels[.rain] ?? 0) > 0.5 ? 0 : 1)
         for sound in SoundID.allCases {
             model.levels[sound] = levels[sound] ?? 0
         }
-        // One real edit: the mix loses the name it loaded with and is stored.
-        model.setLevel(.rain, levels[.rain] ?? 0)
+    }
+
+    /// Moves the pinned clock of a staged Night or Small Hours and lets
+    /// what counts time see it. The screen was just touched: it is not
+    /// drawn dimmed.
+    private static func move(_ model: MixerModel, by seconds: TimeInterval) {
+        stageClock.date.addTimeInterval(seconds)
+        model.timer.tick()
+        model.smallHours.tick()
+        model.noteBedtimeTouch()
     }
 
     /// What a staged page does once it is on screen.
     static func didAppear(_ model: MixerModel) {
         guard let state = PageArguments.state else { return }
         switch state {
-        case .rest, .layersSix, .layersEnd:
+        case .rest, .layersSix, .layersEnd, .timerRest, .timerHour, .timerLength, .tideRest, .tideLocked,
+             .mixesEmpty:
             break
+        case .mixesTrimmed:
+            // "Sea and wind" without access: it plays without the ocean and
+            // its name says so. Never a sheet.
+            model.playMix(.house(.seaAndWind))
+        case .mixesTrimmedLong:
+            model.playMix(.house(.brownAndFire))
+        case .pageSpeaker:
+            if !model.isPlaying { model.play() }
+            model.debugLoseOutput()
+        case .pageCapped:
+            if !model.isPlaying { model.play() }
+            model.debugLoseOutput()
+            model.continueOnSpeaker()
+        case .timerFading:
+            if !model.isPlaying { model.play() }
+            // Eight minutes from the end: the final fade is under way.
+            stageClock.date.addTimeInterval(TimeInterval((TimerChoice.defaultMinutes - 8) * 60))
+            model.timer.tick()
+        case .timerPaused:
+            if !model.isPlaying { model.play() }
+            stageClock.date.addTimeInterval(7 * 60)
+            model.timer.tick()
+            model.pause()
+        case .tideDissolving:
+            if !model.isPlaying { model.play() }
+            model.breathing.release(over: 10 * 60)
+        case .nightEnter, .nightTimer, .nightBlanket, .nightPlain:
+            model.enterBedtime()
+        case .nightDimmed, .nightKeepOn:
+            model.enterBedtime()
+            // Once the scene is active, which counts as a touch: its
+            // minute goes by.
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(1))
+                stageClock.date.addTimeInterval(BedtimeScreenPolicy.dimDelay + 1)
+                model.refreshBedtimeDimming()
+            }
+        case .nightFading:
+            model.enterBedtime()
+            move(model, by: TimeInterval((TimerChoice.defaultMinutes - 8) * 60))
+        case .nightPaused:
+            model.enterBedtime()
+            move(model, by: 7 * 60)
+            model.pause()
+        case .nightSpeaker:
+            model.enterBedtime()
+            move(model, by: 7 * 60)
+            model.debugLoseOutput()
+        case .nightLevel:
+            model.enterBedtime()
+            model.setSessionLevel(0.4)
+        case .nightEnded:
+            model.enterBedtime()
+            // The timer runs out: the night ends by itself.
+            move(model, by: TimeInterval(TimerChoice.defaultMinutes * 60 + 1))
+        case .nightError:
+            model.enterBedtime()
+            model.pause()
+            model.debugFailStart()
+        case .smallHours:
+            model.startSmallHours()
+        case .smallHoursPlain:
+            model.startSmallHours()
+            move(model, by: 14 * 60)
+        case .smallHoursWinding:
+            model.startSmallHours()
+            move(model, by: 16 * 60)
+        case .smallHoursPaused:
+            model.startSmallHours()
+            move(model, by: 6 * 60)
+            model.pause()
         case .error:
             model.debugFailStart()
         case .error2:
@@ -182,7 +548,9 @@ enum PageStage {
         case .error3:
             for _ in 0..<3 { model.debugFailStart() }
         case .playingTwo, .playingFive, .night, .timer, .layers, .layersCap, .largeType,
-             .nightLayers, .tide, .nightTide:
+             .nightLayers, .tide, .nightTide, .timerAsleep, .timerBlanket, .timerNight,
+             .tideGuiding, .tideDescent, .tideNight,
+             .mixes, .mixesSave, .mixesRename, .mixesDelete, .mixesFourth, .mixesNight, .mixesNightFree:
             if !model.isPlaying { model.play() }
         }
     }

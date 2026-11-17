@@ -82,15 +82,22 @@ enum PageStatus: Equatable {
     case playing
     /// Playing with the sleep timer counting: when it ends.
     case playingFadesAt(Date)
+    /// Playing under a blanket: the hour it sounds until.
+    case playingUntil(Date)
     /// The final fade of the timer is running: whole minutes left.
     case fading(minutes: Int)
     /// Playing without the Pro layers of the mix, loudest first.
     case playingWithout([SoundID])
     /// Play raised the fallback layer because nothing else would sound.
     case playingFallback(SoundID, percent: Int)
+    /// The night came back on the speaker, turned down to the cap (C49):
+    /// the session level, until the next touch.
+    case playingAt(percent: Int)
     case paused
-    /// Paused because the output went away.
+    /// Paused because the output went away, or from the headphones.
     case pausedHeadphones
+    /// Paused by a call (C48).
+    case pausedCall
     /// The engine did not start. The line is a button that tries again;
     /// `attempt` is 1, 2, or 3 and more.
     case error(attempt: Int)
@@ -101,6 +108,8 @@ enum PageStatus: Equatable {
         /// Starts that failed in a row. Zero when the last one worked.
         var startFailures = 0
         var timerEndsAt: Date?
+        /// The timer is a blanket: it ends at an hour the person chose.
+        var timerEndsAtAnHour = false
         var timerIsFading = false
         var timerRemaining: TimeInterval?
         /// Pro layers above zero that do not sound, loudest first.
@@ -110,6 +119,11 @@ enum PageStatus: Equatable {
         var isPlayingFallback = false
         /// The night page says nothing about Pro.
         var isNightSession = false
+        /// The output that went away was a pair of headphones, as far as
+        /// the system tells. Anything else is just "Paused".
+        var lostOutputWasHeadphones = true
+        /// The session level to say after a resume capped for the speaker.
+        var cappedLevelNote: Int?
     }
 
     static func resolve(_ input: Input) -> PageStatus {
@@ -118,19 +132,24 @@ enum PageStatus: Equatable {
                 let seconds = max(0, input.timerRemaining ?? 0)
                 return .fading(minutes: max(1, Int((seconds / 60).rounded(.up))))
             }
+            if let percent = input.cappedLevelNote { return .playingAt(percent: percent) }
             if input.isPlayingFallback {
                 return .playingFallback(
                     MixerModel.fallbackSound,
                     percent: Int((MixerModel.fallbackLevel * 100).rounded())
                 )
             }
-            if let end = input.timerEndsAt { return .playingFadesAt(end) }
+            if let end = input.timerEndsAt {
+                return input.timerEndsAtAnHour ? .playingUntil(end) : .playingFadesAt(end)
+            }
             if !input.omitted.isEmpty { return .playingWithout(input.omitted) }
             return .playing
         }
         if input.startFailures > 0 { return .error(attempt: min(3, input.startFailures)) }
         switch input.pauseCause {
-        case .lostOutput: return .pausedHeadphones
+        case .headphones: return .pausedHeadphones
+        case .lostOutput: return input.lostOutputWasHeadphones ? .pausedHeadphones : .paused
+        case .call: return .pausedCall
         case .person, .system: return .paused
         case nil: break
         }
@@ -161,6 +180,8 @@ enum PageStatus: Equatable {
             return localized("pagina.estado.sonando")
         case .playingFadesAt(let date):
             return String(format: localized("pagina.estado.sonando.funde"), time(date))
+        case .playingUntil(let date):
+            return String(format: localized("pagina.estado.sonando.hasta"), time(date))
         case .fading(let minutes):
             return String(format: localized("pagina.estado.fundiendo"), locale: locale, Int64(minutes))
         case .playingWithout(let sounds):
@@ -175,10 +196,14 @@ enum PageStatus: Equatable {
                 soundName(sound).lowercased(with: locale),
                 Int64(percent)
             )
+        case .playingAt(let percent):
+            return String(format: localized("estado.volumen"), locale: locale, Int64(percent))
         case .paused:
             return localized("pagina.estado.pausa")
         case .pausedHeadphones:
             return localized("estado.pausa.auriculares")
+        case .pausedCall:
+            return localized("pagina.estado.pausa.llamada")
         case .error(let attempt):
             switch attempt {
             case ...1: return localized("pagina.error.inicio")

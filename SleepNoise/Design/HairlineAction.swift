@@ -29,9 +29,11 @@ struct HairlineAction: View {
 
     @Environment(\.accessibilityShowButtonShapes) private var buttonShapes
     @Environment(\.dynamicTypeSize) private var dynamicType
+    @Environment(\.nightPhase) private var phase
 
     private var showsAccent: Bool { rules == .accent && isEnabled }
-    private var wordColor: Color { isEnabled ? Ink.text : Ink.text2 }
+    /// On the night page the word takes its one ink, like everything else.
+    private var wordColor: Color { isEnabled ? Ink.primary(phase) : Ink.secondary(phase) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Grid.unit * 2) {

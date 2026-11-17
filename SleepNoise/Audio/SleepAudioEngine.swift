@@ -1,15 +1,44 @@
 import AVFoundation
 import Foundation
 
+/// What the mixer asks of the engine. The app has one, `SleepAudioEngine`;
+/// the tests of the model put a double here and never open an audio session.
+/// Every call is made on the main thread.
+protocol AudioEngineControlling: AnyObject {
+    /// Rises from where the envelope is to `level` (1, or where the final
+    /// fade of the timer stands when a night resumes inside it).
+    func start(gains: SoundGains, fadeIn seconds: TimeInterval, level: Float) throws
+    func updateGains(_ gains: SoundGains)
+    func setBreathing(_ parameters: BreathParameters)
+    /// The session level, 0 to 1, reached over `seconds`.
+    func setMaster(_ level: Float, over seconds: TimeInterval)
+    /// Moves the envelope to `level` without stopping anything.
+    func fade(to level: Float, over seconds: TimeInterval)
+    func stop(fadeOut seconds: TimeInterval)
+    var isStopping: Bool { get }
+    func retargetSampleRateIfNeeded(gains: SoundGains) throws
+    func invalidateGraph()
+    func smoothedOutputRMS(tau: TimeInterval) -> Float
+}
+
+extension AudioEngineControlling {
+    func fadeOut(over seconds: TimeInterval) {
+        fade(to: 0, over: seconds)
+    }
+}
+
 /// Owns the `AVAudioEngine` graph. Control methods are called from the main thread.
 /// The source-node callback only reads the seqlock and runs `RenderState.processStereo`.
-final class SleepAudioEngine {
+final class SleepAudioEngine: AudioEngineControlling {
     /// Seconds the bed takes to rise from silence when Play is pressed. A sleep
     /// app is used in the dark; a soft onset is kinder than a 30 ms step. It
     /// eases out (`FadeShape.easeOut`): most of the level is there in the
     /// first half, so one touch is heard at once, and it settles without a
     /// bump. The Horizon is born from the hairline over the same time.
     static let defaultFadeIn: TimeInterval = 0.8
+
+    /// The shortest ramp of the master level while the engine renders.
+    static let shortestMasterRamp = EngineControl.shortestMasterRamp
 
     /// Volume of the graph's mixer: always 1 in a release build. A debug build
     /// launched with `-silentOutput` renders, meters and publishes as usual
@@ -32,16 +61,13 @@ final class SleepAudioEngine {
     private let outputLevel = OutputLevelCell()
     private var levelFollower = OutputLevelFollower()
     private var sampleRate: Double = 48_000
-    private var lastGains = SoundGains.zero
-    private var lastBreath = BreathParameters.off
-    /// Last envelope request. Carried unchanged by gain and breathing
-    /// publishes so they never cancel or restart a fade.
-    private var envelopeTarget: Float = 0
-    private var envelopeRamp: Int32 = -1
-    private var envelopeShape: Int32 = FadeShape.smooth
-    private var envelopeGeneration: UInt32 = 0
-    private var stopToken = 0
-    private var wantsRunning = false
+    /// What was last asked for: gains, tide, and the last envelope and
+    /// master requests, which every publish carries unchanged so that a
+    /// gain or breathing update never cancels or restarts a fade.
+    private var desk = CommandDesk()
+    /// What the engine is supposed to be doing: wanted or not, and which
+    /// stop is still waiting. The rules live in `EngineControl`.
+    private var control = EngineControl()
     private var configurationObserver: NSObjectProtocol?
 
     init() {
@@ -66,21 +92,33 @@ final class SleepAudioEngine {
         state.deallocate()
     }
 
-    func start(gains: SoundGains, fadeIn seconds: TimeInterval = SleepAudioEngine.defaultFadeIn) throws {
-        stopToken += 1
-        wantsRunning = true
+    func start(
+        gains: SoundGains,
+        fadeIn seconds: TimeInterval = SleepAudioEngine.defaultFadeIn,
+        level: Float = 1
+    ) throws {
+        // Nothing is decided until the session is active and the graph is
+        // built: a start that fails here leaves no restart pending, and a
+        // stop that was waiting for its fade still runs.
         do {
             try AudioSessionConfigurator.activate()
         } catch {
+            startFailed()
             throw EngineError.session(error)
         }
 
         let sessionRate = AVAudioSession.sharedInstance().sampleRate
         let rate = sessionRate > 1 ? sessionRate : 48_000
         if sourceNode == nil || abs(rate - sampleRate) > 0.5 {
-            try buildGraph(sampleRate: rate)
+            do {
+                try buildGraph(sampleRate: rate)
+            } catch {
+                startFailed()
+                throw error
+            }
         }
-        if !engine.isRunning {
+        control.started()
+        if control.startsFromSilence(isRendering: engine.isRunning) {
             // The render thread is idle, so this is safe. After an interruption
             // the system stopped the engine before our fade-out could render:
             // without this the envelope is still 1 and the fade-in is a no-op.
@@ -88,16 +126,30 @@ final class SleepAudioEngine {
             outputLevel.clear()
         }
 
-        lastGains = gains
-        let ramp = PlaybackFade.samples(max(0.03, seconds), sampleRate: sampleRate)
-        publishEnvelope(target: 1, ramp: ramp, shape: FadeShape.easeOut)
+        desk.gains = gains
+        let ramp = EngineControl.startRamp(fadeIn: seconds, sampleRate: sampleRate)
+        publishEnvelope(target: level, ramp: ramp, shape: FadeShape.easeOut)
         if !engine.isRunning {
             do {
                 try engine.start()
             } catch {
-                wantsRunning = false
+                startFailed()
                 throw EngineError.engine(error)
             }
+        }
+    }
+
+    /// A start did not go through. Whoever asked now believes nothing
+    /// plays, so nothing may be left wanted, sounding or holding the
+    /// session.
+    private func startFailed() {
+        switch control.startFailed(isRendering: engine.isRunning) {
+        case .stopWhatSounds:
+            stop(fadeOut: PlaybackFade.interruption)
+        case .releaseSession:
+            AudioSessionConfigurator.deactivate()
+        case .waitForStop:
+            break
         }
     }
 
@@ -116,7 +168,11 @@ final class SleepAudioEngine {
     /// draws. Once the engine stops rendering the fall has its own, shorter
     /// constant, whatever `tau` is: the level is gone well inside 1.5 s.
     /// Main thread.
-    func smoothedOutputRMS(tau: TimeInterval = 0.5, now: TimeInterval? = nil) -> Float {
+    func smoothedOutputRMS(tau: TimeInterval) -> Float {
+        smoothedOutputRMS(tau: tau, now: nil)
+    }
+
+    func smoothedOutputRMS(tau: TimeInterval, now: TimeInterval?) -> Float {
         levelFollower.follow(
             outputRMS,
             at: now ?? Self.monotonicSeconds(),
@@ -132,45 +188,48 @@ final class SleepAudioEngine {
     }
 
     func updateGains(_ gains: SoundGains) {
-        lastGains = gains
+        desk.gains = gains
         publishCurrent()
     }
 
     /// Breathing tide. Takes effect at once; the render state smooths the weight.
     func setBreathing(_ parameters: BreathParameters) {
-        lastBreath = parameters
+        desk.breath = parameters
         publishCurrent()
     }
 
-    func fadeOut(over seconds: TimeInterval) {
-        publishEnvelope(target: 0, ramp: PlaybackFade.samples(seconds, sampleRate: sampleRate))
+    /// Moves the envelope to `level` over `seconds`, from wherever it is:
+    /// to silence for the final fade of the timer, back to 1 when "+15 min"
+    /// calls that fade off. The render thread counts the samples, so the
+    /// main thread only has to ask once.
+    func fade(to level: Float, over seconds: TimeInterval) {
+        publishEnvelope(target: level, ramp: PlaybackFade.samples(seconds, sampleRate: sampleRate))
+    }
+
+    /// The session level (C51). While the night plays it is always a ramp,
+    /// `shortestMasterRamp` at least, also while the system has the engine
+    /// stopped for a moment; with nothing playing nothing is audible and
+    /// the level is simply there when the bed rises.
+    func setMaster(_ level: Float, over seconds: TimeInterval) {
+        let ramp = control.masterRamp(over: seconds, sampleRate: sampleRate, isRendering: engine.isRunning)
+        desk.rampMaster(to: level, samples: ramp)
+        publishCurrent()
     }
 
     /// New envelope request: bumps the envelope generation so the render
     /// state starts the fade even if a later publish overwrites this command.
     private func publishEnvelope(target: Float, ramp: Int32, shape: Int32 = FadeShape.smooth) {
-        envelopeTarget = target
-        envelopeRamp = ramp
-        envelopeShape = shape
-        envelopeGeneration &+= 1
+        desk.fadeEnvelope(to: target, samples: ramp, shape: shape)
         publishCurrent()
     }
 
     private func publishCurrent() {
-        mailbox.publish(EngineCommand(
-            gains: lastGains,
-            envelopeTarget: envelopeTarget,
-            rampSamples: envelopeRamp,
-            envelopeShape: envelopeShape,
-            generation: 0,
-            envelopeGeneration: envelopeGeneration,
-            breath: lastBreath
-        ))
+        mailbox.publish(desk.command)
     }
 
     /// A stop was asked for and its fade is still being rendered. Main thread.
     var isStopping: Bool {
-        !wantsRunning && engine.isRunning
+        control.isStopping(isRendering: engine.isRunning)
     }
 
     /// Ramps to silence, then pauses the engine and releases the session unless
@@ -178,13 +237,11 @@ final class SleepAudioEngine {
     /// new one starts from where the envelope is and replaces the wait.
     func stop(fadeOut seconds: TimeInterval) {
         fadeOut(over: seconds)
-        wantsRunning = false
-        stopToken += 1
-        let token = stopToken
+        let token = control.stopRequested()
         DispatchQueue.main.asyncAfter(deadline: .now() + seconds + 0.02) { [weak self] in
-            guard let self, self.stopToken == token else { return }
+            guard let self, self.control.stopIsDue(token) else { return }
             self.engine.pause()
-            self.lastBreath = .off
+            self.desk.breath = .off
             AudioSessionConfigurator.deactivate()
         }
     }
@@ -198,23 +255,20 @@ final class SleepAudioEngine {
             try restartIfWanted()
             return
         }
-        lastGains = gains
+        desk.gains = gains
+        // The render state keeps the envelope, the master and whatever fade
+        // either is in, rescaled to the new rate (rule 8): nothing is asked
+        // for again, so a resume or a final fade in course is not restarted.
         try buildGraph(sampleRate: rate)
-        if envelopeTarget > 0 {
-            publishEnvelope(target: 1, ramp: PlaybackFade.samples(0.03, sampleRate: sampleRate))
-        } else {
-            // A sleep-timer fade-out is in progress: keep it, just refresh the rest.
-            publishCurrent()
-        }
+        publishCurrent()
         try restartIfWanted()
     }
 
     /// Media services reset invalidates the running engine. Drop the graph so the next
     /// `start` builds a new one.
     func invalidateGraph() {
-        stopToken += 1
-        wantsRunning = false
-        lastBreath = .off
+        control.invalidated()
+        desk.breath = .off
         engine.stop()
         if let sourceNode {
             engine.detach(sourceNode)
@@ -242,7 +296,7 @@ final class SleepAudioEngine {
     }
 
     private func restartIfWanted() throws {
-        guard wantsRunning, !engine.isRunning else { return }
+        guard control.shouldRestart(isRendering: engine.isRunning) else { return }
         try engine.start()
     }
 

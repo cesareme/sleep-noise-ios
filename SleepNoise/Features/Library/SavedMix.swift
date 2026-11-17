@@ -26,6 +26,15 @@ struct SavedMix: Equatable, Identifiable {
     func value(for sound: SoundID) -> Float {
         levels.first { $0.sound == sound }?.value ?? 0
     }
+
+    /// One level per sound. Sounds the mix does not name are silent.
+    var levelsBySound: [SoundID: Float] {
+        var bySound = Dictionary(uniqueKeysWithValues: SoundID.allCases.map { ($0, Float(0)) })
+        for level in levels {
+            bySound[level.sound] = level.value
+        }
+        return bySound
+    }
 }
 
 enum SaveMixResult: Equatable {
