@@ -115,6 +115,9 @@ enum PageDebugState: String, CaseIterable {
     case nightLevel
     /// The timer ran out: "Small hours" in the place of "+15 min".
     case nightEnded
+    /// The same night, with the app opened at eight the next morning: the
+    /// Night screen has given way to the day page.
+    case nightEndedMorning
     /// The sound did not start again.
     case nightError
 
@@ -330,7 +333,8 @@ enum PageDebugState: String, CaseIterable {
     var isNightScreen: Bool {
         switch self {
         case .nightEnter, .nightTimer, .nightDimmed, .nightKeepOn, .nightBlanket, .nightPlain,
-             .nightFading, .nightPaused, .nightSpeaker, .nightLevel, .nightEnded, .nightError, .storeNight:
+             .nightFading, .nightPaused, .nightSpeaker, .nightLevel, .nightEnded, .nightEndedMorning,
+             .nightError, .storeNight:
             return true
         default:
             return false
@@ -645,7 +649,7 @@ enum PageStage {
              .proReceiptFamily, .proReceiptReview,
              .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNotHere,
              .nightEnter, .nightTimer, .nightDimmed, .nightFading, .nightPaused, .nightSpeaker,
-             .nightLevel, .nightEnded, .nightError, .storePlaying, .storeNight,
+             .nightLevel, .nightEnded, .nightEndedMorning, .nightError, .storePlaying, .storeNight,
              .smallHours, .smallHoursPlain, .smallHoursWinding, .smallHoursPaused:
             // Night shows the timer of the first use: 45 minutes.
             break
@@ -891,6 +895,18 @@ enum PageStage {
             model.enterBedtime()
             // The timer runs out: the night ends by itself.
             move(model, by: TimeInterval(TimerChoice.defaultMinutes * 60 + 1))
+        case .nightEndedMorning:
+            model.enterBedtime()
+            move(model, by: TimeInterval(TimerChoice.defaultMinutes * 60 + 1))
+            Task { @MainActor in
+                // "Ended at" is on screen; then the app is opened at
+                // eight, with nothing running in between.
+                try? await Task.sleep(for: .seconds(1))
+                stageClock.date = Calendar.current.date(
+                    bySettingHour: 8, minute: 0, second: 0, of: stageClock.date
+                ) ?? stageClock.date
+                model.appDidBecomeActive()
+            }
         case .nightError:
             model.enterBedtime()
             model.pause()

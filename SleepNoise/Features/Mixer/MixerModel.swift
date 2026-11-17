@@ -137,8 +137,9 @@ final class MixerModel: ObservableObject {
     /// is not on offer.
     @Published private(set) var speakerOfferUntil: Date?
     /// When the last night ended by itself (its timer, a long pause, the
-    /// morning): "Ended at 03:42" on the Night screen. Nil while a night is
-    /// open and after Small Hours, which ends without a word.
+    /// morning): "Ended at 03:42" on the Night screen, for as long as it is
+    /// night. Nil while a night is open and after Small Hours, which ends
+    /// without a word.
     @Published private(set) var sessionEndedAt: Date?
     /// The Night screen shows its two first-time sentences: nobody has
     /// seen them on this install yet. They are fixed text, not a tip (C65).
@@ -445,6 +446,8 @@ final class MixerModel: ObservableObject {
     func nightWindowChanged() {
         saleClock += 1
         closeSaleIfNight()
+        // 07:00 with the Night screen in front and its night over.
+        leaveNightScreenIfOverByDay()
     }
 
     /// Wakes once at the next border of the night window, and again at the
@@ -782,6 +785,8 @@ final class MixerModel: ObservableObject {
         sessionEndedAt = wasSmallHours ? nil : endedAt
         nowPlaying.update(isPlaying: false, title: nowPlayingTitle)
         purchases.applyAccess(canDowngrade: !isPlaying)
+        // A night that ends by day leaves no Night screen behind.
+        if !wasSmallHours { leaveNightScreenIfOverByDay() }
     }
 
     /// The session level times what the blanket leaves of it.
@@ -1304,6 +1309,32 @@ final class MixerModel: ObservableObject {
         if showsNightIntro { showsNightIntro = false }
         cancelDimming()
         beginNightSession()
+    }
+
+    /// The Night screen gives way to the day page by itself once its night
+    /// is over and it is day (07 §4.1, S5). Outside `NightWindow`, "Ended
+    /// at…" and the way into Small Hours are last night's: whoever opens
+    /// the app in the morning finds the page of the day, at rest. Nothing
+    /// sounds and nothing is asked or sold on the way.
+    ///
+    /// At night the screen stays, with the hour the night ended and Small
+    /// Hours in the place of "+15 min". A night that is still open (playing,
+    /// held by an interruption, or paused within its twenty minutes) keeps
+    /// its screen at any hour: the morning never takes a night that is
+    /// alive. Small Hours is not Night and is not touched.
+    ///
+    /// Called when the app comes forward, when the hour reaches 07:00 with
+    /// the app open and when a night ends by itself.
+    private func leaveNightScreenIfOverByDay() {
+        guard isBedtime, !isSmallHours else { return }
+        let now = now()
+        guard !nightIsOpen(at: now), !heldByInterruption,
+              !NightWindow.contains(now, calendar: calendar) else { return }
+        isBedtime = false
+        if showsNightIntro { showsNightIntro = false }
+        cancelDimming()
+        // The day page, not the night page: nobody came back from Night.
+        if isNightSession { isNightSession = false }
     }
 
     /// A touch on the Night screen (or on Small Hours): it is drawn at full
@@ -1872,7 +1903,8 @@ final class MixerModel: ObservableObject {
     /// closed here, unless something still holds the output; a night that
     /// stayed paused too long is over; and the night page, which no clock
     /// ends while it is looked at (C40), gives way once its night is over
-    /// and the app is opened by day.
+    /// and the app is opened by day. So does the Night screen
+    /// (`leaveNightScreenIfOverByDay()`).
     func appDidBecomeActive() {
         appIsActive = true
         smallHours.figureIsWatched = true
@@ -1890,6 +1922,7 @@ final class MixerModel: ObservableObject {
         expireNightIfOver()
         refreshSpeakerOffer()
         refreshBedtimeDimming()
+        leaveNightScreenIfOverByDay()
         let now = now()
         let nightIsOver = !nightIsOpen(at: now) && !heldByInterruption
         let isDay = !NightWindow.contains(now, calendar: calendar)
