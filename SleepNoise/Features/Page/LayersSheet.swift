@@ -24,6 +24,8 @@ struct LayersSheet: View {
     @State private var arbiter = IndexArbiter()
     @State private var sliderDismissal = 0
 
+    private static let contentID = "layers.content"
+
     var body: some View {
         // Read once per draw; the model checks again on the tap.
         let canSell = model.canSell
@@ -31,15 +33,26 @@ struct LayersSheet: View {
             SheetHeader(title: Localized.string("capas.titulo"))
                 .contentShape(Rectangle())
                 .onTapGesture { sliderDismissal += 1 }
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    section("capas.seccion.colores", PageLayers.colors, canSell: canSell)
-                        .padding(.top, Grid.inner)
-                    section("capas.seccion.camas", PageLayers.beds, canSell: canSell)
-                        .padding(.top, Grid.group)
-                    notes
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        section("capas.seccion.colores", PageLayers.colors, canSell: canSell)
+                            .padding(.top, Grid.inner)
+                        section("capas.seccion.camas", PageLayers.beds, canSell: canSell)
+                            .padding(.top, Grid.group)
+                        notes
+                    }
+                    .padding(.bottom, Grid.group)
+                    .id(Self.contentID)
                 }
-                .padding(.bottom, Grid.group)
+                #if DEBUG
+                .onAppear {
+                    // Reference captures of the end of the sheet.
+                    if PageArguments.scrollsLayersToEnd {
+                        proxy.scrollTo(Self.contentID, anchor: .bottom)
+                    }
+                }
+                #endif
             }
             PageBar(model: model, timer: model.timer, onMixes: onMixes)
         }
@@ -77,15 +90,14 @@ struct LayersSheet: View {
         }
     }
 
+    /// One paragraph, so the two notes keep the line height of the step
+    /// between them as well.
     private var notes: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("capas.nota")
-            Text("capas.cero")
-        }
-        .step(.secondary)
-        .foregroundStyle(Ink.secondary(phase))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, Grid.margin)
-        .padding(.top, Grid.unit * 2)
+        Text(verbatim: Localized.string("capas.nota") + "\n" + Localized.string("capas.cero"))
+            .step(.secondary)
+            .foregroundStyle(Ink.secondary(phase))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, Grid.margin)
+            .padding(.top, Grid.inner)
     }
 }

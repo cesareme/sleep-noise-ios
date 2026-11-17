@@ -84,6 +84,8 @@ De la entrega de la página y de Capas (17-11-2026). Quien abra el paquete indic
 - **La barra inferior** es "Mezclas" y el Disco; el sitio de "Noche" queda vacío hasta S-06. Marea y Temporizador son filas de la página, como en la maqueta. La barra es propia (no `ToolbarItemGroup`), para que se vea igual en iOS 17 y 26.
 - **La línea de estado** elige así cuando coinciden varias cosas: fundiendo, capa por defecto ("rosa a 40"), hora del temporizador, "sin {capa}", "Sonando".
 - **"y N más"** cuenta las capas por encima de cero que no tienen fila, también las Pro que conservan nivel.
+- **Versalitas con `.smallCaps()`**, como pide 03 §3.4 y dibuja la maqueta (`all-small-caps`): las cifras y las mayúsculas bajan a la altura de la versalita ("pro · 50", "prueba · 7 días"). 04 §2.0.2 y su anexo A2 escriben `.lowercaseSmallCaps()`, que deja las cifras a altura de mayúscula; manda 03.
+- **Las notas de Capas son un solo párrafo** (`capas.nota`, salto de línea, `capas.cero`), para que el interlineado del paso 7 valga también entre las dos. VoiceOver las lee como un elemento.
 - **Play con la mezcla en silencio** (vacía o toda Pro sin acceso) sube rosa a 40 como nivel real (05 §2.12). Los intents siguen negándose a empezar una noche en silencio.
 
 ### Página nocturna (S-06)
@@ -133,4 +135,4 @@ De la revisión de la página y de Capas (17-11-2026). Lo que sigue no se arregl
 
 ### S-08 (cadenas y capturas)
 
-- Las capturas de referencia en inglés son tres (`page-en-rest`, `page-en-timer`, `page-en-layersSix`): el resto del inglés no se ha mirado en pantalla.
+- Las capturas de referencia en inglés son cuatro (`page-en-rest`, `page-en-timer`, `page-en-layersSix`, `page-en-layersEnd`): el resto del inglés no se ha mirado en pantalla.

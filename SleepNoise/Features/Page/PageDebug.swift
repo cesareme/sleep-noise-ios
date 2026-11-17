@@ -27,6 +27,9 @@ enum PageDebugState: String, CaseIterable {
     case layersSix
     /// Layers with six sounding and the seventh refused.
     case layersCap
+    /// Layers without access, scrolled to its end: the last beds, a Pro
+    /// one that keeps its level, and the notes over the bar.
+    case layersEnd
     /// The engine did not start.
     case error
     /// It did not start twice, and three times: the next rungs of the line.
@@ -56,10 +59,13 @@ enum PageArguments {
 
     static var opensLayers: Bool {
         switch state {
-        case .layers, .layersSix, .layersCap, .nightLayers: return true
+        case .layers, .layersSix, .layersCap, .layersEnd, .nightLayers: return true
         default: return false
         }
     }
+
+    /// Layers opens at the end of its content.
+    static var scrollsLayersToEnd: Bool { state == .layersEnd }
 
     /// The row that shows "Six at once" from the start, for the capture.
     static var capNoteSound: SoundID? {
@@ -114,7 +120,7 @@ enum PageStage {
         let defaults = UserDefaults(suiteName: suiteName) ?? .standard
         defaults.removePersistentDomain(forName: suiteName)
         let purchases = PurchaseManager(defaults: defaults)
-        if state == .layersSix {
+        if state == .layersSix || state == .layersEnd {
             // The trial ran out long ago and nothing was bought.
             let start = Date().addingTimeInterval(-30 * 86_400)
             purchases.startTrialIfNeeded(now: start)
@@ -145,6 +151,9 @@ enum PageStage {
             setLevels(model, [.rain: 0.45, .wind: 0.25, .ocean: 0.5, .white: 0.15, .pink: 0.3, .brown: 0.2])
         case .layersCap:
             setLevels(model, [.rain: 0.45, .wind: 0.25, .ocean: 0.5, .thunder: 0.2, .pink: 0.3, .brown: 0.2])
+        case .layersEnd:
+            // Thunder was saved at 20 while the trial lasted; it keeps it.
+            setLevels(model, [.rain: 0.45, .wind: 0.25, .thunder: 0.2, .pink: 0.3])
         }
         return (purchases, model)
     }
@@ -164,7 +173,7 @@ enum PageStage {
     static func didAppear(_ model: MixerModel) {
         guard let state = PageArguments.state else { return }
         switch state {
-        case .rest, .layersSix:
+        case .rest, .layersSix, .layersEnd:
             break
         case .error:
             model.debugFailStart()

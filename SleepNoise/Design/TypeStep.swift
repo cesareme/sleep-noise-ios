@@ -160,7 +160,9 @@ enum TypeStep: CaseIterable {
     /// paragraph. Everything else calls `.step(_:)`.
     func font(_ phase: NightPhase, dynamicType: DynamicTypeSize) -> Font {
         var font = Font.system(size: scaledSize(for: dynamicType), weight: weight(phase))
-        if isSmallCaps { font = font.lowercaseSmallCaps() }
+        // Small caps both ways, as `all-small-caps` in the mock-up: capitals
+        // and figures come down to the height of the small capitals too.
+        if isSmallCaps { font = font.smallCaps() }
         if isTabular { font = font.monospacedDigit() }
         return font
     }
