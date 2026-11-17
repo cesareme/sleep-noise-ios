@@ -27,8 +27,14 @@ struct ProSheet: View {
     @ScaledMetric(relativeTo: .footnote) private var headerBox: CGFloat = 28
     /// A line of "with pro" is words, not a target: 36 pt, not 44.
     @ScaledMetric(relativeTo: .body) private var includedLine: CGFloat = 36
-    /// Air under the last line of the foot.
+    /// The line that names its textures under it: 22 of words and 18 of
+    /// names, with no air of its own.
+    @ScaledMetric(relativeTo: .body) private var detailedLine: CGFloat = 40
+    /// Air under the last line of the foot, over the home indicator.
     @ScaledMetric(relativeTo: .footnote) private var footAir: CGFloat = 6
+    /// False on a phone with a home button: nothing keeps the last line of
+    /// the foot off the edge of the glass there but the foot itself.
+    @State private var hasHomeIndicator = true
     @State private var wasProWhenOpened: Bool
     /// The trial was on offer when the sheet went up: its note keeps its
     /// room at the foot until the sheet closes, so buying from this sheet
@@ -89,6 +95,10 @@ struct ProSheet: View {
                 column(content)
             }
             .scrollBounceBehavior(.basedOnSize)
+            // Where the column does not fit, the foot cuts it between two
+            // lines and nothing says there is more: the system's own
+            // indicator shows once as the sheet goes up.
+            .scrollIndicatorsFlash(onAppear: true)
             .onChange(of: content.resultKey) { _, key in
                 // With larger text the line is at the end of the column:
                 // the column goes to it, the foot stays where it is.
@@ -100,6 +110,16 @@ struct ProSheet: View {
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             foot(content)
+                .background {
+                    // Read here, under the foot, where the safe area is
+                    // still the device's own.
+                    GeometryReader { geometry in
+                        Color.clear
+                            .onChange(of: geometry.safeAreaInsets.bottom, initial: true) { _, inset in
+                                hasHomeIndicator = inset > 0
+                            }
+                    }
+                }
         }
         .grafitoSheet(surface: .sheet)
         // The sheet only exists by day: it never takes the night ink.
@@ -171,7 +191,7 @@ struct ProSheet: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, Grid.inner + 2)
             Hairline()
-                .padding(.top, Grid.unit * 6)
+                .padding(.top, Grid.inner)
             header("pro.con")
             ForEach(ProSheetText.includedKeys, id: \.self) { key in
                 included(key, detail: key == "pro.incluye.texturas" ? "pro.incluye.texturas.detalle" : nil)
@@ -201,18 +221,12 @@ struct ProSheet: View {
 
     /// The price as the App Store gives it, or a dash until it does: a
     /// hidden figure gives the box its height, so nothing under it moves
-    /// when the price arrives. On the receipt, the words of thanks in a
-    /// box of their own two lines.
+    /// when the price arrives. On the receipt, the words of thanks, as
+    /// tall as they are in this language: a line kept empty for another
+    /// one reads as something missing.
     private func figure(_ content: ProSheetContent) -> some View {
         ZStack(alignment: .topLeading) {
-            if content.isReceipt {
-                // Two lines of the words of thanks, whatever the language
-                // needs: the receipt has the same heights in all of them.
-                Text(verbatim: " \n ")
-                    .step(.name)
-                    .hidden()
-                    .accessibilityHidden(true)
-            } else {
+            if !content.isReceipt {
                 Text(verbatim: Localized.string("pro.precio.cargando"))
                     .step(.figureSmall)
                     .lineLimit(1)
@@ -258,13 +272,15 @@ struct ProSheet: View {
                 .step(.body)
                 .foregroundStyle(Ink.text)
             if let detail {
+                // The step of the notes of the foot (10 §2.8): six steps
+                // on the sheet, and the names fit on one line.
                 Text(verbatim: Localized.string(detail))
-                    .step(.secondary)
+                    .step(.note)
                     .foregroundStyle(Ink.text2)
             }
         }
         .fixedSize(horizontal: false, vertical: true)
-        .frame(maxWidth: .infinity, minHeight: detail == nil ? includedLine : Grid.target, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: detail == nil ? includedLine : detailedLine, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
 
@@ -328,7 +344,18 @@ struct ProSheet: View {
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, alignment: .top)
                 .padding(.horizontal, Grid.margin)
-                .padding(.bottom, footAir)
+                .padding(.bottom, hasHomeIndicator ? footAir : max(footAir, Grid.inner))
+            }
+        }
+        .overlay(alignment: .top) {
+            // The receipt and "Thank you" have no action with rules: the
+            // foot draws its own upper edge, or the column would end
+            // against nothing where it scrolls. Over the foot, so it adds
+            // no height to it.
+            if content.footOpensWithRule {
+                Hairline()
+                    .padding(.horizontal, Grid.margin)
+                    .transition(.opacity)
             }
         }
         .background(Ink.sheet)

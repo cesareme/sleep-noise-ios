@@ -138,6 +138,13 @@ struct ProSheetContent: Equatable {
 
     var canStartTrial: Bool { showsStartTrial && isIdle }
 
+    /// No action with hairlines of its own opens the foot (the receipt,
+    /// and "Thank you" in the place of the purchase): the foot draws its
+    /// upper edge itself, so the column never ends against nothing.
+    var footOpensWithRule: Bool {
+        !showsStartTrial && (purchase == nil || purchase == .thanks)
+    }
+
     var primary: Primary {
         if canStartTrial { return .startTrial }
         return canBuy ? .buy : .none

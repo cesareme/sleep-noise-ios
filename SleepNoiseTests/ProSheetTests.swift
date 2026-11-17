@@ -269,6 +269,27 @@ final class ProSheetContentTests: XCTestCase {
         XCTAssertNil(arrived.purchase)
     }
 
+    /// Red if the foot of the receipt or of "Thank you" has no upper edge
+    /// (the column would end against nothing where it scrolls), or if the
+    /// foot draws a second hairline over an action that has its own.
+    func testTheFootDrawsItsOwnEdgeOnlyWhereNoActionDoes() {
+        XCTAssertTrue(bought().footOpensWithRule)
+        XCTAssertTrue(bought { $0.notice = .restored }.footOpensWithRule)
+        let thanked = selling {
+            $0.isPro = true
+            $0.receipt = self.receipt
+            $0.notice = .purchased
+        }
+        XCTAssertEqual(thanked.purchase, .thanks)
+        XCTAssertTrue(thanked.footOpensWithRule)
+
+        XCTAssertFalse(selling().footOpensWithRule, "the trial opens the foot")
+        XCTAssertFalse(selling { $0.trial = .ended }.footOpensWithRule, "the purchase opens it")
+        XCTAssertFalse(selling { $0.product = .loading }.footOpensWithRule)
+        XCTAssertFalse(selling { $0.activity = .purchasing }.footOpensWithRule)
+        XCTAssertFalse(selling { $0.isPurchasePending = true }.footOpensWithRule)
+    }
+
     /// Red if the review link shows without an App Store page to open, or
     /// anywhere but on the receipt (C55).
     func testTheReviewLinkExistsOnlyOnTheReceiptAndOnlyWithAnAppStoreID() {

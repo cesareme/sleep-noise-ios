@@ -424,7 +424,7 @@ Treinta hallazgos de tres revisores. Lo que cambió, por zonas:
 - **Una sesión gratis solo cuenta si suena** (`sessionDidStart()`). La evaluación sigue yendo antes del sonido, a propósito: la mezcla debe sonar ya recortada.
 - **La puerta nocturna cubre lo que ya estaba en pantalla.** `MixerModel` despierta una vez en cada borde de la ventana (21:00 y 07:00, `NightWindow.nextBorder`) mientras la app está delante: cierra la hoja Pro y publica `saleClock`, que hace que la página y Ajustes vuelvan a leer `canSell` (palabra de la prueba, nota, precio de la fila Pro). Comprar pasa por `MixerModel.purchasePro()`, con la misma puerta que la hoja.
 - **`StoreKitError.unsupported`** (iOS 18.4) ya solo se nombra tras `#available`; el resto del `switch` tiene `default` (no confirmado).
-- **Hoja Pro.** Renglones de "con pro" a 36 pt (el primero, con detalle, sigue a 44) y la lista de "gratis siempre" pegada a su cabecera. El pie reserva el alto de la línea más larga que puede decir en ese ancho y ese idioma (textos ocultos), no 60 pt fijos. `pro.prueba.empezar.nota` es la línea del pie mientras "Empezar la prueba" existe. Con texto de accesibilidad la línea de resultado va al final de la columna y la columna se desplaza hasta ella: el pie no cambia de alto. El texto del pie fijo no crece más allá de AX3. Restaurar y "Ahora no" comparten fila solo si caben en una línea cada uno; si no, se apilan. El recibo reserva dos líneas para "Gracias. Todo abierto." en los dos idiomas y pone "· en familia" en su propia línea. La hoja no se puede arrastrar mientras dice "Comprando…" y al abrirse borra un aviso que quedara de una visita anterior.
+- **Hoja Pro.** Renglones de "con pro" a 36 pt (el primero, con detalle, a 40 desde el ajuste final) y la lista de "gratis siempre" pegada a su cabecera. El pie reserva el alto de la línea más larga que puede decir en ese ancho y ese idioma (textos ocultos), no 60 pt fijos. `pro.prueba.empezar.nota` es la línea del pie mientras "Empezar la prueba" existe. Con texto de accesibilidad la línea de resultado va al final de la columna y la columna se desplaza hasta ella: el pie no cambia de alto. El texto del pie fijo no crece más allá de AX3. Restaurar y "Ahora no" comparten fila solo si caben en una línea cada uno; si no, se apilan. El recibo pone "· en familia" en su propia línea (la reserva de dos líneas para "Gracias. Todo abierto." se quitó en el ajuste final). La hoja no se puede arrastrar mientras dice "Comprando…" y al abrirse borra un aviso que quedara de una visita anterior.
 - **VoiceOver.** El título del recibo y la lista gratis se leen sin puntos medios y con el mes entero; la fila Pro de Ajustes lee el nombre como etiqueta y "gracias, 16 de noviembre de 2026" como valor. Los anuncios de la hoja van con prioridad alta; con VoiceOver "Gracias" dura 3 s, y el anuncio de la prueba se publica 0,7 s después de empezar a cerrarse la hoja.
 - **Ajustes.** El valor de "Mantener encendida" va en el paso 7, como el de la fila Pro (`MenuRow.valueStep`; la hoja de la Marea no cambia). Sin precio, la fila Pro no lleva nada a la derecha. "En familia" es el subtítulo de la fila. "Lo que no hay" ya no repite el pie de privacidad.
 - **Documentos.** `docs/ROADMAP.md` (producto, notas para revisión, paso de `AppLinks`), `README.md` (la prueba es una por dispositivo) y 08 §2.3, §3, §4.5, §5d y §5e (restaurar sin tope, nota de la prueba, AX).
@@ -463,3 +463,31 @@ Tests: 622 (suelo en `scripts/verify-min-tests.txt`).
 - **VoiceOver real**: la prioridad alta de los anuncios y los 3 s de "Gracias" no se han oído.
 - **El despertar de las 21:00** está probado por su efecto (`nightWindowChanged()` y `NightWindow.nextBorder`), no esperando a la hora.
 - **Capturas** (`.build/shots/`, sin versionar): hoja Pro en 402×874, 393×852, 390×844 y 375×667, AX3 y AX5 también en 375, xxxLarge, la hoja sobre Ajustes y sobre Capas y la página de una instalación nueva. Los simuladores de 393, 390 y 375 se crearon para la ocasión y se borraron.
+
+## Ajuste final de S-07 (17-11-2026)
+
+De la crítica visual de las capturas. Los cuatro hallazgos eran ciertos y se aplicaron; ninguno se rechazó. Todo en `SleepNoise/Features/Pro/`; no cambia ninguna cadena. Test nuevo: `testTheFootDrawsItsOwnEdgeOnlyWhereNoActionDoes` (`ProSheetTests.swift`).
+
+### Hecho
+
+- **La columna de la oferta cabe en 393 y 390 pt.** El detalle de "Todas las texturas" va en el paso 8 (13/18, `texto2`), el de la nota, como pide 10 §2.8: la hoja queda en seis estilos y el detalle en español cabe en una línea. Su fila mide 40 (22 + 18) y el titular queda a 16 de la primera hairline, no a 24. Aire medido en las capturas entre la última línea de "gratis siempre" y la hairline del pie: 17,6 pt (EN 393), 21,6 (EN 390), 33,0 (ES 393), 37,0 (ES 390), 36,6 (EN 402) y 52,0 (ES 402). Antes: 5,6, 9,6, 6,6 y 10,6 en los cuatro primeros.
+- **El pie del recibo y el de "Gracias" tienen borde superior**: una hairline de `trazo-hoja` con el margen de 20 pt (`ProSheetContent.footOpensWithRule`), dibujada sobre el pie, sin sumarle alto. Con Aumentar contraste sale en `#3A3836` (leído de la captura).
+- **El recibo no reserva una segunda línea para "Gracias. Todo abierto."**: la caja mide lo que mida el idioma. En español lo de debajo sube 34 pt; en inglés no cambia.
+- **Pantallas con botón de inicio (375×667).** El indicador de desplazamiento del sistema parpadea al abrir la hoja cuando la columna no cabe (`scrollIndicatorsFlash(onAppear:)`; visto en una captura a menos de 1 s del arranque, y ausente en 393, donde cabe). Sin indicador de inicio, el aire bajo la última línea del pie es de 16 pt, no de 6.
+- **Documentos.** 08 §2.3: el detalle de texturas es paso 8.
+- **Capturas.** Regeneradas todas las de la hoja Pro (`pro-*` salvo `pro-*-page-*`) en 402, 393, 390 y 375 pt, y una nueva, `pro-es-contrast-receipt`. Los simuladores de 393, 390 y 375 se crearon para la ocasión y se borraron.
+
+Tests: 623 (suelo en `scripts/verify-min-tests.txt`).
+
+### Decisiones tomadas al ajustar, a confirmar
+
+- **La hairline del pie es una capa sobre el pie, no su primer elemento**: así el pie mide lo mismo con ella y sin ella y nada se mueve cuando la hoja da las gracias.
+- **El alto de 40 de la fila con detalle escala con el texto** (`@ScaledMetric` sobre el cuerpo), como los 36 de las demás.
+- **El recibo deja de compartir cotas entre idiomas**: "Una vez." queda 34 pt más arriba en español que en inglés.
+- **En 375×667 el pie corta ahora "Mezclas sin límite" a media altura** (antes cortaba entre dos renglones). Lleva hairline encima y el indicador parpadea; es el corte normal de una lista bajo una barra fija.
+- **El dibujo de 08 §2.3 conserva sus cotas antiguas** (filas de 44 y 24 pt sobre la primera hairline): solo se corrigió el paso del detalle. Redibujarlo queda para quien cierre las láminas.
+
+### Sin verificar
+
+- El parpadeo del indicador y los 16 pt del pie en un iPhone SE real (solo simulador de iOS 26.5).
+- Que la columna no se desplace nada en 393 y 390 pt: se deduce de las medidas (cabe con 17,6 pt de sobra), no se arrastró.
