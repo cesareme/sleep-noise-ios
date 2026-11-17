@@ -13,7 +13,9 @@ import Foundation
 /// settings: it reads the recipe and says what should happen through its
 /// callbacks. Times are anchored to a date, so a tick that fires late still
 /// lands on the right state; a pause stops the session's clock. The clock
-/// is passed in.
+/// is passed in. Nothing is periodic: one one-shot timer waits for the next
+/// thing to happen (the tide letting go, the closing fade, the next minute
+/// of the figure, the end).
 @MainActor
 final class SmallHoursController: ObservableObject {
     let recipe: SmallHoursRecipe
@@ -112,7 +114,7 @@ final class SmallHoursController: ObservableObject {
         isPaused = false
         guideTide()
         publishFigures()
-        startTicking()
+        scheduleNext()
     }
 
     func pause() {
@@ -145,7 +147,7 @@ final class SmallHoursController: ObservableObject {
         fadeRequested = false
         fadeNotBefore = pausedElapsed >= recipe.finalFadeStart ? now.addingTimeInterval(fadeIn + 0.2) : nil
         publishFigures()
-        startTicking()
+        scheduleNext()
     }
 
     /// The session is over before its time: the person left, or something
@@ -165,7 +167,8 @@ final class SmallHoursController: ObservableObject {
         if windingDownMinutes != nil { windingDownMinutes = nil }
     }
 
-    /// One second went by. Internal so that a test can drive the clock.
+    /// Applies whatever came due. Called by the one-shot timer and safe to
+    /// call at any time. Internal so that a test can drive the clock.
     func tick() {
         guard isActive, !isPaused else { return }
         let time = elapsed
@@ -189,6 +192,31 @@ final class SmallHoursController: ObservableObject {
             onFade?(recipe.duration - time)
         }
         publishFigures()
+        scheduleNext()
+    }
+
+    /// Seconds until something next has to happen. Nil when no session
+    /// runs.
+    func secondsToNextEvent() -> TimeInterval? {
+        guard isActive, !isPaused else { return nil }
+        let time = elapsed
+        let left = recipe.duration - time
+        guard left > 0 else { return 0 }
+        var next = left
+        // The figure moves when a whole minute is left.
+        let toMinute = left - (left / 60).rounded(.down) * 60
+        next = min(next, toMinute > 0 ? toMinute : 60)
+        switch stage {
+        case .guiding: next = min(next, max(0, recipe.tideGuideEnd - time))
+        case .dissolving: next = min(next, max(0, recipe.tideDissolveEnd + Self.tideTail - time))
+        case .off: break
+        }
+        if !fadeRequested {
+            var fadeAt = max(0, recipe.finalFadeStart - time)
+            if let fadeNotBefore { fadeAt = max(fadeAt, fadeNotBefore.timeIntervalSince(now())) }
+            next = min(next, max(0, fadeAt))
+        }
+        return next
     }
 
     private func guideTide() {
@@ -218,11 +246,12 @@ final class SmallHoursController: ObservableObject {
         if windingDownMinutes != winding { windingDownMinutes = winding }
     }
 
-    private func startTicking() {
+    private func scheduleNext() {
         ticker?.invalidate()
         ticker = nil
-        guard usesTicker else { return }
-        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
+        guard usesTicker, let wait = secondsToNextEvent() else { return }
+        // A hair late rather than early: `tick` must find the event due.
+        let timer = Timer(timeInterval: wait + 0.05, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated {
                 self?.tick()
             }

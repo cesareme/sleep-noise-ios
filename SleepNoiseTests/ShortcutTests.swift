@@ -85,13 +85,21 @@ final class ShortcutTests: XCTestCase {
         XCTAssertEqual(night.model.startFailures, 1)
     }
 
-    func testPlayResumesSmallHoursWhenThatIsWhatIsPaused() throws {
-        let night = try NightHarness(at: time(4))
-        night.model.startSmallHours()
-        night.model.pause()
-        XCTAssertEqual(night.model.playFromShortcut(), .started)
-        XCTAssertTrue(night.model.isSmallHours)
-        XCTAssertTrue(night.model.isPlaying)
+    /// "Play my last mix" is the mix, like every other request for it:
+    /// Small Hours gives way, paused or playing.
+    func testPlayLeavesSmallHoursForTheMix() throws {
+        for paused in [true, false] {
+            let night = try NightHarness(at: time(4))
+            night.model.startSmallHours()
+            night.engine.render(seconds: 4)
+            if paused { night.model.pause() }
+            XCTAssertEqual(night.model.playFromShortcut(), .started, "paused: \(paused)")
+            XCTAssertFalse(night.model.isSmallHours, "paused: \(paused)")
+            XCTAssertTrue(night.model.isPlaying)
+            XCTAssertEqual(night.engine.gains.ocean, 0, "the recipe is gone")
+            XCTAssertGreaterThan(night.engine.gains.pink, 0, "the mix plays")
+            XCTAssertEqual(night.nowPlaying.title, HouseMix.pinkAndRain.localizedName)
+        }
     }
 
     // MARK: Play a mix by name

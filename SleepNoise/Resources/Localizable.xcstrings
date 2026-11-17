@@ -2065,13 +2065,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hold to save."
+            "value": "Hold to save or rename."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mantén para guardar."
+            "value": "Mantén para guardar o renombrar."
           }
         }
       }
@@ -2297,15 +2297,39 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld min left"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld min left"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld min left"
+                }
+              }
+            }
           }
         },
         "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "quedan %lld min"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "queda %lld min"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "quedan %lld min"
+                }
+              }
+            }
           }
         }
       }
@@ -2527,19 +2551,19 @@
       }
     },
     "ax.temporizador.valor": {
-      "comment": "VoiceOver value of the timer row while it counts: mode and minutes left.",
+      "comment": "VoiceOver value of the timer row while it counts: the mode, then the minutes left as `ax.anuncio.quedan` says them.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@, %2$lld minutes left"
+            "value": "%1$@, %2$@"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@, quedan %2$lld minutos"
+            "value": "%1$@, %2$@"
           }
         }
       }
@@ -2960,24 +2984,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld min"
-          }
-        }
-      }
-    },
-    "ax.agua.valor": {
-      "comment": "VoiceOver value of the water line while it guides: phase, pace, minutes until it recedes.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@, %2$lld per minute, recedes in %3$lld minutes"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@, %2$lld por minuto, se retira en %3$lld minutos"
           }
         }
       }
@@ -4250,6 +4256,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "¿Cuál de tus mezclas?"
+          }
+        }
+      }
+    },
+    "temporizador.cabecera.fundiendo": {
+      "comment": "Timer sheet, line under the minutes of the final fade. The figure above already says how long.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fading"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fundiendo"
+          }
+        }
+      }
+    },
+    "temporizador.cabecera.manto": {
+      "comment": "Timer sheet, line under the hour of a blanket while its dip is still to come: the minutes after which the level eases down.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eases down after %lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baja un poco a los %lld min"
           }
         }
       }

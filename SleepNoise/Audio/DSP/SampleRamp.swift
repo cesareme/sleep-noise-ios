@@ -59,6 +59,18 @@ struct SampleRamp: Equatable {
         shape = FadeShape.smooth
     }
 
+    /// The sample rate changed by `ratio` (new over old) with the engine
+    /// stopped: a ramp in course keeps its value, its target and the share
+    /// of it already done, and what is left lasts the same seconds as
+    /// before (rule 8).
+    mutating func rescale(by ratio: Double) {
+        guard done < total, ratio > 0, ratio.isFinite else { return }
+        let fraction = Double(done) / Double(total)
+        let length = min(max(2, (Double(total) * ratio).rounded()), Double(UInt32.max))
+        total = UInt32(length)
+        done = min(total - 1, UInt32((fraction * length).rounded()))
+    }
+
     /// One sample.
     @inline(__always)
     mutating func advance() {
@@ -78,6 +90,8 @@ struct SampleRamp: Equatable {
         if shape == FadeShape.easeOut {
             let rest = 1 - t
             shaped = 1 - rest * rest
+        } else if shape == FadeShape.linear {
+            shaped = t
         } else {
             shaped = t * t * (3 - 2 * t)
         }

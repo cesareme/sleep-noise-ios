@@ -136,6 +136,13 @@ final class MixerModel: ObservableObject {
     /// The Night screen shows its two first-time sentences: nobody has
     /// seen them on this install yet. They are fixed text, not a tip (C65).
     @Published private(set) var showsNightIntro = false
+    /// The night came back on the iPhone's speaker turned down to the cap
+    /// (C49): the page says "Playing · at 40" until the next touch. Nil
+    /// otherwise. A note, not a state: the level itself is `sessionLevel`.
+    @Published private(set) var cappedLevelNote: Int?
+    /// The output that went away was a pair of headphones, as far as the
+    /// system tells: only then does the pause say "headphones".
+    @Published private(set) var lostOutputWasHeadphones = true
 
     let purchases: PurchaseManager
     let mixStore: MixStore
@@ -157,6 +164,11 @@ final class MixerModel: ObservableObject {
     /// Where the timer lived when it was only a length in minutes.
     nonisolated static let legacyTimerKey = "sleepnoise.timerMinutes.v1"
     nonisolated static let timerKey = "sleepnoise.timer.v2"
+    /// Set on the first launch of an install that never had another
+    /// timer: with it, "nothing stored" is the first-use timer. Without it
+    /// and with levels already stored, the install comes from a version
+    /// where no timer meant "Off".
+    nonisolated static let timerFirstUseKey = "sleepnoise.timer.firstUse.v1"
     nonisolated static let keepScreenOnKey = "sleepnoise.night.keepScreenOn.v1"
     nonisolated static let nightIntroKey = "sleepnoise.night.introShown.v1"
     private var didStart = false
@@ -176,8 +188,13 @@ final class MixerModel: ObservableObject {
     private var sessionRoute: OutputRoute?
     /// The output that went away, until something plays again: a night
     /// that ended paused by a lost output still caps the next Play when
-    /// what is left is the iPhone's speaker (C49).
+    /// what is left is the iPhone's speaker (C49). It is forgotten with
+    /// that night's evening: `lostRouteMemory` after the loss, or when the
+    /// app is opened by day with the night over.
     private var lostRoute: OutputRoute?
+    private var lostRouteAt: Date?
+    /// How long a lost output still caps a Play on the speaker.
+    nonisolated static let lostRouteMemory: TimeInterval = 6 * 60 * 60
     private var appIsActive = true
     private var bedtimeTouchedAt: Date?
     private var expiryTimer: Timer?
@@ -211,13 +228,14 @@ final class MixerModel: ObservableObject {
         // The timer and Small Hours read the same clock as the model, so a
         // test (or a staged launch for the captures) moves all three at once.
         self.timer = timer ?? SleepTimerController(now: now, calendar: calendar, ticks: audio.isLive)
-        self.breathing = breathing ?? BreathingGuideController(defaults: defaults)
+        self.breathing = breathing ?? BreathingGuideController(defaults: defaults, now: now, ticks: audio.isLive)
         self.smallHours = smallHours ?? SmallHoursController(now: now, ticks: audio.isLive)
         interruptions = InterruptionTracker(calendar: calendar, now: now)
-        let stored = Self.storedTimer(defaults: defaults)
-        storedTimer = stored ?? .firstUse
+        let storedLevels = Self.loadLevels(defaults: defaults, key: levelsKey)
+        storedTimer = Self.timerAtLaunch(defaults: defaults, hasStoredLevels: storedLevels != nil)
         keepScreenOn = defaults.string(forKey: Self.keepScreenOnKey).flatMap(KeepScreenOn.init) ?? .whileCharging
-        if let stored = Self.loadLevels(defaults: defaults, key: levelsKey) {
+        let isFirstUse = storedLevels == nil
+        if let stored = storedLevels {
             levels = stored
             // The levels may still be a mix that was loaded: it keeps its
             // name, and what it plays without, across a restart.
@@ -237,6 +255,13 @@ final class MixerModel: ObservableObject {
         // The first night has a timer (03 §5 #8): "Until I sleep", 45
         // minutes. It is not stored, so it is never taken for a choice.
         self.timer.choose(storedTimer)
+        if isFirstUse {
+            // Stored like any mix that is loaded: the first edit that only
+            // writes the levels (a row touched, the ocean the tide raised)
+            // must not leave them without the name they came with.
+            persistLevels()
+            persistLoadedMix()
+        }
         bindTimer()
         bindBreathing()
         bindSmallHours()
@@ -248,6 +273,10 @@ final class MixerModel: ObservableObject {
         if audio.isLive {
             IntentBridge.attach(self)
             purchases.start()
+            // Once per launch: the phrases that carry a mix by name only
+            // work for the names the app has registered, and someone who
+            // never edits their list would never register any.
+            SleepNoiseShortcuts.updateAppShortcutParameters()
         }
         installSessionHandlers()
         nowPlaying.install(
@@ -302,6 +331,7 @@ final class MixerModel: ObservableObject {
     /// not written to disk; they are when it leaves.
     func beginLevelGesture() {
         liveLevelGestures += 1
+        dismissCappedLevelNote()
     }
 
     func endLevelGesture() {
@@ -392,13 +422,26 @@ final class MixerModel: ObservableObject {
     /// intent (AGENTS §5.7).
     func play(startsTrial: Bool = true) {
         startIfNeeded()
+        // Kept until the start is known to work: a Play that fails during a
+        // call must not cost the night the resume that call owes it (C48).
+        let open = interruptions
+        let wasHeld = heldByInterruption
         interruptions.cancel()
         heldByInterruption = false
         guard !isPlaying else { return }
         audioError = nil
+        if isSmallHours, !nightIsOpen(at: now()) {
+            // Small Hours left paused past its twenty minutes, and nothing
+            // ran to end it (the app was suspended): it is over. Play is
+            // the mix, in a new night.
+            closeNight(endedAt: nil)
+        }
         guard startSound(asked: true, startsTrial: startsTrial) else {
-            // Whatever night was open stays as it was, its timer included:
-            // the page says the sound did not start, and the line retries.
+            // Whatever night was open stays as it was, its timer and its
+            // interruption included: the page says the sound did not start,
+            // and the line retries.
+            interruptions = open
+            heldByInterruption = wasHeld
             purchases.refreshAccess(canDowngrade: true)
             noteStartFailure()
             return
@@ -423,14 +466,18 @@ final class MixerModel: ObservableObject {
         if asked, !nightIsOpen(at: now) {
             beginNewNight()
         }
+        var capped = false
         if asked {
+            forgetLostRouteIfStale(at: now)
             // Capped only when the output changed to the iPhone's speaker
             // since the night paused (C49).
+            let before = sessionLevel
             sessionLevel = RoutePolicy.resumeMaster(
                 pausedOn: sessionRoute ?? lostRoute ?? current,
                 current: current,
                 master: sessionLevel
             )
+            capped = sessionLevel < before
         }
         let fadeIn: TimeInterval
         let level: Float
@@ -467,8 +514,11 @@ final class MixerModel: ObservableObject {
             level = timer.fadeLevel
         }
         // With the engine stopped this is not a ramp: the level is there
-        // when the bed rises.
-        engine.setMaster(effectiveMaster, over: 0)
+        // when the bed rises. When something is still sounding (Small
+        // Hours taking over from the mix, a Play inside the tail of a
+        // pause) the level moves with the rise, never in 50 ms: a new
+        // night starts at 1, and that must not arrive as a jump.
+        engine.setMaster(effectiveMaster, over: fadeIn)
         do {
             try engine.start(gains: currentGains(), fadeIn: fadeIn, level: level)
         } catch {
@@ -485,12 +535,17 @@ final class MixerModel: ObservableObject {
         pausedAt = nil
         lostOutputAt = nil
         lostRoute = nil
+        lostRouteAt = nil
         heldByInterruption = false
         sessionRoute = current
         startFailures = 0
         cancelExpiry()
         clearSpeakerOffer()
-        if !isSmallHours, startsTrial {
+        let note = capped ? NightAxis.percent(sessionLevel) : nil
+        if cappedLevelNote != note { cappedLevelNote = note }
+        // Only a Play the person asked for may begin the trial: a night
+        // that comes back by itself after a call never does.
+        if asked, !isSmallHours, startsTrial {
             purchases.startTrialIfNeeded()
         }
         nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
@@ -527,8 +582,24 @@ final class MixerModel: ObservableObject {
     /// bed takes three seconds to leave, because earbuds send this command
     /// by themselves when someone falls asleep.
     func remotePause() {
-        let onHeadphones = sessionObserver.currentRoute != .builtInSpeaker
-        pause(cause: onHeadphones ? .headphones : .person)
+        // Only what the system says is a pair of headphones: a speaker in
+        // the room or AirPlay is not "headphones" on the page.
+        pause(cause: sessionObserver.currentRoute.isHeadphones ? .headphones : .person)
+    }
+
+    /// The note of the capped level has been read: any touch takes it away.
+    func dismissCappedLevelNote() {
+        if cappedLevelNote != nil { cappedLevelNote = nil }
+    }
+
+    /// A lost output caps the next Play on the speaker for the rest of that
+    /// night, not for ever (C49 is about resuming that night).
+    private func forgetLostRouteIfStale(at now: Date) {
+        guard let lostRouteAt else { return }
+        if now.timeIntervalSince(lostRouteAt) >= Self.lostRouteMemory {
+            lostRoute = nil
+            self.lostRouteAt = nil
+        }
     }
 
     /// The sound stops and the night stays open. `held`: an interruption
@@ -536,6 +607,7 @@ final class MixerModel: ObservableObject {
     /// meanwhile waits until the session really ends.
     private func stopSound(cause: PauseCause, fade: TimeInterval, held: Bool) {
         guard isPlaying else { return }
+        dismissCappedLevelNote()
         heldByInterruption = held
         endPlayback(engineAction: .stop(fadeOut: fade), canDowngrade: !held)
         pauseCause = cause
@@ -564,6 +636,7 @@ final class MixerModel: ObservableObject {
         lostOutputAt = nil
         sessionLevel = 1
         sessionEndedAt = nil
+        dismissCappedLevelNote()
         timer.reset()
         nowPlaying.resetElapsed()
     }
@@ -580,6 +653,7 @@ final class MixerModel: ObservableObject {
         pausedAt = nil
         sessionRoute = nil
         lostOutputAt = nil
+        dismissCappedLevelNote()
         timer.reset()
         let wasSmallHours = isSmallHours
         if wasSmallHours {
@@ -609,6 +683,7 @@ final class MixerModel: ObservableObject {
         let next = min(1, max(Self.minimumSessionLevel, level))
         guard next != sessionLevel else { return }
         sessionLevel = next
+        dismissCappedLevelNote()
         engine.setMaster(effectiveMaster, over: 0)
     }
 
@@ -682,6 +757,24 @@ final class MixerModel: ObservableObject {
         if wasCounting {
             pause()
         }
+    }
+
+    /// The timer a launch starts with. A stored choice rules. With nothing
+    /// stored, an install that already has levels and never saw this
+    /// version comes from one where no timer meant "Off": it stays off, and
+    /// that is stored as the choice it was. Only an install with nothing at
+    /// all gets the first-use timer (03 §5 #8), which is marked, not stored,
+    /// so it is never taken for a choice.
+    nonisolated static func timerAtLaunch(defaults: UserDefaults, hasStoredLevels: Bool) -> TimerChoice {
+        if let stored = storedTimer(defaults: defaults) { return stored }
+        if hasStoredLevels, !defaults.bool(forKey: timerFirstUseKey) {
+            if let data = try? JSONEncoder().encode(TimerChoice.off) {
+                defaults.set(data, forKey: timerKey)
+            }
+            return .off
+        }
+        defaults.set(true, forKey: timerFirstUseKey)
+        return .firstUse
     }
 
     /// The stored choice, from either format. Nil when the person never
@@ -994,6 +1087,9 @@ final class MixerModel: ObservableObject {
     /// Pro without access does not sound, and nothing is said about it.
     @discardableResult
     func playFromShortcut() -> IntentOutcome {
+        // "Play my last mix" is the mix: Small Hours gives way to it,
+        // playing or paused, like every other request for the mix.
+        leaveSmallHoursForTheMix()
         purchases.refreshAccess(canDowngrade: !isPlaying)
         if isPlaying { return .started }
         play(startsTrial: false)
@@ -1135,9 +1231,21 @@ final class MixerModel: ObservableObject {
     /// Whether the Night screen should hold the iPhone awake right now
     /// (`isIdleTimerDisabled`). The view asks with the battery state it
     /// reads; the model never touches the idle timer itself.
+    ///
+    /// Only while a night is open: once it has ended by itself the screen
+    /// goes back to the system's own setting, so an iPhone on its charger
+    /// does not stay lit all morning showing "Ended at".
     func bedtimeKeepsScreenAwake(isCharging: Bool) -> Bool {
         (isBedtime || isSmallHours)
+            && nightHoldsTheScreen
             && BedtimeScreenPolicy.keepsScreenAwake(keepScreenOn, isCharging: isCharging)
+    }
+
+    /// A night is playing, or paused and not yet over: what the idle timer
+    /// follows. It changes with `isPlaying`, `pauseCause` and
+    /// `sessionEndedAt`, which the view watches.
+    var nightHoldsTheScreen: Bool {
+        isPlaying || heldByInterruption || nightIsOpen(at: now())
     }
 
     // MARK: Small Hours
@@ -1509,6 +1617,9 @@ final class MixerModel: ObservableObject {
         }
         if interruptions.isOpen { interruptions.note(.routeDisconnected) }
         lostRoute = sessionRoute
+        lostRouteAt = now
+        let wasHeadphones = sessionRoute?.isHeadphones ?? true
+        if lostOutputWasHeadphones != wasHeadphones { lostOutputWasHeadphones = wasHeadphones }
         if isPlaying {
             stopSound(cause: .lostOutput, fade: fadeOut, held: false)
         } else {
@@ -1618,9 +1729,17 @@ final class MixerModel: ObservableObject {
         refreshSpeakerOffer()
         refreshBedtimeDimming()
         let now = now()
-        if isNightSession, !isBedtime, !isSmallHours, !nightIsOpen(at: now), !heldByInterruption,
-           !NightWindow.contains(now, calendar: calendar) {
+        let nightIsOver = !nightIsOpen(at: now) && !heldByInterruption
+        let isDay = !NightWindow.contains(now, calendar: calendar)
+        if isNightSession, !isBedtime, !isSmallHours, nightIsOver, isDay {
             isNightSession = false
+        }
+        if nightIsOver, isDay {
+            // The output lost last night says nothing about today's.
+            lostRoute = nil
+            lostRouteAt = nil
+        } else {
+            forgetLostRouteIfStale(at: now)
         }
         closeSaleIfNight()
     }
@@ -1739,6 +1858,8 @@ extension MixerModel {
     /// Debug builds only: the output in use goes away, as when earbuds are
     /// taken out. For the reference captures.
     func debugLoseOutput() {
+        // The night was on earbuds: what is left is the iPhone's speaker.
+        sessionRoute = .external(id: "debug.earbuds")
         outputLost()
     }
 }

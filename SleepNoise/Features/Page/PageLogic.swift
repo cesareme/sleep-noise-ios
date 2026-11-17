@@ -90,6 +90,9 @@ enum PageStatus: Equatable {
     case playingWithout([SoundID])
     /// Play raised the fallback layer because nothing else would sound.
     case playingFallback(SoundID, percent: Int)
+    /// The night came back on the speaker, turned down to the cap (C49):
+    /// the session level, until the next touch.
+    case playingAt(percent: Int)
     case paused
     /// Paused because the output went away, or from the headphones.
     case pausedHeadphones
@@ -116,6 +119,11 @@ enum PageStatus: Equatable {
         var isPlayingFallback = false
         /// The night page says nothing about Pro.
         var isNightSession = false
+        /// The output that went away was a pair of headphones, as far as
+        /// the system tells. Anything else is just "Paused".
+        var lostOutputWasHeadphones = true
+        /// The session level to say after a resume capped for the speaker.
+        var cappedLevelNote: Int?
     }
 
     static func resolve(_ input: Input) -> PageStatus {
@@ -124,6 +132,7 @@ enum PageStatus: Equatable {
                 let seconds = max(0, input.timerRemaining ?? 0)
                 return .fading(minutes: max(1, Int((seconds / 60).rounded(.up))))
             }
+            if let percent = input.cappedLevelNote { return .playingAt(percent: percent) }
             if input.isPlayingFallback {
                 return .playingFallback(
                     MixerModel.fallbackSound,
@@ -138,7 +147,8 @@ enum PageStatus: Equatable {
         }
         if input.startFailures > 0 { return .error(attempt: min(3, input.startFailures)) }
         switch input.pauseCause {
-        case .lostOutput, .headphones: return .pausedHeadphones
+        case .headphones: return .pausedHeadphones
+        case .lostOutput: return input.lostOutputWasHeadphones ? .pausedHeadphones : .paused
         case .call: return .pausedCall
         case .person, .system: return .paused
         case nil: break
@@ -186,6 +196,8 @@ enum PageStatus: Equatable {
                 soundName(sound).lowercased(with: locale),
                 Int64(percent)
             )
+        case .playingAt(let percent):
+            return String(format: localized("estado.volumen"), locale: locale, Int64(percent))
         case .paused:
             return localized("pagina.estado.pausa")
         case .pausedHeadphones:

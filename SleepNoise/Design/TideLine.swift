@@ -32,6 +32,16 @@ struct TideLine: View {
     var showsMarks = true
     /// 2 pt in the tide sheet; 1.5 pt in Small Hours.
     var lineThickness = TideLine.thickness
+    /// Height of the band: 120 pt, or 96 on the page of a short screen.
+    var band = TideLine.band
+    /// How far inside the band the line turns: 0 in the sheet, where it
+    /// travels from edge to edge. On the page low water is the Horizon,
+    /// which sits inside the band, and the marks stay on its edges.
+    var highWaterInset: CGFloat = 0
+    var lowWaterInset: CGFloat = 0
+    /// The ink of the line when it is not the sheet's: on the page the
+    /// water line is the Horizon, and carries the accent while it sounds.
+    var ink: Color?
 
     @Environment(\.nightPhase) private var phase
     @Environment(\.scenePhase) private var scenePhase
@@ -55,8 +65,19 @@ struct TideLine: View {
         0.6 + 0.4 * Double(min(1, max(0, level)))
     }
 
-    private var ink: Color {
-        isUnderFinger ? Ink.accent(phase) : Ink.primary(phase)
+    private var lineInk: Color {
+        if let ink { return ink }
+        return isUnderFinger ? Ink.accent(phase) : Ink.primary(phase)
+    }
+
+    /// Where the top of the line sits for a level, with this line's band
+    /// and insets.
+    private func top(_ level: Float) -> CGFloat {
+        highWaterInset + Self.offset(
+            level: level,
+            band: band - highWaterInset - lowWaterInset,
+            thickness: lineThickness
+        )
     }
 
     private var isPaused: Bool { mode != .moving || scenePhase != .active }
@@ -70,10 +91,12 @@ struct TideLine: View {
             switch mode {
             case .off:
                 Hairline()
+                    .padding(.bottom, lowWaterInset)
                     .frame(maxHeight: .infinity, alignment: .bottom)
             case .paused:
                 water
                     .opacity(Self.pausedOpacity)
+                    .padding(.bottom, lowWaterInset)
                     .frame(maxHeight: .infinity, alignment: .bottom)
             case .moving:
                 TimelineView(.animation(minimumInterval: reduceMotion ? 0.25 : 1.0 / 30, paused: isPaused)) { context in
@@ -81,21 +104,21 @@ struct TideLine: View {
                     if reduceMotion {
                         water
                             .opacity(Self.reducedOpacity(level: level))
-                            .offset(y: Self.offset(level: 0.5, thickness: lineThickness))
+                            .offset(y: top(0.5))
                     } else {
-                        water.offset(y: Self.offset(level: level, thickness: lineThickness))
+                        water.offset(y: top(level))
                     }
                 }
             }
         }
-        .frame(height: Self.band, alignment: .top)
+        .frame(height: band, alignment: .top)
         .animation(Motion.controlCurve, value: isUnderFinger)
         .animation(Motion.startCurve, value: mode)
     }
 
     private var water: some View {
         Rectangle()
-            .fill(ink)
+            .fill(lineInk)
             .frame(height: Grid.pixelCeil(lineThickness, displayScale: displayScale))
             .frame(maxWidth: .infinity)
     }
@@ -108,7 +131,7 @@ struct TideLine: View {
             Spacer(minLength: 0)
             mark
         }
-        .frame(height: Self.band)
+        .frame(height: band)
         .frame(maxWidth: .infinity, alignment: .trailing)
     }
 

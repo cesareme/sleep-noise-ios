@@ -37,6 +37,9 @@ struct PageView: View {
     @State private var clock = 0
     /// Height of the name's line: 34 pt at Large.
     @ScaledMetric(relativeTo: .title) private var nameLine: CGFloat = 34
+    /// VoiceOver lands on the name when Night or Small Hours gives the
+    /// page back: what was focused there is gone.
+    @AccessibilityFocusState private var focusesName: Bool
 
     init(model: MixerModel, purchases: PurchaseManager) {
         self.model = model
@@ -75,9 +78,14 @@ struct PageView: View {
                     head(metrics: metrics, canSell: canSell)
                         .frame(minHeight: isLargeText ? nil : metrics.headHeight, alignment: .top)
                         .padding(.bottom, isLargeText ? Grid.unit * 6 : 0)
-                    SoundLine(isSounding: model.isPlaying) { tau in
-                        model.outputLevel(tau: tau)
-                    }
+                    PageHorizon(
+                        model: model,
+                        guide: model.breathing,
+                        band: metrics.tideBand,
+                        // With larger text the Horizon sits right under
+                        // the state line: there is no band above it.
+                        showsWater: !isLargeText
+                    )
                     layerRows(shown, capacity: fits, canSell: canSell)
                         .padding(.top, metrics.airUnderHorizon)
                     EditorialRow(
@@ -133,6 +141,8 @@ struct PageView: View {
             if covered {
                 sheet = nil
                 naming.isPresented = false
+            } else {
+                focusesName = true
             }
         }
         .onReceive(NotificationCenter.default.publisher(
@@ -175,7 +185,10 @@ struct PageView: View {
         }
         .onChange(of: sheet) { previous, next in
             if previous == .layers { chooseRows() }
-            if next != nil { sliderDismissal += 1 }
+            if next != nil {
+                sliderDismissal += 1
+                model.dismissCappedLevelNote()
+            }
             clock += 1
         }
         .onChange(of: model.showPaywall) { _, asked in
@@ -229,16 +242,57 @@ struct PageView: View {
         .padding(.horizontal, Grid.margin)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
-        .onTapGesture { sliderDismissal += 1 }
+        .onTapGesture {
+            sliderDismissal += 1
+            model.dismissCappedLevelNote()
+        }
     }
 
     private var title: String { PageTitle.text(loadedMixName: model.loadedMixName) }
 
-    /// A name the person wrote may shrink a little before it is cut; the
-    /// names the app writes never scale.
+    /// A name the person wrote may shrink a little before it is cut.
     private var isOwnName: Bool {
         model.loadedMixName != nil && model.activeHouseMix == nil && !model.loadedMixWasStripped
     }
+
+    /// A mix that plays trimmed: its title is "<name> · without <layer>",
+    /// and the layer is what the title is there to say.
+    private var isTrimmedName: Bool {
+        model.loadedMixName != nil && model.loadedMixWasStripped
+    }
+
+    /// The line of the name at full size: the name keeps it when it is set
+    /// smaller, so nothing under it moves.
+    private var nameHeight: CGFloat {
+        UIFont.systemFont(ofSize: TypeStep.name.scaledSize(for: dynamicType), weight: .medium).lineHeight
+    }
+
+    private func nameText(_ text: String) -> some View {
+        Text(verbatim: text)
+            .step(.name)
+            .foregroundStyle(Ink.primary(phase))
+            .lineLimit(dynamicType.isAccessibilitySize ? 2 : 1)
+            .truncationMode(.tail)
+    }
+
+    /// The words of the name. A trimmed title is never cut on the layer it
+    /// names: it is set whole, then smaller (down to 0.7), and only when
+    /// even that does not fit is the name left alone, uncut.
+    @ViewBuilder private var nameWords: some View {
+        if isTrimmedName, !dynamicType.isAccessibilitySize {
+            ViewThatFits(in: .horizontal) {
+                nameText(title).fixedSize()
+                ShrinkToFit(least: Self.trimmedNameScale) {
+                    nameText(title).minimumScaleFactor(Self.trimmedNameScale)
+                }
+                nameText(model.loadedMixBaseName ?? title).minimumScaleFactor(0.8)
+            }
+        } else {
+            nameText(title).minimumScaleFactor(isOwnName ? 0.8 : 1)
+        }
+    }
+
+    private static let trimmedNameScale: CGFloat = 0.7
 
     /// A fourth mix without access: the menu says so before the touch.
     private var saveNeedsPro: Bool { !model.canSaveMix }
@@ -253,15 +307,10 @@ struct PageView: View {
         // touch area is 64 pt there, taken from the air above and below, so
         // nothing moves.
         let reach = model.isNightSession ? max(0, (Grid.largeTarget - nameLine) / 2) : 0
-        return Text(verbatim: title)
-            .step(.name)
-            .foregroundStyle(Ink.primary(phase))
-            .lineLimit(dynamicType.isAccessibilitySize ? 2 : 1)
-            .truncationMode(.tail)
-            .minimumScaleFactor(isOwnName ? 0.8 : 1)
+        return nameWords
             .contentTransition(.opacity)
             .animation(Motion.contentCurve, value: title)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: nameHeight, alignment: .leading)
             .padding(.vertical, reach)
             .contentShape(Rectangle())
             .padding(.vertical, -reach)
@@ -278,6 +327,7 @@ struct PageView: View {
                 }
             }
             .accessibilityElement(children: .ignore)
+            .accessibilityFocused($focusesName)
             .accessibilityLabel(Text("mezcla.guardar.campo"))
             .accessibilityValue(Text(verbatim: PageStatus.spoken(title)))
             .accessibilityHint(Text(model.isNightSession ? "ax.nombre.pista.noche" : "ax.nombre.pista"))
@@ -475,6 +525,10 @@ struct PageMetrics: Equatable {
 
     var airUnderHeader: CGFloat { isShort ? Grid.unit * 2 + 2 : Grid.inner + 2 }
     var airUnderHorizon: CGFloat { isShort ? Grid.unit * 3 : Grid.inner }
+    /// The band the water line of the tide moves in, measured up from the
+    /// bottom of the Horizon's own band (05 §2.3; 96 on a short screen,
+    /// where 120 would reach the state line, 05 §2.13).
+    var tideBand: CGFloat { isShort ? 96 : TideLine.band }
     var airOverTide: CGFloat { isShort ? Grid.unit * 6 : Grid.group }
 }
 
@@ -550,13 +604,28 @@ private struct StatusLine: View {
             omitted: MixLoad(levels: model.levels, hasFullAccess: hasFullAccess).omitted,
             isSilent: model.isSilent,
             isPlayingFallback: model.isPlayingFallback,
-            isNightSession: model.isNightSession
+            isNightSession: model.isNightSession,
+            lostOutputWasHeadphones: model.lostOutputWasHeadphones,
+            cappedLevelNote: model.cappedLevelNote
         ))
+    }
+
+    /// "Keep playing on speaker" (C49): on the second line, for the minute
+    /// the offer lasts. The error line is a button of its own and rules.
+    private func showsSpeakerOffer(_ status: PageStatus) -> Bool {
+        model.speakerOfferUntil != nil && !model.isPlaying && !status.isRetry
+    }
+
+    private var offerHeight: CGFloat {
+        Grid.textAction(dynamicType: dynamicType, night: phase.isNight)
     }
 
     var body: some View {
         let status = self.status
         let text = status.isRetry ? status.text() : note ?? status.text()
+        let offers = showsSpeakerOffer(status)
+        // With larger text the action takes its own room under the words.
+        let offerIsInline = dynamicType.isAccessibilitySize
         Group {
             if case .error(let attempt) = status {
                 Button {
@@ -587,6 +656,24 @@ private struct StatusLine: View {
             }
         }
         .frame(maxWidth: .infinity, minHeight: twoLines, alignment: .topLeading)
+        .padding(.bottom, offers && offerIsInline ? offerHeight : 0)
+        .overlay(alignment: offerIsInline ? .bottomLeading : .topLeading) {
+            if offers {
+                // Centred on the second line; its touch area reaches into
+                // the air around it, so nothing moves when it comes or goes.
+                TextAction(title: Localized.string(RoutePolicy.speakerOfferKey), alignment: .leading) {
+                    model.continueOnSpeaker()
+                }
+                .padding(.horizontal, -Grid.margin)
+                .offset(y: offerIsInline ? 0 : twoLines * 0.75 - offerHeight / 2)
+                .accessibilityHint(Text(verbatim: Localized.format(
+                    "ax.altavoz.pista", Int64(NightAxis.percent(RoutePolicy.speakerMasterCap))
+                )))
+                .accessibilityIdentifier("pageSpeaker")
+                .transition(.opacity)
+            }
+        }
+        .animation(Motion.contentCurve, value: offers)
         .onChange(of: model.startFailures) { _, failures in
             // A start that failed was caused by a touch: it may be spoken.
             // High priority, so it is not lost under VoiceOver reading the
@@ -612,8 +699,8 @@ private struct StatusLine: View {
 
 // MARK: - Tide and timer rows
 
-/// The tide on the page: its name, its state in words and the system
-/// toggle in plain ink (never the accent). The words open the tide sheet;
+/// The tide on the page: its name, its state in words and the switch,
+/// drawn with tokens in plain ink (never the accent). The words open the tide sheet;
 /// the toggle switches it. Without access the toggle goes back to off and
 /// the row says "Off · pro"; the Pro sheet only goes up while something may
 /// be sold.
@@ -648,12 +735,10 @@ private struct TideRow: View {
             .accessibilityIdentifier("openTide")
             toggle
                 .accessibilityIdentifier("tideToggle")
-                // Centred on the name's line whatever the system's toggle
-                // measures (31 pt on iOS 17, 28 pt on iOS 26): its box is
-                // that line.
+                // Centred on the name's line: its box is that line, and
+                // its touch area reaches past it.
                 .fixedSize()
                 .frame(height: nameLine)
-                .padding(.trailing, Grid.toggleOverhang)
         }
         .padding(.top, Grid.unit * 3)
         .padding(.bottom, Grid.unit * 2)
@@ -671,8 +756,7 @@ private struct TideRow: View {
         )) {
             Text("marea.titulo")
         }
-        .labelsHidden()
-        .tint(Ink.primary(phase))
+        .toggleStyle(GrafitoToggleStyle(showsLabel: false))
     }
 
     /// With access the system says on or off. Without it the toggle says
@@ -731,17 +815,115 @@ private struct TimerRow: View {
     @Environment(\.calendar) private var calendar
 
     var body: some View {
-        let input = TimerSheetText.Input(timer)
-        EditorialRow(
-            title: Localized.string("temporizador.titulo"),
-            value: TimerSheetText.setting(
-                timer.choice,
-                hour: TimerSheetText.blanketHour(timer.choice, on: Date(), calendar: calendar)
-            ),
-            rule: .top,
-            action: onOpen
+        // The timer publishes nothing as the minutes go by. What VoiceOver
+        // reads here is read again by the minute, only while it counts and
+        // only while the page is on screen.
+        TimelineView(.everyMinute) { _ in
+            let input = TimerSheetText.Input(timer)
+            EditorialRow(
+                title: Localized.string("temporizador.titulo"),
+                value: TimerSheetText.setting(
+                    timer.choice,
+                    hour: TimerSheetText.blanketHour(timer.choice, on: Date(), calendar: calendar)
+                ),
+                rule: .top,
+                action: onOpen
+            )
+            .accessibilityValue(Text(verbatim: TimerSheetText.settingSpokenValue(input) ?? ""))
+            .accessibilityIdentifier("openTimer")
+        }
+    }
+}
+
+// MARK: - Horizon and water line
+
+/// The Horizon of the page and, while the tide guides, its water line
+/// (06 §2.4, 05 §2.3): one line, never two.
+///
+/// The band of the water line reaches up from the bottom of the Horizon's
+/// own band into the air above it, so low water is the Horizon and nothing
+/// on the page is laid out differently with or without the tide. While the
+/// tide has a course the Horizon steps back and the same place is the water
+/// line: the accent by day (colour means sound), plain ink while a finger
+/// holds a level, the one ink at night. It reads the curve and the anchor
+/// the audio uses, like the line of the tide sheet.
+private struct PageHorizon: View {
+    @ObservedObject var model: MixerModel
+    @ObservedObject var guide: BreathingGuideController
+    var band: CGFloat
+    var showsWater: Bool
+
+    @Environment(\.indexArbiter) private var arbiter
+    @Environment(\.nightPhase) private var phase
+    @Environment(\.sheetPresented) private var sheetPresented
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// From the top of the band to high water, and from low water (the
+    /// Horizon, in the middle of its own band) to the bottom.
+    private static let highWater: CGFloat = 8
+    private static var lowWater: CGFloat { Grid.horizonBand / 2 }
+
+    /// The tide is guiding or letting go under a night that plays.
+    private var hasCourse: Bool {
+        showsWater && model.isPlaying && !model.isSmallHours && model.breathingIsIncluded && guide.isActive
+    }
+
+    private var ink: Color {
+        if phase.isNight { return Ink.textNight }
+        return arbiter.fingerIsDown ? Ink.text : Ink.index
+    }
+
+    var body: some View {
+        let hasCourse = self.hasCourse
+        SoundLine(isSounding: model.isPlaying) { tau in
+            model.outputLevel(tau: tau)
+        }
+        .opacity(hasCourse ? 0 : 1)
+        .overlay(alignment: .bottom) {
+            if showsWater {
+                TideLine(
+                    mode: hasCourse ? (sheetPresented ? .paused : .moving) : .off,
+                    level: { date in
+                        let now = guide.onGuideClock(date)
+                        return TideBreath.level(at: now, anchor: guide.anchor, parameters: guide.lastPublished)
+                            * (guide.scheduledWeight(now: now) ?? 1)
+                    },
+                    band: band,
+                    highWaterInset: Self.highWater - TideLine.thickness / 2,
+                    lowWaterInset: Self.lowWater - TideLine.thickness / 2,
+                    ink: ink
+                )
+                .padding(.horizontal, Grid.margin)
+                .opacity(hasCourse ? 1 : 0)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+            }
+        }
+        .animation(.easeInOut(duration: reduceMotion ? Motion.content : PlaybackFade.start), value: hasCourse)
+    }
+}
+
+/// Lets a single line of text be offered to `ViewThatFits` at the width it
+/// would have set smaller: its ideal width is `least` times the text's own,
+/// and the text inside (with a `minimumScaleFactor`) shrinks only as far
+/// as the room it is given asks.
+private struct ShrinkToFit: Layout {
+    var least: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard let text = subviews.first else { return .zero }
+        let ideal = text.sizeThatFits(.unspecified)
+        guard let width = proposal.width else {
+            return CGSize(width: ideal.width * least, height: ideal.height)
+        }
+        return CGSize(width: min(width, ideal.width), height: ideal.height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(
+            at: CGPoint(x: bounds.minX, y: bounds.midY),
+            anchor: .leading,
+            proposal: ProposedViewSize(width: bounds.width, height: bounds.height)
         )
-        .accessibilityValue(Text(verbatim: TimerSheetText.settingSpokenValue(input) ?? ""))
-        .accessibilityIdentifier("openTimer")
     }
 }

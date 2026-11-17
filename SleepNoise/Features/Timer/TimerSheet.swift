@@ -23,25 +23,47 @@ struct TimerSheet: View {
     @State private var detent = PresentationDetent.medium
     /// The wheel or the time picker is open under its row.
     @State private var showsControl: Bool
-    /// The block above the list. Once it is there it stays while the sheet
-    /// is open and only its content changes.
+    /// The block above the list. Decided once, when the sheet opens: a
+    /// night was being counted then. It never comes or goes while the sheet
+    /// is open, so no row moves under a finger (AGENTS §5.9); only its
+    /// content changes. A count begun from this sheet is read on the page
+    /// behind it, as an hour, and here the next time it opens.
     @State private var showsHead: Bool
     @State private var modeChanges = 0
     @State private var extensions = 0
 
     /// Height of the system's wheels.
     private static let wheelHeight: CGFloat = 216
+    /// Width of the system's time wheels, which do not stretch: the wheel
+    /// of lengths takes the same.
+    private static let wheelWidth: CGFloat = 320
 
     init(model: MixerModel) {
         self.model = model
         timer = model.timer
-        _showsHead = State(initialValue: model.canExtendTimer)
+        let showsHead = model.canExtendTimer
+        _showsHead = State(initialValue: showsHead)
+        // With the block above the list the half sheet cuts the last row
+        // and hides the note, which is there to be read.
+        var opensLarge = showsHead
         #if DEBUG
         _showsControl = State(initialValue: PageArguments.opensTimerControl)
-        _detent = State(initialValue: PageArguments.opensTimerControl ? .large : .medium)
+        opensLarge = opensLarge || PageArguments.opensTimerControl
         #else
         _showsControl = State(initialValue: false)
         #endif
+        _detent = State(initialValue: opensLarge ? .large : .medium)
+    }
+
+    /// The minutes of the block change when a whole minute is left: the
+    /// timer publishes nothing meanwhile, so the block reads it again then,
+    /// only while the sheet is on screen.
+    private var minuteSchedule: PeriodicTimelineSchedule {
+        let anchor = timer.endsAt.map { end -> Date in
+            let minutes = (max(0, end.timeIntervalSinceNow) / 60).rounded(.up) + 1
+            return end.addingTimeInterval(-minutes * 60)
+        }
+        return .periodic(from: anchor ?? Date(timeIntervalSinceReferenceDate: 0), by: 60)
     }
 
     private var input: TimerSheetText.Input { TimerSheetText.Input(timer) }
@@ -100,11 +122,6 @@ struct TimerSheet: View {
             // Larger text does not fit the half sheet.
             if dynamicType >= .xLarge { detent = .large }
         }
-        .onChange(of: timer.hasCount, initial: true) { _, counting in
-            // Also on the first draw: a night may have begun between the
-            // sheet being built and being shown.
-            if counting { showsHead = true }
-        }
         .accessibilityAction(.magicTap) { model.togglePlayback() }
     }
 
@@ -113,28 +130,34 @@ struct TimerSheet: View {
     /// What is left, when it ends, and fifteen minutes more. The lines keep
     /// their room when the night is over, so the list does not jump.
     private var head: some View {
-        let head = model.isSmallHours ? nil : TimerSheetText.head(input)
-        return VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(verbatim: head.map { TimerSheetText.figure($0) } ?? " ")
-                    .step(.figureSmall)
-                    .foregroundStyle(Ink.primary(phase))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                Text(verbatim: head.map { TimerSheetText.line($0) } ?? " ")
-                    .step(.secondary)
-                    .monospacedDigit()
-                    .foregroundStyle(Ink.secondary(phase))
-                    .contentTransition(.opacity)
+        VStack(alignment: .leading, spacing: 0) {
+            TimelineView(minuteSchedule) { _ in
+                let input = self.input
+                let head = model.isSmallHours ? nil : TimerSheetText.head(input)
+                let dipIsAhead = input.blanketDipIsAhead
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(verbatim: head.map { TimerSheetText.figure($0) } ?? " ")
+                        .step(.figureSmall)
+                        .foregroundStyle(Ink.primary(phase))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                    Text(verbatim: head.map { TimerSheetText.line($0, dipIsAhead: dipIsAhead) } ?? " ")
+                        .step(.secondary)
+                        .monospacedDigit()
+                        .foregroundStyle(Ink.secondary(phase))
+                        .contentTransition(.opacity)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Grid.margin)
+                .padding(.top, Grid.inner)
+                .padding(.bottom, Grid.unit * 3)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(
+                    verbatim: head.map { TimerSheetText.spoken($0, dipIsAhead: dipIsAhead) } ?? ""
+                ))
+                .accessibilityHidden(head == nil)
+                .accessibilityIdentifier("timerCount")
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, Grid.margin)
-            .padding(.top, Grid.inner)
-            .padding(.bottom, Grid.unit * 3)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(verbatim: head.map { TimerSheetText.spoken($0) } ?? ""))
-            .accessibilityHidden(head == nil)
-            .accessibilityIdentifier("timerCount")
 
             HairlineAction(title: Localized.string("comun.mas15"), isEnabled: model.canExtendTimer) {
                 guard model.extendTimer() else { return }
@@ -144,6 +167,8 @@ struct TimerSheet: View {
                 }
             }
             .accessibilityLabel(Text("ax.mas15"))
+            // Voice Control: the words on screen first.
+            .accessibilityInputLabels([Text("comun.mas15"), Text("ax.mas15")])
             .accessibilityIdentifier("timerExtend")
         }
     }
@@ -191,7 +216,6 @@ struct TimerSheet: View {
         .opacity(control == nil ? 0 : 1)
         .allowsHitTesting(control != nil)
         .accessibilityHidden(control == nil)
-        .accessibilityAddTraits(showsControl ? .isSelected : [])
         .accessibilityIdentifier("timerControl")
     }
 
@@ -220,9 +244,14 @@ struct TimerSheet: View {
             }
         }
         .labelsHidden()
-        .frame(maxWidth: .infinity)
+        // Both wheels in the column, at one width: the band of the
+        // selection does not change size from one mode to the other.
+        .frame(maxWidth: Self.wheelWidth)
         .frame(height: Self.wheelHeight)
+        .clipped()
         .colorMultiply(Ink.primary(phase))
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, Grid.margin)
         .overlay(alignment: .bottom) {
             Hairline().padding(.horizontal, Grid.margin)
         }

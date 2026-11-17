@@ -35,50 +35,12 @@ struct NightScreen: View {
     private var hasRoomForIntro: Bool { dynamicType < .accessibility3 }
 
     var body: some View {
-        let status = self.status
-        let clock = Self.clock(model.clockNow)
-        FullScreenControl(
-            model: model,
-            allowsBack: true,
-            spoken: spoken(status, clock: clock),
-            onTap: { touched(status) },
-            onBack: goBack,
-            onLevel: noteLevel
-        ) { layout in
-            VStack(spacing: 0) {
-                SoundLineMark(rms: 0, isSounding: status.isSounding, ownsAccent: false)
-                    .frame(height: Grid.horizonBand)
-                    .padding(.horizontal, Grid.margin)
-                    .padding(.top, layout.horizonY - Grid.horizonBand / 2)
-                clockFace
-                    .padding(.top, NightLayout.clockDrop - Grid.horizonBand / 2)
-                word(status)
-                    .padding(.top, NightLayout.lineGap)
-                if hasRoomForIntro {
-                    intro
-                        .padding(.top, NightLayout.lineGap)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        } actions: {
-            VStack(spacing: 0) {
-                if model.speakerOfferUntil != nil, !status.isOver {
-                    NightAction(title: Localized.string("ruta.seguir_altavoz")) {
-                        model.noteBedtimeTouch()
-                        model.continueOnSpeaker()
-                    }
-                    .accessibilityHint(Text(verbatim: Localized.format(
-                        "ax.altavoz.pista", Int64(NightAxis.percent(RoutePolicy.speakerMasterCap))
-                    )))
-                    .accessibilityIdentifier("nightSpeaker")
-                    .padding(.bottom, NightLayout.channel)
-                    .transition(.opacity)
-                }
-                slot(status)
-            }
-            .animation(Motion.contentCurve, value: model.speakerOfferUntil != nil)
+        // The hour moves by the minute and nothing else may publish for
+        // hours: what is drawn and what VoiceOver reads come from the same
+        // reading, taken again every minute while the screen is on.
+        TimelineView(.everyMinute) { _ in
+            screen(now: model.clockNow)
         }
-        .overlay(alignment: .top) { backElement }
         .task(id: levelNoteToken) {
             guard levelNoteToken > 0 else { return }
             try? await Task.sleep(for: .seconds(BedtimeScreenPolicy.levelNoteDuration))
@@ -107,20 +69,64 @@ struct NightScreen: View {
         #endif
     }
 
+    private func screen(now: Date) -> some View {
+        let status = self.status
+        return FullScreenControl(
+            model: model,
+            allowsBack: true,
+            spoken: spoken(status, clock: Self.spokenClock(now)),
+            onTap: { touched(status) },
+            onBack: goBack,
+            onLevel: noteLevel
+        ) { layout in
+            VStack(spacing: 0) {
+                SoundLineMark(rms: 0, isSounding: status.isSounding, ownsAccent: false)
+                    .frame(height: Grid.horizonBand)
+                    .padding(.horizontal, Grid.margin)
+                    .padding(.top, layout.horizonY - Grid.horizonBand / 2)
+                clockFace(now)
+                    .padding(.top, NightLayout.clockDrop - Grid.horizonBand / 2)
+                word(status)
+                    .padding(.top, NightLayout.lineGap)
+                if hasRoomForIntro {
+                    intro
+                        .padding(.top, NightLayout.lineGap)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        } actions: {
+            VStack(spacing: 0) {
+                if model.speakerOfferUntil != nil, !status.isOver {
+                    NightAction(title: Localized.string("ruta.seguir_altavoz")) {
+                        model.noteBedtimeTouch()
+                        model.continueOnSpeaker()
+                    }
+                    .accessibilityHint(Text(verbatim: Localized.format(
+                        "ax.altavoz.pista", Int64(NightAxis.percent(RoutePolicy.speakerMasterCap))
+                    )))
+                    .accessibilityIdentifier("nightSpeaker")
+                    .padding(.bottom, NightLayout.channel)
+                    .transition(.opacity)
+                }
+                slot(status)
+            }
+            .animation(Motion.contentCurve, value: model.speakerOfferUntil != nil)
+        }
+        .overlay(alignment: .top) { backElement }
+    }
+
     // MARK: What it shows
 
-    /// The hour of the system, as the person set it. It changes by the
-    /// minute, in place.
-    private var clockFace: some View {
-        TimelineView(.everyMinute) { _ in
-            Text(verbatim: Self.clock(model.clockNow))
-                .step(.figure)
-                .foregroundStyle(Ink.textNight)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-                .padding(.horizontal, Grid.margin)
-                .frame(maxWidth: .infinity, minHeight: TypeStep.figure.scaledLineHeight(for: dynamicType))
-        }
+    /// The hour of the system, as a figure: 24 hours or 12 as the person
+    /// set it, never with "AM" or "PM". It changes by the minute, in place.
+    private func clockFace(_ now: Date) -> some View {
+        Text(verbatim: Self.clock(now))
+            .step(.figure)
+            .foregroundStyle(Ink.textNight)
+            .lineLimit(1)
+            .minimumScaleFactor(0.6)
+            .padding(.horizontal, Grid.margin)
+            .frame(maxWidth: .infinity, minHeight: TypeStep.figure.scaledLineHeight(for: dynamicType))
     }
 
     private func word(_ status: NightStatus) -> some View {
@@ -163,11 +169,17 @@ struct NightScreen: View {
                     model.startSmallHours()
                 }
                 .accessibilityLabel(Text(verbatim: Localized.format("ax.la.madrugada", Int64(smallHoursMinutes))))
+                .accessibilityInputLabels([
+                    Text(verbatim: Localized.format("madrugada.estado", Int64(smallHoursMinutes))),
+                    Text(verbatim: Localized.string("madrugada.titulo")),
+                ])
                 .accessibilityIdentifier("nightSmallHours")
                 .transition(.opacity)
             } else if model.canExtendTimer {
                 NightAction(title: Localized.string("comun.mas15"), action: extend)
                     .accessibilityLabel(Text("ax.mas15"))
+                    // Voice Control: the words on screen first.
+                    .accessibilityInputLabels([Text("comun.mas15"), Text("ax.mas15")])
                     .accessibilityIdentifier("nightExtend")
                     .transition(.opacity)
             }
@@ -254,7 +266,15 @@ struct NightScreen: View {
         )
     }
 
+    /// The figure of the clock: the hour without "AM" or "PM" (07 §2.2.2).
+    /// At 72 pt the suffix nearly doubles the light of the screen to say
+    /// that it is night.
     static func clock(_ date: Date) -> String {
+        TimerSheetText.figureClock(date)
+    }
+
+    /// The hour as VoiceOver says it: the system's short time, whole.
+    static func spokenClock(_ date: Date) -> String {
         date.formatted(date: .omitted, time: .shortened)
     }
 }

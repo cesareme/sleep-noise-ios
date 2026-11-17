@@ -103,13 +103,15 @@ struct MixesSheet: View {
         .mixNaming($naming, model: model) { _ in
             AccessibilityNotification.Announcement(Localized.string("mezclas.guardada")).post()
         }
-        .confirmationDialog(
+        // An alert, like saving and renaming: centred, with "Cancel". A
+        // confirmation dialog hung from the sheet floated over rows it had
+        // nothing to do with and showed no way out.
+        .alert(
             Text(verbatim: Localized.format("mezclas.eliminar.titulo", deleting?.name ?? "")),
             isPresented: Binding(
                 get: { deleting != nil },
                 set: { if !$0 { deleting = nil } }
             ),
-            titleVisibility: .visible,
             presenting: deleting
         ) { mix in
             Button("comun.eliminar", role: .destructive) {
@@ -152,7 +154,10 @@ struct MixesSheet: View {
             recipe: live.recipe,
             stateWord: live.needsPro ? Localized.string("comun.pro") : nil,
             spokenName: Localized.string(namesPro ? "ax.guardar.pro" : "ax.esta_noche"),
-            hint: hint
+            hint: hint,
+            // On the night page it only says what is sounding: words, not
+            // a button that does nothing.
+            isInert: isNight
         ) {
             if !isNight { beginSave() }
         }
@@ -291,51 +296,62 @@ private struct MixRow: View {
     /// What VoiceOver reads instead of the name.
     var spokenName: String?
     var hint: String?
+    /// The row is text: no touch, no relief, no button trait.
+    var isInert = false
     var action: () -> Void
 
     @Environment(\.nightPhase) private var phase
     @Environment(\.dynamicTypeSize) private var dynamicType
 
     var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: Grid.unit / 2) {
-                ViewThatFits(in: .horizontal) {
-                    HStack(alignment: .firstTextBaseline, spacing: Grid.inner) {
-                        title
-                        Spacer(minLength: 0)
-                        state
-                    }
-                    // Larger text: the state drops under the name.
-                    VStack(alignment: .leading, spacing: Grid.unit / 2) {
-                        title
-                        state
-                    }
-                }
-                Text(verbatim: recipe.text())
-                    .step(.secondary)
-                    .monospacedDigit()
-                    .foregroundStyle(Ink.secondary(phase))
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
+        Group {
+            if isInert {
+                face
+            } else {
+                Button(action: action) { face }
+                    .buttonStyle(PressedReliefStyle())
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, Grid.unit * 3)
-            .padding(.horizontal, Grid.margin)
-            .frame(minHeight: Grid.row(subtitle: true, dynamicType: dynamicType))
-            .contentShape(Rectangle())
         }
-        .buttonStyle(PressedReliefStyle())
         .overlay(alignment: .bottom) {
             Hairline().padding(.horizontal, Grid.margin)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: MixesList.spokenLabel(
             name: spokenName ?? name,
-            recipe: recipe.spoken()
+            recipe: recipe.spoken(namesPro: !phase.isNight)
         )))
         .accessibilityValue(Text(verbatim: stateWord ?? ""))
-        .accessibilityHint(Text(verbatim: hint ?? Localized.string("ax.mezcla.pista")))
-        .accessibilityAddTraits(.isButton)
+        .accessibilityHint(Text(verbatim: isInert ? "" : hint ?? Localized.string("ax.mezcla.pista")))
+        .accessibilityAddTraits(isInert ? .isStaticText : .isButton)
+    }
+
+    private var face: some View {
+        VStack(alignment: .leading, spacing: Grid.unit / 2) {
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline, spacing: Grid.inner) {
+                    title
+                    Spacer(minLength: 0)
+                    state
+                }
+                // Larger text: the state drops under the name.
+                VStack(alignment: .leading, spacing: Grid.unit / 2) {
+                    title
+                    state
+                }
+            }
+            // On the night page a recipe never says "is Pro".
+            Text(verbatim: recipe.text(namesPro: !phase.isNight))
+                .step(.secondary)
+                .monospacedDigit()
+                .foregroundStyle(Ink.secondary(phase))
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, Grid.unit * 3)
+        .padding(.horizontal, Grid.margin)
+        .frame(minHeight: Grid.row(subtitle: true, dynamicType: dynamicType))
+        .contentShape(Rectangle())
     }
 
     private var title: some View {

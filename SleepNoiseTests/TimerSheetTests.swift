@@ -34,7 +34,10 @@ final class TimerSheetTextTests: XCTestCase {
         "temporizador.apagado": "Apagado",
         "temporizador.estado.dormirme": "Hasta dormirme · %lld min",
         "temporizador.estado.manto": "Manto · hasta las %@",
-        "ax.temporizador.valor": "%1$@, quedan %2$lld minutos",
+        "ax.temporizador.valor": "%1$@, %2$@",
+        "temporizador.cabecera.fundiendo": "Fundiendo",
+        "temporizador.cabecera.manto": "Baja un poco a los %lld min",
+        "noche.estado.hasta": "hasta las %@",
         "ax.anuncio.quedan": "Quedan %lld minutos",
         "ax.anuncio.hasta": "Hasta las %@"
     ]
@@ -56,8 +59,8 @@ final class TimerSheetTextTests: XCTestCase {
         TimerSheetText.figure(head, localized: lookup, time: clock, locale: locale)
     }
 
-    private func line(_ head: TimerSheetText.Head) -> String {
-        TimerSheetText.line(head, localized: lookup, time: clock, locale: locale)
+    private func line(_ head: TimerSheetText.Head, dipIsAhead: Bool = false) -> String {
+        TimerSheetText.line(head, dipIsAhead: dipIsAhead, localized: lookup, time: clock, locale: locale)
     }
 
     // MARK: The block above the list
@@ -98,8 +101,34 @@ final class TimerSheetTextTests: XCTestCase {
         )))
         XCTAssertEqual(head, .blanket(endsAt: time(7)))
         XCTAssertEqual(figure(head), "07:00")
-        XCTAssertEqual(line(head), "hasta las 07:00 · baja un poco a los 45 min")
+        // The line never says the hour again: only the dip, while it is
+        // still to come. Once it has come, or when it never will, nothing.
+        XCTAssertEqual(line(head, dipIsAhead: true), "Baja un poco a los 45 min")
+        XCTAssertEqual(line(head, dipIsAhead: false), " ")
+        XCTAssertFalse(line(head, dipIsAhead: true).contains("07:00"))
         XCTAssertFalse(figure(head).contains("min"), "a blanket has no length in minutes")
+        XCTAssertEqual(
+            TimerSheetText.spoken(head, dipIsAhead: false, localized: lookup, time: clock, locale: locale),
+            "07:00"
+        )
+    }
+
+    /// The hour as a figure never carries "AM" or "PM", whatever the
+    /// region: the sentences keep the system's short time.
+    func testTheHourAsAFigureHasNoSuffix() {
+        let seven = time(7)
+        let figure = TimerSheetText.figureClock(seven)
+        XCTAssertFalse(figure.uppercased().contains("AM"))
+        XCTAssertFalse(figure.uppercased().contains("PM"))
+        XCTAssertFalse(figure.contains("a. m."), figure)
+        XCTAssertTrue(figure.contains(":"), figure)
+        XCTAssertEqual(NightScreen.clock(seven), figure, "Night draws the same figure")
+        // Whatever the region writes around the digits goes; the digits stay.
+        XCTAssertEqual(TimerSheetText.withoutDayPeriod("7:05 AM"), "7:05")
+        XCTAssertEqual(TimerSheetText.withoutDayPeriod("2:14\u{202F}PM"), "2:14")
+        XCTAssertEqual(TimerSheetText.withoutDayPeriod("2:14 p.\u{00A0}m."), "2:14")
+        XCTAssertEqual(TimerSheetText.withoutDayPeriod("午前7:05"), "7:05")
+        XCTAssertEqual(TimerSheetText.withoutDayPeriod("07:00"), "07:00", "24 hours: as it was")
     }
 
     func testTheFinalFadeIsSaidInWordsInEitherMode() throws {
@@ -110,7 +139,7 @@ final class TimerSheetTextTests: XCTestCase {
             )))
             XCTAssertEqual(head, .fading(minutes: 8))
             XCTAssertEqual(figure(head), "8 min")
-            XCTAssertEqual(line(head), "Fundiendo · 8 min")
+            XCTAssertEqual(line(head), "Fundiendo", "the figure already says how long")
         }
     }
 
@@ -127,7 +156,7 @@ final class TimerSheetTextTests: XCTestCase {
         )))
         XCTAssertEqual(blanket, .pausedBlanket(endsAt: time(7)))
         XCTAssertEqual(figure(blanket), "En pausa")
-        XCTAssertEqual(line(blanket), "hasta las 07:00 · baja un poco a los 45 min")
+        XCTAssertEqual(line(blanket), "Hasta las 07:00", "the hour, once, with a capital")
     }
 
     // MARK: Rows
@@ -200,7 +229,7 @@ final class TimerSheetTextTests: XCTestCase {
         )
         XCTAssertEqual(
             TimerSheetText.settingSpokenValue(counting, localized: lookup, locale: locale),
-            "Hasta dormirme, quedan 38 minutos"
+            "Hasta dormirme, Quedan 38 minutos"
         )
         XCTAssertNil(TimerSheetText.settingSpokenValue(.init(choice: .firstUse), localized: lookup, locale: locale))
         XCTAssertNil(TimerSheetText.settingSpokenValue(
@@ -261,6 +290,7 @@ final class TimerCatalogTests: XCTestCase {
         "temporizador.estado.manto", "temporizador.nota", "comun.min", "comun.min.quedan",
         "comun.mas15", "noche.estado.funde", "noche.estado.fundiendo",
         "pagina.estado.sonando.hasta", "ax.temporizador.valor", "ax.duracion.pista",
+        "temporizador.cabecera.fundiendo", "temporizador.cabecera.manto", "noche.estado.hasta",
         "ax.mas15", "ax.anuncio.quedan", "ax.anuncio.hasta"
     ]
 

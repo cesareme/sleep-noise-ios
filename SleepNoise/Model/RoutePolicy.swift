@@ -6,7 +6,19 @@ enum OutputRoute: Equatable {
     case builtInSpeaker
     /// Anything else: AirPods, wired or Bluetooth headphones, a Bluetooth or
     /// AirPlay speaker. `id` tells one from another (the port's UID).
-    case external(id: String)
+    /// `isHeadphones` is false only when the system says the output is
+    /// something else for certain (AirPlay, a car, a cable to a stereo).
+    /// Bluetooth does not tell earbuds from a speaker: it counts as
+    /// headphones, which is what it is at night nearly always.
+    case external(id: String, isHeadphones: Bool = true)
+
+    /// What the page may call "headphones".
+    var isHeadphones: Bool {
+        switch self {
+        case .builtInSpeaker: return false
+        case .external(_, let isHeadphones): return isHeadphones
+        }
+    }
 }
 
 enum RouteEvent: Equatable, CaseIterable {

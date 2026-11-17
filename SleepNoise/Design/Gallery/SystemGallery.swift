@@ -301,6 +301,7 @@ private struct GalleryRows: View {
     @State private var ocean: Float = 0.5
     @State private var wind: Float = 0.4
     @State private var lockedTaps = 0
+    @State private var switchIsOn = true
 
     private func name(_ sound: SoundID) -> String { sound.localizedName }
     private func detail(_ sound: SoundID) -> String { Localized.string(sound.detailKey) }
@@ -352,6 +353,20 @@ private struct GalleryRows: View {
                 EditorialRow(title: "Mar y viento", subtitle: "océano 50 · viento 20") {}
                 EditorialRow(title: "45 min", isSelected: true) {}
                 EditorialRow(title: name(.thunder), stateWord: Localized.string("comun.pro")) {}
+            }
+            GalleryCase(title: "switch · tokens only: off, on, on at night (nothing lighter than the ink); live") {
+                HStack(spacing: Grid.group) {
+                    GrafitoSwitch(isOn: false)
+                    GrafitoSwitch(isOn: true)
+                    GrafitoSwitch(isOn: true)
+                        .environment(\.nightPhase, .nightPage)
+                    Toggle(isOn: $switchIsOn) {
+                        Text(verbatim: Localized.string("marea.titulo"))
+                    }
+                    .toggleStyle(GrafitoToggleStyle(showsLabel: false))
+                }
+                .padding(.horizontal, Grid.margin)
+                .padding(.vertical, Grid.unit * 3)
             }
         }
     }

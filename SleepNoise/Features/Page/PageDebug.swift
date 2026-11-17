@@ -126,12 +126,22 @@ enum PageDebugState: String, CaseIterable {
     case mixesFourth
     /// Opened from the night page: one ink.
     case mixesNight
+    /// Opened from the night page without access: no recipe says "is Pro".
+    case mixesNightFree
     /// The page after loading a house mix with a Pro layer, without access.
     case mixesTrimmed
+    /// The same with the longest title of the house: "Brown and fire".
+    case mixesTrimmedLong
+    /// The earbuds went away on the page: "Keep playing on speaker" on the
+    /// second line of the state.
+    case pageSpeaker
+    /// Back on the speaker, turned down to the cap: "Playing · at 40".
+    case pageCapped
 
     var opensMixes: Bool {
         switch self {
-        case .mixes, .mixesEmpty, .mixesSave, .mixesRename, .mixesFourth, .mixesNight: return true
+        case .mixes, .mixesEmpty, .mixesSave, .mixesRename, .mixesFourth, .mixesNight, .mixesNightFree:
+            return true
         default: return false
         }
     }
@@ -139,7 +149,8 @@ enum PageDebugState: String, CaseIterable {
     /// Staged without access: the trial ran out and nothing was bought.
     var isFreeTier: Bool {
         switch self {
-        case .layersSix, .layersEnd, .tideLocked, .mixes, .mixesRename, .mixesFourth, .mixesTrimmed:
+        case .layersSix, .layersEnd, .tideLocked, .mixes, .mixesRename, .mixesFourth, .mixesTrimmed,
+             .mixesTrimmedLong, .mixesNightFree:
             return true
         default:
             return false
@@ -185,7 +196,7 @@ enum PageDebugState: String, CaseIterable {
     /// Staged in the small hours, on the night page.
     var isNight: Bool {
         switch self {
-        case .night, .nightLayers, .nightTide, .timerNight, .tideNight, .mixesNight: return true
+        case .night, .nightLayers, .nightTide, .timerNight, .tideNight, .mixesNight, .mixesNightFree: return true
         default: return isNightScreen || isSmallHours
         }
     }
@@ -338,7 +349,8 @@ enum PageStage {
 
         switch state {
         case .rest, .playingTwo, .layers, .error, .error2, .error3, .largeType,
-             .timerRest, .tideRest, .tideLocked, .mixesEmpty, .mixesTrimmed,
+             .timerRest, .tideRest, .tideLocked, .mixesEmpty, .mixesTrimmed, .mixesTrimmedLong,
+             .pageSpeaker, .pageCapped,
              .nightEnter, .nightTimer, .nightDimmed, .nightFading, .nightPaused, .nightSpeaker,
              .nightLevel, .nightEnded, .nightError,
              .smallHours, .smallHoursPlain, .smallHoursWinding, .smallHoursPaused:
@@ -389,12 +401,12 @@ enum PageStage {
         case .layersEnd:
             // Thunder was saved at 20 while the trial lasted; it keeps it.
             setLevels(model, [.rain: 0.45, .wind: 0.25, .thunder: 0.2, .pink: 0.3])
-        case .mixes, .mixesRename, .mixesNight:
+        case .mixes, .mixesRename, .mixesNight, .mixesNightFree:
             // The first of the person's mixes is the one that is loaded.
             if let hotel = saveMixes(model, count: 2) {
                 model.apply(hotel)
             }
-            if state == .mixesNight { model.beginNightSession() }
+            if state == .mixesNight || state == .mixesNightFree { model.beginNightSession() }
         case .mixesSave:
             setLevels(model, [.rain: 0.45, .wind: 0.25, .pink: 0.3])
         case .mixesFourth:
@@ -411,7 +423,7 @@ enum PageStage {
         let mixes: [(String, [SoundID: Float])] = [
             ("Hotel", [.rain: 0.45, .brown: 0.3]),
             ("Ventilador y lluvia", [.rain: 0.5, .fan: 0.3, .brown: 0.2]),
-            ("Siesta de agosto", [.wind: 0.35, .white: 0.15]),
+            ("Verano con ventana", [.wind: 0.35, .white: 0.15]),
         ]
         // A save goes to the top of the list: the last one saved is first.
         for (name, levels) in mixes.prefix(count).reversed() {
@@ -453,6 +465,15 @@ enum PageStage {
             // "Sea and wind" without access: it plays without the ocean and
             // its name says so. Never a sheet.
             model.playMix(.house(.seaAndWind))
+        case .mixesTrimmedLong:
+            model.playMix(.house(.brownAndFire))
+        case .pageSpeaker:
+            if !model.isPlaying { model.play() }
+            model.debugLoseOutput()
+        case .pageCapped:
+            if !model.isPlaying { model.play() }
+            model.debugLoseOutput()
+            model.continueOnSpeaker()
         case .timerFading:
             if !model.isPlaying { model.play() }
             // Eight minutes from the end: the final fade is under way.
@@ -520,7 +541,7 @@ enum PageStage {
         case .playingTwo, .playingFive, .night, .timer, .layers, .layersCap, .largeType,
              .nightLayers, .tide, .nightTide, .timerAsleep, .timerBlanket, .timerNight,
              .tideGuiding, .tideDescent, .tideNight,
-             .mixes, .mixesSave, .mixesRename, .mixesFourth, .mixesNight:
+             .mixes, .mixesSave, .mixesRename, .mixesFourth, .mixesNight, .mixesNightFree:
             if !model.isPlaying { model.play() }
         }
     }

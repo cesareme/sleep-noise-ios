@@ -2,9 +2,12 @@ import XCTest
 @testable import SleepNoise
 
 /// An engine without audio hardware. It keeps its commands with the same
-/// `CommandDesk` the real engine uses and renders them offline through a real
-/// `RenderState`, so a test of the model can ask what the envelope and the
-/// master level actually did, sample by sample.
+/// `CommandDesk` the real engine uses, takes its decisions with the same
+/// `EngineControl` and renders offline through a real `RenderState`, so a
+/// test of the model can ask what the envelope and the master level actually
+/// did, sample by sample. What it stands in for is only the hardware: the
+/// session that may refuse, the engine the system stops, the rate of the
+/// route.
 final class OfflineEngine: AudioEngineControlling {
     enum Call: Equatable {
         case start(fadeIn: TimeInterval, level: Float)
@@ -17,18 +20,27 @@ final class OfflineEngine: AudioEngineControlling {
         case invalidate
     }
 
-    let sampleRate: Double
+    private(set) var sampleRate: Double
     private(set) var desk = CommandDesk()
+    private(set) var control = EngineControl()
     private(set) var state: RenderState
     private(set) var calls: [Call] = []
+    /// The hardware renders. False after a stop, and while the system has
+    /// the engine stopped (`systemStops()`).
     private(set) var isRunning = false
+    /// The session is held: activated by a start, given back by a stop.
+    private(set) var sessionIsActive = false
     /// The next start throws, as when the session cannot be activated.
     var failsToStart = false
-    /// Samples left before a stop that was asked for pauses the engine.
-    private var stopCountdown: Int?
+    /// The rate the route reports. `retargetSampleRateIfNeeded` follows it.
+    var hardwareRate: Double
+    /// Samples left before a stop that was asked for pauses the engine, and
+    /// the token that says whether it is still due.
+    private var stopCountdown: (samples: Int, token: Int)?
 
     init(sampleRate: Double = 48_000) {
         self.sampleRate = sampleRate
+        hardwareRate = sampleRate
         state = RenderState(sampleRate: Float(sampleRate))
     }
 
@@ -49,15 +61,27 @@ final class OfflineEngine: AudioEngineControlling {
 
     func start(gains: SoundGains, fadeIn seconds: TimeInterval, level: Float) throws {
         calls.append(.start(fadeIn: seconds, level: level))
-        if failsToStart { throw EngineError.formatUnavailable }
+        if failsToStart {
+            switch control.startFailed(isRendering: isRunning) {
+            case .stopWhatSounds:
+                beginStop(fadeOut: PlaybackFade.interruption)
+            case .releaseSession:
+                sessionIsActive = false
+            case .waitForStop:
+                break
+            }
+            throw EngineError.formatUnavailable
+        }
+        sessionIsActive = true
+        control.started()
         stopCountdown = nil
-        if !isRunning {
+        if control.startsFromSilence(isRendering: isRunning) {
             state.resetForFreshStart()
         }
         desk.gains = gains
         desk.fadeEnvelope(
             to: level,
-            samples: PlaybackFade.samples(max(0.03, seconds), sampleRate: sampleRate),
+            samples: EngineControl.startRamp(fadeIn: seconds, sampleRate: sampleRate),
             shape: FadeShape.easeOut
         )
         isRunning = true
@@ -75,10 +99,10 @@ final class OfflineEngine: AudioEngineControlling {
 
     func setMaster(_ level: Float, over seconds: TimeInterval) {
         calls.append(.master(level: level, seconds: seconds))
-        let ramp = isRunning
-            ? PlaybackFade.samples(max(SleepAudioEngine.shortestMasterRamp, seconds), sampleRate: sampleRate)
-            : 1
-        desk.rampMaster(to: level, samples: ramp)
+        desk.rampMaster(
+            to: level,
+            samples: control.masterRamp(over: seconds, sampleRate: sampleRate, isRendering: isRunning)
+        )
     }
 
     func fade(to level: Float, over seconds: TimeInterval) {
@@ -88,18 +112,47 @@ final class OfflineEngine: AudioEngineControlling {
 
     func stop(fadeOut seconds: TimeInterval) {
         calls.append(.stop(fadeOut: seconds))
-        desk.fadeEnvelope(to: 0, samples: PlaybackFade.samples(seconds, sampleRate: sampleRate))
-        stopCountdown = Int(((seconds + 0.02) * sampleRate).rounded())
+        beginStop(fadeOut: seconds)
     }
 
-    var isStopping: Bool { isRunning && stopCountdown != nil }
+    private func beginStop(fadeOut seconds: TimeInterval) {
+        desk.fadeEnvelope(to: 0, samples: PlaybackFade.samples(seconds, sampleRate: sampleRate))
+        let token = control.stopRequested()
+        stopCountdown = (Int(((seconds + 0.02) * sampleRate).rounded()), token)
+        if !isRunning {
+            // Nothing renders, so nothing counts the fade down: it is due.
+            finishStop()
+        }
+    }
 
+    private func finishStop() {
+        guard let pending = stopCountdown else { return }
+        stopCountdown = nil
+        guard control.stopIsDue(pending.token) else { return }
+        isRunning = false
+        sessionIsActive = false
+        desk.breath = .off
+    }
+
+    var isStopping: Bool { control.isStopping(isRendering: isRunning) }
+
+    /// The route reports another rate: the render state is prepared for it
+    /// with the engine stopped, as `buildGraph` does, and the engine starts
+    /// again if the night still plays. Nothing is asked of the fades.
     func retargetSampleRateIfNeeded(gains: SoundGains) throws {
         calls.append(.retarget)
+        if abs(hardwareRate - sampleRate) > 0.5 {
+            desk.gains = gains
+            sampleRate = hardwareRate
+            isRunning = false
+            state.prepare(sampleRate: Float(sampleRate))
+        }
+        configurationChanged()
     }
 
     func invalidateGraph() {
         calls.append(.invalidate)
+        control.invalidated()
         isRunning = false
         stopCountdown = nil
         desk.breath = .off
@@ -107,6 +160,19 @@ final class OfflineEngine: AudioEngineControlling {
 
     func smoothedOutputRMS(tau: TimeInterval) -> Float {
         isRunning ? state.outputMeter.rms : 0
+    }
+
+    /// `AVAudioEngine` stops itself when the configuration changes.
+    func systemStops() {
+        isRunning = false
+    }
+
+    /// What the engine does on `AVAudioEngineConfigurationChange`: it
+    /// starts again only if it is still wanted.
+    func configurationChanged() {
+        if control.shouldRestart(isRendering: isRunning) {
+            isRunning = true
+        }
     }
 
     /// Renders `seconds` of sound as the callback would and returns its RMS.
@@ -122,13 +188,11 @@ final class OfflineEngine: AudioEngineControlling {
             let frame = state.processStereo(command)
             sum += Double(frame.left * frame.left + frame.right * frame.right) * 0.5
             rendered += 1
-            if let left = stopCountdown {
-                if left <= 1 {
-                    isRunning = false
-                    stopCountdown = nil
-                    desk.breath = .off
+            if let pending = stopCountdown {
+                if pending.samples <= 1 {
+                    finishStop()
                 } else {
-                    stopCountdown = left - 1
+                    stopCountdown = (pending.samples - 1, pending.token)
                 }
             }
         }
@@ -299,12 +363,14 @@ struct NightHarness {
     }
 
     /// Moves the clock second by second and ticks what the run loop would:
-    /// the timer, Small Hours, and the model's own one-shots.
+    /// the timer, Small Hours, the guide of the tide and the model's own
+    /// one-shots.
     func advance(seconds: Int) {
         for _ in 0..<seconds {
             clock.now += 1
             model.timer.tick()
             model.smallHours.tick()
+            model.breathing.advance()
         }
         settle()
     }

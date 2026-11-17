@@ -29,6 +29,13 @@ struct FullScreenControl<Content: View, Actions: View>: View {
 
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    /// True while a finger is on the surface. The system resets it when it
+    /// takes the gesture away, which is the only notice of that there is.
+    @GestureState private var fingerIsDown = false
+    /// VoiceOver lands on the screen itself when it covers the page.
+    @AccessibilityFocusState private var isFocused: Bool
 
     @State private var touch = NightTouch()
     /// Where the touch in course began, to tell one finger from the next.
@@ -47,7 +54,7 @@ struct FullScreenControl<Content: View, Actions: View>: View {
             let insets = geometry.safeAreaInsets
             let layout = NightLayout(fullHeight: geometry.size.height + insets.top + insets.bottom)
             ZStack(alignment: .top) {
-                surface
+                surface(height: layout.fullHeight)
                 Group {
                     content(layout)
                         .allowsHitTesting(false)
@@ -59,7 +66,11 @@ struct FullScreenControl<Content: View, Actions: View>: View {
                         .accessibilitySortPriority(3)
                     levelElement(layout)
                 }
-                .opacity(model.isBedtimeDimmed ? BedtimeScreenPolicy.dimmedOpacity : 1)
+                .opacity(
+                    model.isBedtimeDimmed
+                        ? BedtimeScreenPolicy.dimmedOpacity(increasedContrast: contrast == .increased)
+                        : 1
+                )
                 .animation(
                     .easeInOut(duration: Motion.phase(reduceMotion: reduceMotion)),
                     value: model.isBedtimeDimmed
@@ -70,6 +81,15 @@ struct FullScreenControl<Content: View, Actions: View>: View {
         .environment(\.nightPhase, allowsBack ? .night : .smallHours)
         .accessibilityElement(children: .contain)
         .accessibilityAction(.magicTap) { activate() }
+        // On the container, so the escape gesture goes back from any of
+        // its elements, not only from the screen itself.
+        .accessibilityAction(.escape) {
+            if allowsBack { onBack() }
+        }
+        .task {
+            // The page under it has just left the accessibility tree.
+            isFocused = true
+        }
         .onChange(of: scenePhase) { _, next in
             if next == .active {
                 wokeAt = Date()
@@ -77,10 +97,14 @@ struct FullScreenControl<Content: View, Actions: View>: View {
                 // the minute starts over.
                 model.noteBedtimeTouch()
             } else {
-                touch.cancel()
-                touchOrigin = nil
-                swallowsTouch = false
+                touchWasTaken()
             }
+        }
+        .onChange(of: fingerIsDown) { _, isDown in
+            // A gesture that ended has already cleared its origin. One the
+            // system took (the notification shade, the home indicator) has
+            // not, and never ends.
+            if !isDown, touchOrigin != nil { touchWasTaken() }
         }
         .onReceive(NotificationCenter.default.publisher(
             for: UIApplication.protectedDataDidBecomeAvailableNotification
@@ -101,10 +125,10 @@ struct FullScreenControl<Content: View, Actions: View>: View {
 
     // MARK: The button
 
-    private var surface: some View {
+    private func surface(height: CGFloat) -> some View {
         Ink.background
             .contentShape(Rectangle())
-            .gesture(finger)
+            .gesture(finger(height: height))
             .accessibilityElement()
             .accessibilityLabel(Text(verbatim: spoken.label))
             .accessibilityValue(Text(verbatim: spoken.value))
@@ -116,9 +140,7 @@ struct FullScreenControl<Content: View, Actions: View>: View {
                     Button(action: item.run) { Text(verbatim: item.name) }
                 }
             }
-            .accessibilityAction(.escape) {
-                if allowsBack { onBack() }
-            }
+            .accessibilityFocused($isFocused)
             .accessibilitySortPriority(4)
             .accessibilityIdentifier(allowsBack ? "nightScreen" : "smallHoursScreen")
     }
@@ -128,8 +150,25 @@ struct FullScreenControl<Content: View, Actions: View>: View {
         onTap()
     }
 
-    private var finger: some Gesture {
+    /// The system took the touch away (one of its own edge gestures, or the
+    /// app left the front): whatever that finger did to the level is
+    /// undone and the rule goes, as if it had never come down.
+    private func touchWasTaken() {
+        if touch.isAdjustingLevel {
+            model.setSessionLevel(touch.startLevel)
+            onLevel()
+        }
+        touch.cancel()
+        touchOrigin = nil
+        swallowsTouch = false
+        showsRule = false
+    }
+
+    private func finger(height: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 0)
+            .updating($fingerIsDown) { _, isDown, _ in
+                isDown = true
+            }
             .onChanged { value in
                 if touchOrigin != value.startLocation {
                     // A new finger. Whatever the last one left behind (a
@@ -139,7 +178,13 @@ struct FullScreenControl<Content: View, Actions: View>: View {
                     swallowsTouch = NightTouch.isGuarded(wokeAt: wokeAt, touchAt: value.time)
                     guard !swallowsTouch else { return }
                     model.noteBedtimeTouch()
-                    touch.begin(at: value.time, level: model.sessionLevel)
+                    // A finger that comes down on the top or the bottom
+                    // edge is on its way to the system's own gestures.
+                    touch.begin(
+                        at: value.time,
+                        level: model.sessionLevel,
+                        isAtEdge: NightTouch.isAtEdge(y: value.startLocation.y, height: height)
+                    )
                 }
                 guard !swallowsTouch else { return }
                 if let level = touch.move(translation: value.translation) {
@@ -191,9 +236,9 @@ struct FullScreenControl<Content: View, Actions: View>: View {
     private func levelElement(_ layout: NightLayout) -> some View {
         Color.clear
             .frame(width: Grid.target, height: NightAxis.travel)
-            .padding(.top, layout.ruleTop)
-            .padding(.trailing, Grid.margin)
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            // The element is this box, 44 by 200 where the rule is drawn.
+            // What follows only puts it there: declared after, the element
+            // would be the whole width from the top of the screen.
             .allowsHitTesting(false)
             .accessibilityElement()
             .accessibilityLabel(Text("ax.volumen"))
@@ -207,6 +252,9 @@ struct FullScreenControl<Content: View, Actions: View>: View {
             }
             .accessibilitySortPriority(2)
             .accessibilityIdentifier("nightLevel")
+            .padding(.top, layout.ruleTop)
+            .padding(.trailing, Grid.margin)
+            .frame(maxWidth: .infinity, alignment: .trailing)
     }
 }
 

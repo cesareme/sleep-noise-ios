@@ -113,9 +113,13 @@ struct RenderState {
     var breathValue: Float = 0
     var breathValueSmoothed: Float = 0
     var breathValueCoefficient: Float = 0.0001
-    /// Target weight (ramped linearly over the command's dissolve) and the
+    /// Where the weight is heading: a straight ramp over the command's
+    /// dissolve, counted in whole samples like the two gains (rule 5; a
+    /// fifteen minute dissolve added in float steps never left 1), and the
     /// 1.5 s smoothed weight actually applied.
-    var breathWeightTarget: Float = 0
+    var breathWeightRamp = SampleRamp(0)
+    /// The dissolve of the ramp in course, to tell a new request apart.
+    var breathDissolveSeconds: Float = 0
     var breathWeight: Float = 0
     var breathWeightCoefficient: Float = 0.00001
     /// Bed modulation depth, smoothed like the weight so a settings change
@@ -136,6 +140,13 @@ struct RenderState {
     /// The master level right now.
     var master: Float { masterRamp.value }
 
+    /// The weight the tide is at on its way to the command's, before the
+    /// smoothing. Setting it drops any dissolve in progress.
+    var breathWeightTarget: Float {
+        get { breathWeightRamp.value }
+        set { breathWeightRamp.set(newValue) }
+    }
+
     /// `thunderSchedule` goes to both channels unchanged: it moves the
     /// thunder rumbles in time, never one channel against the other.
     init(sampleRate: Float = 48_000, thunderSchedule: UInt32 = 0) {
@@ -147,6 +158,14 @@ struct RenderState {
 
     mutating func prepare(sampleRate: Float) {
         let rate = sampleRate > 1 ? sampleRate : 48_000
+        // A fade in course keeps its place and what is left of it lasts the
+        // same seconds at the new rate (rule 8).
+        if rate != self.sampleRate {
+            let ratio = Double(rate) / Double(self.sampleRate)
+            envelopeRamp.rescale(by: ratio)
+            masterRamp.rescale(by: ratio)
+            breathWeightRamp.rescale(by: ratio)
+        }
         self.sampleRate = rate
         gainCoefficient = 1 - expf(-1 / (rate * 0.02))
         breathWeightCoefficient = 1 - expf(-1 / (rate * 1.5))
@@ -222,7 +241,7 @@ struct RenderState {
     /// zero or fading in from zero) the weight is seeded directly so the sea
     /// rises with the first inhale instead of dipping after the fade-in.
     @inline(__always)
-    private mutating func advanceBreath(_ breath: BreathParameters) {
+    mutating func advanceBreath(_ breath: BreathParameters) {
         if breath.epoch != breathEpoch {
             breathEpoch = breath.epoch
             breathSample = 0
@@ -239,17 +258,26 @@ struct RenderState {
             }
         }
 
-        // Weight: linear ramp toward the command over its dissolve, then smoothed.
-        if breath.dissolveSeconds > 0 {
-            let step = 1 / (breath.dissolveSeconds * sampleRate)
-            if breathWeightTarget < breath.weight {
-                breathWeightTarget = min(breath.weight, breathWeightTarget + step)
-            } else if breathWeightTarget > breath.weight {
-                breathWeightTarget = max(breath.weight, breathWeightTarget - step)
+        // Weight: a straight ramp toward the command, then smoothed. The
+        // dissolve is the time the whole range takes, so a part of the way
+        // takes that part of it. Counted in samples: a float step for a
+        // long dissolve is lost to rounding near 1 (C31).
+        if breath.weight != breathWeightRamp.to || breath.dissolveSeconds != breathDissolveSeconds {
+            breathDissolveSeconds = breath.dissolveSeconds
+            if breath.dissolveSeconds > 0 {
+                let distance = abs(Double(breath.weight) - Double(breathWeightRamp.value))
+                let samples = (Double(breath.dissolveSeconds) * Double(sampleRate) * distance).rounded()
+                breathWeightRamp.begin(
+                    to: breath.weight,
+                    samples: Int32(min(samples, Double(Int32.max))),
+                    shape: FadeShape.linear
+                )
+            } else {
+                breathWeightRamp.set(breath.weight)
             }
-        } else {
-            breathWeightTarget = breath.weight
         }
+        breathWeightRamp.advance()
+        let breathWeightTarget = breathWeightRamp.value
         breathWeight += (breathWeightTarget - breathWeight) * breathWeightCoefficient
         if breathWeight < 1e-4, breathWeightTarget <= 0 {
             breathWeight = 0

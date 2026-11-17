@@ -17,8 +17,7 @@ final class TideSheetTextTests: XCTestCase {
         "marea.ritmo.exacto": "%lld por minuto",
         "marea.retira.valor": "%lld min",
         "marea.fase.inhala": "inhala",
-        "marea.fase.exhala": "exhala",
-        "ax.agua.valor": "%1$@, %2$lld por minuto, se retira en %3$lld minutos"
+        "marea.fase.exhala": "exhala"
     ]
 
     private var lookup: (String) -> String {
@@ -144,21 +143,32 @@ final class TideSheetTextTests: XCTestCase {
 
     // MARK: VoiceOver
 
-    func testTheWaterLineSpeaksItsStateItsPaceAndWhenItRecedes() {
-        func spoken(_ status: TideStatus, rising: Bool = true, minutes: Int? = 12) -> String {
+    /// Nothing in the value goes stale between two draws: no phase of the
+    /// breath (that is in the sound) and no countdown, only an hour.
+    func testTheWaterLineSpeaksItsStateItsPaceAndTheHourItRecedes() {
+        let end = Date(timeIntervalSinceReferenceDate: 0)
+        func spoken(_ status: TideStatus, recedes: Date? = end) -> String {
             TideSheetText.spokenLine(
-                status: status, isBreathingIn: rising, chosenRate: 6, minutesToRecede: minutes,
-                localized: lookup, locale: locale
+                status: status, chosenRate: 6, recedesAt: recedes,
+                localized: lookup, time: { _ in "23:27" }, locale: locale
             )
         }
-        XCTAssertEqual(spoken(.guiding(rate: 6)), "inhala, 6 por minuto, se retira en 12 minutos")
-        XCTAssertEqual(spoken(.guiding(rate: 6), rising: false), "exhala, 6 por minuto, se retira en 12 minutos")
-        XCTAssertEqual(spoken(.guiding(rate: 6), minutes: 0), "inhala, 6 por minuto, se retira en 1 minutos")
-        XCTAssertEqual(spoken(.guiding(rate: 6), minutes: nil), "inhala, 6 por minuto")
+        XCTAssertEqual(spoken(.guiding(rate: 6)), "6 por minuto, Se retira a las 23:27")
+        XCTAssertEqual(spoken(.guiding(rate: 12)), "12 por minuto, Se retira a las 23:27", "the step of the descent")
+        XCTAssertEqual(spoken(.guiding(rate: 6), recedes: nil), "6 por minuto")
         XCTAssertEqual(spoken(.off), "apagada, 6 por minuto")
         XCTAssertEqual(spoken(.armed), "apagada, 6 por minuto")
         XCTAssertEqual(spoken(.dissolving), "disolviendo")
         XCTAssertEqual(spoken(.paused), "en pausa, 6 por minuto")
+        for status in [TideStatus.guiding(rate: 6), .off, .armed, .dissolving, .paused] {
+            XCTAssertFalse(spoken(status).contains("inhala"))
+            XCTAssertFalse(spoken(status).contains("exhala"))
+        }
+        // Only a line that guides is adjustable.
+        XCTAssertTrue(TideStatus.guiding(rate: 6).isGuiding)
+        for status in [TideStatus.off, .armed, .dissolving, .paused] {
+            XCTAssertFalse(status.isGuiding)
+        }
     }
 
     // MARK: The breath on screen
@@ -229,7 +239,7 @@ final class TideSheetTextTests: XCTestCase {
             "marea.oceano.subido", "marea.toggle", "marea.descenso", "marea.ritmo", "marea.ritmo.fila",
             "marea.ritmo.tranquilo", "marea.ritmo.suave", "marea.ritmo.tranquilo.corto",
             "marea.ritmo.suave.corto", "marea.ritmo.exacto", "marea.retira", "marea.retira.valor",
-            "ax.agua.valor", "ax.agua.pista", "ax.marea.pista", "ax.marea.off.pro", "ax.marea.pista.pro",
+            "ax.agua.pista", "ax.marea.pista", "ax.marea.off.pro", "ax.marea.pista.pro",
             "comun.pro"
         ]
         for key in keys {

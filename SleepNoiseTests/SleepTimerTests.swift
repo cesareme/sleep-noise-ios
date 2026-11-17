@@ -231,24 +231,67 @@ final class SleepTimerControllerTests: XCTestCase {
         }
     }
 
-    func testItPublishesOnceASecondAtMost() {
+    /// 03 §3.7: with the screen off nothing but the audio runs on a period.
+    /// The count publishes when something happens, not as time goes by.
+    func testNothingIsPublishedWhileTheNightJustPlays() throws {
         let (timer, clock, _) = make(.untilAsleep(45), at: time(23))
         var published = 0
         let watch = timer.objectWillChange.sink { published += 1 }
         defer { watch.cancel() }
         timer.start()
         let afterStart = published
-        // A run loop that fires four times a second.
-        for _ in 0..<40 {
-            clock.now += 0.25
+        // Half an hour of ticks, were anything to tick: nothing changes.
+        for _ in 0..<(30 * 60) {
+            clock.now += 1
             timer.tick()
         }
-        XCTAssertLessThanOrEqual(published - afterStart, 10, "ten seconds, ten changes at most")
-        XCTAssertGreaterThanOrEqual(published - afterStart, 9)
-        // Ticks with the clock standing still publish nothing.
-        let settled = published
-        for _ in 0..<20 { timer.tick() }
-        XCTAssertEqual(published, settled)
+        XCTAssertEqual(published, afterStart, "nothing to say until the fade")
+        XCTAssertEqual(try XCTUnwrap(timer.remaining), 15 * 60, accuracy: 0.001, "the count is read, not published")
+
+        // Inside the fade it publishes by the minute: the figure of the line.
+        for _ in 0..<(5 * 60) {
+            clock.now += 1
+            timer.tick()
+        }
+        let fading = published - afterStart
+        XCTAssertGreaterThanOrEqual(fading, 3)
+        XCTAssertLessThanOrEqual(fading, 5, "the fade begins, and one change a minute")
+    }
+
+    /// One one-shot waits for whatever comes next; it is never a period.
+    func testTheNextEventIsTheFadeThenTheMinutesThenTheEnd() throws {
+        let (timer, clock, _) = make(.untilAsleep(45), at: time(23))
+        XCTAssertNil(timer.secondsToNextEvent(), "nothing counts")
+        timer.start()
+        let fade = TimerMath.fadeDuration(totalSeconds: 45 * 60)
+        XCTAssertEqual(try XCTUnwrap(timer.secondsToNextEvent()), 45 * 60 - fade, accuracy: 0.001, "the start of the fade")
+        clock.now += 45 * 60 - fade
+        timer.tick()
+        XCTAssertTrue(timer.isFading)
+        let inFade = try XCTUnwrap(timer.secondsToNextEvent())
+        XCTAssertGreaterThan(inFade, 0)
+        XCTAssertLessThanOrEqual(inFade, 60, "the next minute of the figure")
+        clock.now = time(23, 44).addingTimeInterval(30)
+        timer.tick()
+        XCTAssertEqual(try XCTUnwrap(timer.secondsToNextEvent()), 30, accuracy: 0.001, "the end")
+        timer.pause()
+        XCTAssertNil(timer.secondsToNextEvent(), "a paused count waits for nothing")
+    }
+
+    func testABlanketWaitsForItsDipFirst() throws {
+        let (timer, clock, _) = make(.blanket(hour: 7), at: time(23))
+        timer.start()
+        XCTAssertEqual(try XCTUnwrap(timer.secondsToNextEvent()), TimerMath.blanketDipAfter, accuracy: 0.001)
+        clock.now += TimerMath.blanketDipAfter
+        timer.tick()
+        XCTAssertLessThan(timer.blanketGain, 1)
+        let fade = TimerMath.fadeDuration(totalSeconds: 8 * 3_600)
+        XCTAssertEqual(
+            try XCTUnwrap(timer.secondsToNextEvent()),
+            8 * 3_600 - TimerMath.blanketDipAfter - fade,
+            accuracy: 0.001,
+            "then nothing until the final fade"
+        )
     }
 
     func testTheCountDoesNotDependOnTheTicks() {

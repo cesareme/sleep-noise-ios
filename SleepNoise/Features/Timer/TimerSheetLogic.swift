@@ -14,6 +14,20 @@ enum TimerSheetText {
     static let standardLookup: Lookup = { Localized.string($0) }
     /// The short time of the system: 24 hours or AM/PM as the person set it.
     static let standardClock: Clock = { $0.formatted(date: .omitted, time: .shortened) }
+    /// The hour as a figure: the clock of Night and the hour of a blanket
+    /// at 56 pt and more. Never with "AM" or "PM": at that size the suffix
+    /// is as many lit pixels again and says nothing a sentence does not
+    /// (07 §2.2.2; the sentences keep the system's short time).
+    static let figureClock: Clock = {
+        withoutDayPeriod($0.formatted(date: .omitted, time: .shortened))
+    }
+
+    /// The short time of the system without its "AM", "p. m." or "午前",
+    /// whichever side it is written on. The digits stay as the region
+    /// writes them ("7:05", never "07:05" where it does not).
+    static func withoutDayPeriod(_ time: String) -> String {
+        time.trimmingCharacters(in: CharacterSet.letters.union(.whitespaces).union(CharacterSet(charactersIn: ".")))
+    }
 
     /// What the block above the list shows while a night is being counted.
     enum Head: Equatable {
@@ -39,6 +53,9 @@ enum TimerSheetText {
         var hasCount = false
         /// The hour a blanket ends tonight. It survives a pause.
         var fixedEnd: Date?
+        /// The blanket has not eased the level down yet, and will before
+        /// its hour.
+        var blanketDipIsAhead = false
     }
 
     /// Whole minutes left, never under one while there is a count.
@@ -66,7 +83,7 @@ enum TimerSheetText {
     static func figure(
         _ head: Head,
         localized: Lookup = standardLookup,
-        time: Clock = standardClock,
+        time: Clock = figureClock,
         locale: Locale = .current
     ) -> String {
         switch head {
@@ -79,10 +96,14 @@ enum TimerSheetText {
         }
     }
 
-    /// The line under the figure: when it ends, as an hour, or what is
-    /// happening.
+    /// The line under the figure. It never says again what the figure
+    /// already says, and it always begins with a capital: when it ends as
+    /// an hour under a count of minutes; under the hour of a blanket, the
+    /// dip that is still to come, and after it nothing; "Fading" under the
+    /// minutes of the fade.
     static func line(
         _ head: Head,
+        dipIsAhead: Bool = false,
         localized: Lookup = standardLookup,
         time: Clock = standardClock,
         locale: Locale = .current
@@ -90,25 +111,38 @@ enum TimerSheetText {
         switch head {
         case .counting(_, let end):
             return String(format: localized("noche.estado.funde"), time(end))
-        case .blanket(let end), .pausedBlanket(let end):
-            return blanketDetail(hour: end, localized: localized, time: time, locale: locale)
-        case .fading(let minutes):
-            return String(format: localized("noche.estado.fundiendo"), locale: locale, Int64(minutes))
+        case .blanket:
+            guard dipIsAhead else { return " " }
+            return String(
+                format: localized("temporizador.cabecera.manto"),
+                locale: locale,
+                Int64((TimerMath.blanketDipAfter / 60).rounded())
+            )
+        case .pausedBlanket(let end):
+            // The figure says "Paused": the line says the hour, which a
+            // pause does not move.
+            let words = String(format: localized("noche.estado.hasta"), time(end))
+            return words.prefix(1).capitalized(with: locale) + words.dropFirst()
+        case .fading:
+            return localized("temporizador.cabecera.fundiendo")
         case .paused(let minutes):
-            return String(format: localized("comun.min.quedan"), locale: locale, Int64(minutes))
+            return String.localizedStringWithFormat(localized("comun.min.quedan"), minutes)
         }
     }
 
     /// What VoiceOver reads for the block: figure and line as one phrase.
     static func spoken(
         _ head: Head,
+        dipIsAhead: Bool = false,
         localized: Lookup = standardLookup,
         time: Clock = standardClock,
         locale: Locale = .current
     ) -> String {
+        // Spoken, an hour keeps what the system says of it, AM and PM too.
         let figure = figure(head, localized: localized, time: time, locale: locale)
-        let line = line(head, localized: localized, time: time, locale: locale)
-        return PageStatus.spoken(figure + ". " + line)
+        let line = line(head, dipIsAhead: dipIsAhead, localized: localized, time: time, locale: locale)
+            .trimmingCharacters(in: .whitespaces)
+        return PageStatus.spoken(line.isEmpty ? figure : figure + ". " + line)
     }
 
     // MARK: Rows
@@ -206,11 +240,12 @@ enum TimerSheetText {
         guard input.choice.mode == .untilAsleep, input.endsAt != nil, let remaining = input.remaining else {
             return nil
         }
+        // The minutes as the announcement of "+15 min" says them, so one
+        // minute is "1 minute left" and not "1 minutes".
         return String(
             format: localized("ax.temporizador.valor"),
-            locale: locale,
             localized("temporizador.dormirme"),
-            Int64(minutes(remaining))
+            String.localizedStringWithFormat(localized("ax.anuncio.quedan"), minutes(remaining))
         )
     }
 
@@ -242,7 +277,8 @@ extension TimerSheetText.Input {
             isFading: timer.isFading,
             fadingMinutes: timer.fadingMinutes,
             hasCount: timer.hasCount,
-            fixedEnd: timer.fixedEnd
+            fixedEnd: timer.fixedEnd,
+            blanketDipIsAhead: timer.blanketDipIsAhead
         )
     }
 }

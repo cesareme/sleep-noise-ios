@@ -21,7 +21,10 @@ final class NightSessionTests: XCTestCase {
         XCTAssertTrue(night.model.isPlaying)
         XCTAssertTrue(night.session.started)
         // The level first, then the bed: 0.8 s to a whole envelope.
-        XCTAssertEqual(night.engine.calls, [.master(level: 1, seconds: 0), .start(fadeIn: 0.8, level: 1)])
+        // With the engine stopped the level is simply there: the seconds
+        // only count when something is still sounding.
+        XCTAssertEqual(night.engine.calls, [.master(level: 1, seconds: 0.8), .start(fadeIn: 0.8, level: 1)])
+        XCTAssertEqual(night.engine.desk.command.masterRampSamples, 1, "not a ramp: nothing was audible")
         XCTAssertEqual(night.model.sessionLevel, 1)
         XCTAssertEqual(night.model.timer.endsAt, time(23, 45), "Until I sleep, 45 minutes")
         XCTAssertTrue(night.model.canExtendTimer)
@@ -648,7 +651,7 @@ final class RouteWiringTests: XCTestCase {
         night.model.continueOnSpeaker()
         XCTAssertTrue(night.model.isPlaying)
         XCTAssertEqual(night.model.sessionLevel, RoutePolicy.speakerMasterCap)
-        XCTAssertEqual(night.engine.masters.last, .master(level: 0.4, seconds: 0))
+        XCTAssertEqual(night.engine.masters.last, .master(level: 0.4, seconds: 0.8))
         XCTAssertEqual(night.engine.starts.last, .start(fadeIn: 0.8, level: 1))
         XCTAssertNil(night.model.speakerOfferUntil)
         XCTAssertNil(night.model.pauseCause)
@@ -1049,7 +1052,7 @@ final class SmallHoursModelTests: XCTestCase {
             XCTAssertEqual(night.engine.breath.weight, 1)
             // A three second entrance, at the level of the night.
             XCTAssertEqual(night.engine.starts, [.start(fadeIn: 3, level: 1)])
-            XCTAssertEqual(night.engine.masters, [.master(level: 1, seconds: 0)])
+            XCTAssertEqual(night.engine.masters, [.master(level: 1, seconds: 3)])
             XCTAssertEqual(night.model.smallHours.minutesLeft, 20)
 
             // The mix, the timer and the tide of the person: as they were.

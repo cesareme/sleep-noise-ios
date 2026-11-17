@@ -562,7 +562,7 @@ final class NightScreenFlowTests: XCTestCase {
         // A paused Night dims too, and so does one that has ended.
         night.advance(seconds: 60)
         XCTAssertTrue(night.model.isBedtimeDimmed)
-        XCTAssertEqual(BedtimeScreenPolicy.dimmedOpacity, 0.5)
+        XCTAssertEqual(BedtimeScreenPolicy.dimmedOpacity, 0.6, "the floor of 03 §3.7: 3.3:1 on black")
     }
 
     func testTheScreenIsHeldAwakeOnlyAsTheSettingSaysAndOnlyOnNight() throws {

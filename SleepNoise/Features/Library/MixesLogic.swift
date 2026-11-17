@@ -81,8 +81,11 @@ struct MixRecipe: Equatable {
     }
 
     /// The segments of the line, in order: one per layer, then one per layer
-    /// that needs Pro.
+    /// that needs Pro. `namesPro` is false on the night page, where "is
+    /// Pro" and "requires Pro" do not exist (copy guide §3): the recipe is
+    /// only its layers there.
     func segments(
+        namesPro: Bool = true,
         soundName: (SoundID) -> String = { $0.localizedName },
         localized: (String) -> String = { Localized.string($0) },
         locale: Locale = .current
@@ -94,7 +97,7 @@ struct MixRecipe: Equatable {
                 soundName(layer.sound).lowercased(with: locale),
                 Int64(layer.percent)
             )
-        } + needsPro.map { sound in
+        } + (namesPro ? needsPro : []).map { sound in
             String(format: localized(Self.proKey), soundName(sound).lowercased(with: locale))
         }
     }
@@ -102,17 +105,19 @@ struct MixRecipe: Equatable {
     /// The line as it is set. The separator is tied to the segment before
     /// it, so a line never begins with a dot.
     func text(
+        namesPro: Bool = true,
         soundName: (SoundID) -> String = { $0.localizedName },
         localized: (String) -> String = { Localized.string($0) },
         locale: Locale = .current
     ) -> String {
-        segments(soundName: soundName, localized: localized, locale: locale)
+        segments(namesPro: namesPro, soundName: soundName, localized: localized, locale: locale)
             .joined(separator: "\u{00A0}" + localized(Self.separatorKey) + " ")
     }
 
     /// What VoiceOver reads: the layers as a list, and "ocean requires Pro"
     /// instead of the phrase on screen.
     func spoken(
+        namesPro: Bool = true,
         soundName: (SoundID) -> String = { $0.localizedName },
         localized: (String) -> String = { Localized.string($0) },
         locale: Locale = .current
@@ -124,7 +129,7 @@ struct MixRecipe: Equatable {
                 soundName(layer.sound).lowercased(with: locale),
                 Int64(layer.percent)
             )
-        } + needsPro.map { sound in
+        } + (namesPro ? needsPro : []).map { sound in
             String(format: localized(Self.spokenProKey), soundName(sound).lowercased(with: locale))
         }
         return parts.joined(separator: ", ")

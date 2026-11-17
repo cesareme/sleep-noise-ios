@@ -36,8 +36,17 @@ enum BedtimeScreenPolicy {
     }
 
     /// How much of its ink a dimmed Night screen keeps. The app never
-    /// touches the brightness of the display: it draws less light.
-    static let dimmedOpacity = 0.5
+    /// touches the brightness of the display: it draws less light. 0.6 is
+    /// the floor 03 §3.7 already set for the Horizon: `texto-noche` at 0.6
+    /// on black is 3.3:1, and under that the hour, the state and "+15 min"
+    /// fall below 3:1 at the one moment they are looked up. With "Increase
+    /// Contrast" the screen dims less.
+    static let dimmedOpacity = 0.6
+    static let dimmedOpacityHighContrast = 0.8
+
+    static func dimmedOpacity(increasedContrast: Bool) -> Double {
+        increasedContrast ? dimmedOpacityHighContrast : dimmedOpacity
+    }
     /// A touch counts only this long after the iPhone was unlocked or the
     /// app came forward: the thumb that unlocks also lands on the screen.
     static let wakeGuard: TimeInterval = 0.3

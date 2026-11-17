@@ -101,13 +101,22 @@ final class BreathingGuideController: ObservableObject {
     private(set) var windowStart: Date?
     /// When the descent of this window began, if it has one.
     private var descentStart: Date?
+    /// When the dissolve the guide began by itself is over.
+    private var dissolveEndsAt: Date?
     private var epoch: UInt32 = 0
     private var ticker: Timer?
     private let defaults: UserDefaults
+    private let clock: () -> Date
+    private let usesTimers: Bool
     private(set) var lastPublished = BreathParameters.off
 
-    init(defaults: UserDefaults = .standard) {
+    /// The clock is passed in, like the timer's and Small Hours': the model
+    /// gives all three the same one. `ticks: false` leaves the run loop
+    /// alone: a test moves the clock and calls `advance()` itself.
+    init(defaults: UserDefaults = .standard, now: @escaping () -> Date = { Date() }, ticks: Bool = true) {
         self.defaults = defaults
+        clock = now
+        usesTimers = ticks
         if let data = defaults.data(forKey: Self.storageKey),
            var decoded = try? JSONDecoder().decode(BreathingSettings.self, from: data) {
             // "All night" is not offered in 1.0: it is read as the longest
@@ -125,19 +134,22 @@ final class BreathingGuideController: ObservableObject {
 
     /// The guide stopped with its window still open (a pause): Play goes on
     /// with it instead of guiding again.
-    func hasOpenWindow(now: Date = Date()) -> Bool {
+    func hasOpenWindow(now given: Date? = nil) -> Bool {
+        let now = given ?? clock()
         guard windowStart != nil else { return false }
         return guideEndsAt.map { now < $0 } ?? true
     }
 
     /// Whether the disc should move at `now`.
-    func isVisuallyActive(now: Date = Date()) -> Bool {
+    func isVisuallyActive(now given: Date? = nil) -> Bool {
+        let now = given ?? clock()
         guard phase == .guiding, let windowStart else { return false }
         return now.timeIntervalSince(windowStart) < Self.visualSeconds
     }
 
     /// Play pressed: a new window from the top of an inhale.
-    func begin(now: Date = Date()) {
+    func begin(now given: Date? = nil) {
+        let now = given ?? clock()
         stopTicking()
         windowStart = now
         descentStart = settings.descends ? now : nil
@@ -149,7 +161,8 @@ final class BreathingGuideController: ObservableObject {
     /// continue the existing window instead of guiding again. Inside the guide
     /// the tide resumes at full weight, re-anchored so audio and disc agree;
     /// once the guide is over nothing comes back.
-    func resume(now: Date = Date()) {
+    func resume(now given: Date? = nil) {
+        let now = given ?? clock()
         stopTicking()
         guard windowStart != nil else {
             begin(now: now)
@@ -170,7 +183,8 @@ final class BreathingGuideController: ObservableObject {
     /// fraction of the cycle) and rebases the anchor so the disc keeps the
     /// same fraction too. During a dissolve only the rate is refreshed and
     /// the finish timer is left alone.
-    func settingsDidChange(now: Date = Date()) {
+    func settingsDidChange(now given: Date? = nil) {
+        let now = given ?? clock()
         guard isActive, let windowStart else { return }
         // "Descent" switched on while guiding begins its way down now;
         // switched off, the guide goes to the pace chosen.
@@ -208,7 +222,12 @@ final class BreathingGuideController: ObservableObject {
 
     /// Applies what came due at `now`: the next step of the descent, or the
     /// end of the guide. Internal so that a test can move the clock.
-    func advance(now: Date = Date()) {
+    func advance(now given: Date? = nil) {
+        let now = given ?? clock()
+        if phase == .dissolving, let dissolveEndsAt, now >= dissolveEndsAt {
+            finish()
+            return
+        }
         guard phase == .guiding else { return }
         if let guideEndsAt, now >= guideEndsAt {
             stopTicking()
@@ -240,11 +259,19 @@ final class BreathingGuideController: ObservableObject {
         guidingRate = rate
     }
 
+    /// A date of the display's own clock (a `TimelineView`) on the clock of
+    /// the guide. The same instant in the app; apart only when a staged
+    /// launch pins the clock.
+    func onGuideClock(_ date: Date) -> Date {
+        date.addingTimeInterval(clock().timeIntervalSince(Date()))
+    }
+
     /// The sleep timer is fading the whole bed out: let the tide go with it so
     /// the last seconds are the natural sea, not a guided inhale.
     func release(over seconds: TimeInterval) {
         guard isActive else { return }
         stopTicking()
+        dissolveEndsAt = nil
         phase = .dissolving
         publish(parameters(weight: 0, dissolve: Float(max(1, seconds))))
     }
@@ -252,6 +279,7 @@ final class BreathingGuideController: ObservableObject {
     /// Stops the tide. The window is kept so a system resume can continue it.
     func end() {
         stopTicking()
+        dissolveEndsAt = nil
         guard isActive || lastPublished != .off else { return }
         phase = .idle
         anchor = nil
@@ -260,7 +288,8 @@ final class BreathingGuideController: ObservableObject {
     }
 
     /// Weight the schedule calls for at `now`, for tests and the indicator.
-    func scheduledWeight(now: Date = Date()) -> Float? {
+    func scheduledWeight(now given: Date? = nil) -> Float? {
+        let now = given ?? clock()
         guard windowStart != nil else { return nil }
         guard let guideEndsAt else { return 1 }
         let elapsed = now.timeIntervalSince(guideEndsAt)
@@ -270,6 +299,7 @@ final class BreathingGuideController: ObservableObject {
     }
 
     private func startEpoch(now: Date) {
+        dissolveEndsAt = nil
         epoch &+= 1
         if epoch == 0 { epoch = 1 }
         anchor = now
@@ -305,28 +335,34 @@ final class BreathingGuideController: ObservableObject {
         }
     }
 
-    private func dissolve(now: Date = Date()) {
+    private func dissolve(now: Date) {
         phase = .dissolving
         publish(parameters(weight: 0, dissolve: Self.dissolveSeconds))
-        schedule(at: now.addingTimeInterval(TimeInterval(Self.dissolveSeconds) + 3)) { [weak self] in
-            self?.finish()
+        let end = now.addingTimeInterval(TimeInterval(Self.dissolveSeconds) + 3)
+        dissolveEndsAt = end
+        schedule(at: end) { [weak self] in
+            self?.advance()
         }
     }
 
     private func finish() {
         stopTicking()
+        dissolveEndsAt = nil
         phase = .idle
         anchor = nil
         guidingRate = nil
         publish(.off)
     }
 
-    /// One-shot timer on the main run loop, computed from a date so a late
-    /// fire still lands on the right state. Background audio keeps the process
-    /// running, so it fires with the screen locked.
+    /// One-shot timer on the main run loop. What it does is read from the
+    /// clock again, so a late fire still lands on the right state.
+    /// Background audio keeps the process running, so it fires with the
+    /// screen locked. The wait is measured on the clock passed in: with a
+    /// pinned clock nothing fires at once.
     private func schedule(at date: Date, _ action: @escaping @MainActor () -> Void) {
         stopTicking()
-        let timer = Timer(fire: date, interval: 0, repeats: false) { _ in
+        guard usesTimers else { return }
+        let timer = Timer(timeInterval: max(0, date.timeIntervalSince(clock())) + 0.05, repeats: false) { _ in
             MainActor.assumeIsolated {
                 action()
             }

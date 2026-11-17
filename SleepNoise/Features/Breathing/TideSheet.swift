@@ -18,6 +18,10 @@ struct TideSheet: View {
 
     @Environment(\.nightPhase) private var phase
     @Environment(\.dynamicTypeSize) private var dynamicType
+    @Environment(\.scenePhase) private var scenePhase
+    /// "breathe in" / "breathe out" are on show: the first three breaths
+    /// of a guide. Their timeline exists only then.
+    @State private var showsBreathWord = false
     /// The box of the state word and the box of the recede line: 20 pt at
     /// Large. They are there when empty, so nothing below moves.
     @ScaledMetric(relativeTo: .subheadline) private var box: CGFloat = 20
@@ -117,8 +121,9 @@ struct TideSheet: View {
         return TideLine(
             mode: mode,
             level: { date in
-                TideBreath.level(at: date, anchor: guide.anchor, parameters: guide.lastPublished)
-                    * (guide.scheduledWeight(now: date) ?? 1)
+                let now = guide.onGuideClock(date)
+                return TideBreath.level(at: now, anchor: guide.anchor, parameters: guide.lastPublished)
+                    * (guide.scheduledWeight(now: now) ?? 1)
             },
             isUnderFinger: isDragging
         )
@@ -145,28 +150,32 @@ struct TideSheet: View {
             )
         }
         .padding(.horizontal, Grid.margin)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("marea.toggle"))
-        .accessibilityValue(Text(verbatim: spokenLine(status)))
-        .accessibilityHint(isGuiding ? Text("ax.agua.pista") : Text(verbatim: ""))
-        .accessibilityAdjustableAction { direction in
-            guard isGuiding else { return }
-            switch direction {
-            case .increment: setPace(settings.breathsPerMinute + 1)
-            case .decrement: setPace(settings.breathsPerMinute - 1)
-            @unknown default: break
-            }
+        .accessibilityHidden(true)
+        .overlay {
+            // The line for VoiceOver, as an element of its own over the
+            // drawing: what it offers changes with the state, and the
+            // drawing under it must not be rebuilt for that.
+            Color.clear
+                .allowsHitTesting(false)
+                .accessibilityElement()
+                .accessibilityLabel(Text("marea.toggle"))
+                .accessibilityValue(Text(verbatim: spokenLine(status)))
+                .accessibilityHint(isGuiding ? Text("ax.agua.pista") : Text(verbatim: ""))
+                // Adjustable only while it can be adjusted: off, paused or
+                // letting go, VoiceOver must not offer a gesture that does
+                // nothing.
+                .modifier(AdjustablePace(isOn: isGuiding) { step in
+                    setPace(settings.breathsPerMinute + step)
+                })
+                .accessibilityIdentifier("tideLine")
         }
-        .accessibilityIdentifier("tideLine")
     }
 
     private func spokenLine(_ status: TideStatus) -> String {
-        let now = Date()
-        return TideSheetText.spokenLine(
+        TideSheetText.spokenLine(
             status: status,
-            isBreathingIn: TideBreath.isBreathingIn(at: now, anchor: guide.anchor, parameters: guide.lastPublished),
             chosenRate: settings.breathsPerMinute,
-            minutesToRecede: guide.guideEndsAt.map { Int(($0.timeIntervalSince(now) / 60).rounded(.up)) }
+            recedesAt: guide.guideEndsAt
         )
     }
 
@@ -200,11 +209,15 @@ struct TideSheet: View {
                 if !dynamicType.isAccessibilitySize {
                     Spacer(minLength: 0)
                 }
-                if case .guiding = status {
-                    breathWord
-                }
+                // Always in the layout: the row is measured by it whether
+                // or not it shows, so the state word never shifts when the
+                // tide goes from guiding to letting go.
+                breathWord(isGuiding: status.isGuiding)
             }
             .frame(maxWidth: .infinity, minHeight: box, alignment: .leading)
+            .task(id: BreathWordKey(isGuiding: status.isGuiding, anchor: guide.anchor, rate: guide.lastPublished.rate)) {
+                await countBreathWord(isGuiding: status.isGuiding)
+            }
             Group {
                 if showsReceded {
                     Text("marea.retirada")
@@ -224,21 +237,53 @@ struct TideSheet: View {
     }
 
     /// Shown for three breaths and gone: there is no need to watch. Not
-    /// read by VoiceOver, which has the phase in the value of the line.
-    private var breathWord: some View {
-        TimelineView(.periodic(from: .now, by: 0.25)) { context in
-            let parameters = guide.lastPublished
-            let done = TideBreath.breathsDone(at: context.date, anchor: guide.anchor, parameters: parameters)
-            let rising = TideBreath.isBreathingIn(at: context.date, anchor: guide.anchor, parameters: parameters)
-            Text(rising ? "marea.fase.inhala" : "marea.fase.exhala")
-                .step(.secondary)
-                .foregroundStyle(Ink.secondary(phase))
-                .contentTransition(.opacity)
-                .opacity(done < TideBreath.guidedBreaths ? 1 : 0)
-                .animation(Motion.contentCurve, value: rising)
-                .animation(.easeInOut(duration: 0.5), value: done < TideBreath.guidedBreaths)
+    /// read by VoiceOver. Its place is always kept; its timeline exists
+    /// only for those three breaths and only while the scene is active, so
+    /// nothing ticks behind a locked screen (03 §3.7).
+    private func breathWord(isGuiding: Bool) -> some View {
+        ZStack(alignment: .trailing) {
+            Group {
+                Text("marea.fase.inhala")
+                Text("marea.fase.exhala")
+            }
+            .step(.secondary)
+            .hidden()
+            if isGuiding, showsBreathWord, scenePhase == .active {
+                TimelineView(.periodic(from: .now, by: 0.25)) { context in
+                    let now = guide.onGuideClock(context.date)
+                    let parameters = guide.lastPublished
+                    let done = TideBreath.breathsDone(at: now, anchor: guide.anchor, parameters: parameters)
+                    let rising = TideBreath.isBreathingIn(at: now, anchor: guide.anchor, parameters: parameters)
+                    Text(rising ? "marea.fase.inhala" : "marea.fase.exhala")
+                        .step(.secondary)
+                        .foregroundStyle(Ink.secondary(phase))
+                        .contentTransition(.opacity)
+                        .opacity(done < TideBreath.guidedBreaths ? 1 : 0)
+                        .animation(Motion.contentCurve, value: rising)
+                        .animation(.easeInOut(duration: 0.5), value: done < TideBreath.guidedBreaths)
+                }
+            }
         }
         .accessibilityHidden(true)
+    }
+
+    /// Keeps the words up for the first three breaths of this guide, and
+    /// half a second more for them to fade.
+    private func countBreathWord(isGuiding: Bool) async {
+        let rate = Double(guide.lastPublished.rate)
+        guard isGuiding, let anchor = guide.anchor, rate > 0 else {
+            showsBreathWord = false
+            return
+        }
+        let end = anchor.addingTimeInterval(Double(TideBreath.guidedBreaths) / rate + 0.5)
+        let wait = end.timeIntervalSince(guide.onGuideClock(Date()))
+        guard wait > 0 else {
+            showsBreathWord = false
+            return
+        }
+        showsBreathWord = true
+        try? await Task.sleep(for: .seconds(wait))
+        if !Task.isCancelled { showsBreathWord = false }
     }
 
     /// Only after the guide ran its course and let go by itself, with the
@@ -356,8 +401,7 @@ struct TideSheet: View {
             }
             .multilineTextAlignment(.leading)
         }
-        .tint(Ink.primary(phase))
-        .padding(.trailing, Grid.toggleOverhang)
+        .toggleStyle(GrafitoToggleStyle())
         .padding(.vertical, Grid.unit * 3)
         .padding(.horizontal, Grid.margin)
         .frame(minHeight: Grid.row(subtitle: subtitle != nil, dynamicType: dynamicType))
@@ -430,4 +474,31 @@ struct TideSheet: View {
 /// Where a drag of the water line began.
 private final class PaceDrag {
     var startRate: Int?
+}
+
+/// What restarts the count of the three first breaths.
+private struct BreathWordKey: Equatable {
+    var isGuiding: Bool
+    var anchor: Date?
+    var rate: Float
+}
+
+/// The adjustable action of the water line, only while it can be adjusted.
+private struct AdjustablePace: ViewModifier {
+    var isOn: Bool
+    var step: (Int) -> Void
+
+    func body(content: Content) -> some View {
+        if isOn {
+            content.accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment: step(1)
+                case .decrement: step(-1)
+                @unknown default: break
+                }
+            }
+        } else {
+            content
+        }
+    }
 }

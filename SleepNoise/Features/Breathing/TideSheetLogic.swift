@@ -45,6 +45,12 @@ enum TideStatus: Equatable {
 
     /// The line is drawn as water, with its two marks, only while there is
     /// a course to mark.
+    /// The guide is under way at full weight: the line answers a finger.
+    var isGuiding: Bool {
+        if case .guiding = self { return true }
+        return false
+    }
+
     var showsWater: Bool {
         switch self {
         case .guiding, .dissolving, .paused: return true
@@ -141,13 +147,15 @@ enum TideSheetText {
     static let pointsPerBreath: Double = 56
 
     /// What VoiceOver says for the water line: its state, its pace and,
-    /// while it guides, how long until it recedes.
+    /// while it guides, when it recedes, as an hour. Nothing in it goes
+    /// stale between two draws: the phase of the breath is in the sound,
+    /// not here, and an hour does not count down.
     static func spokenLine(
         status: TideStatus,
-        isBreathingIn: Bool,
         chosenRate: Int,
-        minutesToRecede: Int?,
+        recedesAt: Date?,
         localized: Lookup = standardLookup,
+        time: (Date) -> String = { $0.formatted(date: .omitted, time: .shortened) },
         locale: Locale = .current
     ) -> String {
         func pace(_ rate: Int) -> String {
@@ -157,15 +165,10 @@ enum TideSheetText {
         case .off, .armed:
             return localized("marea.estado.apagada") + ", " + pace(chosenRate)
         case .guiding(let rate):
-            let phase = localized(isBreathingIn ? "marea.fase.inhala" : "marea.fase.exhala")
-            guard let minutesToRecede else { return phase + ", " + pace(rate) }
-            return String(
-                format: localized("ax.agua.valor"),
-                locale: locale,
-                phase,
-                Int64(rate),
-                Int64(max(1, minutesToRecede))
-            )
+            guard let recedes = recedes(status: status, at: recedesAt, localized: localized, time: time) else {
+                return pace(rate)
+            }
+            return pace(rate) + ", " + recedes
         case .dissolving:
             return localized("marea.estado.disolviendo")
         case .paused:

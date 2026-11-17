@@ -12,8 +12,13 @@ import Foundation
 ///
 /// Everything is anchored to dates: the count does not depend on the app
 /// being in front, and a tick that fires late still lands on the right
-/// state. The clock and the calendar are passed in. It publishes once a
-/// second at most.
+/// state. The clock and the calendar are passed in.
+///
+/// Nothing here is periodic (03 §3.7: with the screen off, nothing but the
+/// audio runs on a period). One one-shot timer waits for whatever comes
+/// next: the blanket's dip, the start of the final fade, the next minute of
+/// "Fading · n min" while it fades, or the end. It publishes only when one
+/// of those moves; the seconds left are worked out when somebody asks.
 ///
 /// The timer owns no sound. It says what should happen through its
 /// callbacks, and where the night stands through `fadeLevel` and
@@ -25,9 +30,15 @@ final class SleepTimerController: ObservableObject {
     @Published private(set) var choice: TimerChoice
     /// When the night ends, while it counts. Nil at rest and while paused.
     @Published private(set) var endsAt: Date?
-    /// Seconds left, in whole-second steps. While paused it holds what is
-    /// left of "Until I sleep". Nil when nothing was started.
-    @Published private(set) var remaining: TimeInterval?
+    /// Seconds left right now. While paused it holds what is left of
+    /// "Until I sleep". Nil when nothing was started. Not published: a view
+    /// that shows minutes reads it on its own schedule; every change of
+    /// state (start, pause, "+15 min", the end) publishes something else.
+    var remaining: TimeInterval? {
+        if let frozen { return frozen }
+        guard isCounting, let endDate else { return nil }
+        return max(0, endDate.timeIntervalSince(now()))
+    }
     /// The final fade is under way.
     @Published private(set) var isFading = false
     /// The figure of "Fading · n min" while it is. It changes by the minute.
@@ -46,6 +57,9 @@ final class SleepTimerController: ObservableObject {
     private let calendar: Calendar
     private let usesTicker: Bool
     private var ticker: Timer?
+    /// Bumped when something that is not published changes what the views
+    /// say (a paused count that grew by fifteen minutes).
+    @Published private var revision = 0
 
     private var isCounting = false
     /// The end of the night. A blanket keeps it through a pause.
@@ -99,6 +113,13 @@ final class SleepTimerController: ObservableObject {
     /// The share of the session level the blanket leaves: 1 until its dip.
     var blanketGain: Float {
         choice.mode == .blanket && hasDipped ? TimerMath.blanketDipGain : 1
+    }
+
+    /// The blanket has not eased the level down yet and will before its
+    /// final fade: what the timer sheet may still promise.
+    var blanketDipIsAhead: Bool {
+        guard choice.mode == .blanket, !hasDipped, let blanketBegan, let endDate else { return false }
+        return blanketBegan.addingTimeInterval(TimerMath.blanketDipAfter) < endDate.addingTimeInterval(-fade)
     }
 
     private func secondsLeft() -> TimeInterval? {
@@ -165,7 +186,7 @@ final class SleepTimerController: ObservableObject {
         fadeNotBefore = fading ? now.addingTimeInterval(fadeIn + 0.2) : nil
         publish(left: left, fading: fading)
         endsAt = endDate
-        startTicking()
+        scheduleNext()
     }
 
     /// Pause. "Until I sleep" keeps what is left; a blanket keeps its hour.
@@ -177,7 +198,6 @@ final class SleepTimerController: ObservableObject {
             let left = max(0, endDate.timeIntervalSince(now()))
             frozen = left
             self.endDate = nil
-            remaining = left
         }
         endsAt = nil
         fadeRequested = false
@@ -198,7 +218,6 @@ final class SleepTimerController: ObservableObject {
         fadeRequested = false
         fadeNotBefore = nil
         if endsAt != nil { endsAt = nil }
-        if remaining != nil { remaining = nil }
         if isFading { isFading = false }
         if fadingMinutes != nil { fadingMinutes = nil }
     }
@@ -211,7 +230,7 @@ final class SleepTimerController: ObservableObject {
         guard choice.mode != .off, seconds > 0 else { return false }
         if let frozen {
             self.frozen = frozen + seconds
-            remaining = frozen + seconds
+            revision += 1
             return true
         }
         guard let end = endDate else { return false }
@@ -221,7 +240,10 @@ final class SleepTimerController: ObservableObject {
         endsAt = later
         let left = later.timeIntervalSince(now())
         let stillFading = left <= fade
-        if isFading, !stillFading, fadeRequested {
+        if isFading, !stillFading {
+            // Whether or not the fade had been asked for yet: a night that
+            // resumed inside it stands below 1 until it is, and the level
+            // comes back from wherever the envelope is.
             onFadeCancelled?()
         }
         // Still inside the fade (a short extension): it is asked for again,
@@ -229,10 +251,13 @@ final class SleepTimerController: ObservableObject {
         fadeRequested = false
         fadeNotBefore = nil
         publish(left: left, fading: stillFading)
+        scheduleNext()
         return true
     }
 
-    /// One second went by. Internal so that a test can drive the clock.
+    /// Applies whatever came due. Called by the one-shot timer and safe to
+    /// call at any time: everything is read from the clock. Internal so
+    /// that a test can drive it.
     func tick() {
         guard isCounting, let endDate else { return }
         let now = now()
@@ -252,6 +277,35 @@ final class SleepTimerController: ObservableObject {
             fadeNotBefore = nil
             onFade?(left)
         }
+        scheduleNext()
+    }
+
+    /// Seconds until something next has to happen, from where the count
+    /// stands: the dip, the start of the fade (or the moment a resumed
+    /// night may ask for it), the next minute of the fade, the end. Nil
+    /// when nothing counts.
+    func secondsToNextEvent() -> TimeInterval? {
+        guard isCounting, let endDate else { return nil }
+        let now = now()
+        let left = endDate.timeIntervalSince(now)
+        guard left > 0 else { return 0 }
+        var next = left
+        if left > fade {
+            next = min(next, left - fade)
+            if !hasDipped, choice.mode == .blanket, let blanketBegan {
+                let dip = TimerMath.blanketDipAfter - now.timeIntervalSince(blanketBegan)
+                // A dip that would land inside the final fade never comes.
+                if dip < left - fade { next = min(next, max(0, dip)) }
+            }
+        } else {
+            if !fadeRequested, let fadeNotBefore {
+                next = min(next, max(0, fadeNotBefore.timeIntervalSince(now)))
+            }
+            // "Fading · n min" moves when a whole minute is left.
+            let toMinute = left - (left / 60).rounded(.down) * 60
+            next = min(next, toMinute > 0 ? toMinute : 60)
+        }
+        return next
     }
 
     private func dipIsDue(at now: Date) -> Bool {
@@ -259,12 +313,9 @@ final class SleepTimerController: ObservableObject {
         return now.timeIntervalSince(blanketBegan) >= TimerMath.blanketDipAfter
     }
 
-    /// Only what changed is published, and the seconds only when the whole
-    /// second moves: nothing is redrawn more than once a second all night.
+    /// Only what changed is published: the fade, and its figure by the
+    /// minute. Outside the fade nothing is published between two events.
     private func publish(left: TimeInterval, fading: Bool) {
-        if remaining.map({ $0.rounded(.up) }) != left.rounded(.up) {
-            remaining = left
-        }
         if isFading != fading { isFading = fading }
         let minutes = fading ? TimerMath.fadingMinutes(remaining: left) : nil
         if fadingMinutes != minutes { fadingMinutes = minutes }
@@ -275,18 +326,21 @@ final class SleepTimerController: ObservableObject {
         onComplete?()
     }
 
-    private func startTicking() {
+    /// One one-shot for whatever comes next. Background audio keeps the
+    /// process running, so it fires with the screen locked. The delay is
+    /// read from the clock passed in, so a pinned clock schedules nothing
+    /// that fires at once.
+    private func scheduleNext() {
         ticker?.invalidate()
         ticker = nil
-        guard usesTicker else { return }
-        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
+        guard usesTicker, let wait = secondsToNextEvent() else { return }
+        // A hair late rather than early: `tick` must find the event due.
+        let timer = Timer(timeInterval: wait + 0.05, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated {
                 self?.tick()
             }
         }
         timer.tolerance = 0.2
-        // Background audio keeps the process running, so it fires with the
-        // screen locked.
         RunLoop.main.add(timer, forMode: .common)
         ticker = timer
     }

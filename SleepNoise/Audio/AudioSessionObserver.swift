@@ -63,6 +63,9 @@ final class AudioSessionObserver: NSObject, AudioSessionObserving, @unchecked Se
         switch port.portType {
         case .builtInSpeaker, .builtInReceiver:
             return .builtInSpeaker
+        case .airPlay, .carAudio, .HDMI:
+            // An output that is certainly not on anybody's ears.
+            return .external(id: port.uid, isHeadphones: false)
         default:
             return .external(id: port.uid)
         }

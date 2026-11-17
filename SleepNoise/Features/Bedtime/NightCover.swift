@@ -78,6 +78,11 @@ private struct NightScreenAwake: ViewModifier {
                 apply()
             }
             .onChange(of: model.keepScreenOn) { _, _ in apply() }
+            // Only a night that is open holds the screen: when it ends by
+            // itself the iPhone sleeps as the system says.
+            .onChange(of: model.isPlaying) { _, _ in apply() }
+            .onChange(of: model.pauseCause) { _, _ in apply() }
+            .onChange(of: model.sessionEndedAt) { _, _ in apply() }
             .onReceive(NotificationCenter.default.publisher(
                 for: UIDevice.batteryStateDidChangeNotification
             )) { _ in

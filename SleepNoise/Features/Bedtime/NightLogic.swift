@@ -44,6 +44,9 @@ enum NightStatus: Equatable {
         var endedAt: Date?
         /// The session level to say, while the note of the drag lasts.
         var levelNote: Int?
+        /// The output that went away was a pair of headphones, as far as
+        /// the system tells. Anything else is just "Paused".
+        var lostOutputWasHeadphones = true
     }
 
     static func resolve(_ input: Input) -> NightStatus {
@@ -60,7 +63,8 @@ enum NightStatus: Equatable {
         }
         if input.startFailures > 0 { return .noSound }
         switch input.pauseCause {
-        case .lostOutput, .headphones: return .pausedHeadphones
+        case .headphones: return .pausedHeadphones
+        case .lostOutput: return input.lostOutputWasHeadphones ? .pausedHeadphones : .paused
         case .call: return .pausedCall
         case .person, .system: return .paused
         case nil: break
@@ -180,7 +184,10 @@ extension NightStatus.Input {
             fadingMinutes: timer.fadingMinutes,
             timerRemaining: timer.remaining,
             endedAt: model.sessionEndedAt,
-            levelNote: levelNote
+            // After a resume capped for the speaker the level is said until
+            // the next touch, as on the page (C49).
+            levelNote: levelNote ?? model.cappedLevelNote,
+            lostOutputWasHeadphones: model.lostOutputWasHeadphones
         )
     }
 }
@@ -258,8 +265,18 @@ struct NightTouch: Equatable {
     var isDown: Bool { startedAt != nil }
     var isAdjustingLevel: Bool { isDown && kind == .level }
 
-    mutating func begin(at date: Date, level: Float) {
-        kind = .undecided
+    /// A finger that comes down this close to the top or the bottom of the
+    /// screen belongs to the system: the notification shade, Control
+    /// Centre, the home indicator. It is not the level, a touch or a way
+    /// back.
+    static let edgeGuard: CGFloat = 32
+
+    static func isAtEdge(y: CGFloat, height: CGFloat) -> Bool {
+        y < edgeGuard || y > height - edgeGuard
+    }
+
+    mutating func begin(at date: Date, level: Float, isAtEdge: Bool = false) {
+        kind = isAtEdge ? .cancelled : .undecided
         startedAt = date
         startLevel = level
     }
