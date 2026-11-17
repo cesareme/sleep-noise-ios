@@ -60,33 +60,6 @@ final class AccessPolicyTests: XCTestCase {
         }
     }
 
-    func testPresetTiersFollowTheSoundsInsideThem() {
-        let free: [SoundPreset] = [.steadyRain, .nightWind]
-        for preset in free {
-            XCTAssertFalse(preset.requiresFullAccess, preset.rawValue)
-            guard case .levels(let levels) = PresetLibrary.apply(preset, hasFullAccess: false) else {
-                return XCTFail("A free preset should apply without Pro")
-            }
-            for sound in SoundID.allCases {
-                let level = levels[sound] ?? 0
-                if level > 0.001 {
-                    XCTAssertTrue(AccessPolicy.soundIsIncluded(sound, hasFullAccess: false))
-                }
-            }
-        }
-
-        let pro: [SoundPreset] = [.storm, .cabin, .campfire, .brook, .shore]
-        for preset in pro {
-            XCTAssertTrue(preset.requiresFullAccess, preset.rawValue)
-            XCTAssertEqual(PresetLibrary.apply(preset, hasFullAccess: false), .needsPro)
-            guard case .levels = PresetLibrary.apply(preset, hasFullAccess: true) else {
-                return XCTFail("Full access should apply a Pro preset")
-            }
-        }
-
-        XCTAssertEqual(SoundPreset.allCases.count, free.count + pro.count)
-    }
-
     /// Saved mixes, the last levels and Shortcuts store these raw values.
     /// Renaming a case makes that data fail to decode and it is lost.
     func testSoundRawValuesAreFrozen() {
@@ -239,7 +212,6 @@ final class NightAndShortcutTests: XCTestCase {
         let before = model.levels
 
         XCTAssertEqual(model.playSound(.thunder), .needsPro)
-        XCTAssertEqual(model.playPreset(.storm), .needsPro)
         if let minutes = lengthThatNeedsPro {
             XCTAssertEqual(model.startTimer(minutes: minutes), .needsPro)
         }
@@ -249,7 +221,7 @@ final class NightAndShortcutTests: XCTestCase {
         XCTAssertFalse(model.showPaywall)
         XCTAssertFalse(model.isPlaying)
         XCTAssertEqual(model.levels, before)
-        XCTAssertNil(model.activePreset)
+        XCTAssertNil(model.activeHouseMix)
         XCTAssertNil(model.timer.selectedMinutes)
     }
 
@@ -286,13 +258,14 @@ final class NightAndShortcutTests: XCTestCase {
         XCTAssertFalse(purchases.hasFullAccess)
         XCTAssertFalse(model.isPlaying)
 
-        for entry in ["preset", "timer"] {
+        for entry in ["house mix", "timer"] {
             let stale = try makeDefaults()
             let clock = PurchaseManager(defaults: stale, now: day0)
             clock.startTrialIfNeeded(now: day0)
             let other = MixerModel(purchases: clock, defaults: stale)
-            if entry == "preset" {
-                XCTAssertEqual(other.playPreset(.storm), .needsPro)
+            if entry == "house mix" {
+                let withPro = try XCTUnwrap(HouseMix.allCases.first { $0.load(hasFullAccess: false).isTrimmed })
+                XCTAssertTrue(other.loadHouseMix(withPro).isTrimmed, "loaded with the access the clock gives now")
             } else {
                 for sound in SoundID.allCases {
                     other.levels[sound] = 0
