@@ -40,6 +40,25 @@ enum PageLayers {
         present(levels).filter { !rows.contains($0) }.count
     }
 
+    /// The value of the "All layers" row: "and 5 more", followed by "Six at
+    /// once" when a layer that waits (`LayerCap`) has no row of its own to
+    /// say so. The number counts the layers of the mix without a row,
+    /// sounding or not, as it does for a Pro layer that keeps its level;
+    /// the words of the cap say that not all of them sound. Nil when every
+    /// layer above zero has its row.
+    static func moreValue(
+        _ levels: [SoundID: Float],
+        rows: [SoundID],
+        waiting: [SoundID],
+        more: (Int) -> String,
+        cap: String
+    ) -> String? {
+        let count = self.more(levels, rows: rows)
+        guard count > 0 else { return nil }
+        let words = more(count)
+        return waiting.contains { !rows.contains($0) } ? words + " · " + cap : words
+    }
+
     /// A layer that came up on its own (Play on an empty mix raises pink)
     /// takes the first empty row. With no row free it has none: it sounds,
     /// it is in the Layers sheet, and the state line names it.
@@ -112,7 +131,9 @@ enum PageStatus: Equatable {
         var timerEndsAtAnHour = false
         var timerIsFading = false
         var timerRemaining: TimeInterval?
-        /// Pro layers above zero that do not sound, loudest first.
+        /// Layers above zero that do not sound: the Pro ones without
+        /// access, loudest first, then the ones that wait because six
+        /// others sound, the next one to come in first.
         var omitted: [SoundID] = []
         /// No layer would sound at this access level.
         var isSilent = false

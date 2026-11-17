@@ -9,19 +9,35 @@ import SwiftUI
 /// sells, rates or asks.
 ///
 /// Opened from the night page it takes its one ink, and the Pro row is
-/// words: nothing sells at night.
+/// words: nothing sells at night. Without Pro, "Restore purchase" is then a
+/// row of its own under it (`SettingsRestoreRow`): what was paid for is
+/// never out of reach until the morning. Whether that row is there is
+/// decided when the sheet opens and does not change while it is open.
 struct SettingsSheet: View {
     @ObservedObject var model: MixerModel
     @ObservedObject var purchases: PurchaseManager
 
     @Environment(\.nightPhase) private var phase
     @Environment(\.openURL) private var openURL
+    @Environment(\.dynamicTypeSize) private var dynamicType
     @ScaledMetric(relativeTo: .footnote) private var headerLine: CGFloat = 18
     @State private var path: [SettingsPage]
+    /// "Restore purchase" is part of this visit, from the moment the sheet
+    /// opens until it closes.
+    @State private var hasRestoreRow: Bool
+    /// "Restore purchase" was pressed in this visit, or was still looking
+    /// when the sheet opened: its line is said here.
+    @State private var askedRestore: Bool
 
     init(model: MixerModel, purchases: PurchaseManager) {
         self.model = model
         self.purchases = purchases
+        // Read when the sheet is built, kept by the first draw: SwiftUI
+        // ignores these values on every later one.
+        _hasRestoreRow = State(initialValue: SettingsRestoreRow.existsOnOpen(
+            isPro: purchases.isPro, canSell: model.canSell, activity: purchases.activity
+        ))
+        _askedRestore = State(initialValue: SettingsRestoreRow.askedOnOpen(activity: purchases.activity))
         #if DEBUG
         _path = State(initialValue: SettingsArguments.initialPath)
         #else
@@ -47,6 +63,7 @@ struct SettingsSheet: View {
     var body: some View {
         // Read once per draw; the model checks again on the tap.
         let canSell = model.canSell
+        let restore = restoreRow
         NavigationStack(path: $path) {
             VStack(spacing: 0) {
                 SheetHeader(title: Localized.string("ajustes.titulo"))
@@ -58,8 +75,15 @@ struct SettingsSheet: View {
                         header(Localized.string("ajustes.seccion.pro"))
                             .padding(.top, Grid.group)
                         proRow(canSell: canSell)
+                        if restore.exists {
+                            restoreAction(restore)
+                            restoreResult(restore)
+                        }
                         header(SettingsText.aboutHeader(appName: Self.appName))
-                            .padding(.top, Grid.group)
+                            // The place of the restore line is air already.
+                            // At the accessibility sizes no place is kept,
+                            // so the air is the group's again.
+                            .padding(.top, restore.exists && !isLargeText ? Grid.inner : Grid.group)
                         EditorialRow(title: Localized.string("lo_que_no_hay.titulo")) {
                             path.append(.whatIsNotHere)
                         }
@@ -102,6 +126,28 @@ struct SettingsSheet: View {
                 .modifier(DebugDynamicType())
                 #endif
         }
+        .onChange(of: restore.resultKey) { _, key in
+            // About what was paid for: said over whatever is being read.
+            guard let key else { return }
+            var words = AttributedString(ProSheetText.spoken(Localized.string(key)))
+            words.accessibilitySpeechAnnouncementPriority = .high
+            AccessibilityNotification.Announcement(words).post()
+        }
+        .onDisappear {
+            // The line of this visit says nothing about the next one, in
+            // Settings or in the Pro sheet.
+            if askedRestore, purchases.activity == .idle { purchases.clearNotice() }
+        }
+        #if DEBUG
+        .task {
+            // A capture of the row after its answer: pressed once the
+            // sheet is up and the store has given the name.
+            guard SettingsArguments.restoresOnAppear else { return }
+            try? await Task.sleep(for: .milliseconds(1200))
+            PageStage.stageRestore()
+            restorePurchase()
+        }
+        #endif
     }
 
     private func header(_ text: String) -> some View {
@@ -142,7 +188,9 @@ struct SettingsSheet: View {
             displayName: purchases.displayName,
             product: purchases.productState,
             receipt: purchases.receipt,
-            canSell: canSell
+            canSell: canSell,
+            // The row under this one was pressed: nothing here grows.
+            holdsName: askedRestore
         )
         return EditorialRow(
             // Where it wraps, a line begins with the dot, never ends with it.
@@ -156,6 +204,84 @@ struct SettingsSheet: View {
         .accessibilityLabel(Text(verbatim: row.spokenTitle))
         .accessibilityValue(Text(verbatim: row.spokenValue ?? ""))
         .accessibilityIdentifier("settings.pro")
+    }
+}
+
+extension SettingsSheet {
+    private var isLargeText: Bool { dynamicType.isAccessibilitySize }
+
+    private var restoreRow: SettingsRestoreRow {
+        SettingsRestoreRow(
+            exists: hasRestoreRow,
+            isPro: purchases.isPro,
+            activity: purchases.activity,
+            notice: purchases.notice,
+            isPlaying: model.isPlaying,
+            askedHere: askedRestore
+        )
+    }
+
+    /// "Restore purchase": it asks the App Store and nothing else
+    /// (`SettingsRestoreRow.restore(with:)`).
+    private func restorePurchase() {
+        let row = restoreRow
+        guard row.isEnabled else { return }
+        askedRestore = true
+        // Caused by a touch, so it may be spoken: the answer can take as
+        // long as typing the password of the account.
+        AccessibilityNotification.Announcement(
+            ProSheetText.spoken(Localized.string(SettingsRestoreRow.lookingKey))
+        ).post()
+        Task { await row.restore(with: purchases) }
+    }
+
+    /// One button from the touch to the answer: while it looks, and once
+    /// Pro is there, it is disabled, not replaced, so VoiceOver keeps its
+    /// place on it and says it is dimmed. With Pro it is words: the button
+    /// trait goes too.
+    private func restoreAction(_ row: SettingsRestoreRow) -> some View {
+        let title = Localized.string(row.titleKey)
+        return EditorialRow(title: title) {
+            restorePurchase()
+        }
+        .disabled(!row.isEnabled)
+        .accessibilityLabel(Text(verbatim: ProSheetText.spoken(title)))
+        .accessibilityRemoveTraits(purchases.isPro ? .isButton : [])
+        .accessibilityIdentifier("settings.restore")
+    }
+
+    /// What the restore brought, under its row. Up to the largest regular
+    /// text size the place is always there, as tall as its longest line:
+    /// the rows below never move. At the accessibility sizes that place
+    /// would be most of a screen of nothing, and what is under it is
+    /// already off the screen: only the line that is said is drawn.
+    private func restoreResult(_ row: SettingsRestoreRow) -> some View {
+        ZStack(alignment: .topLeading) {
+            if !isLargeText {
+                ForEach(SettingsRestoreRow.resultKeys, id: \.self) { key in
+                    restoreLine(key)
+                        .hidden()
+                        .accessibilityHidden(true)
+                }
+            }
+            if let key = row.resultKey {
+                restoreLine(key)
+                    .id(key)
+                    .transition(.opacity)
+                    .accessibilityIdentifier("settings.restore.result")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .padding(.horizontal, Grid.margin)
+        .padding(.top, row.resultKey != nil || !isLargeText ? Grid.unit * 2 : 0)
+        .animation(Motion.contentCurve, value: row.resultKey)
+    }
+
+    private func restoreLine(_ key: String) -> some View {
+        Text(verbatim: Localized.string(key))
+            .step(.note)
+            .foregroundStyle(Ink.secondary(phase))
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
@@ -212,6 +338,11 @@ struct WhatIsNotHerePage: View {
 enum SettingsArguments {
     static var initialPath: [SettingsPage] {
         PageArguments.state == .settingsNotHere ? [.whatIsNotHere] : []
+    }
+
+    /// The capture is of "Restore purchase" after it was pressed.
+    static var restoresOnAppear: Bool {
+        PageArguments.state?.restoreOutcome != nil
     }
 }
 #endif

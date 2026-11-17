@@ -96,14 +96,17 @@ struct PageView: View {
                     )
                     layerRows(shown, capacity: fits, canSell: canSell)
                         .padding(.top, metrics.airUnderHorizon)
+                    let allLayers = allLayersValue(shown)
                     EditorialRow(
                         title: Localized.string("capas.todas"),
-                        value: allLayersValue(shown),
+                        value: allLayers.map { LineTies.dotLeads($0) },
                         valueIsDatum: true,
                         rule: .top
                     ) {
                         sheet = .layers
                     }
+                    .accessibilityLabel(Text("capas.todas"))
+                    .accessibilityValue(Text(verbatim: PageStatus.spoken(allLayers ?? "")))
                     .accessibilityHint(Text("ax.mas.pista"))
                     .accessibilityIdentifier("openLayers")
                     Color.clear.frame(height: metrics.airOverTide)
@@ -461,9 +464,13 @@ struct PageView: View {
     }
 
     private func allLayersValue(_ shown: [SoundID]) -> String? {
-        let more = PageLayers.more(model.levels, rows: shown)
-        guard more > 0 else { return nil }
-        return Localized.format("capas.mas", Int64(more))
+        PageLayers.moreValue(
+            model.levels,
+            rows: shown,
+            waiting: model.waitingLayers,
+            more: { Localized.format("capas.mas", Int64($0)) },
+            cap: Localized.string("capas.tope")
+        )
     }
 
     private func chooseRows() {
@@ -685,7 +692,7 @@ private struct StatusLine: View {
             timerEndsAtAnHour: timer.choice.mode == .blanket,
             timerIsFading: timer.isFading,
             timerRemaining: timer.remaining,
-            omitted: MixLoad(levels: model.levels, hasFullAccess: hasFullAccess).omitted,
+            omitted: model.unheardLayers,
             isSilent: model.isSilent,
             isPlayingFallback: model.isPlayingFallback,
             isNightSession: model.isNightSession,

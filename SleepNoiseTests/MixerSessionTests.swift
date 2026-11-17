@@ -1011,14 +1011,272 @@ final class BedtimeModelTests: XCTestCase {
         night.model.appDidBecomeActive()
         XCTAssertFalse(night.model.isNightSession)
 
-        // The Night screen itself is never taken away by the morning.
+        // The Night screen of a night that is alive is never taken away
+        // by the morning either: playing at eight, it stays.
         let screen = try NightHarness(at: time(23))
+        screen.model.chooseTimer(.off)
         screen.model.enterBedtime()
-        screen.advance(seconds: 2_700)
         screen.jump(to: time(day: 18, 8))
         screen.model.appDidBecomeActive()
-        XCTAssertTrue(screen.model.isBedtime)
-        XCTAssertEqual(screen.model.sessionEndedAt, time(23, 45), "Night says when it ended")
+        screen.model.nightWindowChanged()
+        XCTAssertTrue(screen.model.isBedtime, "the night still plays")
+        XCTAssertTrue(screen.model.isPlaying)
+        XCTAssertNil(screen.model.sessionEndedAt)
+
+        // Paused by day on the Night screen: it stays for its twenty
+        // minutes, and goes with the night when they are up.
+        screen.model.pause()
+        screen.advance(seconds: 600)
+        screen.model.appDidBecomeActive()
+        XCTAssertTrue(screen.model.isBedtime, "paused, and still open")
+        XCTAssertEqual(screen.model.pauseCause, .person)
+        screen.advance(seconds: 600)
+        XCTAssertFalse(screen.model.isBedtime, "the night is over, by day")
+        XCTAssertFalse(screen.model.isNightSession)
+    }
+
+    // MARK: A night that ended, the morning after
+
+    /// Red if the morning leaves "Ended at…" and Small Hours in front of
+    /// whoever opens the app, or if the night takes them away before 07:00.
+    func testAnEndedNightKeepsItsScreenAtNightAndGivesWayByDay() throws {
+        let night = try NightHarness(at: time(23), free: true)
+        night.model.enterBedtime()
+        XCTAssertTrue(night.model.isBedtime)
+        // The timer of the first use runs out at 23:45.
+        night.advance(seconds: 2_700)
+        XCTAssertFalse(night.model.isPlaying)
+        XCTAssertEqual(night.model.sessionEndedAt, time(23, 45))
+        XCTAssertTrue(night.model.isBedtime, "at night the screen stays")
+
+        // Opened again in the small hours, and at 06:59: as it was, with
+        // the hour the night ended and the way into Small Hours.
+        for hour in [time(day: 18, 3, 42), time(day: 18, 6, 59)] {
+            night.jump(to: hour)
+            night.model.appDidBecomeActive()
+            night.model.nightWindowChanged()
+            XCTAssertTrue(night.model.isBedtime, "\(hour)")
+            XCTAssertEqual(night.model.sessionEndedAt, time(23, 45), "Night says when it ended")
+            let status = NightStatus.resolve(NightStatus.Input(endedAt: night.model.sessionEndedAt))
+            XCTAssertTrue(status.isOver, "Small Hours is in the place of +15 min")
+        }
+
+        // Opened at eight: the day page, at rest. Nothing sounds, nothing
+        // is sold and nothing started on the way.
+        let starts = night.engine.starts.count
+        let syncs = night.store.syncCount
+        night.jump(to: time(day: 18, 8))
+        night.model.appDidBecomeActive()
+        XCTAssertFalse(night.model.isBedtime, "the Night screen gave way")
+        XCTAssertFalse(night.model.isNightSession, "to the day page, not the night page")
+        XCTAssertFalse(night.model.isSmallHours)
+        XCTAssertFalse(night.model.isPlaying)
+        XCTAssertNil(night.model.pauseCause, "silent, not paused")
+        XCTAssertEqual(night.engine.starts.count, starts, "no sound")
+        XCTAssertFalse(night.model.showPaywall, "nothing is sold on the way")
+        XCTAssertEqual(night.store.purchaseCount, 0)
+        XCTAssertEqual(night.store.syncCount, syncs)
+        XCTAssertEqual(night.purchases.trialState, .ended, "and no trial was touched")
+        XCTAssertFalse(night.model.bedtimeKeepsScreenAwake(isCharging: true))
+        XCTAssertFalse(night.model.isBedtimeDimmed)
+        // It is the page of any other day: the sale gate is the day's.
+        XCTAssertTrue(night.model.canSell)
+
+        // Night asked for again that day is a new night.
+        XCTAssertEqual(night.model.enterBedtime(), .entered)
+        XCTAssertTrue(night.model.isBedtime)
+        XCTAssertTrue(night.model.isPlaying)
+        XCTAssertNil(night.model.sessionEndedAt)
+    }
+
+    /// The hour reaches 07:00 with the app open on an ended Night: it goes
+    /// then, without waiting for the app to be opened again.
+    func testAnEndedNightLeavesItsScreenWhenTheMorningComesWithTheAppOpen() throws {
+        let night = try NightHarness(at: time(23))
+        night.model.enterBedtime()
+        night.advance(seconds: 2_700)
+        XCTAssertEqual(night.model.sessionEndedAt, time(23, 45))
+
+        night.jump(to: time(day: 18, 6, 59))
+        night.model.nightWindowChanged()
+        XCTAssertTrue(night.model.isBedtime, "not yet")
+        night.jump(to: time(day: 18, 7))
+        night.model.nightWindowChanged()
+        XCTAssertFalse(night.model.isBedtime)
+        XCTAssertFalse(night.model.isNightSession)
+        XCTAssertFalse(night.model.isPlaying)
+        XCTAssertFalse(night.model.showPaywall)
+
+        // A night paused past its twenty minutes while the app slept is
+        // found over at the morning's launch, and its screen goes too.
+        let paused = try NightHarness(at: time(23))
+        paused.model.chooseTimer(.off)
+        paused.model.enterBedtime()
+        paused.model.pause()
+        paused.jump(to: time(day: 18, 8))
+        paused.model.appDidBecomeActive()
+        XCTAssertFalse(paused.model.isBedtime)
+        XCTAssertFalse(paused.model.isNightSession)
+        XCTAssertEqual(paused.model.sessionEndedAt, time(23), "it ended when it was paused")
+    }
+
+    /// A night whose timer runs out after 07:00, Night in front: there is
+    /// no "Ended at…" by day, the page is what is left.
+    func testANightThatEndsByDayLeavesNoNightScreenBehind() throws {
+        let night = try NightHarness(at: time(6, 50))
+        night.model.enterBedtime()
+        XCTAssertTrue(night.model.isBedtime)
+        // Still playing at 07:00 and after: the morning does not touch it.
+        night.advance(seconds: 900)
+        night.model.nightWindowChanged()
+        night.model.appDidBecomeActive()
+        XCTAssertTrue(night.model.isPlaying)
+        XCTAssertTrue(night.model.isBedtime, "a night that plays keeps its screen")
+        // 07:35: its forty-five minutes are up.
+        night.advance(seconds: 1_800)
+        XCTAssertFalse(night.model.isPlaying)
+        XCTAssertFalse(night.model.isBedtime)
+        XCTAssertFalse(night.model.isNightSession)
+
+        // Small Hours is not Night: the morning leaves it alone.
+        let small = try NightHarness(at: time(6, 55))
+        XCTAssertEqual(small.model.startSmallHours(), .started)
+        small.advance(seconds: 600)
+        small.model.nightWindowChanged()
+        small.model.appDidBecomeActive()
+        XCTAssertTrue(small.model.isSmallHours)
+        XCTAssertTrue(small.model.isPlaying)
+    }
+
+    /// Red if the morning takes the Night screen from a night that a call
+    /// still holds: past its twenty minutes and by day, it is alive until
+    /// the call says otherwise.
+    func testANightHeldByACallKeepsItsScreenByDay() throws {
+        // A call from 06:50 that is still on at 08:00.
+        let night = try NightHarness(at: time(day: 18, 6, 50))
+        night.model.chooseTimer(.off)
+        night.model.enterBedtime()
+        night.session.call(true)
+        night.session.interrupt()
+        XCTAssertEqual(night.model.pauseCause, .call)
+        night.jump(to: time(day: 18, 8))
+        night.model.appDidBecomeActive()
+        night.model.nightWindowChanged()
+        night.settle()
+        XCTAssertTrue(night.model.isBedtime, "the call still holds the night")
+        XCTAssertEqual(night.model.pauseCause, .call)
+        XCTAssertNil(night.model.sessionEndedAt)
+        XCTAssertEqual(night.model.nightYields, 0)
+
+        // It ends at eight, inside the morning: nothing resumes, the night
+        // is over and its screen goes with it. No sound and nothing sold.
+        let starts = night.engine.starts.count
+        night.session.call(false)
+        night.session.endInterruption()
+        XCTAssertFalse(night.model.isPlaying)
+        XCTAssertNil(night.model.pauseCause)
+        XCTAssertFalse(night.model.isBedtime, "over, and it is day")
+        XCTAssertFalse(night.model.isNightSession)
+        XCTAssertEqual(night.model.nightYields, 1, "nobody asked for this fade")
+        XCTAssertEqual(night.engine.starts.count, starts)
+        XCTAssertFalse(night.model.showPaywall)
+
+        // Outside the morning a call never ends the night: half an hour
+        // at noon, the screen stays and the night goes on after it.
+        let noon = try NightHarness(at: time(day: 18, 11, 30))
+        noon.model.chooseTimer(.off)
+        noon.model.enterBedtime()
+        noon.advance(seconds: 600)
+        noon.session.call(true)
+        noon.session.interrupt()
+        noon.jump(to: time(day: 18, 12, 10))
+        noon.model.appDidBecomeActive()
+        noon.model.nightWindowChanged()
+        noon.settle()
+        XCTAssertTrue(noon.model.isBedtime, "held, though its twenty minutes are long gone")
+        noon.session.call(false)
+        noon.session.endInterruption()
+        XCTAssertTrue(noon.model.isPlaying, "the same night")
+        XCTAssertTrue(noon.model.isBedtime)
+        XCTAssertEqual(noon.model.nightYields, 0)
+
+        // Leaving Night by hand is not the screen giving way by itself.
+        noon.model.leaveBedtime()
+        XCTAssertFalse(noon.model.isBedtime)
+        XCTAssertEqual(noon.model.nightYields, 0)
+    }
+
+    /// The alarm, which the system reports as an interruption like any
+    /// other. Red if a night it ended before 07:00 loses "Ended at…"
+    /// before the morning, or if one it ended by day keeps its screen.
+    func testANightTheAlarmEndedFollowsTheSameRule() throws {
+        // 06:40, inside the night window: the night is over and Night
+        // says when, until 07:00.
+        let early = try NightHarness(at: time(day: 18, 6, 30))
+        early.model.chooseTimer(.off)
+        early.model.enterBedtime()
+        early.advance(seconds: 600)
+        early.session.interrupt()
+        early.advance(seconds: 60)
+        early.session.endInterruption()
+        XCTAssertFalse(early.model.isPlaying, "in the morning no interruption resumes")
+        XCTAssertEqual(early.model.sessionEndedAt, time(day: 18, 6, 40))
+        XCTAssertTrue(early.model.isBedtime, "still night: \"Ended at…\" stays")
+        XCTAssertEqual(early.model.nightYields, 0)
+        early.jump(to: time(day: 18, 7))
+        early.model.nightWindowChanged()
+        XCTAssertFalse(early.model.isBedtime)
+        XCTAssertFalse(early.model.isNightSession)
+        XCTAssertEqual(early.model.nightYields, 1)
+
+        // 07:30, by day: while it is open the screen stays, and when it
+        // ends the page of the day is what is left.
+        let late = try NightHarness(at: time(day: 18, 6, 50))
+        late.model.chooseTimer(.off)
+        late.model.enterBedtime()
+        late.advance(seconds: 2_400)
+        XCTAssertTrue(late.model.isPlaying)
+        let starts = late.engine.starts.count
+        late.session.interrupt()
+        late.model.nightWindowChanged()
+        XCTAssertTrue(late.model.isBedtime, "an open interruption holds the night")
+        late.advance(seconds: 60)
+        XCTAssertTrue(late.model.isBedtime)
+        late.session.endInterruption()
+        XCTAssertFalse(late.model.isPlaying)
+        XCTAssertFalse(late.model.isBedtime)
+        XCTAssertFalse(late.model.isNightSession)
+        XCTAssertEqual(late.model.nightYields, 1)
+        XCTAssertEqual(late.engine.starts.count, starts, "no sound on the way")
+        XCTAssertFalse(late.model.showPaywall)
+    }
+
+    /// The earbuds fall out at 06:55 with Night in front: the night is
+    /// paused with the offer of the speaker, and 07:00 does not take its
+    /// screen. It goes when the twenty minutes of the pause are up.
+    func testALostOutputBeforeSevenKeepsNightForItsTwentyMinutes() throws {
+        let night = try NightHarness(at: time(day: 18, 6, 50))
+        night.session.currentRoute = ScriptedSession.airPods
+        night.model.chooseTimer(.off)
+        night.model.enterBedtime()
+        night.engine.render(seconds: 1)
+        night.advance(seconds: 300)
+        night.session.loseOutput()
+        XCTAssertEqual(night.model.pauseCause, .lostOutput)
+        XCTAssertNotNil(night.model.speakerOfferUntil)
+
+        night.jump(to: time(day: 18, 7, 5))
+        night.model.nightWindowChanged()
+        night.model.appDidBecomeActive()
+        XCTAssertTrue(night.model.isBedtime, "paused ten minutes ago: the night is open")
+        XCTAssertEqual(night.model.pauseCause, .lostOutput)
+        XCTAssertEqual(night.model.nightYields, 0)
+
+        night.advance(seconds: 660)
+        XCTAssertFalse(night.model.isBedtime, "07:16: the night is over, by day")
+        XCTAssertFalse(night.model.isNightSession)
+        XCTAssertFalse(night.model.isPlaying)
+        XCTAssertEqual(night.model.nightYields, 1)
     }
 }
 

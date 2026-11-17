@@ -59,9 +59,9 @@ enum LevelChange: Equatable {
 
 @MainActor
 final class MixerModel: ObservableObject {
-    /// The most layers that may sound at once (C19). A rule of the model:
-    /// the interface never draws slots for it.
-    nonisolated static let maxSimultaneousLayers = 6
+    /// The most layers that may sound at once (C19). A rule of the model
+    /// (`LayerCap`): the interface never draws slots for it.
+    nonisolated static let maxSimultaneousLayers = LayerCap.limit
     /// What Play raises when nothing would sound: the instrument always
     /// sounds.
     nonisolated static let fallbackSound = SoundID.pink
@@ -137,12 +137,17 @@ final class MixerModel: ObservableObject {
     /// is not on offer.
     @Published private(set) var speakerOfferUntil: Date?
     /// When the last night ended by itself (its timer, a long pause, the
-    /// morning): "Ended at 03:42" on the Night screen. Nil while a night is
-    /// open and after Small Hours, which ends without a word.
+    /// morning): "Ended at 03:42" on the Night screen, for as long as it is
+    /// night. Nil while a night is open and after Small Hours, which ends
+    /// without a word.
     @Published private(set) var sessionEndedAt: Date?
     /// The Night screen shows its two first-time sentences: nobody has
     /// seen them on this install yet. They are fixed text, not a tip (C65).
     @Published private(set) var showsNightIntro = false
+    /// Times the Night screen gave way to the day page by itself
+    /// (`leaveNightScreenIfOverByDay()`). Nobody asked for that fade, so
+    /// the cover takes no touch while it lasts (`NightCover`).
+    @Published private(set) var nightYields = 0
     /// The night came back on the iPhone's speaker turned down to the cap
     /// (C49): the page says "Playing · at 40" until the next touch. Nil
     /// otherwise. A note, not a state: the level itself is `sessionLevel`.
@@ -214,6 +219,10 @@ final class MixerModel: ObservableObject {
     private var loadedMixRecipe: [SoundID: Float]?
     /// Level rows with a finger on them right now.
     private var liveLevelGestures = 0
+    /// Layers of the mix that a drag still open took to zero. Until the
+    /// last finger lifts they may come back up past the cap: the drag that
+    /// silenced a layer can always undo it, as it does in a mix of six.
+    private var zeroedUnderFinger: Set<SoundID> = []
 
     init(
         purchases: PurchaseManager,
@@ -302,7 +311,14 @@ final class MixerModel: ObservableObject {
 
     /// Sets the level of a layer. A Pro layer without access does not move
     /// (and asks for the Pro sheet, which the night refuses). A layer raised
-    /// from zero while six already sound is not added.
+    /// from zero while six already sound is not added. A layer that is
+    /// already in the mix always moves, sounding or waiting: which six
+    /// sound is worked out again from the levels (`LayerCap`).
+    ///
+    /// A layer of the mix that a finger takes to zero is still in the mix
+    /// until the finger lifts: it may come back up in the same drag, even
+    /// when another layer came in meanwhile, and then competes by level
+    /// like any other.
     @discardableResult
     func setLevel(_ sound: SoundID, _ value: Float) -> LevelChange {
         guard AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess) else {
@@ -312,12 +328,16 @@ final class MixerModel: ObservableObject {
         let next = min(1, max(0, value))
         let current = levels[sound] ?? 0
         if current <= MixLoad.audibleThreshold, next > MixLoad.audibleThreshold,
+           !zeroedUnderFinger.contains(sound),
            soundingLayers.count >= Self.maxSimultaneousLayers {
             return .capReached
         }
         // Nothing changed (a drag that came back, a refused seventh layer
         // let go at zero): the mix keeps its name.
         guard next != current else { return .applied }
+        if liveLevelGestures > 0, current > MixLoad.audibleThreshold, next <= MixLoad.audibleThreshold {
+            zeroedUnderFinger.insert(sound)
+        }
         levels[sound] = next
         // A drag writes here on every sample: only what really changes is
         // published.
@@ -350,6 +370,8 @@ final class MixerModel: ObservableObject {
     func endLevelGesture() {
         liveLevelGestures = max(0, liveLevelGestures - 1)
         if liveLevelGestures == 0 {
+            // What was left at zero is out of the mix from here on.
+            zeroedUnderFinger.removeAll()
             persistLevels()
             endNightIfNothingSounds()
         }
@@ -369,13 +391,30 @@ final class MixerModel: ObservableObject {
         closeNight(endedAt: nil)
     }
 
-    /// The layers that sound: above zero and included at this access level.
-    /// A Pro layer that keeps a level without access is not one of them.
+    /// The layers that sound: above zero, included at this access level
+    /// and among the six highest (`LayerCap`). A Pro layer that keeps a
+    /// level without access is not one of them, and neither is a seventh.
     var soundingLayers: [SoundID] {
-        SoundID.allCases.filter { sound in
-            (levels[sound] ?? 0) > MixLoad.audibleThreshold
-                && AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess)
-        }
+        let sounding = LayerCap.sounding(levels, isIncluded: isIncluded)
+        return SoundID.allCases.filter { sounding.contains($0) }
+    }
+
+    /// The layers that wait because six already sound, the next one to come
+    /// in first. Each keeps its level, here and on disk; it sounds when one
+    /// of the six goes to zero. Empty in a mix of six or fewer.
+    var waitingLayers: [SoundID] {
+        LayerCap.waiting(levels, isIncluded: isIncluded)
+    }
+
+    /// The layers above zero that do not sound, as the state line of the
+    /// page names them ("Playing · without white or brown"): the Pro ones
+    /// without access, loudest first, then the ones that wait.
+    var unheardLayers: [SoundID] {
+        MixLoad(levels: levels, hasFullAccess: purchases.hasFullAccess).omitted + waitingLayers
+    }
+
+    private func isIncluded(_ sound: SoundID) -> Bool {
+        AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess)
     }
 
     // MARK: Pro sheet and night
@@ -433,6 +472,8 @@ final class MixerModel: ObservableObject {
     func nightWindowChanged() {
         saleClock += 1
         closeSaleIfNight()
+        // 07:00 with the Night screen in front and its night over.
+        leaveNightScreenIfOverByDay()
     }
 
     /// Wakes once at the next border of the night window, and again at the
@@ -770,6 +811,8 @@ final class MixerModel: ObservableObject {
         sessionEndedAt = wasSmallHours ? nil : endedAt
         nowPlaying.update(isPlaying: false, title: nowPlayingTitle)
         purchases.applyAccess(canDowngrade: !isPlaying)
+        // A night that ends by day leaves no Night screen behind.
+        if !wasSmallHours { leaveNightScreenIfOverByDay() }
     }
 
     /// The session level times what the blanket leaves of it.
@@ -950,7 +993,9 @@ final class MixerModel: ObservableObject {
 
     /// Loads a saved mix. Pro layers are muted (their levels are kept) when
     /// they are not included: the mix loads trimmed, like a house mix, and
-    /// its title says what it plays without. Never a sheet.
+    /// its title says what it plays without. Never a sheet. A mix with more
+    /// than six layers loads whole too: the six highest sound and the others
+    /// wait at their level (`LayerCap`).
     @discardableResult
     func apply(_ mix: SavedMix) -> Bool {
         let next = mix.levelsBySound
@@ -1292,6 +1337,33 @@ final class MixerModel: ObservableObject {
         beginNightSession()
     }
 
+    /// The Night screen gives way to the day page by itself once its night
+    /// is over and it is day (07 §4.1, S5). Outside `NightWindow`, "Ended
+    /// at…" and the way into Small Hours are last night's: whoever opens
+    /// the app in the morning finds the page of the day, at rest. Nothing
+    /// sounds and nothing is asked or sold on the way.
+    ///
+    /// At night the screen stays, with the hour the night ended and Small
+    /// Hours in the place of "+15 min". A night that is still open (playing,
+    /// held by an interruption, or paused within its twenty minutes) keeps
+    /// its screen at any hour: the morning never takes a night that is
+    /// alive. Small Hours is not Night and is not touched.
+    ///
+    /// Called when the app comes forward, when the hour reaches 07:00 with
+    /// the app open and when a night ends by itself.
+    private func leaveNightScreenIfOverByDay() {
+        guard isBedtime, !isSmallHours else { return }
+        let now = now()
+        guard !nightIsOpen(at: now), !heldByInterruption,
+              !NightWindow.contains(now, calendar: calendar) else { return }
+        isBedtime = false
+        nightYields += 1
+        if showsNightIntro { showsNightIntro = false }
+        cancelDimming()
+        // The day page, not the night page: nobody came back from Night.
+        if isNightSession { isNightSession = false }
+    }
+
     /// A touch on the Night screen (or on Small Hours): it is drawn at full
     /// ink again and the 60 s start over.
     func noteBedtimeTouch() {
@@ -1448,7 +1520,9 @@ final class MixerModel: ObservableObject {
     /// Access changed: bought, restored, the trial started, or lost once
     /// nothing was sounding. Nothing stored is written: the levels, the
     /// saved mixes and the tide's switch stay as they were (C23). What
-    /// changes is what may sound and what the page says about it.
+    /// changes is what may sound and what the page says about it. Pro
+    /// layers that come back at a level compete for the six like any other
+    /// (`LayerCap`), and when they go the layers that waited come in.
     private func accessDidChange() {
         clampTimerToEntitlement()
         refreshEntitledAudio()
@@ -1510,9 +1584,10 @@ final class MixerModel: ObservableObject {
 
     /// Switches the tide on or off. Takes effect at once when playing.
     /// Turning it on with the ocean silent raises the ocean so the tide can
-    /// be heard, unless six layers already sound: the cap is a rule of the
-    /// model, so the tide is armed and the ocean stays where it was. The
-    /// ocean it raised stays up when the tide goes.
+    /// be heard, unless six other layers already sound: the cap is a rule of
+    /// the model, so the tide is armed, the ocean stays where it was (at
+    /// zero, or waiting at the level it keeps) and the note says "Six at
+    /// once". The ocean it raised stays up when the tide goes.
     ///
     /// `startsSound` is the switch on the page and in the tide sheet: with
     /// nothing playing, turning the tide on starts the night, so the switch
@@ -1526,17 +1601,16 @@ final class MixerModel: ObservableObject {
         }
         guard breathing.settings.isEnabled != enabled else { return }
         breathing.settings.isEnabled = enabled
-        if enabled, (levels[.ocean] ?? 0) < 0.05 {
-            if !soundingLayers.contains(.ocean), soundingLayers.count >= Self.maxSimultaneousLayers {
-                showBreathingNote(String(localized: "capas.tope"))
-            } else {
-                writeLevel(.ocean, Self.tideOceanLevel)
-                tideOceanRaises += 1
-                showBreathingNote(String(
-                    format: String(localized: "marea.oceano.subido"),
-                    Int64((Self.tideOceanLevel * 100).rounded())
-                ))
-            }
+        if enabled, !soundingLayers.contains(.ocean), soundingLayers.count >= Self.maxSimultaneousLayers {
+            // The ocean is at zero or waits at its level: six others sound.
+            showBreathingNote(String(localized: "capas.tope"))
+        } else if enabled, (levels[.ocean] ?? 0) < 0.05 {
+            writeLevel(.ocean, Self.tideOceanLevel)
+            tideOceanRaises += 1
+            showBreathingNote(String(
+                format: String(localized: "marea.oceano.subido"),
+                Int64((Self.tideOceanLevel * 100).rounded())
+            ))
         }
         // Small Hours has its own tide: the switch is armed for the mix.
         guard !isSmallHours else { return }
@@ -1856,7 +1930,8 @@ final class MixerModel: ObservableObject {
     /// closed here, unless something still holds the output; a night that
     /// stayed paused too long is over; and the night page, which no clock
     /// ends while it is looked at (C40), gives way once its night is over
-    /// and the app is opened by day.
+    /// and the app is opened by day. So does the Night screen
+    /// (`leaveNightScreenIfOverByDay()`).
     func appDidBecomeActive() {
         appIsActive = true
         smallHours.figureIsWatched = true
@@ -1874,6 +1949,7 @@ final class MixerModel: ObservableObject {
         expireNightIfOver()
         refreshSpeakerOffer()
         refreshBedtimeDimming()
+        leaveNightScreenIfOverByDay()
         let now = now()
         let nightIsOver = !nightIsOpen(at: now) && !heldByInterruption
         let isDay = !NightWindow.contains(now, calendar: calendar)
@@ -1954,12 +2030,11 @@ final class MixerModel: ObservableObject {
         if isSmallHours {
             return smallHours.gains(hasFullAccess: purchases.hasFullAccess)
         }
+        // The one place the cap is applied to the sound (`LayerCap`): every
+        // road to the engine, whatever loaded the levels, ends here.
         var gains = SoundGains.zero
-        for sound in SoundID.allCases {
-            let level = levels[sound] ?? 0
-            if AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess) {
-                gains.set(sound, level)
-            }
+        for sound in LayerCap.sounding(levels, isIncluded: isIncluded) {
+            gains.set(sound, levels[sound] ?? 0)
         }
         return gains
     }

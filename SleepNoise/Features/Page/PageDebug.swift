@@ -41,6 +41,11 @@ enum PageDebugState: String, CaseIterable {
     case layersSix
     /// Layers with six sounding and the seventh refused.
     case layersCap
+    /// Layers with a mix of eight: the six highest sound, two wait.
+    case layersOver
+    /// The page with that mix of eight, playing: its three rows sound, the
+    /// two layers that wait have none, and the page says so.
+    case pageOver
     /// Layers without access, scrolled to its end: the last beds, a Pro
     /// one that keeps its level, and the notes over the bar.
     case layersEnd
@@ -113,6 +118,9 @@ enum PageDebugState: String, CaseIterable {
     case nightLevel
     /// The timer ran out: "Small hours" in the place of "+15 min".
     case nightEnded
+    /// The same night, with the app opened at eight the next morning: the
+    /// Night screen has given way to the day page.
+    case nightEndedMorning
     /// The sound did not start again.
     case nightError
 
@@ -215,8 +223,22 @@ enum PageDebugState: String, CaseIterable {
     case settingsPro
     /// Bought through the family.
     case settingsFamily
-    /// Opened from the night page: one ink, and the Pro row is words.
+    /// Opened from the night page: one ink, the Pro row is words and
+    /// "Restore purchase" is a row of its own under it.
     case settingsNight
+    /// The same after "Restore purchase": "Looking…".
+    case settingsNightRestoring
+    /// The App Store had nothing for this account: the longest line.
+    case settingsNightNothing
+    /// The purchase came back: "Thank you" under the row, which no longer
+    /// answers; the Pro row keeps the name alone until Settings closes.
+    case settingsNightRestored
+    /// The same with a purchase shared by the family.
+    case settingsNightRestoredFamily
+    /// The store did not answer.
+    case settingsNightStoreAway
+    /// The dialog of the Apple Account was closed: no line at all.
+    case settingsNightCancelled
     /// "What's not here".
     case settingsNotHere
     /// The end of Mixes: "Settings", its last row.
@@ -265,7 +287,25 @@ enum PageDebugState: String, CaseIterable {
         case .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNight, .settingsNotHere,
              .proOfferSettings:
             return true
-        default: return false
+        default: return restoreOutcome != nil
+        }
+    }
+
+    /// How "Restore purchase" ends in a staged Settings at night, or nil
+    /// for a state that does not press it.
+    enum RestoreOutcome {
+        case looking, nothing, restored, restoredFamily, storeAway, cancelled
+    }
+
+    var restoreOutcome: RestoreOutcome? {
+        switch self {
+        case .settingsNightRestoring: return .looking
+        case .settingsNightNothing: return .nothing
+        case .settingsNightRestored: return .restored
+        case .settingsNightRestoredFamily: return .restoredFamily
+        case .settingsNightStoreAway: return .storeAway
+        case .settingsNightCancelled: return .cancelled
+        default: return nil
         }
     }
 
@@ -295,7 +335,7 @@ enum PageDebugState: String, CaseIterable {
             return true
         default:
             // A staged trial is neither Pro nor a new install.
-            return trialConsumed != nil
+            return trialConsumed != nil || restoreOutcome != nil
         }
     }
 
@@ -303,7 +343,8 @@ enum PageDebugState: String, CaseIterable {
     var isNightScreen: Bool {
         switch self {
         case .nightEnter, .nightTimer, .nightDimmed, .nightKeepOn, .nightBlanket, .nightPlain,
-             .nightFading, .nightPaused, .nightSpeaker, .nightLevel, .nightEnded, .nightError, .storeNight:
+             .nightFading, .nightPaused, .nightSpeaker, .nightLevel, .nightEnded, .nightEndedMorning,
+             .nightError, .storeNight:
             return true
         default:
             return false
@@ -342,7 +383,7 @@ enum PageDebugState: String, CaseIterable {
         case .night, .nightLayers, .nightTide, .timerNight, .tideNight, .mixesNight, .mixesNightFree,
              .trialAtNight, .settingsNight:
             return true
-        default: return isNightScreen || isSmallHours
+        default: return isNightScreen || isSmallHours || restoreOutcome != nil
         }
     }
 }
@@ -380,7 +421,8 @@ enum PageArguments {
 
     static var opensLayers: Bool {
         switch state {
-        case .layers, .layersSix, .layersCap, .layersEnd, .nightLayers, .proOfferLayers, .storeLayers:
+        case .layers, .layersSix, .layersCap, .layersOver, .layersEnd, .nightLayers, .proOfferLayers,
+             .storeLayers:
             return true
         default: return false
         }
@@ -617,7 +659,7 @@ enum PageStage {
              .proReceiptFamily, .proReceiptReview,
              .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNotHere,
              .nightEnter, .nightTimer, .nightDimmed, .nightFading, .nightPaused, .nightSpeaker,
-             .nightLevel, .nightEnded, .nightError, .storePlaying, .storeNight,
+             .nightLevel, .nightEnded, .nightEndedMorning, .nightError, .storePlaying, .storeNight,
              .smallHours, .smallHoursPlain, .smallHoursWinding, .smallHoursPaused:
             // Night shows the timer of the first use: 45 minutes.
             break
@@ -664,7 +706,9 @@ enum PageStage {
             model.beginNightSession()
         case .timer:
             model.selectTimer(minutes: 45)
-        case .nightLayers, .settingsNight:
+        case .nightLayers, .settingsNight, .settingsNightRestoring, .settingsNightNothing,
+             .settingsNightRestored, .settingsNightRestoredFamily, .settingsNightStoreAway,
+             .settingsNightCancelled:
             model.beginNightSession()
         case .tide:
             model.setBreathingEnabled(true)
@@ -676,6 +720,19 @@ enum PageStage {
             setLevels(model, [.rain: 0.45, .wind: 0.25, .ocean: 0.5, .white: 0.15, .pink: 0.3, .brown: 0.2])
         case .layersCap:
             setLevels(model, [.rain: 0.45, .wind: 0.25, .ocean: 0.5, .thunder: 0.2, .pink: 0.3, .brown: 0.2])
+        case .layersOver, .pageOver:
+            // A mix saved by a version without the cap. White and brown
+            // are the lowest: they keep their level and wait.
+            setLevels(model, [
+                .white: 0.15, .pink: 0.3, .brown: 0.1, .rain: 0.45, .wind: 0.25,
+                .ocean: 0.5, .thunder: 0.2, .campfire: 0.35,
+            ])
+            if state == .pageOver {
+                // No timer: the state line is free to name the layers
+                // that wait. With one it says the hour, and the "All
+                // layers" row alone says "Six at once".
+                model.chooseTimer(TimerChoice.firstUse.with(mode: .off))
+            }
         case .layersEnd:
             // Thunder was saved at 20 while the trial lasted; it keeps it.
             setLevels(model, [.rain: 0.45, .wind: 0.25, .thunder: 0.2, .pink: 0.3])
@@ -732,6 +789,29 @@ enum PageStage {
         model.noteBedtimeTouch()
     }
 
+    /// Sets the staged store for the answer the capture is of, just before
+    /// Settings presses "Restore purchase".
+    static func stageRestore() {
+        guard let outcome = PageArguments.state?.restoreOutcome, let store = stageStore else { return }
+        switch outcome {
+        case .looking:
+            // "Looking…" lasts for as long as the App Store takes.
+            store.hangs = true
+        case .nothing:
+            store.syncResult = .synced
+        case .restored, .restoredFamily:
+            // Bought the day before the capture.
+            store.entitlementAfterSync = .entitled(ProReceipt(
+                purchaseDate: stageClock.date.addingTimeInterval(-86_400),
+                isFamilyShared: outcome == .restoredFamily
+            ))
+        case .storeAway:
+            store.syncResult = .unavailable
+        case .cancelled:
+            store.syncResult = .cancelled
+        }
+    }
+
     /// What a staged page does once it is on screen.
     static func didAppear(_ model: MixerModel) {
         guard let state = PageArguments.state else { return }
@@ -739,7 +819,10 @@ enum PageStage {
         case .rest, .restFree, .storeFirstUse, .layersSix, .layersEnd, .timerRest, .timerHour, .timerLength,
              .tideRest, .tideLocked, .mixesEmpty,
              .trialNight1, .trialNight3, .trialNight7, .trialLastDay, .trialNight8, .trialAtNight,
-             .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNight, .settingsNotHere:
+             .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNight, .settingsNotHere,
+             .settingsNightRestoring, .settingsNightNothing, .settingsNightRestored,
+             .settingsNightRestoredFamily, .settingsNightStoreAway, .settingsNightCancelled:
+            // Settings presses its own "Restore purchase" (`stageRestore`).
             break
         case .proOffer, .proTrial, .proLoading, .proUnavailable, .proReceipt, .proReceiptFamily,
              .proReceiptReview:
@@ -833,6 +916,18 @@ enum PageStage {
             model.enterBedtime()
             // The timer runs out: the night ends by itself.
             move(model, by: TimeInterval(TimerChoice.defaultMinutes * 60 + 1))
+        case .nightEndedMorning:
+            model.enterBedtime()
+            move(model, by: TimeInterval(TimerChoice.defaultMinutes * 60 + 1))
+            Task { @MainActor in
+                // "Ended at" is on screen; then the app is opened at
+                // eight, with nothing running in between.
+                try? await Task.sleep(for: .seconds(1))
+                stageClock.date = Calendar.current.date(
+                    bySettingHour: 8, minute: 0, second: 0, of: stageClock.date
+                ) ?? stageClock.date
+                model.appDidBecomeActive()
+            }
         case .nightError:
             model.enterBedtime()
             model.pause()
@@ -855,8 +950,8 @@ enum PageStage {
             for _ in 0..<2 { model.debugFailStart() }
         case .error3:
             for _ in 0..<3 { model.debugFailStart() }
-        case .playingTwo, .playingFive, .night, .timer, .layers, .layersCap, .largeType,
-             .storePlaying, .storeLayers,
+        case .playingTwo, .playingFive, .night, .timer, .layers, .layersCap, .layersOver, .pageOver,
+             .largeType, .storePlaying, .storeLayers,
              .nightLayers, .tide, .nightTide, .timerAsleep, .timerBlanket, .timerNight,
              .tideGuiding, .tideDescent, .tideNight,
              .mixes, .mixesSave, .mixesRename, .mixesDelete, .mixesFourth, .mixesNight, .mixesNightFree,

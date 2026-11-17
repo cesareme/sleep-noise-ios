@@ -371,7 +371,7 @@ Si tampoco eso es viable, la salida que no necesita a Apple: **enviar sin prueba
 
 | Motivo probable | Qué responder o hacer | Dónde está el material |
 |---|---|---|
-| "No encuentro la compra" o "no puedo restaurar" | El revisor probó de noche. Repite que la hoja se abre de 07:00 a 21:00 y por dónde se llega. Si el problema es restaurar de noche, ver `DECISIONES.md`, D-08 | `docs/store/notas-revision.md` |
+| "No encuentro la compra" o "no puedo restaurar" | El revisor probó de noche. Repite que la hoja se abre de 07:00 a 21:00 y por dónde se llega. Si el problema es restaurar de noche: sin Pro, mientras la hoja no se abre, "Restaurar compra" está también en Ajustes, en una fila bajo "pro" (`DECISIONES.md`, D-08, cerrada el 17-11-2026; las notas ya lo dicen) | `docs/store/notas-revision.md` |
 | 4.3, app parecida a otras | El sonido se genera en el iPhone en tiempo real, sin grabaciones; indica la carpeta `SleepNoise/Audio/DSP`, el reparto gratis y Pro y que no es una plantilla | `docs/ROADMAP.md`, apartado 4.3 |
 | 2.3, precio o condiciones en subtítulo o capturas | Pasar a los textos de reserva de las fichas | `docs/store/ficha-en.md`, `ficha-es.md` |
 | 5.1.1, política de privacidad dentro de la app | Comprobar D-06 | `docs/store/README.md` |

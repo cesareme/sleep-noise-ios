@@ -9,7 +9,8 @@ import SwiftUI
 ///
 /// Six layers may sound at once. That is a rule of the model, so the sheet
 /// draws nothing for it: the row of a seventh says "Six at once" and does
-/// not move. A Pro layer without access says "pro" in words (and keeps its
+/// not move, and in a mix that already holds more than six the rows that
+/// wait say it for as long as they wait. A Pro layer without access says "pro" in words (and keeps its
 /// saved level, "pro · 30"); a tap on it opens the Pro sheet only while
 /// something may be sold. At night nothing here sells.
 struct LayersSheet: View {

@@ -17,6 +17,11 @@ import UIKit
 /// A locked row (a Pro layer without access) keeps its saved level, shows
 /// "pro" where the value would be and does not move. Whether a tap may open
 /// the Pro sheet is the caller's decision: at night it passes no action.
+///
+/// A waiting row (an included layer above zero while six others sound) is
+/// drawn in secondary ink with its value and no level ink: it keeps its
+/// level and does not sound. It still moves under a finger like any other,
+/// and stays without level ink and without the accent while it waits.
 struct LevelRule: View {
     /// Stable identifier of the layer, for the accent arbiter.
     let id: String
@@ -24,6 +29,8 @@ struct LevelRule: View {
     let subtitle: String
     @Binding var level: Float
     var isLocked = false
+    /// The layer keeps its level and does not sound: six others do.
+    var isWaiting = false
     /// A few words in the dead channel under the row ("Six at once"). They
     /// fade in and out in place; the channel never answers a touch.
     var channelNote: String?
@@ -52,7 +59,8 @@ struct LevelRule: View {
     /// locked row is named like any other and its value says it is silent.
     private var speech: LevelRuleSpeech {
         LevelRuleSpeech(
-            name: name, subtitle: subtitle, level: level, isLocked: isLocked, namesPro: !phase.isNight
+            name: name, subtitle: subtitle, level: level, isLocked: isLocked, isWaiting: isWaiting,
+            namesPro: !phase.isNight
         )
     }
 
@@ -110,7 +118,9 @@ struct LevelRule: View {
             .animation(Motion.contentCurve, value: channelNote)
             .frame(maxWidth: .infinity, minHeight: Grid.layerChannel, alignment: .leading)
             .padding(.horizontal, Grid.margin)
-            .accessibilityHidden(channelNote == nil)
+            // A row that waits already says "Six at once" in its value:
+            // the note would be a second stop with the same words.
+            .accessibilityHidden(channelNote == nil || isWaiting)
             .allowsHitTesting(false)
     }
 
@@ -151,8 +161,12 @@ struct LevelRule: View {
     private var faceMode: LevelRuleFace.Mode {
         if isLocked { return .locked }
         if showsSlider { return .fineSlider }
-        if isDragging { return .underFinger(accent: arbiter.owns(.finger(id))) }
-        return .rest
+        if isDragging {
+            // A layer that waits is silent under the finger too: no level
+            // ink and no accent until it is one of the six.
+            return isWaiting ? .waitingUnderFinger : .underFinger(accent: arbiter.owns(.finger(id)))
+        }
+        return isWaiting ? .waiting : .rest
     }
 
     // MARK: Gestures
@@ -339,6 +353,14 @@ struct LevelRuleFace: View {
         case fineSlider
         /// A Pro layer without access: secondary ink, "pro", track only.
         case locked
+        /// Six other layers sound: secondary ink, the value it keeps,
+        /// track only. Same anatomy as `rest`.
+        case waiting
+        /// A finger is dragging a layer that waits: the `grafito` track
+        /// and the value grown in place, like any row under a finger, but
+        /// no ink on the line and no accent, because it still does not
+        /// sound. It becomes `underFinger` the moment it is one of the six.
+        case waitingUnderFinger
     }
 
     var name: String
@@ -360,10 +382,12 @@ struct LevelRuleFace: View {
 
     private var percent: Int { LevelMath.percent(level) }
     private var isLocked: Bool { mode == .locked }
+    /// Nothing of this row sounds: no ink on its line.
+    private var isMuted: Bool { mode == .locked || mode == .waiting || mode == .waitingUnderFinger }
     private var showsSlider: Bool { mode == .fineSlider }
     private var isUnderFinger: Bool {
         if case .underFinger = mode { return true }
-        return false
+        return mode == .waitingUnderFinger
     }
     private var ownsAccent: Bool { mode == .underFinger(accent: true) }
 
@@ -395,7 +419,7 @@ struct LevelRuleFace: View {
     }
 
     private var nameColor: Color {
-        isLocked ? Ink.secondary(phase) : Ink.primary(phase)
+        isMuted ? Ink.secondary(phase) : Ink.primary(phase)
     }
 
     private var subtitleColor: Color { Ink.secondary(phase) }
@@ -470,7 +494,7 @@ struct LevelRuleFace: View {
                 Rectangle()
                     .fill(Ink.text3)
                     .frame(height: 1)
-                if !isLocked {
+                if !isMuted {
                     Rectangle()
                         .fill(ownsAccent ? Ink.accent(phase) : Ink.primary(phase))
                         .frame(width: width * CGFloat(LevelMath.clamped(level)), height: isUnderFinger ? 3 : 2)
