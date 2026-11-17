@@ -20,3 +20,11 @@ uint32_t sn_seqlock_read_end(uint32_t *sequence) {
     atomic_thread_fence(memory_order_acquire);
     return atomic_load_explicit((_Atomic uint32_t *)sequence, memory_order_relaxed);
 }
+
+void sn_cell_store(uint32_t *cell, uint32_t value) {
+    atomic_store_explicit((_Atomic uint32_t *)cell, value, memory_order_relaxed);
+}
+
+uint32_t sn_cell_load(uint32_t *cell) {
+    return atomic_load_explicit((_Atomic uint32_t *)cell, memory_order_relaxed);
+}

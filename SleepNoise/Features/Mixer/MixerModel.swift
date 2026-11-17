@@ -89,6 +89,13 @@ final class MixerModel: ObservableObject {
         }
     }
 
+    /// Level of what the engine is producing right now, for the Horizon: the
+    /// RMS measured on the render thread, smoothed with `tau` seconds. 0 when
+    /// nothing sounds.
+    func outputLevel(tau: TimeInterval) -> Float {
+        engine.smoothedOutputRMS(tau: tau)
+    }
+
     func togglePlayback() {
         if isPlaying {
             pause(resumeLater: false)

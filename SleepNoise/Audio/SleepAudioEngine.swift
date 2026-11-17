@@ -8,10 +8,26 @@ final class SleepAudioEngine {
     /// app is used in the dark; a soft onset is kinder than a 30 ms step.
     static let defaultFadeIn: TimeInterval = 1.5
 
+    /// Volume of the graph's mixer: always 1 in a release build. A debug build
+    /// launched with `-silentOutput` renders, meters and publishes as usual
+    /// but sends nothing to the speaker, so the interface can be exercised on
+    /// a simulator without making a sound.
+    private static let mixerVolume: Float = {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-silentOutput") {
+            return 0
+        }
+        #endif
+        return 1
+    }()
+
     private var engine = AVAudioEngine()
     private var sourceNode: AVAudioSourceNode?
     private let mailbox = ParameterMailbox()
     private let state: UnsafeMutablePointer<RenderState>
+    /// Written by the render thread once per buffer, read here.
+    private let outputLevel = OutputLevelCell()
+    private var levelFollower = OutputLevelFollower()
     private var sampleRate: Double = 48_000
     private var lastGains = SoundGains.zero
     private var lastBreath = BreathParameters.off
@@ -65,6 +81,7 @@ final class SleepAudioEngine {
             // the system stopped the engine before our fade-out could render:
             // without this the envelope is still 1 and the fade-in is a no-op.
             state.pointee.resetForFreshStart()
+            outputLevel.clear()
         }
 
         lastGains = gains
@@ -78,6 +95,30 @@ final class SleepAudioEngine {
                 throw EngineError.engine(error)
             }
         }
+    }
+
+    /// RMS of the stereo output after the soft clip, as the render thread last
+    /// measured it: 0 for silence, about 0.7 for a full-scale sine. It is 0
+    /// whenever the engine is not rendering, so a paused or interrupted engine
+    /// never leaves a stale level on show. Main thread.
+    var outputRMS: Float {
+        guard engine.isRunning else { return 0 }
+        return outputLevel.rms
+    }
+
+    /// `outputRMS` followed with a time constant of `tau` seconds. The
+    /// smoothing advances with the clock between two calls, so the caller
+    /// (the Horizon) decides how often it runs and nothing ticks when nobody
+    /// draws. Main thread.
+    func smoothedOutputRMS(tau: TimeInterval = 0.5, now: TimeInterval? = nil) -> Float {
+        levelFollower.follow(outputRMS, at: now ?? Self.monotonicSeconds(), tau: tau)
+    }
+
+    /// Monotonic seconds for the smoothing. `DispatchTime` on purpose: the
+    /// system-uptime calls are "required reason" APIs for the privacy
+    /// manifest, and a level meter is no reason to declare one.
+    private static func monotonicSeconds() -> TimeInterval {
+        TimeInterval(DispatchTime.now().uptimeNanoseconds) / 1_000_000_000
     }
 
     func updateGains(_ gains: SoundGains) {
@@ -203,7 +244,7 @@ final class SleepAudioEngine {
         let node = makeSourceNode(format: format)
         engine.attach(node)
         engine.connect(node, to: engine.mainMixerNode, format: format)
-        engine.mainMixerNode.outputVolume = 1
+        engine.mainMixerNode.outputVolume = Self.mixerVolume
         sourceNode = node
     }
 
@@ -211,6 +252,7 @@ final class SleepAudioEngine {
         let state = self.state
         let commandPtr = mailbox.storage
         let sequencePtr = mailbox.sequence
+        let levelPtr = outputLevel.storage
 
         return AVAudioSourceNode(format: format) { _, _, frameCount, audioBufferList in
             let frames = Int(frameCount)
@@ -268,6 +310,7 @@ final class SleepAudioEngine {
             }
 
             state.pointee = render
+            publishOutputLevel(render.outputMeter.meanSquare, to: levelPtr)
             return noErr
         }
     }
