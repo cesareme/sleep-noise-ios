@@ -422,6 +422,10 @@ private struct GalleryActions: View {
                 TextAction(title: "Ahora no") {}
                     .environment(\.nightPhase, .nightPage)
             }
+            GalleryCase(title: "night action · Night and Small Hours: step 4, 64 pt (96 from AX3), one ink") {
+                NightAction(title: Localized.string("comun.mas15")) {}
+                    .environment(\.nightPhase, .night)
+            }
         }
     }
 }

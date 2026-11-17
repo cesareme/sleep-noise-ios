@@ -50,7 +50,7 @@ struct SmallHoursScreen: View {
                 word(status)
                     .padding(.top, NightLayout.lineGap)
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         } actions: {
             NightAction(title: Localized.string("comun.parar")) {
                 model.endSmallHours()

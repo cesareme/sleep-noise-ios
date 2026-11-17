@@ -31,6 +31,8 @@ struct FullScreenControl<Content: View, Actions: View>: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var touch = NightTouch()
+    /// Where the touch in course began, to tell one finger from the next.
+    @State private var touchOrigin: CGPoint?
     /// The touch in course began inside the wake guard: it is not counted.
     @State private var swallowsTouch = false
     @State private var wokeAt: Date?
@@ -76,6 +78,7 @@ struct FullScreenControl<Content: View, Actions: View>: View {
                 model.noteBedtimeTouch()
             } else {
                 touch.cancel()
+                touchOrigin = nil
                 swallowsTouch = false
             }
         }
@@ -128,15 +131,17 @@ struct FullScreenControl<Content: View, Actions: View>: View {
     private var finger: some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
-                guard !swallowsTouch else { return }
-                if !touch.isDown {
-                    if NightTouch.isGuarded(wokeAt: wokeAt, touchAt: value.time) {
-                        swallowsTouch = true
-                        return
-                    }
+                if touchOrigin != value.startLocation {
+                    // A new finger. Whatever the last one left behind (a
+                    // gesture the system took away never ends) is forgotten.
+                    touch.cancel()
+                    touchOrigin = value.startLocation
+                    swallowsTouch = NightTouch.isGuarded(wokeAt: wokeAt, touchAt: value.time)
+                    guard !swallowsTouch else { return }
                     model.noteBedtimeTouch()
                     touch.begin(at: value.time, level: model.sessionLevel)
                 }
+                guard !swallowsTouch else { return }
                 if let level = touch.move(translation: value.translation) {
                     showsRule = true
                     model.setSessionLevel(level)
@@ -144,6 +149,7 @@ struct FullScreenControl<Content: View, Actions: View>: View {
                 }
             }
             .onEnded { value in
+                touchOrigin = nil
                 if swallowsTouch {
                     swallowsTouch = false
                     return

@@ -59,7 +59,7 @@ struct NightScreen: View {
                         .padding(.top, NightLayout.lineGap)
                 }
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         } actions: {
             VStack(spacing: 0) {
                 if model.speakerOfferUntil != nil, !status.isOver {
