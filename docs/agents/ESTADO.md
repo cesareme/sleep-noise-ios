@@ -58,10 +58,13 @@ intent.timerNeedsProFormat
 
 S-04 retiró las que vivían en la pantalla antigua (`trial.intro.*`, `trial.ended.*`, `mixes.stripped`), junto con el resto de cadenas que solo usaba ella. `paywall.trial.activeFormat` es la que ve hoy toda instalación nueva que abre la hoja Pro mientras corre la prueba. `timer.locked` ya no se enseña: la página abre la hoja del temporizador con todas las duraciones libres. La corrección de S-04 quitó de la hoja Pro la ventaja del temporizador (`paywall.benefit.timer*`, que vendía algo que ya es gratis) y puso en las tres `paywall.trial.*` el viento y "el temporizador entero"; siguen hablando de días y de una prueba que empieza con Play, y se reescriben en S-07.
 
+**Hecho en S-07 (tarea 2):** no queda ninguna. `PaywallView` se borró con todas las `paywall.*` y con `common.close` (`ProCatalogTests.testTheStringsOfTheOldSheetAreGone`).
+
 ### Textos fuera del catálogo
 
 - `README.md`, párrafo de lo gratis y lo Pro: dice temporizador de 15, 30 o 60 minutos, una mezcla guardada y prueba de 7 días que empieza con el primer Play. Se corrige cuando la interfaz ya no tenga la puerta del temporizador a medida (S-06) y la prueba esté cableada (S-07).
 - `SleepNoise/Resources/SleepNoise.storekit`, descripciones EN y ES del producto: mencionan "timers past 60 minutes and custom". Se reescriben en S-07, que ya toca la tienda, y se replican en App Store Connect.
+- **Hecho en S-07:** el `.storekit` en la tarea 1 y el README en la tarea 2 (reparto, prueba, Atajos, pasos de la tienda local y mapa).
 
 ### Condiciones para cablear `NightTrial` (S-07)
 
@@ -106,6 +109,7 @@ De la entrega de la página y de Capas (17-11-2026). Quien abra el paquete indic
 
 - La cabecera de la página está vacía hasta que la prueba empieza (05 §2.1, C07) y enseña después la prueba de 7 días de hoy con la cadena del chip antiguo (`trial.chip.daysFormat`), como palabra de estado. La tarjeta de bienvenida y la de "prueba terminada" se fueron con la pantalla antigua: la prueba sigue empezando con Play hasta S-07, y ahora solo lo dice la hoja Pro.
 - Los renglones de la nota de una vez (noche 7 y noche 8) no se construyeron: dependen de `NightTrial`. La cabecera tiene su renglón fijo.
+- **Hecho en S-07 (tarea 2):** los dos renglones tienen vista (`PageTrialNote`, `TrialEndedNote`) y la palabra de cabecera no existe de noche. Detalle al final de este fichero.
 
 ### Lo que la página no hace todavía
 
@@ -148,6 +152,7 @@ De la revisión de la página y de Capas (17-11-2026). Lo que sigue no se arregl
 - **S-04 no se publica sin S-07.** La prueba sigue arrancando con el primer Play, también de madrugada, y la página no lo dice: solo lo explica la hoja Pro antigua.
 - **Cabecera vacía tras la prueba.** Con la prueba terminada y sin compra, comprar y restaurar se alcanzan solo desde una fila "pro" de Capas, desde la Marea o al guardar la cuarta mezcla, y nunca de noche. `pro.prueba.estado.gratis` ("gratis siempre") y las cadenas `pro.prueba.estado*` en noches entran aquí.
 - **Cadenas de la hoja Pro que faltan en la lista de arriba:** `paywall.purchaseFormat` ("Desbloquear Pro", en la lista negra), `paywall.restore` ("Restaurar compras"; la guía pide "Restaurar compra"), `paywall.trial.titleFormat` (días) y `common.close`.
+- **Hecho en S-07 (tarea 2)** para los tres puntos: la hoja Pro es `ProSheet`, la cabecera tras la prueba dice "gratis siempre" siete sesiones y abre la hoja de día, y esas cadenas ya no existen.
 
 ### S-08 (cadenas y capturas)
 
@@ -208,10 +213,12 @@ Sin hacer en esta tarea, y por qué:
 - **La banda de 120 pt y la línea de agua en la página** (03 §3.5, 05 §2.3): cambia la geometría de la página para todo el que tiene Marea. Queda para quien cierre la página en S-06.
 - **Paquete I0-8 de 06** (cambios de `main` que la spec pide): la disolución dentro de la ventana (hoy la guía dura la ventana entera y disuelve 120 s después), los 30 s de disolución al apagar a mano (hoy corta con el suavizado del motor), que el interruptor vuelva a apagado solo tras la retirada, y corregir el ancla con `outputLatency`.
 - **Háptica "Mínima"** (C35): 06 la mantiene en 1.0, pero no hay base de Core Haptics en el código. La fila Háptica y su nota no están; entra con Ajustes.
+- **S-07 (tarea 2):** Ajustes existe y la fila Háptica sigue fuera: no hay háptica de la Marea que ajustar.
 - **"Qué sabemos ›"**: la pantalla de destino no existe (E5, E7).
 - **`Slider` de pulsación larga sobre la banda** y la fila "Ritmo exacto" para Control por botón.
 - **Rueda de minutos de 5 en 5 en el selector de hora**: el `DatePicker` de SwiftUI no lo ofrece sin tocar la apariencia global.
 - **README**: el párrafo de lo gratis sigue diciendo 15, 30 o 60 minutos; se corrige con la prueba en S-07.
+- **Hecho en S-07.**
 - Sin verificar en dispositivo: VoiceOver sobre las dos hojas, el arrastre de la línea con un dedo real, la háptica de selección y que la línea de agua vaya con el oleaje (en el simulador el audio se silenció).
 
 ### Tarea 3 · Noche y Madrugada (17-11-2026)
@@ -277,6 +284,7 @@ Sin hacer en esta tarea, y por qué:
 - **"Guardar en «…»"**, la fila "Ajustes" (superficie 18) y el fundido cruzado de 1,5 s entre mezclas (cambio en el hilo de audio; hoy rige el suavizado del motor).
 - **`PlayLayer`, `ExtendTimer`, `Toggle` y `CurrentState`** (C43): fuera de los cinco de PLAN-SIMPLE.
 - **README**: sigue describiendo los atajos y el reparto antiguos; se corrige con S-07.
+- **Hecho en S-07 (tarea 2)**, y la fila "Ajustes" de Mezclas también.
 - Sin verificar en dispositivo: Siri y la app Atajos (frases, entidad, sinónimos, desambiguación), la pantalla de bloqueo ("En directo", título, controles), VoiceOver sobre la hoja y la háptica de guardar. En el simulador se comprobó a mano cargar una mezcla, el menú del nombre, "Vaciar", el menú de una fila y eliminar.
 
 ## Corrección de S-06 (17-11-2026)
@@ -367,4 +375,41 @@ Sin vistas nuevas. La hoja Pro antigua (`PaywallView`) sigue compilando sobre el
 - **La compra o la prueba "que se oyen" entran con el suavizado normal del motor**, no con el fundido de 800 ms de 08 §2.3: pide una rampa por capa en `EngineCommand` (hilo de audio). Tampoco se guarda qué capa abrió la hoja para subirla al empezar la prueba.
 - **Nota de "La prueba terminó":** muere con "Entendido" o con el siguiente Play de día. La tercera salida de 08 §2.4 ("la siguiente apertura de día") no está.
 - **"Gratis siempre" solo existe tras la prueba**, siete sesiones (guía 10 §2 y este fichero). 08 §2.4 la pone también en una instalación nueva; no se ha hecho, para no cambiar la primera pantalla. A decidir.
-- **Vistas:** hoja Pro en Grafito, recibo, fila Pro de Ajustes, los dos párrafos de la página y el estado "Pendiente" del botón.
+- **Vistas:** hechas en la tarea 2 (abajo).
+
+### Tarea 2 · Interfaz (17-11-2026)
+
+`PaywallView` se borró. La lógica de presentación es pura y está probada: `ProSheetContent`, `ProSheetText`, `AppLinks` (`Features/Pro/ProSheetLogic.swift`), `PageTrialNote` y `PageTrialWord.spoken` (`PageLogic.swift`), `SettingsText` y `SettingsProRow` (`Features/Settings/SettingsLogic.swift`). Estados de depuración `-pageState pro…`, `trial…`, `settings…` y `mixesEnd` en `PageDebug.swift`.
+
+- **Hoja Pro** (`ProSheet`, superficies 14, 15 y 33; anatomía de 08 §2.3). Versalita con `displayName`, `displayPrice` en paso 1 ("—" hasta que la tienda responde), "Una vez.", el titular, "con pro" (texturas nombradas y sin contar, Marea, mezclas sin límite, En familia) y "gratis siempre". Pie fijo: "Empezar la prueba · 7 noches" mientras la prueba no se ha usado, Comprar entre las dos únicas hairlines de acento, "Restaurar compra" y "Ahora no", y una línea que es el pie de privacidad o lo que acaba de pasar. Estados en palabras, sin spinner: "Comprando…", "Buscando…", "Pendiente", "Gracias. Todo abierto." (1,5 s y la hoja se cierra sola).
+- **Recibo**: el estado comprado de la misma hoja. "{displayName} · gracias · {fecha}" (y "· en familia"), "Gracias. Todo abierto." en el sitio del precio, las mismas listas, sin nada que cueste dinero. "Escribir una reseña" abre la página de la tienda; nunca `requestReview` (hay un test que lee los fuentes).
+- **Cabecera de la página**: la palabra solo existe mientras se puede vender. Dentro de `NightWindow`, en la página nocturna y en Madrugada el renglón queda vacío (antes, dentro de la ventana, era texto estático). VoiceOver lee "Prueba, quedan 5 noches" (`ax.prueba.cabecera`).
+- **Los dos renglones de una vez**: "Última noche con todo. Mañana, lo gratis sigue gratis." ocupa el sitio de "En silencio" hasta el Play, una frase por línea; "La prueba terminó. Lo que usaste sigue aquí." va bajo la línea de estado con "Entendido". Solo de día, en página de día y en silencio (`MixerModel.visibleTrialNote`).
+- **Ajustes** (`SettingsSheet`, superficie 18): hoja que ocupa el sitio de Mezclas al tocar su última fila, "Ajustes" (08 §2.1; única entrada). Lista de PLAN-SIMPLE §4.3: Noche ("Mantener encendida", con el menú del sistema, como las filas de la Marea), Pro (estado y entrada a la hoja), "Lo que no hay" y "Escribir al autor", más el pie de privacidad.
+- **"Lo que no hay"** (superficie 32): página empujada dentro de Ajustes. Siete hechos, uno por línea, "No te pediremos que la valores." y el pie.
+- **Componentes tocados**: `HairlineAction` (sin hairline inferior cuando la de debajo es de otra fila; etiqueta, valor y pista de VoiceOver), `EditorialRow` (`isInert`: palabras, no botón) y `MenuRow`, que sale de `TideSheet` para que la usen la Marea y Ajustes.
+- **`Info.plist`**: `LSApplicationQueriesSchemes` con `mailto`, para que `canOpenURL` pueda decir si hay un cliente de correo. Sin eso la fila "Escribir al autor" no aparecería nunca.
+
+### Decisiones de la tarea 2, a confirmar
+
+- **Sin dirección y sin identificador, dos cosas no se ven.** `AppLinks.appStoreID` y `AppLinks.authorAddress` son cadenas vacías: "Escribir una reseña" y "Escribir al autor" no aparecen hasta que el dueño dé el identificador de la app en la tienda y una dirección pública. Rellenarlas es todo lo que hace falta.
+- **Fila Pro de noche**: palabras, sin precio y sin toque. 08 §2.7 la deja con el precio como texto estático; aquí manda "de noche nada vende".
+- **Nombre antes de que la tienda responda**: "Pro" (la palabra de `comun.pro`) en la versalita de la hoja y en la fila de Ajustes. Con la tienda respondida una vez, el nombre queda guardado.
+- **"En familia"** se lista salvo que el producto cargado diga que no se comparte.
+- **Háptica fuera de Ajustes**: no hay base (el código solo tiene la háptica de los controles, con su puerta nocturna; la de la Marea de C35 no existe).
+- **"Lo que no hay" sin el párrafo del registro** (`lo_que_no_hay.diagnostico`): en 1.0 no hay diagnóstico (PLAN-SIMPLE §4.4) y la frase afirmaría algo que no existe.
+- **Sin fila de versión**: no está en la lista de PLAN-SIMPLE y `ajustes.version` pide el tamaño en MB fijado en build.
+- **`pro.prueba.empezar.nota`** solo se ve desde AX3, en la columna (08 §2.3 y §5d); en el resto es la pista de VoiceOver. La guía 10 §2.8 la pone bajo el botón.
+- **`pro.pendiente.boton`** ("Pendiente" / "Pending") viene de 08 §5e, donde está marcada como pendiente de la guía.
+- **Con texto de accesibilidad** el pie fijo guarda la prueba, Comprar y Restaurar; "Ahora no" y el pie de privacidad pasan al final de la columna. Una línea de resultado larga en AX3 lleva el pie fijo a algo más de la mitad de la hoja.
+- **La hoja con la prueba sin usar desplaza unos 40 pt en un iPhone 17 Pro**: 08 cuenta 808 pt útiles sin el área del indicador de inicio.
+- **De la hoja Pro abierta desde Ajustes se vuelve a Ajustes**; desde Marea y Mezclas, a la página (como ya era).
+
+### Sin verificar
+
+- **VoiceOver real**: etiquetas, valores, pistas y rasgos están puestos y la lógica probada, pero nadie ha recorrido las pantallas con VoiceOver.
+- **La compra de verdad**: los estados de la hoja se han visto con la tienda de guion (`ScriptedProStore`), no con StoreKit. Comprar, restaurar, Pedir para comprar, el reembolso y En familia quedan para el sandbox del dueño.
+- **Pantallas de 375 pt y de 667 pt de alto**: en una pantalla corta la nota "La prueba terminó" no cabe sobre el Horizonte y lo empuja mientras está; no se ha capturado. Tampoco de xL a xxxL, donde 08 §5d quiere la nota bajo el Horizonte.
+- **`mailto:` y el enlace a la tienda**: con las constantes vacías no se pueden probar.
+- Capturas en `.build/shots/` (`pro-*` y `settings-*`, español e inglés, AX3 y tres con Aumentar contraste), sin versionar.
+

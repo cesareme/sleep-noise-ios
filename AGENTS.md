@@ -30,7 +30,7 @@ SleepNoise/Design     Grafito: tokens, componentes, galería (-gallery)
 SleepNoise/Model      SoundID, AccessPolicy, NightTrial (prueba de 7 noches, Keychain)
 SleepNoise/StoreKit   PurchaseManager, ProStore (AppStoreProStore; doble ScriptedProStore)
 SleepNoise/Features   Page (página y Capas), Mixer (MixerModel), Timer, Breathing,
-                      Bedtime, SmallHours, Library, Paywall
+                      Bedtime, SmallHours, Library, Pro, Settings
 SleepNoise/Intents    los cinco Atajos
 SleepNoise/Resources  Localizable.xcstrings, Info.plist, entitlements, .storekit
 SleepNoiseTests       XCTest (Spectrum.swift para tests espectrales)
