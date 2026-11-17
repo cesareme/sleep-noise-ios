@@ -24,7 +24,7 @@ final class ShortcutTests: XCTestCase {
     // MARK: Play the last mix
 
     func testPlayStartsTheLastMixWithItsTimerAndNoTrial() throws {
-        let night = try NightHarness(at: time(23))
+        let night = try NightHarness(at: time(23), access: .free)
         XCTAssertEqual(night.purchases.trialState, .notStarted)
 
         XCTAssertEqual(night.model.playFromShortcut(), .started)
@@ -33,6 +33,8 @@ final class ShortcutTests: XCTestCase {
         XCTAssertEqual(night.model.loadedMix, .house(.pinkAndRain), "the mix that was there")
         XCTAssertTrue(night.model.timer.hasCount, "with the timer the person chose")
         XCTAssertEqual(night.purchases.trialState, .notStarted, "a trial never begins from an intent")
+        XCTAssertNil(night.trialStorage.record)
+        XCTAssertFalse(night.purchases.hasFullAccess)
         XCTAssertFalse(night.model.showPaywall)
 
         // Asked for again while it sounds: nothing changes.
@@ -41,16 +43,17 @@ final class ShortcutTests: XCTestCase {
         XCTAssertEqual(night.engine.calls, [])
     }
 
-    /// The Disc starts the trial the app has today; the same night started
-    /// by voice does not.
-    func testOnlyThePersonsOwnPlayStartsTheTrial() throws {
-        let disc = try NightHarness(at: time(23))
-        disc.model.play()
-        XCTAssertNotEqual(disc.purchases.trialState, .notStarted)
-
-        for shortcut in ["play", "mix", "timer", "small hours"] {
-            let night = try NightHarness(at: time(23))
+    /// No Play starts the trial (C07): not the Disc, not the lock screen,
+    /// not a Shortcut, by night or by day. Red if a start of the sound
+    /// writes a trial record.
+    func testNoPlayStartsTheTrial() throws {
+        for shortcut in ["disc", "remote", "play", "mix", "timer", "small hours"] {
+            let night = try NightHarness(at: time(shortcut == "disc" ? 12 : 23), access: .free)
             switch shortcut {
+            case "disc": night.model.play()
+            case "remote":
+                night.model.startIfNeeded()
+                night.nowPlaying.pressPlay()
             case "play": night.model.playFromShortcut()
             case "mix": night.model.playMixFromShortcut(.house(.wall))
             case "timer": night.model.setTimerFromShortcut(mode: .blanket)
@@ -58,6 +61,9 @@ final class ShortcutTests: XCTestCase {
             }
             XCTAssertTrue(night.model.isPlaying, shortcut)
             XCTAssertEqual(night.purchases.trialState, .notStarted, shortcut)
+            XCTAssertNil(night.trialStorage.record, shortcut)
+            XCTAssertEqual(night.trialStorage.saveCount, 0, shortcut)
+            XCTAssertFalse(night.purchases.hasFullAccess, shortcut)
             XCTAssertFalse(night.model.showPaywall, shortcut)
         }
     }
@@ -138,13 +144,14 @@ final class ShortcutTests: XCTestCase {
         XCTAssertTrue(night.model.isPlaying, "what sounds is not touched")
     }
 
-    /// The trial ran out while the app was suspended and nothing has looked
-    /// at the clock since: the Shortcut does, before it loads anything.
-    func testAShortcutReadsTheTrialClockBeforeLoading() throws {
+    /// The trial ran out while the app was suspended and nothing has
+    /// evaluated it since: the night a Shortcut starts does, before
+    /// anything sounds.
+    func testANightStartedByAShortcutEvaluatesTheTrial() throws {
         for shortcut in ["house mix", "saved mix", "play"] {
-            let night = try NightHarness(at: time(23))
-            night.purchases.startTrialIfNeeded(now: NightHarness.trialStart)
-            XCTAssertTrue(night.purchases.hasFullAccess, "stale: nobody has read the clock")
+            let night = try NightHarness(at: time(12), access: .trial)
+            night.jump(to: time(12).addingTimeInterval(8 * 86_400 + 11 * 3_600))
+            XCTAssertTrue(night.purchases.hasFullAccess, "stale: no session has started since")
             switch shortcut {
             case "house mix":
                 night.model.playMixFromShortcut(.house(.seaAndWind))
@@ -158,8 +165,10 @@ final class ShortcutTests: XCTestCase {
                 night.model.playFromShortcut()
             }
             XCTAssertFalse(night.purchases.hasFullAccess, shortcut)
+            XCTAssertEqual(night.purchases.trialState, .ended, shortcut)
             XCTAssertTrue(night.model.isPlaying, shortcut)
             XCTAssertEqual(night.engine.gains.ocean, 0, "\(shortcut): not one more Pro night")
+            XCTAssertNil(night.model.visibleTrialNote, "\(shortcut): nothing is said at night")
             XCTAssertFalse(night.model.showPaywall, shortcut)
         }
     }
@@ -323,6 +332,7 @@ final class ShortcutTests: XCTestCase {
         XCTAssertTrue(night.model.isSmallHours)
         XCTAssertFalse(night.model.showPaywall)
         XCTAssertEqual(night.purchases.trialState, .notStarted)
+        XCTAssertNil(night.trialStorage.record)
     }
 
     func testAnIntentThatCannotStartTheSoundSaysOnlyThat() async throws {

@@ -67,7 +67,7 @@ struct LayersSheet: View {
             get: { model.showPaywall },
             set: { if !$0 { model.dismissPro() } }
         )) {
-            PaywallView(purchases: purchases)
+            PaywallView(purchases: purchases, model: model)
                 .onDisappear { purchases.clearNotice() }
         }
     }

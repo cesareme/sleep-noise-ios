@@ -1,7 +1,7 @@
 import Foundation
 
-/// What the seven-night trial stores. `consumed` is counted as it is observed,
-/// the same arithmetic as `TrialClock.observe`.
+/// What the seven-night trial stores. `consumed` is counted as it is observed:
+/// every observation adds the wall-clock time elapsed since the one before.
 ///
 /// Keep it backward compatible: a field added later must be optional, or a
 /// record stored by an older build stops decoding and reads as "no trial".
@@ -147,28 +147,45 @@ struct NightTrial {
         return grantsFullAccess
     }
 
-    /// The figure of "trial · n nights left": nights between tonight and the
-    /// night the trial runs out, never less than 1 while it is active. A night
-    /// belongs to the day it began on, so the figure does not drop at midnight
-    /// in the middle of a night. `nil` before the trial starts and once it has
-    /// ended.
+    /// Reads the storage again when there is no record in memory. A read can
+    /// fail (the Keychain before the first unlock) and look like "no trial":
+    /// launch, the return to the foreground and every session start ask
+    /// again, so a trial that is running is not lost for the whole launch.
+    /// Returns whether a record appeared.
+    @discardableResult
+    mutating func reloadIfMissing() -> Bool {
+        guard record == nil, let stored = storage.loadTrial() else { return false }
+        record = stored
+        grantsFullAccess = stored.consumed < Self.length
+        return true
+    }
+
+    /// The figure of "trial · n nights left": the nights that are not over
+    /// yet and begin (21:00, `NightWindow.startHour`) before the trial runs
+    /// out. The night in progress counts until 07:00, so the figure does not
+    /// drop in the middle of a night; it drops in the morning. Never more
+    /// than `nights`. `nil` before the trial starts and once it has ended.
     ///
-    /// Known limit, an open question in the design notes (08 §9.3): on the
-    /// day the trial runs out the floor still answers 1 ("last night"), even
-    /// when a session started that night will find the trial over. That is
-    /// why the figure lives in this one function and nothing else derives
-    /// from it; settle the question before showing the figure.
+    /// 1 is the last night. 0 is the day the trial runs out: it is still
+    /// active until its hour, but no night is left, so no figure is shown
+    /// (08 §9.3, settled this way; the owner confirms). A trial whose time
+    /// is up and has not been evaluated yet answers 0 as well.
     func nightsRemaining(now: Date, calendar: Calendar = .current) -> Int? {
         guard status == .active, let record else { return nil }
         let used = record.consumed + max(0, now.timeIntervalSince(record.lastSeen))
-        let left = max(0, Self.length - used)
-        let end = now.addingTimeInterval(left)
-        let nights = calendar.dateComponents(
-            [.day],
-            from: Self.nightDay(of: now, calendar: calendar),
-            to: Self.nightDay(of: end, calendar: calendar)
-        ).day ?? 0
-        return max(1, nights)
+        // Not clamped: a trial that is over and not evaluated ended before now.
+        let end = now.addingTimeInterval(Self.length - used)
+        var day = Self.nightDay(of: now, calendar: calendar)
+        var count = 0
+        while count < Self.nights {
+            guard let start = calendar.date(
+                bySettingHour: NightWindow.startHour, minute: 0, second: 0, of: day
+            ), start < end else { break }
+            count += 1
+            guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { break }
+            day = next
+        }
+        return count
     }
 
     /// The local day a night began on: before `NightWindow.endHour` it is

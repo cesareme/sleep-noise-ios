@@ -2,7 +2,7 @@ import XCTest
 @testable import SleepNoise
 
 /// A storage that can lose a read or refuse a write, over a real one.
-private final class FaultyTrialStorage: TrialStorage {
+final class FaultyTrialStorage: TrialStorage {
     let inner: InMemoryTrialStorage
     var failsToRead = false
     var failsToWrite = false
@@ -216,45 +216,95 @@ final class NightTrialTests: XCTestCase {
     }
 
     // Red if the figure counts 24 h blocks, drops at midnight in the middle
-    // of a night, loses the floor of 1, or ignores time not yet evaluated.
-    // The 23:00 start is the example of the design notes (08 §2.4).
-    func testNightsRemainingFollowsTheCalendar() throws {
+    // of a night, counts a night the trial does not reach, or ignores time
+    // not yet evaluated. The start is by day: the trial is never offered
+    // inside `NightWindow`.
+    func testNightsRemainingCountsTheNightsThatAreLeft() throws {
         let calendar = try madrid()
         var trial = NightTrial(storage: InMemoryTrialStorage())
-        trial.start(now: try november(16, 23, 0))
+        trial.start(now: try november(16, 20, 0))
 
+        XCTAssertEqual(trial.nightsRemaining(now: try november(16, 20, 0), calendar: calendar), 7)
         XCTAssertEqual(trial.nightsRemaining(now: try november(16, 23, 0), calendar: calendar), 7)
+        // Still the first night: the figure does not change at midnight.
         XCTAssertEqual(trial.nightsRemaining(now: try november(17, 0, 30), calendar: calendar), 7)
+        XCTAssertEqual(trial.nightsRemaining(now: try november(17, 6, 59), calendar: calendar), 7)
+        // It changes in the morning, when that night is over.
+        XCTAssertEqual(trial.nightsRemaining(now: try november(17, 7, 0), calendar: calendar), 6)
         XCTAssertEqual(trial.nightsRemaining(now: try november(17, 23, 30), calendar: calendar), 6)
-        // Still the second night: the figure does not change at midnight.
         XCTAssertEqual(trial.nightsRemaining(now: try november(18, 1, 0), calendar: calendar), 6)
-        XCTAssertEqual(trial.nightsRemaining(now: try november(18, 7, 0), calendar: calendar), 5)
+        XCTAssertEqual(trial.nightsRemaining(now: try november(22, 12, 0), calendar: calendar), 1)
         XCTAssertEqual(trial.nightsRemaining(now: try november(22, 23, 30), calendar: calendar), 1)
-        XCTAssertEqual(trial.nightsRemaining(now: try november(23, 22, 0), calendar: calendar), 1)
-        // Past the end but not evaluated yet: still active, so still 1.
-        XCTAssertEqual(trial.nightsRemaining(now: try november(23, 23, 30), calendar: calendar), 1)
-        XCTAssertEqual(trial.status, .active)
+        XCTAssertEqual(trial.nightsRemaining(now: try november(23, 3, 0), calendar: calendar), 1)
     }
 
-    // Red if the figure of a trial started by day changes. It also writes
-    // down the open question (08 §9.3): on the last day the floor answers 1
-    // although no night is left. Settle it before the figure is shown.
-    func testNightsRemainingWithADaytimeStart() throws {
+    // Red if the day the trial runs out still reads "last night" (08 §9.3):
+    // that night a session start finds the trial over. The figure is 0 and
+    // the trial is still active until its hour.
+    func testNoNightIsLeftOnTheDayTheTrialRunsOut() throws {
         let calendar = try madrid()
         var trial = NightTrial(storage: InMemoryTrialStorage())
         trial.start(now: try november(16, 12, 0))
 
         XCTAssertEqual(trial.nightsRemaining(now: try november(16, 12, 0), calendar: calendar), 7)
-        XCTAssertEqual(trial.nightsRemaining(now: try november(16, 23, 0), calendar: calendar), 7)
-        XCTAssertEqual(trial.nightsRemaining(now: try november(17, 1, 0), calendar: calendar), 7)
-        XCTAssertEqual(trial.nightsRemaining(now: try november(17, 23, 0), calendar: calendar), 6)
         XCTAssertEqual(trial.nightsRemaining(now: try november(22, 23, 0), calendar: calendar), 1)
         XCTAssertEqual(trial.nightsRemaining(now: try november(23, 3, 0), calendar: calendar), 1)
 
-        // The last day: "last night" is read twice, and the second is not true.
-        XCTAssertEqual(trial.nightsRemaining(now: try november(23, 9, 0), calendar: calendar), 1)
-        XCTAssertEqual(trial.nightsRemaining(now: try november(23, 20, 0), calendar: calendar), 1)
+        // The last day, before its hour: active, and no night left.
+        XCTAssertEqual(trial.nightsRemaining(now: try november(23, 9, 0), calendar: calendar), 0)
+        XCTAssertTrue(trial.evaluateAtSessionStart(now: try november(23, 9, 0)))
+        XCTAssertEqual(trial.status, .active)
+        // Past its hour and not evaluated yet, by day and at night.
+        XCTAssertEqual(trial.nightsRemaining(now: try november(23, 20, 0), calendar: calendar), 0)
+        XCTAssertEqual(trial.nightsRemaining(now: try november(23, 23, 0), calendar: calendar), 0)
+        XCTAssertEqual(trial.status, .active)
+
         XCTAssertFalse(trial.evaluateAtSessionStart(now: try november(23, 23, 0)))
         XCTAssertNil(trial.nightsRemaining(now: try november(23, 23, 0), calendar: calendar))
+    }
+
+    // Red if the figure can promise more than the seven nights, or if the
+    // hour that the clocks go back adds or removes a night.
+    func testTheFigureNeverPassesSevenAndFollowsTheLocalClock() throws {
+        let calendar = try madrid()
+        // A start inside the night, which the app never allows: eight
+        // nights begin before it ends, and the figure still says seven.
+        var late = NightTrial(storage: InMemoryTrialStorage())
+        late.start(now: try november(16, 23, 0))
+        XCTAssertEqual(late.nightsRemaining(now: try november(16, 23, 0), calendar: calendar), 7)
+
+        // Across the end of summer time (25-10-2026 in Madrid): seven times
+        // 86 400 s end one hour earlier by the local clock.
+        func october(_ day: Int, _ hour: Int) throws -> Date {
+            try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 10, day: day, hour: hour)))
+        }
+        var autumn = NightTrial(storage: InMemoryTrialStorage())
+        autumn.start(now: try october(20, 12))
+        XCTAssertEqual(autumn.nightsRemaining(now: try october(20, 12), calendar: calendar), 7)
+        XCTAssertEqual(autumn.nightsRemaining(now: try october(26, 12), calendar: calendar), 1)
+        XCTAssertEqual(autumn.nightsRemaining(now: try october(27, 8), calendar: calendar), 0)
+        XCTAssertFalse(autumn.evaluateAtSessionStart(now: try october(27, 11)))
+    }
+
+    // Red if a read that failed at launch leaves a running trial on the
+    // free tier for good, or if asking again can hand out a second trial.
+    func testAReadThatFailedIsAskedAgain() throws {
+        let start = try day0()
+        let storage = FaultyTrialStorage()
+        var first = NightTrial(storage: storage)
+        XCTAssertTrue(first.start(now: start))
+
+        storage.failsToRead = true
+        var trial = NightTrial(storage: storage)
+        XCTAssertEqual(trial.status, .notStarted)
+        XCTAssertFalse(trial.reloadIfMissing(), "still unreadable")
+        XCTAssertFalse(trial.start(now: start.addingTimeInterval(day)), "the record is there: no second trial")
+        XCTAssertEqual(storage.inner.record?.startedAt, start)
+
+        storage.failsToRead = false
+        XCTAssertTrue(trial.reloadIfMissing())
+        XCTAssertEqual(trial.status, .active)
+        XCTAssertTrue(trial.grantsFullAccess)
+        XCTAssertFalse(trial.reloadIfMissing(), "nothing to ask once it is read")
     }
 }

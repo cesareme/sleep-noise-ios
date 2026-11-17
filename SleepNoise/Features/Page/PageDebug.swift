@@ -149,7 +149,7 @@ enum PageDebugState: String, CaseIterable {
         }
     }
 
-    /// Staged without access: the trial ran out and nothing was bought.
+    /// Staged without access: no trial and nothing bought.
     var isFreeTier: Bool {
         switch self {
         case .layersSix, .layersEnd, .tideLocked, .mixes, .mixesRename, .mixesDelete, .mixesFourth, .mixesTrimmed,
@@ -338,16 +338,32 @@ enum PageStage {
         return Calendar.current.date(from: components) ?? Date()
     }
 
+    /// The product a staged launch shows. The app itself never writes a
+    /// name or a price: these stand in for the App Store in the captures.
+    static let stagedProduct = ProProduct(
+        displayName: "SleepNoise Pro",
+        displayPrice: "29,99 €",
+        isFamilyShareable: true
+    )
+
     static func make(_ state: PageDebugState) -> (PurchaseManager, MixerModel) {
         let defaults = UserDefaults(suiteName: suiteName) ?? .standard
         defaults.removePersistentDomain(forName: suiteName)
-        let purchases = PurchaseManager(defaults: defaults)
-        if state.isFreeTier {
-            // The trial ran out long ago and nothing was bought.
-            let start = Date().addingTimeInterval(-30 * 86_400)
-            purchases.startTrialIfNeeded(now: start)
-            purchases.refreshAccess(now: start.addingTimeInterval(8 * 86_400), canDowngrade: true)
+        // A staged launch never touches the Keychain or the App Store: the
+        // trial lives in memory and the store answers what the stage says.
+        // Without access is a new install: no trial, nothing bought. With
+        // access is Pro bought, so the header stays empty.
+        let store = ScriptedProStore(product: stagedProduct)
+        if !state.isFreeTier {
+            store.entitlement = .entitled(ProReceipt(purchaseDate: clock(for: state), isFamilyShared: false))
+            defaults.set(true, forKey: PurchaseManager.cacheKey)
         }
+        let purchases = PurchaseManager(
+            defaults: defaults,
+            trialStorage: InMemoryTrialStorage(),
+            store: store,
+            now: clock(for: state)
+        )
         if state != .nightEnter {
             // Only one capture is the first Night of the install.
             defaults.set(true, forKey: MixerModel.nightIntroKey)

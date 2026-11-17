@@ -200,15 +200,14 @@ final class HouseMixModelTests: XCTestCase {
         return defaults
     }
 
-    /// The trial ran out days ago and nothing was bought.
+    /// The running trial is found over at the next session start.
     private func expire(_ purchases: PurchaseManager) {
-        purchases.startTrialIfNeeded(now: day0)
-        purchases.refreshAccess(now: day0.addingTimeInterval(8 * 86_400), canDowngrade: true)
+        purchases.expireTrial(startedAt: day0)
     }
 
     func testLoadingAHouseMixNeverRaisesThePaywall() throws {
         let defaults = try makeDefaults()
-        let purchases = PurchaseManager(defaults: defaults, now: day0)
+        let purchases = PurchaseManager.onDoubles(defaults: defaults, access: .trial, now: day0)
         expire(purchases)
         XCTAssertFalse(purchases.hasFullAccess)
         let model = MixerModel(purchases: purchases, defaults: defaults)
@@ -244,7 +243,7 @@ final class HouseMixModelTests: XCTestCase {
 
     func testAHouseMixIsWholeWithAccessAndSaysWhatItLosesWithout() throws {
         let defaults = try makeDefaults()
-        let purchases = PurchaseManager(defaults: defaults, now: day0)
+        let purchases = PurchaseManager.onDoubles(defaults: defaults, access: .trial, now: day0)
         XCTAssertTrue(purchases.hasFullAccess)
         let model = MixerModel(purchases: purchases, defaults: defaults)
         let mix = try XCTUnwrap(HouseMix.allCases.first { $0.load(hasFullAccess: false).isTrimmed })
@@ -269,7 +268,7 @@ final class HouseMixModelTests: XCTestCase {
     /// never had is not named as missing when access goes.
     func testTheTitleFollowsTheRecipeNotALayerTheTideRaised() throws {
         let defaults = try makeDefaults()
-        let purchases = PurchaseManager(defaults: defaults, now: day0)
+        let purchases = PurchaseManager.onDoubles(defaults: defaults, access: .trial, now: day0)
         let model = MixerModel(purchases: purchases, defaults: defaults)
         let mix = HouseMix.pinkAndRain
         XCTAssertFalse(mix.load(hasFullAccess: false).isTrimmed, "the recipe has no Pro layer")
@@ -304,7 +303,7 @@ final class HouseMixModelTests: XCTestCase {
             let name = house ? "house mix" : "saved mix"
             let expected = house ? seaAndWind.levelsBySound() : savedLevels
             let defaults = try makeDefaults()
-            let purchases = PurchaseManager(defaults: defaults, now: day0)
+            let purchases = PurchaseManager.onDoubles(defaults: defaults, access: .trial, now: day0)
             XCTAssertTrue(purchases.hasFullAccess)
             let model = MixerModel(purchases: purchases, defaults: defaults)
             XCTAssertEqual(model.levels[.ocean], 0, name)
@@ -324,7 +323,7 @@ final class HouseMixModelTests: XCTestCase {
         // Without a load in between the ocean the tide raised stays up: the
         // tide never switches off a layer it turned on.
         let defaults = try makeDefaults()
-        let model = MixerModel(purchases: PurchaseManager(defaults: defaults, now: day0), defaults: defaults)
+        let model = MixerModel(purchases: PurchaseManager.onDoubles(defaults: defaults, access: .trial, now: day0), defaults: defaults)
         model.setBreathingEnabled(true)
         model.setBreathingEnabled(false)
         XCTAssertEqual(model.levels[.ocean], MixerModel.tideOceanLevel)
@@ -334,7 +333,7 @@ final class HouseMixModelTests: XCTestCase {
     /// says what it plays without, and the name itself is kept apart.
     func testASavedMixWithProLayersLoadsTrimmed() throws {
         let defaults = try makeDefaults()
-        let purchases = PurchaseManager(defaults: defaults, now: day0)
+        let purchases = PurchaseManager.onDoubles(defaults: defaults, access: .trial, now: day0)
         expire(purchases)
         let model = MixerModel(purchases: purchases, defaults: defaults)
         let pro = try XCTUnwrap(SoundID.allCases.first { !AccessPolicy.soundIsIncluded($0, hasFullAccess: false) })
@@ -360,7 +359,7 @@ final class HouseMixModelTests: XCTestCase {
         // Whole with access, and trimmed again when the title is worked out
         // after access changes.
         let fresh = try makeDefaults()
-        let trial = PurchaseManager(defaults: fresh, now: day0)
+        let trial = PurchaseManager.onDoubles(defaults: fresh, access: .trial, now: day0)
         let whole = MixerModel(purchases: trial, defaults: fresh)
         XCTAssertFalse(whole.apply(mix))
         XCTAssertEqual(whole.loadedMixName, "Hotel")

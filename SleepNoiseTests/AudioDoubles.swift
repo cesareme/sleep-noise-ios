@@ -297,6 +297,63 @@ final class TestClock {
     init(_ now: Date) { self.now = now }
 }
 
+/// The access a test starts with.
+enum TestAccess {
+    /// Bought. The trial was never used.
+    case pro
+    /// A new install: nothing bought, no trial.
+    case free
+    /// The seven-night trial, started at the manager's `now`.
+    case trial
+    /// The trial ran out and nothing was bought.
+    case trialEnded
+}
+
+extension PurchaseManager {
+    /// A manager on doubles: never the Keychain, never the App Store.
+    @MainActor
+    static func onDoubles(
+        defaults: UserDefaults,
+        access: TestAccess = .pro,
+        trialStorage: InMemoryTrialStorage = InMemoryTrialStorage(),
+        store givenStore: ScriptedProStore? = nil,
+        calendar givenCalendar: Calendar? = nil,
+        timeouts: StoreTimeouts = StoreTimeouts(),
+        now: Date = Date(timeIntervalSinceReferenceDate: 700_000_000)
+    ) -> PurchaseManager {
+        let store = givenStore ?? ScriptedProStore()
+        let calendar = givenCalendar ?? NightHarness.utc
+        switch access {
+        case .pro:
+            defaults.set(true, forKey: PurchaseManager.cacheKey)
+            store.entitlement = .entitled(ProReceipt(purchaseDate: now, isFamilyShared: false))
+        case .free:
+            break
+        case .trial:
+            _ = trialStorage.createTrial(TrialRecord(startedAt: now, lastSeen: now, consumed: 0))
+        case .trialEnded:
+            _ = trialStorage.createTrial(
+                TrialRecord(startedAt: now, lastSeen: now, consumed: NightTrial.length + 86_400)
+            )
+        }
+        return PurchaseManager(
+            defaults: defaults,
+            trialStorage: trialStorage,
+            store: store,
+            calendar: calendar,
+            timeouts: timeouts,
+            now: now
+        )
+    }
+
+    /// The running trial of `.trial` is found over at the next session
+    /// start, eight days on.
+    @MainActor
+    func expireTrial(startedAt start: Date = Date(timeIntervalSinceReferenceDate: 700_000_000)) {
+        evaluateTrialAtSessionStart(now: start.addingTimeInterval(8 * 86_400))
+    }
+}
+
 /// A mixer on doubles: no audio session, no store, no timers on the run
 /// loop. The test moves the clock and the harness ticks what would tick.
 @MainActor
@@ -308,6 +365,8 @@ struct NightHarness {
     let clock: TestClock
     let defaults: UserDefaults
     let purchases: PurchaseManager
+    let trialStorage: InMemoryTrialStorage
+    let store: ScriptedProStore
 
     static let trialStart = Date(timeIntervalSinceReferenceDate: 700_000_000)
 
@@ -328,8 +387,14 @@ struct NightHarness {
         return utc.date(from: components) ?? trialStart
     }
 
-    /// `free`: the trial ran out and nothing was bought.
-    init(at start: Date, free: Bool = false, defaults suite: UserDefaults? = nil) throws {
+    /// `free`: the trial ran out and nothing was bought. `access` says it
+    /// in full; without either, Pro is bought.
+    init(
+        at start: Date,
+        free: Bool = false,
+        access: TestAccess? = nil,
+        defaults suite: UserDefaults? = nil
+    ) throws {
         let defaults: UserDefaults
         if let suite {
             defaults = suite
@@ -338,17 +403,25 @@ struct NightHarness {
             defaults = try XCTUnwrap(UserDefaults(suiteName: name))
             defaults.removePersistentDomain(forName: name)
         }
-        let purchases = PurchaseManager(defaults: defaults, now: Self.trialStart)
-        if free {
-            purchases.startTrialIfNeeded(now: Self.trialStart)
-            purchases.refreshAccess(now: Self.trialStart.addingTimeInterval(8 * 86_400), canDowngrade: true)
-        }
+        let trialStorage = InMemoryTrialStorage()
+        let store = ScriptedProStore()
+        // A running trial starts when the test does, so it is still
+        // running at the first Play.
+        let purchases = PurchaseManager.onDoubles(
+            defaults: defaults,
+            access: access ?? (free ? .trialEnded : .pro),
+            trialStorage: trialStorage,
+            store: store,
+            now: access == .trial ? start : Self.trialStart
+        )
         let clock = TestClock(start)
         let engine = OfflineEngine()
         let session = ScriptedSession()
         let nowPlaying = ScriptedNowPlaying()
         self.defaults = defaults
         self.purchases = purchases
+        self.trialStorage = trialStorage
+        self.store = store
         self.clock = clock
         self.engine = engine
         self.session = session

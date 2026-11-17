@@ -1,11 +1,12 @@
 import SwiftUI
 
-/// Three states: purchased (badge), trial not started or running (disclosure
-/// plus "keep everything"), trial over (plain unlock). Purchase and Restore
-/// are keyed on `isPro`, never on trial access, so App Review, which always
-/// lands inside the trial, can buy Pro.
+/// The Pro sheet as it was before Grafito, kept working on the new model
+/// until it is rebuilt: the price and the store states come from
+/// `PurchaseManager`, and the trial starts here and nowhere else (C07).
+/// Purchase and Restore are keyed on `isPro`, never on trial access.
 struct PaywallView: View {
     @ObservedObject var purchases: PurchaseManager
+    @ObservedObject var model: MixerModel
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -19,10 +20,6 @@ struct PaywallView: View {
                         Text("paywall.subtitle")
                             .font(.body)
                             .foregroundStyle(Palette.muted)
-                    }
-
-                    if !purchases.isPro {
-                        trialStatus
                     }
 
                     VStack(spacing: 12) {
@@ -48,15 +45,27 @@ struct PaywallView: View {
                             .font(.body.weight(.semibold))
                             .foregroundStyle(Palette.amber)
                     } else {
+                        if purchases.canStartTrial {
+                            Button {
+                                model.startTrial()
+                            } label: {
+                                Text("pro.prueba.empezar")
+                                    .font(.body.weight(.semibold))
+                                    .frame(maxWidth: .infinity, minHeight: 52)
+                            }
+                            .foregroundStyle(Palette.text)
+                            .disabled(purchases.activity != .idle)
+                            .accessibilityIdentifier("paywall.trial.start")
+                        }
                         purchaseButton
                         Button {
                             Task { await purchases.restore() }
                         } label: {
-                            Text("paywall.restore")
+                            Text("pro.restaurar")
                                 .font(.body.weight(.medium))
                                 .frame(maxWidth: .infinity, minHeight: 44)
                         }
-                        .disabled(purchases.isPurchasing)
+                        .disabled(purchases.activity != .idle)
                         .foregroundStyle(Palette.mist)
                     }
 
@@ -89,61 +98,18 @@ struct PaywallView: View {
         }
     }
 
-    /// Trial disclosure: duration, what stays free afterwards, and that the
-    /// mixes already saved are kept.
-    private var trialStatus: some View {
-        let (symbol, title, detail): (String, String, String) = {
-            switch purchases.trialState {
-            case .notStarted:
-                return ("gift",
-                        String(format: String(localized: "paywall.trial.titleFormat"), Int64(AccessPolicy.trialDays)),
-                        String(format: String(localized: "paywall.trial.notStartedFormat"), Int64(AccessPolicy.trialDays)))
-            case .active(let days):
-                return ("hourglass",
-                        String(format: String(localized: "paywall.trial.titleFormat"), Int64(AccessPolicy.trialDays)),
-                        String.localizedStringWithFormat(String(localized: "paywall.trial.activeFormat"), days))
-            case .ended:
-                return ("hourglass.bottomhalf.filled",
-                        String(localized: "paywall.trial.endedTitle"),
-                        String(localized: "paywall.trial.endedDetail"))
-            }
-        }()
-        return HStack(alignment: .top, spacing: 12) {
-            Image(systemName: symbol)
-                .font(.body.weight(.semibold))
-                .foregroundStyle(Palette.amber)
-                .frame(width: 28)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(Palette.text)
-                Text(detail)
-                    .font(.subheadline)
-                    .foregroundStyle(Palette.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Palette.amber.opacity(0.10))
-        )
-        .accessibilityIdentifier("paywall.trial")
-    }
-
     private var purchaseButton: some View {
         Button {
             Task { await purchases.purchase() }
         } label: {
             Group {
-                if purchases.isPurchasing {
+                if purchases.activity == .purchasing {
                     ProgressView()
                         .tint(Palette.background)
                 } else if let price = purchases.product?.displayPrice {
-                    Text(String(format: String(localized: purchaseKey), price))
+                    Text(String(format: String(localized: "pro.comprar"), price))
                 } else {
-                    Text("paywall.purchaseUnavailable")
+                    Text("pro.comprar.sin_precio")
                 }
             }
             .font(.body.weight(.semibold))
@@ -152,17 +118,8 @@ struct PaywallView: View {
         .buttonStyle(.borderedProminent)
         .tint(Palette.amber)
         .foregroundStyle(Palette.background)
-        .disabled(purchases.isPurchasing || purchases.product == nil)
+        .disabled(purchases.activity != .idle || purchases.product == nil || purchases.isPurchasePending)
         .accessibilityIdentifier("paywall.purchase")
-    }
-
-    private var purchaseKey: String.LocalizationValue {
-        switch purchases.trialState {
-        case .notStarted, .active:
-            return "paywall.keepFormat"
-        case .ended:
-            return "paywall.purchaseFormat"
-        }
     }
 
     private func benefit(symbol: String, title: LocalizedStringKey, detail: LocalizedStringKey) -> some View {
@@ -190,10 +147,12 @@ struct PaywallView: View {
 
     private func noticeText(_ notice: PurchaseNotice) -> LocalizedStringKey {
         switch notice {
-        case .restored: return "paywall.restored"
-        case .nothingToRestore: return "paywall.nothingToRestore"
-        case .pending: return "paywall.pending"
-        case .failed: return "paywall.failed"
+        case .purchased, .restored: return "pro.gracias"
+        case .nothingToRestore: return "pro.restaurar.no"
+        case .pending: return "pro.pendiente"
+        case .cancelled, .failed, .trialNotStarted: return "pro.fallo"
+        case .unconfirmed: return "pro.fallo.sin_confirmar"
+        case .storeUnavailable: return model.isPlaying ? "pro.sin_tienda" : "pro.sin_tienda.silencio"
         }
     }
 }

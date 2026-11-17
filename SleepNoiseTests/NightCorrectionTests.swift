@@ -266,24 +266,45 @@ final class NightCorrectionTests: XCTestCase {
         XCTAssertEqual(night.model.startFailures, 0)
     }
 
-    func testAResumeNobodyAskedForNeverBeginsTheTrial() throws {
-        let night = try NightHarness(at: time(2))
+    /// The trial is evaluated when a night starts and at no other start of
+    /// the sound: not when a call ends, and not when the person pauses and
+    /// plays again inside the same night. Red if either one takes the ocean
+    /// from under someone at 02:00.
+    func testAResumeInsideTheNightNeverEvaluatesTheTrial() throws {
+        let night = try NightHarness(at: time(12), access: .trial)
+        night.model.setLevel(.ocean, 0.5)
+        // The last second of the trial: the night starts with everything.
+        night.jump(to: time(12).addingTimeInterval(NightTrial.length - 1))
         XCTAssertEqual(night.model.playFromShortcut(), .started)
         night.engine.render(seconds: 1)
-        XCTAssertEqual(night.purchases.trialState, .notStarted)
+        XCTAssertEqual(night.engine.gains.ocean, 0.5)
+        let evaluated = night.trialStorage.saveCount
 
         night.session.interrupt()
         night.engine.render(seconds: 1)
         night.advance(seconds: 60)
         night.session.endInterruption()
         XCTAssertTrue(night.model.isPlaying)
-        XCTAssertEqual(night.purchases.trialState, .notStarted, "asleep, after a call: no trial begins")
+        XCTAssertTrue(night.purchases.hasFullAccess, "asleep, after a call: nothing is evaluated")
+        XCTAssertEqual(night.engine.gains.ocean, 0.5)
 
-        // The Disc is the person: that one does.
+        // The person pauses and plays again: the same night.
         night.model.pause()
         night.engine.render(seconds: 2)
         night.model.play()
-        XCTAssertNotEqual(night.purchases.trialState, .notStarted)
+        XCTAssertTrue(night.purchases.hasFullAccess)
+        XCTAssertEqual(night.engine.gains.ocean, 0.5, "the night keeps what it started with")
+        XCTAssertEqual(night.trialStorage.saveCount, evaluated, "the clock was not even read")
+
+        // Twenty minutes paused end the night. The next Play is a new one.
+        night.model.pause()
+        night.engine.render(seconds: 2)
+        night.advance(seconds: Int(SessionPause.longest) + 1)
+        night.model.play()
+        XCTAssertFalse(night.purchases.hasFullAccess)
+        XCTAssertEqual(night.purchases.trialState, .ended)
+        XCTAssertEqual(night.engine.gains.ocean, 0)
+        XCTAssertEqual(night.model.levels[.ocean], 0.5, "the level is kept")
     }
 
     // MARK: "+15 min" inside the fade

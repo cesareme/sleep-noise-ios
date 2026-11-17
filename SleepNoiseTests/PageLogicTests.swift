@@ -232,21 +232,28 @@ final class PageLogicTests: XCTestCase {
 
     // MARK: Trial word
 
-    func testTrialWordSaysTheTrialTheAppHasToday() {
-        for (language, five, last) in [
-            ("en", "trial · 5 days", "trial · last day"),
-            ("es", "prueba · 5 días", "prueba · último día"),
+    func testTrialWordSaysTheNightsThatAreLeft() {
+        for (language, five, last, free) in [
+            ("en", "trial · 5 nights left", "trial · last night", "always free"),
+            ("es", "prueba · quedan 5 noches", "prueba · última noche", "gratis siempre"),
         ] {
             let strings = catalog(language)
             let locale = Locale(identifier: language)
-            func word(_ trial: TrialState, isPro: Bool = false) -> String? {
-                PageTrialWord.text(trial: trial, isPro: isPro, localized: strings, locale: locale)
+            func word(_ trial: TrialState, isPro: Bool = false, alwaysFree: Bool = false) -> String? {
+                PageTrialWord.text(
+                    trial: trial, isPro: isPro, showsAlwaysFree: alwaysFree, localized: strings, locale: locale
+                )
             }
             XCTAssertNil(word(.notStarted), "the first screen says nothing about a trial")
-            XCTAssertEqual(word(.active(daysRemaining: 5)), five, language)
-            XCTAssertEqual(word(.active(daysRemaining: 1)), last, language)
-            XCTAssertNil(word(.ended), "after the trial the header is empty")
-            XCTAssertNil(word(.active(daysRemaining: 5), isPro: true), "bought: no mention")
+            XCTAssertNil(word(.notStarted, alwaysFree: true))
+            XCTAssertEqual(word(.active(nightsLeft: 5)), five, language)
+            XCTAssertEqual(word(.active(nightsLeft: 2))?.contains("2"), true, language)
+            XCTAssertEqual(word(.active(nightsLeft: 1)), last, language)
+            XCTAssertNil(word(.active(nightsLeft: 0)), "the day it runs out: no night is left, so no figure")
+            XCTAssertEqual(word(.ended, alwaysFree: true), free, language)
+            XCTAssertNil(word(.ended), "after the first free sessions the header is empty")
+            XCTAssertNil(word(.active(nightsLeft: 5), isPro: true), "bought: no mention")
+            XCTAssertNil(word(.ended, isPro: true, alwaysFree: true))
         }
     }
 
@@ -336,7 +343,7 @@ final class PageLogicTests: XCTestCase {
             "capas.titulo", "capas.seccion.colores", "capas.seccion.camas", "capas.nota", "capas.cero",
             "ax.mas.pista", "ax.nombre.pista", "ax.nombre.pista.noche", "ax.accion.guardar",
             "ax.accion.volver.dia", "ax.marea.off.pro", "ax.marea.pista.pro", "ax.prueba.pista",
-            "ax.reintentar", "trial.chip.daysFormat",
+            "ax.reintentar", "pro.prueba.estado", "pro.prueba.estado.ultima", "pro.prueba.estado.gratis",
             "mezcla.guardar.titulo", "common.save", "common.cancel",
             "mezcla.menu.guardar.pro", "ax.guardar.pro", "ax.guardar.pro.pista", "marea.oceano.subido",
         ] + SoundID.allCases.flatMap { [$0.nameKey, $0.detailKey] }
@@ -431,11 +438,9 @@ final class PageModelTests: XCTestCase {
     /// `free`: the trial ran out and nothing was bought.
     private func makeModel(free: Bool, clock: Clock, defaults: UserDefaults? = nil) throws -> MixerModel {
         let defaults = try defaults ?? makeDefaults()
-        let purchases = PurchaseManager(defaults: defaults, now: day0)
-        if free {
-            purchases.startTrialIfNeeded(now: day0)
-            purchases.refreshAccess(now: day0.addingTimeInterval(8 * 86_400), canDowngrade: true)
-        }
+        let purchases = PurchaseManager.onDoubles(
+            defaults: defaults, access: free ? .trialEnded : .pro, now: day0
+        )
         XCTAssertEqual(purchases.hasFullAccess, !free)
         return MixerModel(purchases: purchases, defaults: defaults, now: { clock.now }, calendar: utc)
     }
@@ -468,7 +473,7 @@ final class PageModelTests: XCTestCase {
         XCTAssertEqual(PageTitle.text(loadedMixName: model.loadedMixName), Localized.string("mezcla.nombre.vacio"))
 
         // Next launch: the stored levels, not the house mix again.
-        let purchases = PurchaseManager(defaults: defaults, now: day0)
+        let purchases = PurchaseManager.onDoubles(defaults: defaults, now: day0)
         let next = MixerModel(purchases: purchases, defaults: defaults)
         XCTAssertEqual(next.levels[.rain], 0.3)
         XCTAssertEqual(next.levels[.pink], HouseMix.pinkAndRain.levelsBySound()[.pink])

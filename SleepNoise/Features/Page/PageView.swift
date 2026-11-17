@@ -165,17 +165,11 @@ struct PageView: View {
                 model.appDidResignActive()
                 return
             }
-            // A trial that ran out is only applied while nothing is playing.
-            purchases.refreshAccess(canDowngrade: !model.isPlaying)
             // An interruption that never closed, a night paused too long,
-            // and a Pro sheet left up before the night, which does not come
-            // back with it.
+            // a Pro sheet left up before the night, which does not come
+            // back with it, and the clock of the trial.
             model.appDidBecomeActive()
             clock += 1
-        }
-        .onChange(of: purchases.hasFullAccess) { _, _ in
-            model.clampTimerToEntitlement()
-            model.refreshEntitledAudio()
         }
         .onChange(of: model.mixRevision) { _, _ in chooseRows() }
         .onChange(of: model.isPlayingFallback) { _, raised in
@@ -200,7 +194,7 @@ struct PageView: View {
             sheetContent(which)
         }
         .sheet(isPresented: proBinding(when: sheet == nil)) {
-            PaywallView(purchases: purchases)
+            PaywallView(purchases: purchases, model: model)
                 .onDisappear { purchases.clearNotice() }
         }
         .mixNaming($naming, model: model) { _ in
@@ -546,7 +540,11 @@ private struct PageHeaderWord: View {
 
     private var word: String? {
         guard !model.isNightSession else { return nil }
-        return PageTrialWord.text(trial: purchases.trialState, isPro: purchases.isPro)
+        return PageTrialWord.text(
+            trial: purchases.trialState,
+            isPro: purchases.isPro,
+            showsAlwaysFree: purchases.showsAlwaysFree
+        )
     }
 
     var body: some View {

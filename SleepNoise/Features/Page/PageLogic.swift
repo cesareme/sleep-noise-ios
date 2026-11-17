@@ -235,23 +235,42 @@ enum PageStatus: Equatable {
     }
 }
 
-/// The header of the page while the current trial lasts.
+/// The header of the page: the trial as a state word (08 §2.4).
 ///
-/// It appears only once the trial has begun (05 §2.1, C07): the first
-/// screen of a new install says nothing about a trial, and nothing after it
-/// ends. Until the seven-night trial is wired, this is the seven-day trial
-/// the app has today, said with the words it already had. It is never shown
-/// on the night page and it is plain text whenever nothing may be sold.
+/// It appears only once the trial has begun (C07): the first screen of a
+/// new install says nothing about a trial. While it runs it says how many
+/// nights are left, and "last night" on the last one. On the day the trial
+/// runs out no night is left, so there is no figure and no word. After it,
+/// "always free" for the first free sessions, then nothing. Bought: nothing.
+/// It is never shown on the night page and it is plain text whenever
+/// nothing may be sold.
 enum PageTrialWord {
+    static let nightsLeftKey = "pro.prueba.estado"
+    static let lastNightKey = "pro.prueba.estado.ultima"
+    static let alwaysFreeKey = "pro.prueba.estado.gratis"
+
     static func text(
         trial: TrialState,
         isPro: Bool,
+        showsAlwaysFree: Bool = false,
         localized: (String) -> String = { Localized.string($0) },
         locale: Locale = .current
     ) -> String? {
         guard !isPro else { return nil }
-        guard case .active(let days) = trial else { return nil }
-        let words = String.localizedStringWithFormat(localized("trial.chip.daysFormat"), days)
+        let words: String
+        switch trial {
+        case .notStarted:
+            return nil
+        case .active(let nights) where nights >= 2:
+            words = String.localizedStringWithFormat(localized(nightsLeftKey), nights)
+        case .active(let nights) where nights == 1:
+            words = localized(lastNightKey)
+        case .active:
+            return nil
+        case .ended:
+            guard showsAlwaysFree else { return nil }
+            words = localized(alwaysFreeKey)
+        }
         // State words are small caps: written in lower case.
         return words.lowercased(with: locale)
     }
