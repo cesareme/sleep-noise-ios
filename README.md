@@ -67,7 +67,8 @@ project.yml                  XcodeGen spec (app + unit tests)
 scripts/verify.sh            The gate: clean build, tests, no warnings
 SleepNoise/App               Entry point and colors
 SleepNoise/Audio             Session, engine, Now Playing
-SleepNoise/Audio/DSP         Real-time generators, fade, mailbox
+SleepNoise/Audio/DSP         Real-time generators, fade, mailbox, output meter
+SleepNoise/Design            Grafito design system: tokens, components, debug gallery
 SleepNoise/Features          Mixer, timer, saved mixes, paywall
 SleepNoise/Model             Sound ids and the free/Pro rules
 SleepNoise/StoreKit          StoreKit 2 purchase manager
@@ -77,6 +78,10 @@ docs/ROADMAP.md              v1.1, v1.2, and the App Store checklist
 ```
 
 The render callback copies a value-type `RenderState` once per buffer and reads gains through a seqlock (`AtomicBridge.c`, with explicit fences on both sides). It does not allocate, take a lock, or touch reference-counted objects. Left and right channels run independent noise generators with shared LFO phases, so the beds are decorrelated in stereo while swells stay centred. Pink noise is Paul Kellet’s economy filter. Brown noise is a leaky integrator. Rain is a hiss bed plus five overlapping resonant droplet voices with Poisson arrivals; the fan is a drifting resonant whoosh with a quiet motor hum; the ocean is a rumble under two incommensurate swells plus a surf band whose crest leads the wave.
+
+The same callback keeps a running mean square of what it outputs and stores it once per buffer in one atomic word; the main thread reads it to draw the Horizon, the line whose thickness is the real level of the sound.
+
+A debug build launched with `-gallery` opens the design gallery instead of the app: every Grafito component in its states. `-gallerySection <name>` shows one section, `-galleryType <size>` forces a Dynamic Type size and `-silentOutput` keeps the engine rendering without sending anything to the speaker.
 
 Saved mixes and the last slider positions are `Codable` values in `UserDefaults`. Strings live in `Localizable.xcstrings` (English and Spanish).
 

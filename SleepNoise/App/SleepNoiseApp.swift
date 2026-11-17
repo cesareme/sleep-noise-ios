@@ -6,8 +6,18 @@ struct SleepNoiseApp: App {
 
     var body: some Scene {
         WindowGroup {
+            #if DEBUG
+            if GalleryArguments.isRequested {
+                // Design gallery, debug builds only: launch with -gallery.
+                SystemGallery(model: root.mixer)
+            } else {
+                MixerView(model: root.mixer, purchases: root.purchases)
+                    .tint(Palette.amber)
+            }
+            #else
             MixerView(model: root.mixer, purchases: root.purchases)
                 .tint(Palette.amber)
+            #endif
         }
     }
 }

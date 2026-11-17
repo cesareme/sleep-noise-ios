@@ -26,6 +26,7 @@ SleepNoise/App        AppRoot, Theme
 SleepNoise/Audio      SleepAudioEngine, sesión, observador, Now Playing
 SleepNoise/Audio/DSP  EngineCommand, ParameterMailbox, AtomicBridge, RenderState,
                       SoundGains, generadores y filtros
+SleepNoise/Design     Grafito: tokens, componentes, galería (-gallery)
 SleepNoise/Model      SoundID, AccessPolicy, TrialClock
 SleepNoise/StoreKit   PurchaseManager
 SleepNoise/Features   Mixer, Timer, Breathing, Library, Paywall
