@@ -569,3 +569,50 @@ Diecinueve hallazgos de la revisión. Todos comprobados contra el código, el ca
 - Que un aviso del sistema que dure más de ocho segundos no se cuele en las dos tomas: la comprobación compara dos tomas, no sabe qué hay debajo. Las doce capturas se miran antes de subirlas.
 - Lo que ya estaba sin verificar: App Store Connect, un iPhone real, es-419.
 
+## Arreglos del repaso completo (17-11-2026)
+
+Veintiún hallazgos del recorrido de la app entera (dos de ellos, el mismo). Cada uno se comprobó contra el código de esta rama antes de tocar nada. Tests nuevos en `AppWalkthroughFixTests.swift`; lo de las vistas se miró en el simulador (iPhone 17 Pro, ES y EN). `scripts/verify.sh` en verde con 672 tests (suelo subido de 657 a 672).
+
+### Hecho
+
+- **Todas las capas a cero mientras suena.** Al soltar la última capa en cero (o al fijarla sin dedo, con VoiceOver) la noche termina como con "Vaciar": fundido de pausa, temporizador fuera, "En silencio" y Play. Con el dedo aún puesto no termina nada. Antes la página decía "Sonando · se funde a las…" con el motor y el temporizador corriendo sobre silencio.
+- **Manto vencido en silencio.** Una reanudación que nadie pidió (auriculares de vuelta, fin de una interrupción, reinicio de los servicios de audio) con la hora del Manto ya pasada cierra la noche a esa hora en vez de arrancar: el temporizador la tomaba por la de mañana y sonaba un día entero. Y la bajada del Manto que venció durante una pausa ya no se aplica al reanudar dentro del fundido final.
+- **Reinstalar con la prueba gastada.** El registro vive en el llavero y las preferencias no: el fin de una prueba que esta instalación nunca vio en marcha no es noticia, así que no hay párrafo ni "gratis siempre". `endEvaluatedKey` existe desde que la prueba empieza aquí o se encuentra aquí en marcha; solo entonces su fin deja nota.
+- **Madrugada no despierta cada minuto con la pantalla apagada.** El minuto solo es un hecho mientras la app está delante (`SmallHoursController.figureIsWatched`); al volver, la cifra se lee otra vez.
+- **Marea.** La línea "Se retira a las…" nunca da una hora posterior al fin del temporizador. El océano que la Marea sube ocupa la fila libre de la página (`tideOceanRaises`). El menú Ritmo usa la forma corta ("Tranquilo · 6"), que cabe en una línea con su marca.
+- **Nombre de una mezcla.** El campo deja de aceptar caracteres donde se corta el nombre guardado (`MixCodec.maxNameLength`): ya no se recorta nada a espaldas de la persona.
+- **Teclado.** La barra (Mezclas, Disco, Noche) no sube con el teclado de la alerta de nombre, ni en la página ni en Mezclas.
+- **Menú de guardar la cuarta mezcla.** "pro" es la segunda línea del ítem (`mezcla.menu.guardar` + `comun.pro`), no parte del título, y el ítem sale desactivado mientras no se vende. `mezcla.menu.guardar.pro` sale del catálogo; anotado en la guía 10.
+- **Texto de accesibilidad.** La página, al desplazarse, se corta bajo la barra de estado en vez de leerse a través del reloj del sistema. La columna de la hoja Pro se corta bajo el tirador en vez de cruzarlo (la franja del tirador es de la hoja; el título sigue a 24 pt).
+- **Prueba empezada desde Ajustes.** Ajustes baja con la hoja Pro y se cae en la página, que es la única que lo dice ("prueba · quedan 7 noches"). Capas se queda, como estaba.
+- **`-pageClock HH:mm`** (solo DEBUG): un lanzamiento normal, sobre las preferencias reales, cuyo reloj empieza a esa hora de hoy y corre. La prueba del llavero lee ese mismo reloj: para simulador.
+- **Release se compila en la puerta.** `scripts/verify.sh` compila también en Release tras los tests, con la misma criba de avisos (24 s más). El aviso que nadie había visto (`var opensLarge` en `TimerSheet`) está quitado.
+
+### Decisiones tomadas al arreglar, a confirmar
+
+- **Soltar la última capa en cero termina la noche**, no la pausa: el siguiente Play es una noche nueva (temporizador desde el principio, y cuenta como sesión para "gratis siempre").
+- **El campo corta a 40, no a los 24 de la guía 10.** Los nombres automáticos llegan a 28 ("Ventilador, hoguera y cabina") y ya hay nombres guardados más largos: bajar la cota los cortaría. Si el dueño quiere 24, hay que decidir antes qué pasa con esos.
+- **La mezcla conserva su nombre cuando la Marea sube el océano** (decisión de S-06: `writeLevel`). Por eso Mezclas sigue listando la receta con que se cargó y no hay fila "Esta noche". Solo se añadió la fila de la página.
+- **La puerta tarda unos 25 s más** por la compilación en Release; la CI la hereda porque ejecuta el mismo script.
+
+### Descartado: ya estaba abierto aquí
+
+- **Noche terminada no cede sola a la página por la mañana.** Es la decisión de S-06 (tarea 3, "Noche terminada por la mañana"), con su test (`testTheNightPageStaysWhileItsNightIsAlive`), a la espera del dueño. La revisión insiste y añade un dato: con la entrada por bloqueo (C47) es lo que se ve al abrir la app al día siguiente, y de ahí solo se sale con la pulsación larga. Recomendación: seguir 07 S5 (de día, con la noche terminada, volver a la página de día). Son seis líneas en `appDidBecomeActive` y el cambio de ese test.
+- **Tope de seis (C19) por las tres vías que quedan** (mezcla guardada de siete o más, acceso recuperado con capas Pro a nivel, niveles de una versión anterior): sigue en "Preguntas al dueño" de la corrección de S-04, con la misma propuesta (`currentGains()` deja sonar las seis más altas).
+
+### Aplazado: necesita al dueño
+
+- **Política de privacidad dentro de la app** (mayor; directriz 5.1.1(i)). Las notas para revisión dicen que se lee en Ajustes › "Lo que no hay", y allí no hay ni texto ni enlace. No se construyó porque faltan tres cosas que no son de código: la guía 10 veta "Política" y "Privacidad" como título (§0.2) y no hay cadena para la fila; `docs/privacy/index.md` tiene datos pendientes del dueño; y la dirección pública no existe todavía. `docs/store/README.md` recomienda el texto dentro de la página, no un enlace. La tabla de `docs/store/notas-revision.md` está al día: mientras no se haga, esa frase no va en las notas.
+- **Acceso que llega solo de noche y sonando** (compra pendiente aprobada, familia): sube al momento las capas Pro guardadas y arranca la Marea con la persona dormida. La pérdida de acceso espera al fin de la sesión; la ganancia no ("comprar se oye al momento" es la regla escrita en `PurchaseManager.applyAccess`). Aplazarla pide un estado nuevo (acceso concedido que aún no suena) en todo lo que lee `hasFullAccess`: decisión de producto antes que código.
+- **Las ruedas del Temporizador no siguen el tamaño de texto** (AX3: filas de unos 13 pt junto a etiquetas de 28). Son las ruedas del sistema, que no escalan. Sustituirlas en tamaños de accesibilidad (lista de duraciones, selector compacto) es rediseñar el control: ver también "Rechazado" en la corrección de S-06.
+
+### Visto de paso, sin tocar
+
+- Cargar, mientras suena y sin acceso, una mezcla cuyas capas son todas Pro deja el motor sonando en silencio ("Sonando · sin…"): `apply` no levanta la capa de reserva como hace Play.
+
+### Sin verificar
+
+- En dispositivo: el teclado real sobre la barra, la reanudación con auriculares de verdad pasada la hora del Manto y los despertares de Madrugada con la pantalla apagada (probados por su regla, no medidos).
+- El menú de guardar con "pro" en segunda línea se vio en Mezclas; el de la página comparte la etiqueta y se vio con la primera línea sola.
+- La línea "Se retira a las…" con un temporizador más corto que la Marea: por test, no en pantalla.
+
