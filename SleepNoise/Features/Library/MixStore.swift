@@ -2,11 +2,17 @@ import Combine
 import Foundation
 
 /// Saved mixes. The mixer mutates this on the main thread.
+///
+/// Stored with `MixCodec` (mix format v2) in `UserDefaults`, on the device
+/// only. What earlier builds stored under the v1 key is read once, written
+/// back as v2 under the new key and left where it was.
 final class MixStore: ObservableObject {
     @Published private(set) var mixes: [SavedMix] = []
 
+    static let storageKey = "sleepnoise.mixes.v2"
+    static let legacyStorageKey = "sleepnoise.mixes.v1"
+
     private let defaults: UserDefaults
-    private let storageKey = "sleepnoise.mixes.v1"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -19,14 +25,12 @@ final class MixStore: ObservableObject {
         guard AccessPolicy.canSave(existingCount: mixes.count, hasFullAccess: hasFullAccess) else {
             return .needsPro
         }
-        let mix = SavedMix(
+        let mix = MixCodec.normalized(SavedMix(
             id: UUID(),
             name: String(trimmed.prefix(40)),
-            levels: SoundID.allCases.map { sound in
-                MixLevel(sound: sound, value: min(1, max(0, levels[sound] ?? 0)))
-            },
+            levels: SoundID.allCases.map { MixLevel(sound: $0, value: levels[$0] ?? 0) },
             createdAt: Date()
-        )
+        ))
         mixes.insert(mix, at: 0)
         persist()
         return .saved(mix)
@@ -38,13 +42,20 @@ final class MixStore: ObservableObject {
     }
 
     private func load() {
-        guard let data = defaults.data(forKey: storageKey) else { return }
-        guard let decoded = try? JSONDecoder().decode([SavedMix].self, from: data) else { return }
+        if let data = defaults.data(forKey: Self.storageKey) {
+            mixes = (try? MixCodec.decode(data)) ?? []
+            return
+        }
+        // First launch with the v2 format: bring over what v1 stored.
+        guard let legacy = defaults.data(forKey: Self.legacyStorageKey),
+              let decoded = try? MixCodec.decode(legacy)
+        else { return }
         mixes = decoded
+        persist()
     }
 
     private func persist() {
-        guard let data = try? JSONEncoder().encode(mixes) else { return }
-        defaults.set(data, forKey: storageKey)
+        guard let data = try? MixCodec.encode(mixes) else { return }
+        defaults.set(data, forKey: Self.storageKey)
     }
 }
