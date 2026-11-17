@@ -616,3 +616,33 @@ Veintiún hallazgos del recorrido de la app entera (dos de ellos, el mismo). Cad
 - El menú de guardar con "pro" en segunda línea se vio en Mezclas; el de la página comparte la etiqueta y se vio con la primera línea sola.
 - La línea "Se retira a las…" con un temporizador más corto que la Marea: por test, no en pantalla.
 
+
+## Decisiones del dueño aplicadas (17-11-2026): D-08, D-32 y D-52
+
+Rama `claude/decisiones-producto`. El dueño dijo que sí a la recomendación de `docs/lanzamiento/DECISIONES.md` en las tres. Un commit por decisión y uno de documentación. Sin cadenas nuevas en el catálogo.
+
+### Hecho
+
+- **D-08, restaurar de noche.** `SettingsRestoreRow` (`SettingsLogic.swift`): sin Pro y con `MixerModel.canSell` en falso (ventana de noche, página nocturna, Madrugada), Ajustes tiene bajo "pro" una fila "Restaurar compra". No lleva precio ni entra a la hoja: llama a `PurchaseManager.restore()`, que no pasa por la puerta de venta, dice "Buscando…" en su sitio (la fila es entonces solo palabras) y deja debajo una línea con lo que contestó la tienda: `pro.gracias`, `pro.restaurar.no`, `pro.fallo` (cancelado) o `pro.sin_tienda` / `pro.sin_tienda.silencio`. El sitio de esa línea está siempre reservado con el alto de la más larga, así que nada de lo de abajo se mueve. Una vez pulsada, la fila se queda hasta que Ajustes se cierra, aunque llegue Pro o llegue la mañana; al cerrar se borra el aviso. De día no existe. Cierra "Restaurar de noche" de la corrección de S-07.
+- **D-32, tope de seis.** `LayerCap` (`SleepNoise/Model/LayerCap.swift`): función pura de los niveles y del acceso. Suenan las seis capas incluidas de nivel más alto; las demás conservan su nivel sin sonar. Se aplica en `MixerModel.currentGains()`, por donde pasa todo lo que llega al motor, y `soundingLayers` y `waitingLayers` leen la misma regla. Nada guardado se reescribe: ni los niveles ni las mezclas. La séptima desde cero sigue rechazada en `setLevel` (C19); una capa que ya está en la mezcla se mueve siempre, suene o espere, y las seis se recalculan en cada cambio. La fila que espera: tinta secundaria, su cifra, sin tinta en la línea y "Seis a la vez" debajo mientras espera; VoiceOver dice "en silencio, nivel guardado N, Seis a la vez". Cierra el tope de seis de las correcciones de S-04 y del repaso completo.
+- **D-52, Noche terminada por la mañana.** `MixerModel.leaveNightScreenIfOverByDay()`: con Noche delante, la noche cerrada (ni sonando, ni retenida por una interrupción, ni en pausa dentro de sus veinte minutos) y la hora fuera de `NightWindow`, Noche cede a la página de día (`isBedtime` y `isNightSession` a falso). Se llama al volver la app al frente, al cruzar las 07:00 con la app abierta (`nightWindowChanged`) y cuando una noche termina sola (`closeNight`). `NightCover` hace el fundido de siempre (2 s; 0,25 s con Reducir movimiento). `testTheNightPageStaysWhileItsNightIsAlive` conserva lo que protegía (la noche viva, también en Noche) y su último tramo, que fijaba lo contrario para la noche terminada, pasa a tres tests nuevos.
+- **Estados de depuración**: `settingsNightRestoring`, `settingsNightNothing`, `settingsNightRestored`, `settingsNightFailed`, `layersOver` y `nightEndedMorning`.
+- **Documentos**: `DECISIONES.md` (las tres cerradas), `docs/store/notas-revision.md` (texto EN en 3867 de 4000, resumen, tabla y condición 6), `PRUEBAS-EN-DISPOSITIVO.md` (§1.A paso 9, §4 pasos 17 y 18, §8.A pasos 18 a 20, §8.B paso 5b, §10 paso 5b), `GUIA.md` (fila del rechazo por restaurar) y la guía 10 (`capas.tope`, `pro.restaurar`, `pro.buscando`, `ax.capa.pro.valor`).
+
+### Decisiones tomadas al aplicarlas, a confirmar
+
+- **Desempate del tope.** Con niveles iguales suena la capa que va antes en `SoundID.allCases` (blanco, rosa, marrón, lluvia, ventilador, océano, trueno, hoguera, arroyo, viento, cabina): el mismo criterio que ya usa `MixLoad.omitted`, y un orden que no cambia porque es el de los identificadores guardados. Alternativa: el orden de la página (camas antes que colores).
+- **La regla no tiene memoria.** Las seis son las seis más altas en cada momento: bajar una de las seis por debajo de una que espera las intercambia, también a mitad de un arrastre. El motor suaviza el cambio. La alternativa (que las seis se queden fijas hasta llegar a cero) pide estado y deja de ser una sola regla.
+- **Una capa que espera se puede arrastrar**, hacia arriba (entra si supera a la sexta) o hasta cero (sale de la mezcla). No se trata como una fila Pro.
+- **La línea de estado de la página no nombra las capas que esperan**: lo dice cada fila. Con tres filas en la página puede esperar una capa que no está a la vista; se ve en "Todas las capas".
+- **VoiceOver reutiliza `ax.capa.pro.valor`** para la capa que espera, seguida de `capas.tope`, en vez de una cadena nueva.
+- **Restaurar cancelado dice `pro.fallo`** ("No se ha podido completar. No se ha cobrado nada."), como en la hoja Pro. Para una restauración la frase habla de un cobro que nadie esperaba; cambiarla es una cadena nueva.
+- **El hueco bajo la fila de restaurar.** Reservar el alto de la línea más larga deja aire de más bajo la fila en reposo: dos líneas en el tamaño normal y unas cinco en AX3. A cambio nada se mueve. La alternativa es no reservar en tamaños de accesibilidad.
+- **Una noche que termina sola ya de día** (temporizador a las 07:35 con Noche delante) no llega a enseñar "Terminó a las…": Noche se funde a la página en ese momento. Es la misma regla, sin excepción.
+- **Notas de revisión.** Para que la frase nueva cupiera junto a la línea de la política que tiene que volver (condición 1), se acortaron tres líneas de la compra sin cambiar lo que afirman. Con la línea de la política el texto queda en 3995 de 4000.
+
+### Sin verificar
+
+- En un iPhone o en el sandbox: nada. La restauración real desde Ajustes de noche (contraseña de la cuenta incluida), el fundido de Noche a la página al abrir por la mañana tras una noche de verdad y cómo suena el intercambio de capas del tope están probados por su regla y vistos en capturas del simulador, no medidos ni oídos.
+- VoiceOver: el valor de la fila que espera y el anuncio del resultado de restaurar, por test o por lectura del código, no con VoiceOver encendido.
+- Madrugada que termina ya de día sigue dejando la página nocturna hasta que la app se abre de nuevo: no era parte de D-52 y no se ha tocado.

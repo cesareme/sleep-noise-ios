@@ -222,7 +222,7 @@ Nada de esta anatomía cambia de posición con el estado (03 §3.7): el horizont
 | Subtítulo de capa | `capas.{id}.detalle` | 7 | `texto2` | bajo el nombre | 28 car. | Honesto, sin promesa |
 | Valor | número tabular / `comun.pro` / `comun.pro.nivel` | 9 | `texto2` (17 `texto` bajo el dedo) | derecha, en su sitio | 8 car. | "pro · N" conserva el nivel guardado; la degradación nunca escribe (C23) |
 | "y n más" | `capas.mas` | 5 | `texto` | fila 56 | 20 car. | Botón → Capas; plural |
-| Tope de capas | `capas.tope` | 7 | `texto2` | 1 línea bajo la fila tocada, 3 s | 14 car. | "Seis a la vez" al activar la séptima; la capa no se añade (C19; tope del motor, no de la interfaz: ningún hueco) |
+| Tope de capas | `capas.tope` | 7 | `texto2` | 1 línea bajo la fila tocada, 3 s; fija bajo cada fila que espera | 14 car. | "Seis a la vez" al activar la séptima; la capa no se añade (C19; tope del motor, no de la interfaz: ningún hueco). En una mezcla que ya trae más de seis (D-32) suenan las seis más altas y la misma frase queda bajo cada fila que espera, mientras espera: fila en `texto2`, con su cifra y sin tinta en la línea |
 | Todas las capas | `capas.todas` | 5 | `texto` | fila 56, sin chevron ni cifra | 16 car. | Botón por rasgo `.button` y por Button Shapes (03 §3.6: cero glifos en la principal fuera de la barra) |
 | Fila Marea | `marea.titulo` + `marea.estado.apagada.fila` / `marea.estado.apagada.pro` / `marea.estado.guiando.corto` | 5 + 7 (9 la versalita) | `texto` + `texto2` | fila 72 | 20 + 44 car. | Toggle del sistema `.tint(índice)` (03 §4.12). **Encender el toggle arranca el sonido** si no sonaba (el instrumento siempre suena, 03 §1.3): nunca hay índice sin audio. [Conflicto anotado para el director: sonando hay dos índices en la página, horizonte y toggle, contra 03 §3.1 regla 2; propuesta `.tint(texto)`: el estado del toggle ya se lee por forma y por palabra] |
 | Fila Temporizador | `temporizador.titulo` + `temporizador.estado.*` | 5 + 7 | `texto` + `texto2` | fila 56 | 14 + 30 car. | Muestra el ajuste ("Hasta dormirme · 45 min"), no la cuenta: la cuenta vive en la línea de estado |
@@ -548,7 +548,7 @@ Para una guía de copy, las tablas (a)-(d) recogen **el texto que se mueve, se l
 | T21 | Página de día ↔ página nocturna (todo el texto a `texto-noche` y pesos Medium) | vuelta de Noche (por procedencia, dura la sesión) / toque en el nombre; nunca por reloj (C40) | 2 s opacidad | 250 ms | — |
 | T22 | [retirada por C06: sin escucha de 30 s en 1.0] | — | — | — | — |
 | T23 | `marea.oceano.subido` | la Marea sube el océano desde 0 | 250 ms in · 4 s · 500 ms out | igual | no de noche |
-| T24 | `capas.tope` ("Seis a la vez") | activar la séptima capa (C19) | 250 ms in · 3 s · 500 ms out; la capa no se añade | igual | de noche igual, en `texto-noche` |
+| T24 | `capas.tope` ("Seis a la vez") | activar la séptima capa (C19); o una capa que espera porque ya suenan seis (D-32) | 250 ms in · 3 s · 500 ms out; la capa no se añade. Bajo una fila que espera no caduca: dura lo que dure la espera | igual | de noche igual, en `texto-noche` |
 | T25 | `noche.primera` + `noche.volver` (no son TipKit) | primera entrada en Noche | aparecen con la pantalla · 4 s · 500 ms out | igual | sí de noche: son las dos frases de Noche |
 | T26 | `mezclas.sonando` (versalita junto a la mezcla cargada) | cargar una mezcla | 250 ms opacidad, con el fundido cruzado | igual | n/a |
 | T27 | `pagina.estado.manana.error` | sesión nueva a la mañana tras un corte | aparece con la pantalla; se va 250 ms al primer toque | igual | nunca de noche |
@@ -728,7 +728,7 @@ Formato: clave → ES (es-ES; es-419 solo si cambia, en §0.3) → EN (en-US) �
 | `mezcla.guardar.campo` | Nombre de la mezcla | Mix name | placeholder del campo del sistema (precargado con el nombre automático) | 20 |
 | `capas.todas` | Todas las capas | All layers | fila 56 paso 5 `texto`; sin cifra ni chevron (botón por rasgo y por Button Shapes) | 16 |
 | `capas.mas` (pl) | y %lld más | and %lld more | fila 56 cuando suenan más de tres capas | 12 |
-| `capas.tope` | Seis a la vez | Six at once | nota paso 7 `texto2` 3 s al activar la séptima capa; la capa no se añade; tope de seis simultáneas como regla de modelo (C19), nunca huecos ni ranuras | 14 |
+| `capas.tope` | Seis a la vez | Six at once | nota paso 7 `texto2` 3 s al activar la séptima capa; la capa no se añade; tope de seis simultáneas como regla de modelo (C19), nunca huecos ni ranuras. También, sin caducar, bajo cada capa que espera en una mezcla de más de seis (D-32) | 14 |
 | `barra.mezclas` | Mezclas | Mixes | barra inferior 17 Medium `texto` | 8 |
 | `barra.noche` | Noche | Night | barra inferior | 6 |
 | `barra.mezclas.ax` | Mezclas | Mixes | etiqueta accesible del glifo `square.stack` en AX4-AX5 | 8 |
@@ -941,8 +941,8 @@ Once texturas en 1.0 vía PR-A (C19): cinco libres (blanco, rosa, marrón, lluvi
 | `pro.comprar` | Comprar · %@ | Buy · %@ | acción primaria 64 entre hairlines (`índice` solo con precio); `%@` = `displayPrice`; sin "Desbloquear" (C12) | 20 |
 | `pro.comprar.sin_precio` | Comprar | Buy | botón mientras no hay producto: palabra en `texto2` (6,06:1 sobre `hoja`) entre hairlines `trazo-hoja`, `.notEnabled` [anotado para el director: 03 §4.6 escribe `texto3`, pero 03 §3.1 y §4.7 reservan `texto3` a texto ≥ 18 pt y a 17 pt daría 3,25:1] | 8 |
 | `pro.comprando` | Comprando… | Buying… | el botón mientras StoreKit trabaja; sin spinner | 12 |
-| `pro.restaurar` | Restaurar compra | Restore purchase | acción secundaria paso 6 `texto2` (sustituye `paywall.restore` en plural) | 18 |
-| `pro.buscando` | Buscando… | Looking… | el botón de restaurar mientras `AppStore.sync()` | 10 |
+| `pro.restaurar` | Restaurar compra | Restore purchase | acción secundaria paso 6 `texto2` (sustituye `paywall.restore` en plural). También fila editorial de Ajustes, bajo "pro", cuando no hay Pro y no se puede vender (D-08): sin precio y sin entrada a la hoja; su resultado va debajo, en paso 8, con las mismas líneas de la hoja (`pro.gracias`, `pro.restaurar.no`, `pro.fallo`, `pro.sin_tienda`, `pro.sin_tienda.silencio`) | 18 |
+| `pro.buscando` | Buscando… | Looking… | el botón de restaurar mientras `AppStore.sync()`; en Ajustes, la fila de restaurar, que mientras tanto es solo palabras | 10 |
 | `pro.resena` | Escribir una reseña | Write a review | enlace de texto paso 6 `texto2` solo en el estado comprado de la hoja Pro (C55): sin `requestReview` en 1.0 (política dormida tras bandera), sin fila "Valorar" en Ajustes; abre App Store; nunca se ve de noche | 20 |
 | `pro.gracias` | Gracias. Todo abierto. | Thank you. Everything’s open. | sustituye al botón 1,5 s; `.success` (sustituye `paywall.restored`, `paywall.active`) | 24 |
 | `pro.fallo` | No se ha podido completar. No se ha cobrado nada. | The purchase didn’t go through. Nothing was charged. | paso 8 bajo el botón; `.error`; botón intacto; solo `.userCancelled` y errores previos al pago (sustituye `paywall.failed`) | 52 |
@@ -1116,7 +1116,7 @@ Sin columna Máx.: VoiceOver no mide. Las etiquetas que son la propia cadena vis
 | `ax.capa` | %@, %@ | %@, %@ | etiqueta de la fila: nombre + subtítulo ("Rosa, suave y equilibrado") |
 | `ax.capa.pista` | Desliza arriba o abajo para ajustar. | Swipe up or down to adjust. | pista de la fila |
 | `ax.capa.pro` | %@, %@, requiere Pro | %@, %@, requires Pro | etiqueta de la fila Pro sin acceso |
-| `ax.capa.pro.valor` | en silencio, nivel guardado %@ | silent, saved level %@ | valor; `%@` = cifra hablada; sin nivel guardado: "en silencio" |
+| `ax.capa.pro.valor` | en silencio, nivel guardado %@ | silent, saved level %@ | valor; `%@` = cifra hablada; sin nivel guardado: "en silencio". También el valor de una capa incluida que espera porque ya suenan seis (D-32), seguido de `capas.tope`: "en silencio, nivel guardado 15, Seis a la vez" |
 | `ax.capa.pro.pista` | Toca dos veces para ver Pro. | Double-tap to see Pro. | pista de la fila Pro, solo de día (C06, C08) |
 | `ax.capa.escucha` | [retirada por C06] | — | sin escucha de 30 s en 1.0 |
 | `ax.mas.pista` | Abre todas las capas. | Opens all layers. | pista de "y n más" y de "Todas las capas" |
