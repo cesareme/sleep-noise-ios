@@ -24,7 +24,15 @@ struct KeychainTrialStorage: TrialStorage {
         ]
     }
 
-    /// Any failure or unreadable data reads as "no trial".
+    private func newItem(_ data: Data) -> [String: Any] {
+        var attributes = baseQuery
+        attributes[kSecValueData as String] = data
+        attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        return attributes
+    }
+
+    /// Any failure or unreadable data reads as "no trial". That alone never
+    /// hands out a second trial: `createTrial` refuses to write over an item.
     func loadTrial() -> TrialRecord? {
         var query = baseQuery
         query[kSecReturnData as String] = true
@@ -37,16 +45,20 @@ struct KeychainTrialStorage: TrialStorage {
         return try? JSONDecoder().decode(TrialRecord.self, from: data)
     }
 
+    /// Add only: `errSecDuplicateItem` (an item is there, readable or not) and
+    /// every other failure answer `false` and leave the Keychain as it was.
+    func createTrial(_ record: TrialRecord) -> Bool {
+        guard let data = try? JSONEncoder().encode(record) else { return false }
+        return SecItemAdd(newItem(data) as CFDictionary, nil) == errSecSuccess
+    }
+
     @discardableResult
     func saveTrial(_ record: TrialRecord) -> Bool {
         guard let data = try? JSONEncoder().encode(record) else { return false }
         let update: [String: Any] = [kSecValueData as String: data]
         var status = SecItemUpdate(baseQuery as CFDictionary, update as CFDictionary)
         if status == errSecItemNotFound {
-            var attributes = baseQuery
-            attributes[kSecValueData as String] = data
-            attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-            status = SecItemAdd(attributes as CFDictionary, nil)
+            status = SecItemAdd(newItem(data) as CFDictionary, nil)
         }
         return status == errSecSuccess
     }

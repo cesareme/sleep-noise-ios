@@ -1,3 +1,4 @@
+import Security
 import XCTest
 @testable import SleepNoise
 
@@ -32,6 +33,60 @@ final class KeychainTrialStorageTests: XCTestCase {
         XCTAssertTrue(storage.removeTrial())
         XCTAssertNil(storage.loadTrial())
         XCTAssertTrue(storage.removeTrial(), "removing nothing is not a failure")
+    }
+
+    // Red if `createTrial` writes over an item that is already there.
+    func testCreateNeverOverwrites() {
+        let storage = makeStorage()
+        defer { storage.removeTrial() }
+
+        let first = TrialRecord(startedAt: start, lastSeen: start, consumed: 0)
+        XCTAssertTrue(storage.createTrial(first))
+        XCTAssertEqual(storage.loadTrial(), first)
+
+        let later = start.addingTimeInterval(30 * 86_400)
+        XCTAssertFalse(storage.createTrial(TrialRecord(startedAt: later, lastSeen: later, consumed: 0)))
+        XCTAssertEqual(storage.loadTrial(), first)
+
+        // An evaluation still updates the record that is there.
+        let seen = TrialRecord(startedAt: start, lastSeen: later, consumed: 30 * 86_400)
+        XCTAssertTrue(storage.saveTrial(seen))
+        XCTAssertEqual(storage.loadTrial(), seen)
+    }
+
+    // Red if the item becomes synchronizable or gets another accessibility
+    // class, on either of the two paths that add it: the state must not leave
+    // the device.
+    func testItemStaysOnThisDevice() throws {
+        let record = TrialRecord(startedAt: start, lastSeen: start, consumed: 0)
+        let writes: [(String, (KeychainTrialStorage) -> Bool)] = [
+            ("create", { $0.createTrial(record) }),
+            ("save", { $0.saveTrial(record) })
+        ]
+        for (name, write) in writes {
+            let storage = makeStorage()
+            defer { storage.removeTrial() }
+            XCTAssertTrue(write(storage), name)
+
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: storage.service,
+                kSecAttrAccount as String: KeychainTrialStorage.account,
+                kSecAttrSynchronizable as String: kSecAttrSynchronizableAny,
+                kSecReturnAttributes as String: true,
+                kSecMatchLimit as String: kSecMatchLimitOne
+            ]
+            var item: CFTypeRef?
+            XCTAssertEqual(SecItemCopyMatching(query as CFDictionary, &item), errSecSuccess, name)
+            let attributes = try XCTUnwrap(item as? [String: Any], name)
+            XCTAssertEqual(
+                attributes[kSecAttrAccessible as String] as? String,
+                kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly as String,
+                name
+            )
+            let synchronizable = attributes[kSecAttrSynchronizable as String] as? Bool ?? false
+            XCTAssertFalse(synchronizable, name)
+        }
     }
 
     // Red if the query drops `kSecAttrService` and every storage shares one item.

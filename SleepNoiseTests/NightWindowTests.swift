@@ -50,9 +50,16 @@ final class NightWindowTests: XCTestCase {
     }
 
     // Red if the window is computed from elapsed time instead of the local
-    // hour: the skipped and the repeated hour must both stay inside.
+    // hour: the skipped and the repeated hour must both stay inside, and
+    // both edges must sit on the local clock of a 23 h and of a 25 h day.
     func testWindowOnClockChangeNights() throws {
         let madrid = try calendar("Europe/Madrid")
+        let edges: [(Int, Int, Int, Bool)] = [
+            (6, 59, 59, true),
+            (7, 0, 0, false),
+            (20, 59, 59, false),
+            (21, 0, 0, true)
+        ]
         for (month, day) in [(3, 29), (10, 25)] {
             let base = try date(2026, month, day, 0, 30, in: madrid)
             for minute in 0...240 {
@@ -60,6 +67,13 @@ final class NightWindowTests: XCTestCase {
                 XCTAssertTrue(
                     NightWindow.contains(moment, calendar: madrid),
                     "\(day)-\(month) +\(minute) min"
+                )
+            }
+            for (hour, minute, second, expected) in edges {
+                let moment = try date(2026, month, day, hour, minute, second, in: madrid)
+                XCTAssertEqual(
+                    NightWindow.contains(moment, calendar: madrid), expected,
+                    "\(day)-\(month) \(hour):\(minute):\(second)"
                 )
             }
         }
