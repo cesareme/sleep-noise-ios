@@ -558,14 +558,14 @@ final class TextureReviewTests: XCTestCase {
         XCTAssertLessThan(Double(aboveKnee) / Double(count), 0.02, "the flame should rarely reach the soft clip")
     }
 
-    func testPresetsWithTrimmedTexturesStayBelowTheSoftClipKnee() {
-        // The trims must not push a one-tap mix into the saturating part of
-        // the output stage. Ten seconds cover the campfire flicker.
+    func testHouseMixesStayBelowTheSoftClipKnee() {
+        // A house mix must not reach the saturating part of the output
+        // stage. Ten seconds cover the campfire flicker.
         let rate = Self.rate
-        for preset in [SoundPreset.campfire, .brook, .nightWind] {
+        for mix in HouseMix.allCases {
             var gains = SoundGains.zero
-            for (sound, level) in preset.layers {
-                gains.set(sound, level)
+            for layer in mix.recipe {
+                gains.set(layer.sound, layer.value)
             }
             var state = RenderState(sampleRate: rate)
             let command = EngineCommand(
@@ -584,8 +584,8 @@ final class TextureReviewTests: XCTestCase {
                 if magnitude > 0.6 { aboveKnee += 1 }
                 peak = max(peak, magnitude)
             }
-            XCTAssertLessThan(peak, 0.9, "\(preset.rawValue) should keep headroom")
-            XCTAssertLessThan(Double(aboveKnee) / Double(frames), 0.01, "\(preset.rawValue) should rarely reach the knee")
+            XCTAssertLessThan(peak, 0.9, "\(mix.rawValue) should keep headroom")
+            XCTAssertLessThan(Double(aboveKnee) / Double(frames), 0.01, "\(mix.rawValue) should rarely reach the knee")
         }
     }
 

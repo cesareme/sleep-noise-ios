@@ -7,11 +7,21 @@ struct MixLevel: Codable, Equatable, Identifiable {
     var id: SoundID { sound }
 }
 
-struct SavedMix: Codable, Equatable, Identifiable {
+/// A layer whose id this version does not know: a texture added by a later
+/// version. It is never played or shown; it is only carried, so saving the
+/// list again does not take it out of the mix. See `MixCodec`.
+struct UnknownMixLayer: Equatable {
+    var id: String
+    var level: Float
+}
+
+/// A mix the person saved. `MixCodec` owns how it is stored.
+struct SavedMix: Equatable, Identifiable {
     var id: UUID
     var name: String
     var levels: [MixLevel]
     var createdAt: Date
+    var unknownLayers: [UnknownMixLayer] = []
 
     func value(for sound: SoundID) -> Float {
         levels.first { $0.sound == sound }?.value ?? 0
