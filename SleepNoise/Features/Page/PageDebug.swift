@@ -41,6 +41,8 @@ enum PageDebugState: String, CaseIterable {
     case layersSix
     /// Layers with six sounding and the seventh refused.
     case layersCap
+    /// Layers with a mix of eight: the six highest sound, two wait.
+    case layersOver
     /// Layers without access, scrolled to its end: the last beds, a Pro
     /// one that keeps its level, and the notes over the bar.
     case layersEnd
@@ -405,7 +407,8 @@ enum PageArguments {
 
     static var opensLayers: Bool {
         switch state {
-        case .layers, .layersSix, .layersCap, .layersEnd, .nightLayers, .proOfferLayers, .storeLayers:
+        case .layers, .layersSix, .layersCap, .layersOver, .layersEnd, .nightLayers, .proOfferLayers,
+             .storeLayers:
             return true
         default: return false
         }
@@ -702,6 +705,13 @@ enum PageStage {
             setLevels(model, [.rain: 0.45, .wind: 0.25, .ocean: 0.5, .white: 0.15, .pink: 0.3, .brown: 0.2])
         case .layersCap:
             setLevels(model, [.rain: 0.45, .wind: 0.25, .ocean: 0.5, .thunder: 0.2, .pink: 0.3, .brown: 0.2])
+        case .layersOver:
+            // A mix saved by a version without the cap. White and brown
+            // are the lowest: they keep their level and wait.
+            setLevels(model, [
+                .white: 0.15, .pink: 0.3, .brown: 0.1, .rain: 0.45, .wind: 0.25,
+                .ocean: 0.5, .thunder: 0.2, .campfire: 0.35,
+            ])
         case .layersEnd:
             // Thunder was saved at 20 while the trial lasted; it keeps it.
             setLevels(model, [.rain: 0.45, .wind: 0.25, .thunder: 0.2, .pink: 0.3])
@@ -903,7 +913,7 @@ enum PageStage {
             for _ in 0..<2 { model.debugFailStart() }
         case .error3:
             for _ in 0..<3 { model.debugFailStart() }
-        case .playingTwo, .playingFive, .night, .timer, .layers, .layersCap, .largeType,
+        case .playingTwo, .playingFive, .night, .timer, .layers, .layersCap, .layersOver, .largeType,
              .storePlaying, .storeLayers,
              .nightLayers, .tide, .nightTide, .timerAsleep, .timerBlanket, .timerNight,
              .tideGuiding, .tideDescent, .tideNight,

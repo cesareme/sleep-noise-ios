@@ -7,6 +7,11 @@ import SwiftUI
 /// added. When that happens the dead channel under the row says "Six at
 /// once" for three seconds and nothing else changes.
 ///
+/// A mix can hold more than six layers (a saved mix, access that came
+/// back): the six highest sound and the others wait at their level
+/// (`LayerCap`). A row that waits says "Six at once" under it for as long
+/// as it waits, in secondary ink and without level ink.
+///
 /// A locked row opens the Pro sheet only while something may be sold. At
 /// night the row has no tap at all.
 struct LayerRow: View {
@@ -26,6 +31,11 @@ struct LayerRow: View {
         !AccessPolicy.soundIsIncluded(sound, hasFullAccess: hasFullAccess)
     }
 
+    /// The layer keeps its level and does not sound: six others do.
+    private var isWaiting: Bool {
+        model.waitingLayers.contains(sound)
+    }
+
     var body: some View {
         LevelRule(
             id: sound.rawValue,
@@ -36,7 +46,8 @@ struct LayerRow: View {
                 set: { write($0) }
             ),
             isLocked: isLocked,
-            channelNote: showsCap ? Localized.string("capas.tope") : nil,
+            isWaiting: isWaiting,
+            channelNote: showsCap || isWaiting ? Localized.string("capas.tope") : nil,
             onLockedTap: canSell ? { model.offerPro() } : nil,
             // The levels go to disk when the finger leaves, not on every
             // sample of the drag.

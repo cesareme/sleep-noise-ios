@@ -20,7 +20,8 @@ struct MixLoad: Equatable {
 
     /// Every layer of the mix at its level. This is what the mixer holds.
     let levels: [SoundID: Float]
-    /// What may play: `levels` with the layers that need Pro at zero.
+    /// What may play: `levels` with the layers that need Pro at zero. How
+    /// many of them sound at once is the mixer's rule (`LayerCap`).
     let audibleLevels: [SoundID: Float]
     /// The layers left out, loudest first.
     let omitted: [SoundID]

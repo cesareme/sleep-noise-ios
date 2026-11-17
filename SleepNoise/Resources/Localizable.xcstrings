@@ -578,7 +578,7 @@
       }
     },
     "ax.capa.pro.valor": {
-      "comment": "VoiceOver value of a Pro layer without access. %@ is the saved level, 1 to 100.",
+      "comment": "VoiceOver value of a layer that keeps a level and does not sound: a Pro layer without access, or one that waits because six already sound. %@ is the saved level, 1 to 100.",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -1082,7 +1082,7 @@
       }
     },
     "capas.tope": {
-      "comment": "Note under a layer row when a seventh layer is refused.",
+      "comment": "Note under a layer row when a seventh layer is refused, and under each layer that waits because six already sound.",
       "extractionState": "manual",
       "localizations": {
         "en": {

@@ -59,9 +59,9 @@ enum LevelChange: Equatable {
 
 @MainActor
 final class MixerModel: ObservableObject {
-    /// The most layers that may sound at once (C19). A rule of the model:
-    /// the interface never draws slots for it.
-    nonisolated static let maxSimultaneousLayers = 6
+    /// The most layers that may sound at once (C19). A rule of the model
+    /// (`LayerCap`): the interface never draws slots for it.
+    nonisolated static let maxSimultaneousLayers = LayerCap.limit
     /// What Play raises when nothing would sound: the instrument always
     /// sounds.
     nonisolated static let fallbackSound = SoundID.pink
@@ -302,7 +302,9 @@ final class MixerModel: ObservableObject {
 
     /// Sets the level of a layer. A Pro layer without access does not move
     /// (and asks for the Pro sheet, which the night refuses). A layer raised
-    /// from zero while six already sound is not added.
+    /// from zero while six already sound is not added. A layer that is
+    /// already in the mix always moves, sounding or waiting: which six
+    /// sound is worked out again from the levels (`LayerCap`).
     @discardableResult
     func setLevel(_ sound: SoundID, _ value: Float) -> LevelChange {
         guard AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess) else {
@@ -369,13 +371,23 @@ final class MixerModel: ObservableObject {
         closeNight(endedAt: nil)
     }
 
-    /// The layers that sound: above zero and included at this access level.
-    /// A Pro layer that keeps a level without access is not one of them.
+    /// The layers that sound: above zero, included at this access level
+    /// and among the six highest (`LayerCap`). A Pro layer that keeps a
+    /// level without access is not one of them, and neither is a seventh.
     var soundingLayers: [SoundID] {
-        SoundID.allCases.filter { sound in
-            (levels[sound] ?? 0) > MixLoad.audibleThreshold
-                && AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess)
-        }
+        let sounding = LayerCap.sounding(levels, isIncluded: isIncluded)
+        return SoundID.allCases.filter { sounding.contains($0) }
+    }
+
+    /// The layers that wait because six already sound, the next one to come
+    /// in first. Each keeps its level, here and on disk; it sounds when one
+    /// of the six goes to zero. Empty in a mix of six or fewer.
+    var waitingLayers: [SoundID] {
+        LayerCap.waiting(levels, isIncluded: isIncluded)
+    }
+
+    private func isIncluded(_ sound: SoundID) -> Bool {
+        AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess)
     }
 
     // MARK: Pro sheet and night
@@ -950,7 +962,9 @@ final class MixerModel: ObservableObject {
 
     /// Loads a saved mix. Pro layers are muted (their levels are kept) when
     /// they are not included: the mix loads trimmed, like a house mix, and
-    /// its title says what it plays without. Never a sheet.
+    /// its title says what it plays without. Never a sheet. A mix with more
+    /// than six layers loads whole too: the six highest sound and the others
+    /// wait at their level (`LayerCap`).
     @discardableResult
     func apply(_ mix: SavedMix) -> Bool {
         let next = mix.levelsBySound
@@ -1448,7 +1462,9 @@ final class MixerModel: ObservableObject {
     /// Access changed: bought, restored, the trial started, or lost once
     /// nothing was sounding. Nothing stored is written: the levels, the
     /// saved mixes and the tide's switch stay as they were (C23). What
-    /// changes is what may sound and what the page says about it.
+    /// changes is what may sound and what the page says about it. Pro
+    /// layers that come back at a level compete for the six like any other
+    /// (`LayerCap`), and when they go the layers that waited come in.
     private func accessDidChange() {
         clampTimerToEntitlement()
         refreshEntitledAudio()
@@ -1954,12 +1970,11 @@ final class MixerModel: ObservableObject {
         if isSmallHours {
             return smallHours.gains(hasFullAccess: purchases.hasFullAccess)
         }
+        // The one place the cap is applied to the sound (`LayerCap`): every
+        // road to the engine, whatever loaded the levels, ends here.
         var gains = SoundGains.zero
-        for sound in SoundID.allCases {
-            let level = levels[sound] ?? 0
-            if AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess) {
-                gains.set(sound, level)
-            }
+        for sound in LayerCap.sounding(levels, isIncluded: isIncluded) {
+            gains.set(sound, levels[sound] ?? 0)
         }
         return gains
     }

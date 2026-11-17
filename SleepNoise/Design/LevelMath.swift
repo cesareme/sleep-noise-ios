@@ -87,6 +87,8 @@ struct LevelRuleSpeech: Equatable {
     var subtitle: String
     var level: Float
     var isLocked = false
+    /// Included and above zero, but six other layers sound (`LayerCap`).
+    var isWaiting = false
     /// Off on the night page, where nothing says "requires Pro".
     var namesPro = true
     var bundle: Bundle = .main
@@ -98,10 +100,16 @@ struct LevelRuleSpeech: Equatable {
     }
 
     /// "65 percent". A locked layer does not sound: "Silent", or
-    /// "silent, saved level 30" when it keeps a level for later.
+    /// "silent, saved level 30" when it keeps a level for later. A layer
+    /// that waits says the same and why: "silent, saved level 30, six at
+    /// once".
     var value: String {
         let percent = LevelMath.percent(level)
         guard isLocked else {
+            if isWaiting, percent > 0 {
+                let saved = Localized.format("ax.capa.pro.valor", bundle: bundle, String(percent))
+                return saved + ", " + Localized.string("capas.tope", bundle: bundle)
+            }
             return Localized.format("a11y.percentFormat", bundle: bundle, Int64(percent))
         }
         guard percent > 0 else {
