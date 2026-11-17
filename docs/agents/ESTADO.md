@@ -83,7 +83,7 @@ De la entrega de la página y de Capas (17-11-2026). Quien abra el paquete indic
 ### Decisiones tomadas al construir, a confirmar
 
 - **Capas va sobre `hoja`**, como pide PLAN-SIMPLE §4.1 ("nunca hojas negras sobre negro"). 03 §4.10 y 05 §2.7 la querían sobre `negro`. Sobre `hoja` el relieve ya no es `grafito` (1E1D1B sobre 1C1C1E, 1,01:1) sino `negro` (`Ink.relief(on:)`, 1,23:1, sin hex nuevo): el Disco, la pista bajo el dedo y la fila editorial pulsada. Si se prefiere el negro, es un argumento en `LayersSheet` (`grafitoSheet(surface:)`).
-- **La barra inferior** es "Mezclas" y el Disco; el sitio de "Noche" queda vacío hasta S-06. Marea y Temporizador son filas de la página, como en la maqueta. La barra es propia (no `ToolbarItemGroup`), para que se vea igual en iOS 17 y 26.
+- **La barra inferior** es "Mezclas", el Disco y, desde S-06 (tarea 3), "Noche". Marea y Temporizador son filas de la página, como en la maqueta. La barra es propia (no `ToolbarItemGroup`), para que se vea igual en iOS 17 y 26.
 - **La línea de estado** elige así cuando coinciden varias cosas: fundiendo, capa por defecto ("rosa a 40"), hora del temporizador, "sin {capa}", "Sonando".
 - **"y N más"** cuenta las capas por encima de cero que no tienen fila, también las Pro que conservan nivel.
 - **Versalitas con `.smallCaps()`**, como pide 03 §3.4 y dibuja la maqueta (`all-small-caps`): las cifras y las mayúsculas bajan a la altura de la versalita ("pro · 50", "prueba · 7 días"). 04 §2.0.2 y su anexo A2 escriben `.lowercaseSmallCaps()`, que deja las cifras a altura de mayúscula; manda 03.
@@ -93,6 +93,7 @@ De la entrega de la página y de Capas (17-11-2026). Quien abra el paquete indic
 ### Página nocturna (S-06)
 
 - La tinta nocturna es por procedencia (C40): `MixerModel.beginNightSession()`, que ya llama `leaveBedtime()`. Hoy nada entra en Noche, así que la página nocturna solo se ve con `-pageState night`. Vive en memoria: falta decidir qué es "la sesión" y guardarla.
+- **Hecho en S-06 (tarea 3).** "Noche" está en la barra (página y Capas) y Noche es una capa sobre la página: salir de ella (pulsación larga, botón de VoiceOver, gesto de escape) deja la página nocturna; el fin de Madrugada también.
 - La venta se cierra por `NightWindow` y, además, mientras dure la página nocturna (`SaleGate`). Toda petición de la hoja Pro pasa por `MixerModel.offerPro()`.
 - **Hecho en S-06 (cimientos): qué es "la sesión".** La noche es la sesión de audio: va del Play hasta que acaba sola (fin del temporizador, 20 minutos en pausa por `SessionPause`, la ventana de la mañana o el fin de Madrugada). No se guarda: tras un reinicio no suena nada y no hay sesión. La página nocturna dura hasta que la persona toca el nombre o hasta que la app pasa a primer plano de día (fuera de `NightWindow`) con esa noche ya terminada; mientras se mira no la cambia ningún reloj (`MixerModel.appDidBecomeActive()`, tests en `BedtimeModelTests`). A confirmar por el dueño.
 
@@ -106,6 +107,7 @@ De la entrega de la página y de Capas (17-11-2026). Quien abra el paquete indic
 - Marea: la banda de 120 pt y la línea de agua, "Se retira a las", y que el interruptor arranque el sonido (S-06). El interruptor arma la Marea como hasta ahora.
 - **S-06 (tarea 2):** el interruptor ya arranca el sonido (`setBreathingEnabled(_:startsSound:)`), y la línea de agua y "Se retira a las" existen en la hoja Marea. **La banda de 120 pt de la página sigue sin hacer**: el Horizonte de la página no cambia con la Marea.
 - Línea 2: "Seguir por el altavoz", "Sonando · al 40", "En pausa · llamada", "· AirPods" y el fin de sesión a los 20 minutos en pausa dependen de cablear `RoutePolicy` e `InterruptionPolicy` (S-06).
+- **S-06 (tarea 3):** "Seguir por el altavoz" y "Sonando · al 40" existen en Noche. **La segunda línea de la página sigue sin hacer**: en la página, tras perder los auriculares, la línea de estado dice "En pausa · auriculares" y el Disco reanuda con la misma regla del 40, pero no hay botón de texto ni nota del nivel. Pide el sitio reservado de 64 pt de la cabecera (guía §2.1), que la página no tiene, y un dato nuevo en el modelo ("capado hasta el primer toque").
 - Menú del nombre: solo "Guardar como mezcla…". Renombrar y Vaciar, con Mezclas (S-06).
 - Descomposición del Horizonte por pulsación larga, TipKit del segundo arrastre, fila Timbre (1.1) y "Enviar informe".
 - Una mezcla guardada con más de seis capas se carga entera: el tope solo impide añadir la séptima (ver "Lo que la corrección de S-04 aplaza").
@@ -203,3 +205,35 @@ Sin hacer en esta tarea, y por qué:
 - **Rueda de minutos de 5 en 5 en el selector de hora**: el `DatePicker` de SwiftUI no lo ofrece sin tocar la apariencia global.
 - **README**: el párrafo de lo gratis sigue diciendo 15, 30 o 60 minutos; se corrige con la prueba en S-07.
 - Sin verificar en dispositivo: VoiceOver sobre las dos hojas, el arrastre de la línea con un dedo real, la háptica de selección y que la línea de agua vaya con el oleaje (en el simulador el audio se silenció).
+
+### Tarea 3 · Noche y Madrugada (17-11-2026)
+
+Noche (superficie 10) y Madrugada (superficie 11) son `NightScreen` y `SmallHoursScreen` sobre un mismo `FullScreenControl` (03 §4.5), como capa de la página (`NightCover`), no como presentación del sistema: entran y salen por opacidad (2 s; 0,25 s con Reducir movimiento; 0,25 s de Noche a Madrugada, que es negro sobre negro) y la barra de estado se oculta. La lógica es pura y está probada: `NightStatus`, `NightAxis`, `NightTouch`, `NightLayout`, `SmallHoursStatus`, `SmallHoursWater`. Estados de depuración `-pageState night…` y `smallHours…` en `PageDebug.swift`.
+
+- **Noche** (C46, C47, C51, C27): negro, una tinta, Horizonte de 2 pt a un tercio (continuo o ausente), la hora del sistema, la palabra de estado y "+15 min" solo si hay cuenta (Noche nunca crea un temporizador; sin él el hueco queda vacío). Toque = pausa o reanuda; arrastre vertical = nivel de sesión, con la regla de 200 pt y "Sonando · al 40" tres segundos; pulsación de 0,6 a 2 s, al soltar = volver. Terminada, la pantalla deja de ser botón, dice "Terminó a las…" y el hueco del "+15 min" ofrece "Madrugada · 20 min". "Seguir por el altavoz" va encima, con 24 pt de canal, mientras dura la oferta. Atenuada a los 60 s sin tocar (tinta al 50 %); "Mantener encendida" se aplica con `isIdleTimerDisabled` y el estado de la batería.
+- **Entrada**: "Noche" en la barra funciona siempre (con la mezcla parada arranca el sonido, como Play, también con una mezcla en silencio: sube rosa a 40). Al bloquear (C47), con `protectedDataWillBecomeUnavailableNotification`: sonando, sin hoja delante y dentro de `NightWindow`. Las dos frases de la primera vez (C65) cuentan sus 4 s solo con la app activa y no se dan por vistas hasta entonces.
+- **Madrugada** (C05, C60): línea de agua de 1,5 pt sin marcas, leída del ancla de la receta, que se funde en bajamar cuando la Marea se retira y deja el Horizonte; la cifra de minutos; "Se retira · n min" los últimos cinco; "Parar". En pausa no hay palabra. Al terminar, nada: la capa se funde a la página nocturna. Nunca prueba ni hoja Pro.
+- **VoiceOver**: la pantalla es un botón ("Pantalla de noche", con la hora y el estado como valor), "+15 min", "Seguir por el altavoz", "Volumen" ajustable (pasos de 5) y "Volver a la página" como botón propio; Magic Tap y gesto de escape. En Madrugada: la pantalla, "Parar" y "Volumen". Los anuncios de la guía ("Sonando", "En pausa", "Página", los minutos tras "+15").
+
+Decisiones tomadas al construir, a confirmar:
+
+- **`noche.estado.termino`** ("Terminó a las %@" / "Ended at %@") no está en la guía 10: es la frase de 07 §3.2. Sin ella Noche terminada no dice nada. También son nuevas `ax.noche.pista.reanudar` y `ax.madrugada.pista.reanudar`: la guía solo trae la pista "para pausar", que en pausa miente.
+- **Sin háptica en la pulsación larga.** 03 §3.8 la pide (`.impact(.light, 0.4)`); C35 y `MotionGate` dicen que de noche nada vibra. Manda la reconciliación.
+- **Las frases de primera vez duran 4 s** (guía T25), no los 10 s de 07, y se omiten desde AX3 (están en la pista de VoiceOver).
+- **La cifra de Madrugada va a 72 pt en y 396** (03 §3.4, 07 y la maqueta). La guía §2.6 la pone a 56 pt en y 332, donde pisa la banda de la línea de agua.
+- **La hora lleva el sufijo del sistema** donde la región usa 12 h (guía §2.5: "2:14 AM"); 07 lo quitaba.
+- **Atenuada = tinta al 50 %** (`BedtimeScreenPolicy.dimmedOpacity`): ninguna spec da la cifra. Volver la app a primer plano cuenta como un toque.
+- **Entrada al bloquear solo dentro de `NightWindow`** (21:00–07:00): 07 decía 20:00–09:00 y C40 deja una sola constante. Sin código de bloqueo el sistema no avisa, y no se usa `scenePhase == .background` porque no distingue bloquear de salir de la app.
+- **Los 20, los 40 y los minutos salen del código**: `madrugada.estado` y `ax.la.madrugada` reciben la duración de la receta y `ax.altavoz.pista` el tope de `RoutePolicy`.
+- **La regla del nivel** dibuja su recorrido entero en `trazo` y el nivel en `texto-noche`; 07 solo describe "longitud llena = nivel".
+- **Noche terminada por la mañana.** La tarea 1 decidió que la mañana nunca quita la pantalla Noche (test `testTheNightPageStaysWhileItsNightIsAlive`): quien abre la app a las 08:00 con Noche delante ve "Terminó a las 23:45" y "Madrugada · 20 min", y al salir llega a la página nocturna. 07 (S5) la fundía sola a la página de día. A decidir por el dueño.
+- **`BedtimeEntryOutcome.nothingToPlay` desaparece**: 07 §4.1 pide que "Noche" funcione siempre, y Play ya sube rosa con la mezcla en silencio.
+
+Sin hacer en esta tarea, y por qué:
+
+- **Ajustes** (superficie 18, otro paquete): "Mantener encendida", "Pasar sola a Noche" (1 y 3 min), "Controles visibles de noche", "Mostrar la hora en Madrugada" y "Sin reloj" no tienen interfaz. Rigen los valores por defecto: mientras carga, al bloquear, sin controles visibles, sin hora.
+- **Controles visibles de noche** (fila de cuatro botones y deslizador; se activan solos con Control por botón o AssistiveTouch): no están. Con VoiceOver y Control por botón todo es alcanzable por los elementos accesibles; con AssistiveTouch, por sus gestos.
+- **Toque ignorado boca abajo**: pide el sensor de proximidad o CoreMotion (C35 lo deja fuera de 1.0).
+- **"Nivel bajado al 40 para el altavoz"** (nota de 4 s de 07): la guía no trae la cadena; el nivel se dice con "Sonando · al 40" solo tras el arrastre.
+- **Acceso asistido** (`UISupportsFullScreenInAssistiveAccess`), foco de teclado y atajos.
+- Sin verificar en dispositivo: VoiceOver y Control por botón sobre las dos pantallas, la entrada al bloquear (el simulador no tiene código de bloqueo), la guarda de 300 ms tras desbloquear, `isIdleTimerDisabled` cargando (en el simulador la batería es desconocida; con "Siempre" se comprobó que se pide), el arrastre con un dedo real y la línea de agua contra el oleaje.
