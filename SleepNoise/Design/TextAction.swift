@@ -8,6 +8,9 @@ import SwiftUI
 struct TextAction: View {
     var title: String
     var alignment = Alignment.center
+    /// The longest title this action shows, when it has more than one: it
+    /// is measured as if it showed that one, so it keeps its shape.
+    var sizingTitle: String?
     var action: () -> Void
 
     @Environment(\.nightPhase) private var phase
@@ -16,16 +19,24 @@ struct TextAction: View {
 
     var body: some View {
         Button(action: action) {
-            Text(verbatim: title)
-                .step(.body)
-                .foregroundStyle(Ink.secondary(phase))
-                .underline(buttonShapes, color: Ink.secondary(phase))
-                .frame(
-                    maxWidth: .infinity,
-                    minHeight: Grid.textAction(dynamicType: dynamicType, night: phase.isNight),
-                    alignment: alignment
-                )
-                .contentShape(Rectangle())
+            ZStack(alignment: alignment) {
+                if let sizingTitle, sizingTitle != title {
+                    Text(verbatim: sizingTitle)
+                        .step(.body)
+                        .hidden()
+                        .accessibilityHidden(true)
+                }
+                Text(verbatim: title)
+                    .step(.body)
+                    .foregroundStyle(Ink.secondary(phase))
+                    .underline(buttonShapes, color: Ink.secondary(phase))
+            }
+            .frame(
+                maxWidth: .infinity,
+                minHeight: Grid.textAction(dynamicType: dynamicType, night: phase.isNight),
+                alignment: alignment
+            )
+            .contentShape(Rectangle())
         }
         .buttonStyle(PressedFadeStyle())
         .padding(.horizontal, Grid.margin)

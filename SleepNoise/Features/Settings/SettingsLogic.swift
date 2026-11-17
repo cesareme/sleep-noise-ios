@@ -36,16 +36,23 @@ enum SettingsText {
 /// the Pro sheet while something may be sold.
 ///
 /// Without Pro it is the name the App Store gives with "{price} · Once."
-/// on the right, a dash while there is no price. With Pro it is the
-/// receipt line. The trial is not said here: it is read on the page.
+/// on the right, and nothing there until the store has given a price. With
+/// Pro it is the receipt line, and "With your family" under it when the
+/// purchase is shared. The trial is not said here: it is read on the page.
 ///
 /// At night, on the night page and in Small Hours the row is words, not a
 /// button, and it carries no price: nothing sells then (C08).
 struct SettingsProRow: Equatable {
     var title: String
+    /// "With your family", on its own line.
+    var subtitle: String?
     var value: String?
     /// The row opens the Pro sheet.
     var opensSheet: Bool
+    /// What VoiceOver reads: the name as the label, and the rest (the
+    /// thanks and the date in full, the family, or the price) as the value.
+    var spokenTitle: String
+    var spokenValue: String?
 
     init(
         isPro: Bool,
@@ -55,37 +62,53 @@ struct SettingsProRow: Equatable {
         canSell: Bool,
         localized: SettingsText.Lookup = { Localized.string($0) },
         date: (Date) -> String = { ProSheetText.shortDate($0) },
+        spokenDate: (Date) -> String = { ProSheetText.longDate($0) },
         locale: Locale = .current
     ) {
         opensSheet = canSell
+        let name = ProSheetText.name(displayName, localized: localized, locale: locale)
+        spokenTitle = name
         if isPro {
             title = ProSheetText.receiptLine(
                 displayName: displayName,
                 receipt: receipt,
+                withFamily: false,
                 localized: localized,
                 date: date,
                 locale: locale
             )
+            let isShared = receipt?.isFamilyShared == true
+            subtitle = isShared ? localized("pro.familia") : nil
             value = nil
+            let spoken = ProSheetText.spoken(ProSheetText.receiptLine(
+                displayName: displayName,
+                receipt: receipt,
+                localized: localized,
+                date: spokenDate,
+                locale: locale
+            ))
+            // "Name, thank you, date": the name is the label, the rest the
+            // value. A sentence built another way is read whole.
+            let lead = name + ", "
+            if spoken.hasPrefix(lead) {
+                spokenValue = String(spoken.dropFirst(lead.count))
+            } else {
+                spokenTitle = spoken
+                spokenValue = nil
+            }
             return
         }
-        title = ProSheetText.name(displayName, localized: localized, locale: locale)
-        guard canSell else {
-            value = nil
-            return
-        }
-        if case .loaded(let loaded) = product {
-            value = String(format: localized("pro.precio"), loaded.displayPrice)
+        title = name
+        subtitle = nil
+        // No price yet, or nothing to sell right now: the row is the name
+        // alone. A dash on its own here would read as a fault.
+        if canSell, case .loaded(let loaded) = product {
+            let price = String(format: localized("pro.precio"), loaded.displayPrice)
+            value = price
+            spokenValue = PageStatus.spoken(price)
         } else {
-            value = localized("pro.precio.cargando")
+            value = nil
+            spokenValue = nil
         }
-    }
-
-    /// What VoiceOver reads as the value: the price with its words, or
-    /// that there is none yet.
-    func spokenValue(localized: SettingsText.Lookup = { Localized.string($0) }) -> String? {
-        guard let value else { return nil }
-        if value == localized("pro.precio.cargando") { return localized("ax.comprar.sin_precio.valor") }
-        return PageStatus.spoken(value)
     }
 }

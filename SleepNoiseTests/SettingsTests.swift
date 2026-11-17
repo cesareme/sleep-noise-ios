@@ -26,6 +26,7 @@ final class SettingsTests: XCTestCase {
             canSell: canSell,
             localized: ProCatalog.lookup(language),
             date: { _ in "<date>" },
+            spokenDate: { _ in "<long date>" },
             locale: Locale(identifier: language)
         )
     }
@@ -38,14 +39,17 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(spanish.title, "Store Name")
         XCTAssertEqual(spanish.value, "¤ 12,34 · Una vez.")
         XCTAssertTrue(spanish.opensSheet)
-        XCTAssertEqual(spanish.spokenValue(localized: ProCatalog.lookup("es")), "¤ 12,34, Una vez.")
+        XCTAssertEqual(spanish.spokenTitle, "Store Name")
+        XCTAssertEqual(spanish.spokenValue, "¤ 12,34, Una vez.")
         XCTAssertEqual(row(language: "en").value, "¤ 12,34 · Once.")
 
+        // Red if the row shows anything in the place of a price it does
+        // not have: a dash alone under "pro" and "Pro" reads as a fault.
         for state in [ProductState.loading, .unavailable] {
             let waiting = row(product: state)
-            XCTAssertEqual(waiting.value, "—", "\(state): a dash, never a figure")
-            XCTAssertEqual(waiting.spokenValue(localized: ProCatalog.lookup("es")), "precio no disponible")
-            XCTAssertTrue(waiting.opensSheet)
+            XCTAssertNil(waiting.value, "\(state): no figure and nothing in its place")
+            XCTAssertNil(waiting.spokenValue)
+            XCTAssertTrue(waiting.opensSheet, "the sheet says the store is away")
         }
         XCTAssertEqual(row(displayName: nil).title, "Pro", "until the store has answered once")
     }
@@ -56,10 +60,53 @@ final class SettingsTests: XCTestCase {
         XCTAssertNil(bought.value, "no price once it is paid")
         XCTAssertTrue(bought.opensSheet, "it opens the receipt")
 
+        // Red if the family is left to wrap with its "·" at the end of
+        // the line above: it is the subtitle, on its own line.
         let shared = row(isPro: true, receipt: ProReceipt(purchaseDate: receipt.purchaseDate, isFamilyShared: true))
-        XCTAssertEqual(shared.title, "Store Name · gracias · <date> · en familia")
+        XCTAssertEqual(shared.title, "Store Name · gracias · <date>")
+        XCTAssertEqual(shared.subtitle, "En familia")
+        XCTAssertNil(bought.subtitle)
         XCTAssertEqual(
             row(isPro: true, receipt: receipt, language: "en").title, "Store Name · thank you · <date>"
+        )
+        let sharedInEnglish = row(
+            isPro: true,
+            receipt: ProReceipt(purchaseDate: receipt.purchaseDate, isFamilyShared: true),
+            language: "en"
+        )
+        XCTAssertEqual(sharedInEnglish.subtitle, "With your family")
+    }
+
+    /// Red if VoiceOver reads the row as it is drawn, middle dots and
+    /// short month included: the name is the label and the rest the value.
+    func testVoiceOverReadsTheNameAndThenTheReceipt() {
+        let bought = row(isPro: true, receipt: receipt)
+        XCTAssertEqual(bought.spokenTitle, "Store Name")
+        XCTAssertEqual(bought.spokenValue, "gracias, <long date>")
+
+        let shared = row(isPro: true, receipt: ProReceipt(purchaseDate: receipt.purchaseDate, isFamilyShared: true))
+        XCTAssertEqual(shared.spokenTitle, "Store Name")
+        XCTAssertEqual(shared.spokenValue, "gracias, <long date>, en familia")
+        XCTAssertEqual(
+            row(isPro: true, receipt: receipt, language: "en").spokenValue, "thank you, <long date>"
+        )
+
+        // A purchase kept without its date is the name alone.
+        let undated = row(isPro: true)
+        XCTAssertEqual(undated.spokenTitle, "Store Name")
+        XCTAssertNil(undated.spokenValue)
+
+        let utc = try? XCTUnwrap(TimeZone(identifier: "UTC"))
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = utc ?? .gmt
+        let day = Date(timeIntervalSinceReferenceDate: 0)
+        XCTAssertEqual(
+            ProSheetText.longDate(day, locale: Locale(identifier: "es_ES"), calendar: calendar),
+            "1 de enero de 2001"
+        )
+        XCTAssertEqual(
+            ProSheetText.longDate(day, locale: Locale(identifier: "en_US"), calendar: calendar),
+            "January 1, 2001"
         )
     }
 
@@ -70,7 +117,7 @@ final class SettingsTests: XCTestCase {
         XCTAssertFalse(night.opensSheet)
         XCTAssertEqual(night.title, "Store Name")
         XCTAssertNil(night.value)
-        XCTAssertNil(night.spokenValue(localized: ProCatalog.lookup("es")))
+        XCTAssertNil(night.spokenValue)
 
         let bought = row(isPro: true, receipt: receipt, canSell: false)
         XCTAssertFalse(bought.opensSheet)

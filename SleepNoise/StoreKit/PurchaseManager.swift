@@ -71,9 +71,12 @@ enum TrialNote: Equatable {
 }
 
 /// How long the store is waited for before saying it does not answer.
+///
+/// Only the product has a limit. Restore has none: `AppStore.sync()` asks
+/// for the password of the Apple Account, and the time someone takes to type
+/// it is not the store failing to answer.
 struct StoreTimeouts: Equatable {
     var product: TimeInterval = 8
-    var restore: TimeInterval = 10
 }
 
 /// Who has what: the purchase, the seven-night trial and the store.
@@ -126,6 +129,9 @@ final class PurchaseManager: ObservableObject {
     nonisolated static let familySharedKey = "sleepnoise.pro.familyShared.v1"
     nonisolated static let displayNameKey = "sleepnoise.pro.displayName.v1"
     nonisolated static let endNoteKey = "sleepnoise.trial.endNoteDue.v1"
+    /// The end of the trial has been found once, wherever it was found: at a
+    /// session start, or at a launch that read a record already used up.
+    nonisolated static let endEvaluatedKey = "sleepnoise.trial.endEvaluated.v1"
     nonisolated static let lastNightNoteKey = "sleepnoise.trial.lastNightNoteSeen.v1"
     nonisolated static let freeSessionsKey = "sleepnoise.trial.freeSessions.v1"
 
@@ -133,6 +139,10 @@ final class PurchaseManager: ObservableObject {
     private let calendar: Calendar
     private let timeouts: StoreTimeouts
     private let store: ProStore
+    private let trialStorage: TrialStorage
+    /// Goes up every time Pro is granted. A reading of the entitlements
+    /// that was asked for before a grant must not undo it.
+    private var grantCount = 0
     private var updatesTask: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
     /// Access was lost while the bed was sounding; applied when it stops.
@@ -150,12 +160,16 @@ final class PurchaseManager: ObservableObject {
         self.calendar = calendar
         self.timeouts = timeouts
         self.store = store ?? AppStoreProStore()
-        LegacyTrial.migrate(from: defaults, to: trialStorage)
+        self.trialStorage = trialStorage
+        Self.migrateLegacyTrial(from: defaults, to: trialStorage)
         var trial = NightTrial(storage: trialStorage)
         // The clock is sampled at launch; the answer only changes at the
         // next session start.
         trial.observe(now: now)
         self.trial = trial
+        // A trial whose time ran out between two launches is read here as
+        // over, with no session start in between to say so: its note is due.
+        Self.noteEndOnce(of: trial, in: defaults)
         let purchased = defaults.bool(forKey: Self.cacheKey)
         isPro = purchased
         hasFullAccess = purchased || trial.grantsFullAccess
@@ -183,7 +197,7 @@ final class PurchaseManager: ObservableObject {
     /// "Start the trial · 7 nights" exists: not bought and never used. The
     /// night gate is the mixer's (`MixerModel.startTrial()`).
     var canStartTrial: Bool {
-        !isPro && trialState == .notStarted
+        !isPro && trialState == .notStarted && LegacyTrial.record(in: defaults) == nil
     }
 
     /// The header says "always free": the trial is over, nothing was bought
@@ -266,29 +280,23 @@ final class PurchaseManager: ObservableObject {
         }
     }
 
-    /// Asks the App Store for the purchases of this Apple Account. It never
-    /// waits longer than `timeouts.restore`: past that the store "does not
-    /// answer", and whatever arrives later still applies in silence.
+    /// Asks the App Store for the purchases of this Apple Account. There is
+    /// no limit of its own: the system may ask for the password, and "the
+    /// store does not answer" over that dialog would be false. "Looking…"
+    /// stays, with the actions held, until the App Store answers; the one
+    /// line that follows is the one that is true then.
     func restore() async {
         guard activity == .idle else { return }
         notice = nil
         activity = .restoring
-        let outcome = await Self.value(within: timeouts.restore) { [weak self] () -> ProSyncResult in
-            guard let self else { return .unavailable }
-            let result = await self.store.sync()
-            await self.refreshEntitlements(allowDowngrade: result == .synced)
-            return result
-        }
+        let result = await store.sync()
+        await refreshEntitlements(allowDowngrade: result == .synced)
         activity = .idle
-        guard let outcome else {
-            notice = .storeUnavailable
-            return
-        }
         if isPro {
             notice = .restored
             return
         }
-        switch outcome {
+        switch result {
         case .synced: notice = .nothingToRestore
         case .cancelled: notice = .cancelled
         case .unavailable: notice = .storeUnavailable
@@ -304,10 +312,17 @@ final class PurchaseManager: ObservableObject {
     func startTrial(now: Date, calendar: Calendar? = nil) -> TrialStartResult {
         guard !isPro else { return .notNeeded }
         guard !NightWindow.contains(now, calendar: calendar ?? self.calendar) else { return .closedAtNight }
-        trial.reloadIfMissing()
+        reloadTrial()
         guard trial.status == .notStarted else {
             trialChanged(now: now, canDowngrade: !isSoundPlaying())
             return .alreadyUsed
+        }
+        // A trial of the builds before this one that still cannot be moved
+        // counts as used: a Keychain that writes again must not hand out
+        // seven new nights over it. Nothing is granted.
+        guard LegacyTrial.record(in: defaults) == nil else {
+            notice = .trialNotStarted
+            return .failed
         }
         guard trial.start(now: now) else {
             // An item may be there that could not be read: ask once more.
@@ -318,6 +333,7 @@ final class PurchaseManager: ObservableObject {
         }
         setFreeSessions(0)
         defaults.set(false, forKey: Self.endNoteKey)
+        defaults.set(false, forKey: Self.endEvaluatedKey)
         defaults.set(false, forKey: Self.lastNightNoteKey)
         trialChanged(now: now, canDowngrade: true)
         return .started
@@ -327,7 +343,7 @@ final class PurchaseManager: ObservableObject {
     /// every return to the foreground. Without it, winding the clock back
     /// before each Play would stretch the trial without limit.
     func observeClock(now: Date) {
-        trial.reloadIfMissing()
+        reloadTrial()
         trial.observe(now: now)
         // A record that could not be read at launch grants what it grants
         // as soon as it can be read. Nothing is taken away here.
@@ -338,18 +354,24 @@ final class PurchaseManager: ObservableObject {
     /// Not a resume after a pause or an interruption, and not Small Hours.
     /// A trial that ran out ends here, in silence: what it leaves to say
     /// (`trialNote`) waits for daytime.
+    ///
+    /// The mixer calls this before the engine starts, on purpose: a mix
+    /// whose trial is over must play trimmed from its first sample. Whether
+    /// the session counts as one of the free ones is said afterwards
+    /// (`sessionDidStart()`), once the sound is there.
     func evaluateTrialAtSessionStart(now: Date) {
-        trial.reloadIfMissing()
-        let before = trial.status
+        reloadTrial()
         trial.evaluateAtSessionStart(now: now)
-        if before == .active, trial.status == .ended {
-            defaults.set(true, forKey: Self.endNoteKey)
-            setFreeSessions(0)
-        }
+        trialChanged(now: now, canDowngrade: !isSoundPlaying())
+    }
+
+    /// The session that was just evaluated did start. After the trial, and
+    /// without Pro, it is one of the seven that say "always free". A Play
+    /// that failed is not a session and does not use one up.
+    func sessionDidStart() {
         if trial.status == .ended, !isPro {
             setFreeSessions(freeSessionsAfterTrial + 1)
         }
-        trialChanged(now: now, canDowngrade: !isSoundPlaying())
     }
 
     /// The person pressed Play: a paragraph that was on the page until
@@ -396,7 +418,40 @@ final class PurchaseManager: ObservableObject {
 
     // MARK: Private
 
+    /// Reads the trial again where a launch could not: a legacy trial that
+    /// could not be written is moved now, and a record that could not be
+    /// read is asked for once more.
+    private func reloadTrial() {
+        Self.migrateLegacyTrial(from: defaults, to: trialStorage)
+        trial.reloadIfMissing()
+    }
+
+    /// Moves the trial of the builds before this one. One that had already
+    /// run out there ended long ago: its end is not news, so it leaves no
+    /// note.
+    private static func migrateLegacyTrial(from defaults: UserDefaults, to storage: TrialStorage) {
+        guard let legacy = LegacyTrial.record(in: defaults) else { return }
+        if legacy.consumed >= NightTrial.length {
+            defaults.set(true, forKey: endEvaluatedKey)
+        }
+        LegacyTrial.migrate(from: defaults, to: storage)
+    }
+
+    /// The first time the trial is found over, its note becomes due and the
+    /// count of free sessions starts. Returns whether this was that time.
+    @discardableResult
+    private static func noteEndOnce(of trial: NightTrial, in defaults: UserDefaults) -> Bool {
+        guard trial.status == .ended, !defaults.bool(forKey: endEvaluatedKey) else { return false }
+        defaults.set(true, forKey: endEvaluatedKey)
+        defaults.set(true, forKey: endNoteKey)
+        defaults.set(0, forKey: freeSessionsKey)
+        return true
+    }
+
     private func trialChanged(now: Date, canDowngrade: Bool) {
+        if Self.noteEndOnce(of: trial, in: defaults), freeSessionsAfterTrial != 0 {
+            freeSessionsAfterTrial = 0
+        }
         let state = Self.state(of: trial, now: now, calendar: calendar)
         if state != trialState { trialState = state }
         refreshTrialNote()
@@ -457,14 +512,23 @@ final class PurchaseManager: ObservableObject {
     /// `allowDowngrade` is set (the product just loaded, or the App Store
     /// just synced): a launch with the store out of reach must not take a
     /// paid Pro away.
+    ///
+    /// A reading can be old by the time it is applied: the scene comes back
+    /// when the payment sheet closes, and this is asked while the purchase
+    /// is still on its way. An answer that does not entitle is dropped when
+    /// Pro was granted since it was asked for, or while a purchase is open;
+    /// the next refresh reads the truth.
     private func refreshEntitlements(allowDowngrade: Bool) async {
-        switch await store.currentEntitlement() {
+        let grants = grantCount
+        let answer = await store.currentEntitlement()
+        let mayBeOld = grants != grantCount || activity == .purchasing
+        switch answer {
         case .entitled(let receipt):
             setPro(true, receipt: receipt)
         case .notEntitled:
-            setPro(false, receipt: nil)
+            if !mayBeOld { setPro(false, receipt: nil) }
         case .nothing:
-            if allowDowngrade { setPro(false, receipt: nil) }
+            if allowDowngrade, !mayBeOld { setPro(false, receipt: nil) }
         }
     }
 
@@ -483,6 +547,7 @@ final class PurchaseManager: ObservableObject {
         if isPro != value { isPro = value }
         defaults.set(value, forKey: Self.cacheKey)
         if value {
+            grantCount += 1
             isPurchasePending = false
             if let next {
                 defaults.set(next.purchaseDate, forKey: Self.purchasedAtKey)

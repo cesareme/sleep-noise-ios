@@ -69,9 +69,14 @@ struct ProSheetContent: Equatable {
     var isRestoring: Bool
     var showsNotNow: Bool
     var showsReview: Bool
-    /// The catalog key of the line that takes the place of the footer, or
-    /// nil for the footer itself.
+    /// The catalog key of the line that says what just happened, or nil
+    /// when nothing has: then the foot says `footKey`.
     var resultKey: String?
+    /// The line of the foot at rest. While the trial is on offer it is
+    /// what the trial is (how long, that nothing is charged, what stays
+    /// when it ends): it must be read before the button is pressed, at
+    /// every text size. Otherwise it is the footer.
+    var footKey: String
     /// Bought or restored from the sheet that sells: it says thanks for a
     /// moment and comes down.
     var closesItself: Bool
@@ -108,10 +113,21 @@ struct ProSheetContent: Equatable {
         }
 
         showsStartTrial = !input.isPro && input.trial == .notStarted
+        footKey = showsStartTrial ? ProSheetText.trialNoteKey : ProSheetText.footerKey
         showsNotNow = !isReceipt
         showsReview = isReceipt && input.hasReviewLink
         resultKey = Self.resultKey(input, isReceipt: isReceipt)
     }
+
+    /// Every line the foot of this sheet can say while it is up: the one
+    /// at rest and each of the results. The view reserves the height of the
+    /// longest, so the foot never changes height.
+    var footKeys: [String] { [footKey] + Self.resultKeys }
+
+    static let resultKeys = [
+        "pro.restaurar.no", "pro.pendiente", "pro.fallo", "pro.fallo.sin_confirmar",
+        storeAwayKey, storeAwayInSilenceKey, "pro.gracias",
+    ]
 
     /// The purchase can be pressed: the price is known and nothing is in
     /// flight. Only then are its hairlines the accent.
@@ -164,6 +180,7 @@ enum ProSheetText {
     typealias Lookup = (String) -> String
 
     static let footerKey = "lo_que_no_hay.pie"
+    static let trialNoteKey = "pro.prueba.empezar.nota"
     static let includedKeys = ["pro.incluye.texturas", "pro.incluye.marea", "pro.incluye.mezclas"]
     static let familyKey = "pro.familia"
 
@@ -179,11 +196,13 @@ enum ProSheetText {
     }
 
     /// "{displayName} · thank you · {date}", and "· with your family"
-    /// after it. Without a date (a purchase kept by a build that stored
-    /// none) it is the name alone.
+    /// after it when `withFamily` asks for the whole sentence. Without a
+    /// date (a purchase kept by a build that stored none) it is the name
+    /// alone.
     static func receiptLine(
         displayName: String?,
         receipt: ProReceipt?,
+        withFamily: Bool = true,
         localized: Lookup = { Localized.string($0) },
         date: (Date) -> String = { shortDate($0) },
         locale: Locale = .current
@@ -191,13 +210,14 @@ enum ProSheetText {
         let name = name(displayName, localized: localized, locale: locale)
         guard let receipt else { return name }
         var line = String(format: localized("pro.ajustes.gracias"), name, date(receipt.purchaseDate))
-        if receipt.isFamilyShared {
+        if withFamily, receipt.isFamilyShared {
             line += " " + localized("pro.ajustes.familia")
         }
         return line
     }
 
-    /// The small caps over the price: the name, or the receipt line.
+    /// The small caps over the price: the name, or the receipt line. The
+    /// family goes on a line of its own (`familyLine`).
     static func title(
         _ content: ProSheetContent,
         localized: Lookup = { Localized.string($0) },
@@ -208,6 +228,7 @@ enum ProSheetText {
             ? receiptLine(
                 displayName: content.displayName,
                 receipt: content.receipt,
+                withFamily: false,
                 localized: localized,
                 date: date,
                 locale: locale
@@ -217,9 +238,54 @@ enum ProSheetText {
         return words.lowercased(with: locale)
     }
 
+    /// "· with your family", under the receipt line: its own line, so the
+    /// "·" is never left hanging at the end of the one above.
+    static func familyLine(
+        _ content: ProSheetContent,
+        localized: Lookup = { Localized.string($0) },
+        locale: Locale = .current
+    ) -> String? {
+        guard content.isReceipt, content.receipt?.isFamilyShared == true else { return nil }
+        return localized("pro.ajustes.familia").lowercased(with: locale)
+    }
+
+    /// What VoiceOver reads for the small caps: the same words as a
+    /// sentence, with the month in full.
+    static func spokenTitle(
+        _ content: ProSheetContent,
+        localized: Lookup = { Localized.string($0) },
+        date: (Date) -> String = { longDate($0) },
+        locale: Locale = .current
+    ) -> String {
+        guard content.isReceipt else { return name(content.displayName, localized: localized, locale: locale) }
+        return spoken(receiptLine(
+            displayName: content.displayName,
+            receipt: content.receipt,
+            localized: localized,
+            date: date,
+            locale: locale
+        ))
+    }
+
+    /// "Start the trial · 7 nights". With larger text the two halves are
+    /// two lines, instead of a "·" left at the end of the first.
+    static func trialTitle(stacked: Bool, localized: Lookup = { Localized.string($0) }) -> String {
+        let title = localized("pro.prueba.empezar")
+        return stacked ? title.replacingOccurrences(of: " · ", with: "\n") : title
+    }
+
     /// "16 Nov 2026": day, short month and year, in the order of the place.
     static func shortDate(_ date: Date, locale: Locale = .current, calendar: Calendar = .current) -> String {
         var style = Date.FormatStyle.dateTime.day().month(.abbreviated).year()
+        style.locale = locale
+        style.calendar = calendar
+        style.timeZone = calendar.timeZone
+        return date.formatted(style)
+    }
+
+    /// "16 November 2026": the date as a voice says it.
+    static func longDate(_ date: Date, locale: Locale = .current, calendar: Calendar = .current) -> String {
+        var style = Date.FormatStyle.dateTime.day().month(.wide).year()
         style.locale = locale
         style.calendar = calendar
         style.timeZone = calendar.timeZone

@@ -118,7 +118,9 @@ struct SettingsSheet: View {
     private var keepScreenOnRow: some View {
         MenuRow(
             title: Localized.string("ajustes.pantalla"),
-            value: Localized.string(SettingsText.keepScreenOnKey(model.keepScreenOn))
+            value: Localized.string(SettingsText.keepScreenOnKey(model.keepScreenOn)),
+            // The value of every row of Settings is in the same step.
+            valueStep: .secondary
         ) {
             Picker(selection: Binding(
                 get: { model.keepScreenOn },
@@ -142,11 +144,17 @@ struct SettingsSheet: View {
             receipt: purchases.receipt,
             canSell: canSell
         )
-        return EditorialRow(title: row.title, value: row.value, isInert: !row.opensSheet) {
+        return EditorialRow(
+            // Where it wraps, a line begins with the dot, never ends with it.
+            title: LineTies.dotLeads(row.title),
+            subtitle: row.subtitle,
+            value: row.value.map { LineTies.dotLeads($0) },
+            isInert: !row.opensSheet
+        ) {
             model.offerPro()
         }
-        .accessibilityLabel(Text(verbatim: PageStatus.spoken(row.title)))
-        .accessibilityValue(Text(verbatim: row.spokenValue() ?? ""))
+        .accessibilityLabel(Text(verbatim: row.spokenTitle))
+        .accessibilityValue(Text(verbatim: row.spokenValue ?? ""))
         .accessibilityIdentifier("settings.pro")
     }
 }
@@ -171,12 +179,9 @@ struct WhatIsNotHerePage: View {
                     }
                     Hairline()
                         .padding(.vertical, Grid.unit * 6)
+                    // No footer here: it would repeat the first three
+                    // facts of this very page.
                     words(Localized.string("lo_que_no_hay.resena"))
-                    Text(verbatim: Localized.string(ProSheetText.footerKey))
-                        .step(.note)
-                        .foregroundStyle(Ink.secondary(phase))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, Grid.group)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, Grid.margin)

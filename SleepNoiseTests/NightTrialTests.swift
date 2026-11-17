@@ -173,7 +173,9 @@ final class NightTrialTests: XCTestCase {
         XCTAssertTrue(trial.grantsFullAccess)
         XCTAssertEqual(trial.status, .active)
 
-        // And winding the clock back again before Play no longer helps.
+        // Once the real clock has been seen, winding it back before Play
+        // no longer helps. Winding it back before the app is opened still
+        // does: the limit is written in `NightTrial` and in ESTADO.md.
         XCTAssertFalse(trial.evaluateAtSessionStart(now: start.addingTimeInterval(hour)))
         XCTAssertEqual(trial.status, .ended)
     }

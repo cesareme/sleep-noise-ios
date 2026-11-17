@@ -64,6 +64,51 @@ final class ProSheetContentTests: XCTestCase {
         XCTAssertFalse(sheet.closesItself)
     }
 
+    /// Red if the trial can be started without its terms in sight: how
+    /// long it lasts, that nothing is charged and what stays when it ends
+    /// are the line of the foot for as long as the button is there, and the
+    /// footer comes back when it is not.
+    func testWhileTheTrialIsOnOfferTheFootSaysWhatItIs() {
+        XCTAssertEqual(selling().footKey, "pro.prueba.empezar.nota")
+        XCTAssertEqual(selling { $0.product = .loading }.footKey, "pro.prueba.empezar.nota")
+        for trial in [TrialState.active(nightsLeft: 3), .ended] {
+            XCTAssertEqual(selling { $0.trial = trial }.footKey, "lo_que_no_hay.pie", "\(trial)")
+        }
+        XCTAssertEqual(bought().footKey, "lo_que_no_hay.pie")
+        XCTAssertEqual(bought { $0.trial = .notStarted }.footKey, "lo_que_no_hay.pie")
+
+        // What just happened still takes its place, one line at a time.
+        let failed = selling { $0.notice = .trialNotStarted }
+        XCTAssertEqual(failed.resultKey, "pro.fallo")
+
+        // Red if a line the foot can say is missing from the ones it
+        // reserves room for: the foot would grow when that line appears.
+        let notices: [PurchaseNotice?] = [
+            nil, .purchased, .restored, .nothingToRestore, .pending, .cancelled, .failed, .unconfirmed,
+            .storeUnavailable, .trialNotStarted,
+        ]
+        for notice in notices {
+            for isPlaying in [false, true] {
+                for sheet in [
+                    selling { $0.notice = notice; $0.isPlaying = isPlaying },
+                    selling { $0.notice = notice; $0.isPlaying = isPlaying; $0.product = .unavailable },
+                    selling { $0.notice = notice; $0.isPurchasePending = true },
+                    bought { $0.notice = notice },
+                ] {
+                    XCTAssertTrue(sheet.footKeys.contains(sheet.footKey))
+                    if let key = sheet.resultKey {
+                        XCTAssertTrue(sheet.footKeys.contains(key), "\(String(describing: notice)): \(key)")
+                    }
+                }
+            }
+        }
+        for language in ["en", "es"] {
+            let note = ProCatalog.lookup(language)("pro.prueba.empezar.nota")
+            XCTAssertFalse(note.isEmpty, language)
+            XCTAssertNotEqual(note, "pro.prueba.empezar.nota", language)
+        }
+    }
+
     /// Red if "Start the trial" is offered once the trial was used, in any
     /// of its states, or with Pro bought.
     func testTheTrialIsOfferedOnlyWhileItWasNeverUsed() {
@@ -295,11 +340,69 @@ final class ProSheetTextTests: XCTestCase {
             let sheet = ProSheetContent(.init(
                 isPro: true, wasProWhenOpened: true, receipt: shared, displayName: "Store Name"
             ))
+            // On the sheet the family has a line of its own: a "·" is
+            // never left at the end of the line above.
             XCTAssertEqual(
                 ProSheetText.title(sheet, localized: strings, date: fixedDate, locale: locale),
+                thanks.lowercased(with: locale),
+                language
+            )
+            let familyLine = try? XCTUnwrap(ProSheetText.familyLine(sheet, localized: strings, locale: locale))
+            XCTAssertEqual(
+                ProSheetText.title(sheet, localized: strings, date: fixedDate, locale: locale)
+                    + " " + (familyLine ?? ""),
                 family.lowercased(with: locale),
                 language
             )
+            let alone = ProSheetContent(.init(
+                isPro: true, wasProWhenOpened: true, receipt: own, displayName: "Store Name"
+            ))
+            XCTAssertNil(ProSheetText.familyLine(alone, localized: strings, locale: locale), language)
+            XCTAssertNil(
+                ProSheetText.familyLine(ProSheetContent(.init(displayName: "Store Name")), localized: strings),
+                "the sheet that sells has no receipt"
+            )
+        }
+    }
+
+    /// Red if VoiceOver reads the small caps as they are drawn: middle
+    /// dots, and a month cut to three letters.
+    func testVoiceOverReadsTheReceiptAsASentence() {
+        let shared = ProReceipt(purchaseDate: date, isFamilyShared: true)
+        func longDate(_: Date) -> String { "<long date>" }
+        for (language, expected) in [
+            ("en", "Store Name, thank you, <long date>, with your family"),
+            ("es", "Store Name, gracias, <long date>, en familia"),
+        ] {
+            let strings = ProCatalog.lookup(language)
+            let locale = Locale(identifier: language)
+            let sheet = ProSheetContent(.init(
+                isPro: true, wasProWhenOpened: true, receipt: shared, displayName: "Store Name"
+            ))
+            let spoken = ProSheetText.spokenTitle(sheet, localized: strings, date: longDate, locale: locale)
+            XCTAssertEqual(spoken, expected, language)
+            XCTAssertFalse(spoken.contains("·"), language)
+            XCTAssertEqual(
+                ProSheetText.spokenTitle(
+                    ProSheetContent(.init(displayName: "Store Name")), localized: strings, locale: locale
+                ),
+                "Store Name",
+                language
+            )
+            XCTAssertFalse(ProSheetText.spoken(strings("pro.gratis.lista")).contains("·"), language)
+        }
+    }
+
+    /// Red if the trial button, set in two lines with larger text, leaves
+    /// its "·" at the end of the first.
+    func testWithLargerTextTheTrialButtonIsTwoLinesWithoutADot() {
+        for (language, whole, stacked) in [
+            ("en", "Start the trial · 7 nights", "Start the trial\n7 nights"),
+            ("es", "Empezar la prueba · 7 noches", "Empezar la prueba\n7 noches"),
+        ] {
+            let strings = ProCatalog.lookup(language)
+            XCTAssertEqual(ProSheetText.trialTitle(stacked: false, localized: strings), whole, language)
+            XCTAssertEqual(ProSheetText.trialTitle(stacked: true, localized: strings), stacked, language)
         }
     }
 

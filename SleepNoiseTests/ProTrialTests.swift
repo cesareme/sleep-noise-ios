@@ -454,6 +454,171 @@ final class ProTrialTests: XCTestCase {
         XCTAssertNil(defaults.object(forKey: LegacyTrial.startedAtKey))
     }
 
+    /// Red if an old trial whose migration could not be written at launch
+    /// lets a new one start as soon as the Keychain writes again, in the
+    /// same launch: the install would get seven nights on top of its own.
+    func testAnOldTrialStillToBeMovedDoesNotAllowANewOne() throws {
+        let defaults = try makeDefaults()
+        let start = time(day: 1, 12)
+        legacy(defaults, startedAt: start, lastSeen: start, consumed: 9 * day)
+        let storage = FaultyTrialStorage()
+        storage.failsToWrite = true
+        let purchases = manager(defaults, storage, now: time(12))
+        XCTAssertEqual(purchases.trialState, .notStarted)
+        XCTAssertFalse(purchases.canStartTrial, "the old trial counts as used while it waits")
+
+        storage.failsToWrite = false
+        XCTAssertEqual(purchases.startTrial(now: time(12)), .alreadyUsed)
+        XCTAssertFalse(purchases.hasFullAccess)
+        XCTAssertEqual(purchases.trialState, .ended, "the old trial is the one that counts")
+        XCTAssertEqual(storage.inner.record?.startedAt, start, "moved, not replaced by a new one")
+        XCTAssertNil(defaults.object(forKey: LegacyTrial.startedAtKey))
+        XCTAssertNil(purchases.trialNote, "it ended long ago: nothing to announce")
+
+        // The return to the foreground moves it too, without a tap.
+        let other = try makeDefaults()
+        legacy(other, startedAt: start, lastSeen: start, consumed: day)
+        let slow = FaultyTrialStorage()
+        slow.failsToWrite = true
+        let waiting = manager(other, slow, now: time(12))
+        XCTAssertFalse(waiting.hasFullAccess)
+        slow.failsToWrite = false
+        waiting.observeClock(now: time(12, 1))
+        XCTAssertTrue(waiting.hasFullAccess, "the old trial in progress goes on")
+        XCTAssertNil(other.object(forKey: LegacyTrial.startedAtKey))
+    }
+
+    // MARK: A trial that ends with the app closed
+
+    /// Red if a trial whose time ran out between two launches, with no
+    /// session start in between, ends without ever saying so: the launch
+    /// that reads it as over is the one that owes the note.
+    func testATrialThatEndsBetweenLaunchesStillSaysItsEnd() throws {
+        let defaults = try makeDefaults()
+        let storage = InMemoryTrialStorage()
+        let first = manager(defaults, storage, now: time(12))
+        XCTAssertEqual(first.startTrial(now: time(12)), .started)
+
+        // Eight days on the app is opened to look, and nobody presses Play.
+        first.observeClock(now: time(day: 25, 19))
+        XCTAssertTrue(first.hasFullAccess, "the answer changes only at a session start")
+        XCTAssertNil(first.trialNote)
+
+        // The process dies. The next launch reads a trial that is used up.
+        let second = manager(defaults, storage, now: time(day: 25, 22, 30))
+        XCTAssertEqual(second.trialState, .ended)
+        XCTAssertFalse(second.hasFullAccess)
+        XCTAssertEqual(second.trialNote, .ended)
+        XCTAssertTrue(second.showsAlwaysFree)
+        second.playWasAsked(now: time(day: 25, 22, 31))
+        XCTAssertEqual(second.trialNote, .ended, "at night it waits for the day")
+
+        // The launch after still owes it, and once read it is gone for good.
+        let third = manager(defaults, storage, now: time(day: 26, 9))
+        XCTAssertEqual(third.trialNote, .ended)
+        third.dismissTrialNote()
+        XCTAssertNil(third.trialNote)
+        XCTAssertNil(manager(defaults, storage, now: time(day: 26, 10)).trialNote, "said once")
+    }
+
+    /// Red if a Play that did not sound uses up one of the seven sessions
+    /// that say "always free". The trial is still evaluated before the
+    /// sound, so a mix whose trial is over never starts whole.
+    func testAPlayThatFailsIsNotAFreeSession() throws {
+        let night = try NightHarness(at: time(12), access: .trial)
+        night.jump(to: time(day: 25, 12))
+        night.engine.failsToStart = true
+        night.model.play()
+        XCTAssertFalse(night.model.isPlaying)
+        XCTAssertEqual(night.purchases.trialState, .ended, "evaluated before anything sounds")
+        XCTAssertEqual(night.purchases.freeSessionsAfterTrial, 0, "nothing sounded: not a session")
+
+        night.engine.failsToStart = false
+        night.model.play()
+        XCTAssertTrue(night.model.isPlaying)
+        XCTAssertEqual(night.purchases.freeSessionsAfterTrial, 1)
+    }
+
+    // MARK: The night begins with the sheet open
+
+    private let listed = ProProduct(displayName: "Scripted Pro", displayPrice: "¤ 12,34", isFamilyShareable: true)
+
+    /// Red if a Pro sheet that was up before 21:00 still sells after it:
+    /// nothing redraws a page that is open and still, so the border of the
+    /// night window has to close the sheet, and Buy has to pass the gate.
+    func testASheetLeftOpenSellsNothingOnceTheNightBegins() async throws {
+        let night = try NightHarness(at: time(20, 59), access: .free)
+        night.store.product = listed
+        night.store.purchaseResult = .purchased(ProReceipt(purchaseDate: time(21), isFamilyShared: false))
+        await night.purchases.refresh()
+        night.model.offerPro()
+        XCTAssertTrue(night.model.showPaywall)
+        let drawn = night.model.saleClock
+
+        // The clock reaches the night with the app open.
+        night.jump(to: time(21))
+        night.model.nightWindowChanged()
+        XCTAssertFalse(night.model.showPaywall)
+        XCTAssertGreaterThan(night.model.saleClock, drawn, "what reads the gate is drawn again")
+
+        // A sheet that is still up for any reason does not reach the store.
+        night.jump(to: time(20, 59))
+        night.model.offerPro()
+        night.jump(to: time(21))
+        await night.model.purchasePro()
+        XCTAssertEqual(night.store.purchaseCount, 0, "nothing is sold at night")
+        XCTAssertFalse(night.purchases.isPro)
+        XCTAssertFalse(night.model.showPaywall, "it comes down, in silence")
+        XCTAssertNil(night.purchases.notice)
+
+        // By day the same tap buys.
+        night.jump(to: time(day: 18, 9))
+        night.model.offerPro()
+        await night.model.purchasePro()
+        XCTAssertEqual(night.store.purchaseCount, 1)
+        XCTAssertTrue(night.purchases.isPro)
+    }
+
+    /// Red if a purchase that is already with the App Store when the night
+    /// begins loses its sheet from under the confirmation, or if the sheet
+    /// stays up selling once that purchase ends without Pro.
+    func testAPurchaseBegunByDayIsSeenThrough() async throws {
+        let night = try NightHarness(at: time(20, 59), access: .free)
+        night.store.product = listed
+        night.store.holdsPurchase = true
+        night.store.purchaseResult = .cancelled
+        await night.purchases.refresh()
+        night.model.offerPro()
+        let model = night.model
+        let buying = Task { await model.purchasePro() }
+        try await waitUntil { night.store.purchaseCount == 1 }
+
+        night.jump(to: time(21))
+        night.model.nightWindowChanged()
+        XCTAssertTrue(night.model.showPaywall, "the confirmation of the App Store is up")
+        night.store.release()
+        await buying.value
+        XCTAssertFalse(night.model.showPaywall, "closed without buying: the sheet comes down for the night")
+
+        // Paid after 21:00: the sheet stays to say thank you and closes itself.
+        let other = try NightHarness(at: time(20, 59), access: .free)
+        other.store.product = listed
+        other.store.holdsPurchase = true
+        other.store.purchaseResult = .purchased(ProReceipt(purchaseDate: time(21), isFamilyShared: false))
+        await other.purchases.refresh()
+        other.model.offerPro()
+        let paying = other.model
+        let paid = Task { await paying.purchasePro() }
+        try await waitUntil { other.store.purchaseCount == 1 }
+        other.jump(to: time(21))
+        other.model.nightWindowChanged()
+        other.store.release()
+        await paid.value
+        XCTAssertTrue(other.purchases.isPro)
+        XCTAssertEqual(other.purchases.notice, .purchased)
+        XCTAssertTrue(other.model.showPaywall, "what was begun by day is thanked")
+    }
+
     // MARK: A Keychain that cannot be read
 
     /// Red if a running trial that could not be read at launch stays on the

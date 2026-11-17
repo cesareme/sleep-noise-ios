@@ -19,6 +19,9 @@ final class ScriptedProStore: ProStore {
     /// What `currentEntitlement` answers. A purchase that goes through
     /// leaves its receipt here, like the real store.
     var entitlement: ProEntitlement = .nothing
+    /// `currentEntitlement` reads its answer and keeps it until
+    /// `release()`: a reading that is old by the time it arrives.
+    var holdsEntitlement = false
     /// What the App Store sync brings, if it differs from what is there.
     var entitlementAfterSync: ProEntitlement?
 
@@ -28,6 +31,7 @@ final class ScriptedProStore: ProStore {
     private(set) var loadCount = 0
     private(set) var purchaseCount = 0
     private(set) var syncCount = 0
+    private(set) var entitlementReadCount = 0
 
     private var waiting: [UnsafeContinuation<Void, Never>] = []
     private var listener: AsyncStream<ProStoreChange>.Continuation?
@@ -66,7 +70,12 @@ final class ScriptedProStore: ProStore {
     }
 
     func currentEntitlement() async -> ProEntitlement {
-        entitlement
+        let read = entitlement
+        entitlementReadCount += 1
+        if holdsEntitlement {
+            await withUnsafeContinuation { waiting.append($0) }
+        }
+        return read
     }
 
     func changes() -> AsyncStream<ProStoreChange> {
@@ -90,6 +99,7 @@ final class ScriptedProStore: ProStore {
     func release() {
         hangs = false
         holdsPurchase = false
+        holdsEntitlement = false
         let held = waiting
         waiting = []
         held.forEach { $0.resume() }

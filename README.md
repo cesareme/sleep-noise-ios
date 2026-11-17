@@ -59,7 +59,7 @@ The scheme loads `SleepNoise/Resources/SleepNoise.storekit`, so a Run from Xcode
 4. Fan, ocean, the tide and a fourth saved mix should open. **Mixes → Settings → Pro** now opens the receipt.
 5. Use **Debug → StoreKit → Manage Transactions** to delete the transaction and return to the free tier.
 6. Tap **Restore purchase**. With the transaction deleted, the app reports that there is nothing to restore. Buy again, then Restore on a fresh launch should turn Pro back on while the transaction still exists.
-7. "Start the trial · 7 nights" is offered once per install and lives in the Keychain: erase the simulator to see it again.
+7. "Start the trial · 7 nights" is offered once per device and lives in the Keychain, so it survives a reinstall: erase the simulator to see it again.
 8. The configuration’s storefront defaults to the US. Change it in Xcode’s StoreKit editor (or the transaction manager) to try the Spanish product localization (`es_ES`).
 
 A TestFlight or App Store build ignores this file and uses App Store Connect.

@@ -16,7 +16,7 @@ Resumen: 1 en curso (S-04), 9 pendientes, 2 integrados (S-01 y S-02). PR abierto
 | S-04 | Tokens Grafito, Horizonte (con nivel RMS desde el hilo de audio), Disco, filas, página principal y Capas | Claude | Cursor (CI) | 2 | `claude/s-04-pagina-grafito` | en curso | - |
 | S-05 | Códec de mezclas v2, mezclas de la casa, políticas de interrupción y de ruta | Cursor | Claude | 2 | `cursor/s-05-mezclas-politicas` | pendiente | - |
 | S-06 | Noche, Madrugada, Temporizador, Marea y Mezclas en Grafito (con ganancia maestra con rampa) | Claude | Cursor (CI) | 2-3 | `claude/s-06-noche-temporizador` | en curso | - |
-| S-07 | Hoja Pro, prueba de 7 noches, recibo y estados de la tienda; sandbox | Claude | Cursor (CI) | 3 | `claude/s-07-hoja-pro` | pendiente | - |
+| S-07 | Hoja Pro, prueba de 7 noches, recibo y estados de la tienda; sandbox | Claude | Cursor (CI) | 3 | `claude/s-07-pro-prueba` | en revisión | - |
 | S-08 | Catálogo de cadenas EN y ES, test de interfaz que genera las capturas | Claude | Cursor (CI) | 3 | `claude/s-08-cadenas-capturas` | pendiente | - |
 | S-09 | Ficha de App Store EN y ES, notas para revisión, "Lo que no hay", política de privacidad | Cursor | Claude + dueño | 3 | `cursor/s-09-ficha` | pendiente | - |
 | S-10 | Icono "La regla y la marea" | Claude o diseñador | Dueño | 3 | `claude/s-10-icono` | pendiente | - |
@@ -73,7 +73,7 @@ S-04 retiró las que vivían en la pantalla antigua (`trial.intro.*`, `trial.end
 - **La cifra de "quedan n noches" no se enseña sin cerrar con el dueño la pregunta 08 §9.3.** `nightsRemaining` ancla hoy cada noche al día en que empezó (hasta las 07:00 sigue siendo la noche anterior), así que la cifra ya no baja a medianoche. Queda un defecto: el día en que la prueba se agota el suelo devuelve 1 ("última noche") aunque esa noche el arranque de sesión ya la dé por terminada. `testNightsRemainingWithADaytimeStart` lo deja escrito. Propuesta de la revisión: contar los comienzos de noche (21:00) que quedan antes del fin; el último día da 0 y la interfaz dice que la prueba termina hoy o no muestra cifra.
 - `start(now:)` no se ofrece ni se llama dentro de `NightWindow`, y el paso a `.ended` no se anuncia de noche. Son contratos del comentario del tipo: la función no los comprueba.
 - `start(now:)` devuelve `false` y no da acceso si el registro no se puede crear. La interfaz necesita un estado para ese caso.
-- `observe(now:)` se llama al lanzar la app y al volver a primer plano. Sin esas llamadas, atrasar el reloj antes de cada Play alarga la prueba sin límite.
+- `observe(now:)` se llama al lanzar la app y al volver a primer plano. Sin esas llamadas, atrasar el reloj antes de cada Play alarga la prueba sin límite. **Sigue abierto** (corrección de S-07): atrasar la fecha antes de abrir la app cada tarde la alarga igual, porque la primera muestra ya ve el reloj falso. Ver "Tarea 3", al final.
 - `KeychainTrialStorage.loadTrial` no distingue "no hay registro" de un fallo de lectura. Ya no permite una segunda prueba (`createTrial` no pisa un registro), pero con la prueba activa un fallo de lectura deja ese arranque en el nivel gratuito sin explicación. Decidir en S-07 si se reintenta.
 - `TrialRecord` se mantiene compatible hacia atrás: un campo nuevo es opcional.
 
@@ -364,7 +364,7 @@ Sin vistas nuevas. La hoja Pro antigua (`PaywallView`) sigue compilando sobre el
 - **Lectura fallida del Keychain:** se reintenta al volver a primer plano, al empezar una noche y al tocar "Empezar la prueba" (`NightTrial.reloadIfMissing`).
 - **Degradación sin escritura:** al terminar la prueba no se toca ni la mezcla, ni las mezclas guardadas, ni el interruptor de la Marea (test `testTheTrialEndsAtTheNextNightAndWritesNothing`). El modelo se entera solo del cambio de acceso (`PurchaseManager.onAccessChange`); la página ya no lo reenvía.
 - **Una revocación (reembolso, fin de En familia) con el sonido puesto espera a que pare.** Antes cortaba en el acto.
-- **Tienda detrás de `ProStore`.** `AppStoreProStore` es StoreKit 2; `ScriptedProStore` (solo DEBUG) es el doble de los tests y de los arranques escenificados. Estados: `productState` (cargando, cargado, no disponible), `activity` (comprando, restaurando), `isPurchasePending`, `notice` (nueve líneas) y `receipt` (fecha y En familia). Topes propios: 8 s para el producto y 10 s para restaurar; lo que llega tarde se aplica igual.
+- **Tienda detrás de `ProStore`.** `AppStoreProStore` es StoreKit 2; `ScriptedProStore` (solo DEBUG) es el doble de los tests y de los arranques escenificados. Estados: `productState` (cargando, cargado, no disponible), `activity` (comprando, restaurando), `isPurchasePending`, `notice` (nueve líneas) y `receipt` (fecha y En familia). Tope propio: 8 s para el producto; lo que llega tarde se aplica igual. Restaurar no tiene tope (tarea 3).
 - **`SleepNoise.storekit`:** 29,99, Family Sharing, descripciones nuevas. Es solo la tienda local: el precio real sale de App Store Connect.
 - **Cadenas:** fuera `trial.chip.daysFormat`, `paywall.trial.*`, `paywall.keepFormat`, `paywall.purchaseFormat`, `paywall.purchaseUnavailable`, `paywall.restore*`, `paywall.nothingToRestore`, `paywall.pending` y `paywall.failed`. Dentro, de la guía 10: `pro.prueba.empezar`, `pro.prueba.estado` (plural), `.ultima`, `.gratis`, `pro.comprar`, `pro.comprar.sin_precio`, `pro.restaurar`, `pro.gracias`, `pro.fallo`, `pro.fallo.sin_confirmar`, `pro.pendiente`, `pro.sin_tienda`, `pro.sin_tienda.silencio` y `pro.restaurar.no`. Siguen en la hoja antigua, hasta que se rehaga: `paywall.title`, `paywall.subtitle`, `paywall.benefit.*`, `paywall.active`, `paywall.once` y `common.close`.
 - **README:** corregidos el párrafo de la prueba y los pasos de la tienda local.
@@ -399,10 +399,10 @@ Sin vistas nuevas. La hoja Pro antigua (`PaywallView`) sigue compilando sobre el
 - **Háptica fuera de Ajustes**: no hay base (el código solo tiene la háptica de los controles, con su puerta nocturna; la de la Marea de C35 no existe).
 - **"Lo que no hay" sin el párrafo del registro** (`lo_que_no_hay.diagnostico`): en 1.0 no hay diagnóstico (PLAN-SIMPLE §4.4) y la frase afirmaría algo que no existe.
 - **Sin fila de versión**: no está en la lista de PLAN-SIMPLE y `ajustes.version` pide el tamaño en MB fijado en build.
-- **`pro.prueba.empezar.nota`** solo se ve desde AX3, en la columna (08 §2.3 y §5d); en el resto es la pista de VoiceOver. La guía 10 §2.8 la pone bajo el botón.
+- **`pro.prueba.empezar.nota`**: cambiado en la tarea 3. Es la línea del pie fijo mientras la prueba está en oferta, a la vista en todos los tamaños (guía 10 §2.8, C07).
 - **`pro.pendiente.boton`** ("Pendiente" / "Pending") viene de 08 §5e, donde está marcada como pendiente de la guía.
-- **Con texto de accesibilidad** el pie fijo guarda la prueba, Comprar y Restaurar; "Ahora no" y el pie de privacidad pasan al final de la columna. Una línea de resultado larga en AX3 lleva el pie fijo a algo más de la mitad de la hoja.
-- **La hoja con la prueba sin usar desplaza unos 40 pt en un iPhone 17 Pro**: 08 cuenta 808 pt útiles sin el área del indicador de inicio.
+- **Con texto de accesibilidad** el pie fijo guarda la prueba, Comprar y Restaurar; "Ahora no", la nota de la prueba o el pie de privacidad y la línea de resultado pasan al final de la columna (tarea 3: el pie ya no cambia de alto).
+- **La hoja con la prueba sin usar ya cabe sin desplazar** en 402×874, 393×852 y 390×844, en español y en inglés (tarea 3). En 375×667 desplaza, como prevé 08.
 - **De la hoja Pro abierta desde Ajustes se vuelve a Ajustes**; desde Marea y Mezclas, a la página (como ya era).
 
 ### Sin verificar
@@ -413,3 +413,53 @@ Sin vistas nuevas. La hoja Pro antigua (`PaywallView`) sigue compilando sobre el
 - **`mailto:` y el enlace a la tienda**: con las constantes vacías no se pueden probar.
 - Capturas en `.build/shots/` (`pro-*` y `settings-*`, español e inglés, AX3 y tres con Aumentar contraste), sin versionar.
 
+### Tarea 3 · Corrección tras la revisión (17-11-2026)
+
+Treinta hallazgos de tres revisores. Lo que cambió, por zonas:
+
+- **Restaurar ya no tiene tope.** `AppStore.sync()` pide la contraseña de la cuenta de Apple; con el tope de 10 s la hoja decía "La tienda no responde" con el diálogo delante, soltaba el botón (un segundo toque lanzaba otro `sync`) y el resultado tardío se perdía. Ahora "Buscando…" dura lo que tarde App Store y la línea que se escribe es la que toca (`.restored`, `.nothingToRestore`, cancelado o sin tienda). Coste: si `sync()` no volviera nunca, Comprar y Restaurar quedarían sin responder hasta el siguiente arranque; "Ahora no" sigue cerrando la hoja.
+- **Una lectura vieja de derechos no deshace una compra.** `refreshEntitlements` descarta un "nada" o un "no da derecho" si Pro se concedió después de pedir la lectura (contador `grantCount`) o si hay una compra en curso. El doble `ScriptedProStore` puede retener `currentEntitlement` (`holdsEntitlement`).
+- **El fin de la prueba se dice aunque se descubra en un arranque** (`sleepnoise.trial.endEvaluated.v1`): una prueba que vence entre dos lanzamientos, sin Play en medio, nace ya terminada y antes no dejaba nota. La prueba antigua que ya estaba agotada al migrar no la deja: terminó hace tiempo.
+- **Una prueba antigua sin migrar cuenta como usada**: la migración se reintenta al volver a primer plano, al empezar una noche y al tocar "Empezar la prueba", y mientras las claves antiguas sigan ahí no se concede otra.
+- **Una sesión gratis solo cuenta si suena** (`sessionDidStart()`). La evaluación sigue yendo antes del sonido, a propósito: la mezcla debe sonar ya recortada.
+- **La puerta nocturna cubre lo que ya estaba en pantalla.** `MixerModel` despierta una vez en cada borde de la ventana (21:00 y 07:00, `NightWindow.nextBorder`) mientras la app está delante: cierra la hoja Pro y publica `saleClock`, que hace que la página y Ajustes vuelvan a leer `canSell` (palabra de la prueba, nota, precio de la fila Pro). Comprar pasa por `MixerModel.purchasePro()`, con la misma puerta que la hoja.
+- **`StoreKitError.unsupported`** (iOS 18.4) ya solo se nombra tras `#available`; el resto del `switch` tiene `default` (no confirmado).
+- **Hoja Pro.** Renglones de "con pro" a 36 pt (el primero, con detalle, sigue a 44) y la lista de "gratis siempre" pegada a su cabecera. El pie reserva el alto de la línea más larga que puede decir en ese ancho y ese idioma (textos ocultos), no 60 pt fijos. `pro.prueba.empezar.nota` es la línea del pie mientras "Empezar la prueba" existe. Con texto de accesibilidad la línea de resultado va al final de la columna y la columna se desplaza hasta ella: el pie no cambia de alto. El texto del pie fijo no crece más allá de AX3. Restaurar y "Ahora no" comparten fila solo si caben en una línea cada uno; si no, se apilan. El recibo reserva dos líneas para "Gracias. Todo abierto." en los dos idiomas y pone "· en familia" en su propia línea. La hoja no se puede arrastrar mientras dice "Comprando…" y al abrirse borra un aviso que quedara de una visita anterior.
+- **VoiceOver.** El título del recibo y la lista gratis se leen sin puntos medios y con el mes entero; la fila Pro de Ajustes lee el nombre como etiqueta y "gracias, 16 de noviembre de 2026" como valor. Los anuncios de la hoja van con prioridad alta; con VoiceOver "Gracias" dura 3 s, y el anuncio de la prueba se publica 0,7 s después de empezar a cerrarse la hoja.
+- **Ajustes.** El valor de "Mantener encendida" va en el paso 7, como el de la fila Pro (`MenuRow.valueStep`; la hoja de la Marea no cambia). Sin precio, la fila Pro no lleva nada a la derecha. "En familia" es el subtítulo de la fila. "Lo que no hay" ya no repite el pie de privacidad.
+- **Documentos.** `docs/ROADMAP.md` (producto, notas para revisión, paso de `AppLinks`), `README.md` (la prueba es una por dispositivo) y 08 §2.3, §3, §4.5, §5d y §5e (restaurar sin tope, nota de la prueba, AX).
+
+Tests: 622 (suelo en `scripts/verify-min-tests.txt`).
+
+### Decisiones de la tarea 3, a revisar
+
+- **La nota de la prueba ocupa el sitio del pie de privacidad** mientras "Empezar la prueba" existe: "Sin suscripción. Sin cuenta. Sin rastreo." no se lee en la hoja Pro de una instalación nueva (sí con la prueba usada, en el recibo y en Ajustes). Las dos líneas no caben sin que la columna vuelva a cortarse.
+- **Una compra empezada antes de las 21:00 se termina**: la hoja no se retira de debajo de la confirmación de App Store; si acaba en compra dice "Gracias" y se cierra sola, y si no, se cierra en silencio. Restaurar no pasa por la puerta: no es vender.
+- **"Lo que no hay" sin pie** contradice la letra de 08 §2.10; el pie sigue en Ajustes y en la hoja Pro.
+- **Tope de AX3 en el texto del pie fijo** de la hoja Pro (no en la columna).
+- **El recibo en español deja una línea vacía** bajo "Gracias. Todo abierto.": es el precio de que los dos idiomas compartan cotas.
+- **Con el recibo en familia la columna baja una línea** respecto al recibo propio (la segunda versalita). Nadie ve los dos.
+- **En AX, las versalitas y la fila Pro parten antes del punto medio** ("· gracias", "· 16 nov 2026"), nunca después.
+
+### Aplazado: necesita al dueño
+
+- **Restaurar de noche** (mayor). De 21:00 a 07:00, en la página nocturna y en Madrugada no hay forma de llegar a "Restaurar compra": solo vive en la hoja Pro. Dos salidas: (a) una fila "Restaurar compra" en Ajustes › Pro cuando no hay Pro y no se puede vender, sin precio ni entrada a la hoja; (b) aceptar el hueco. En los dos casos las notas para revisión (S-09) dicen que la hoja Pro solo se abre de 07:00 a 21:00 de la hora del dispositivo y por dónde se llega (ya está en `docs/ROADMAP.md`).
+- **Nombre antes de que la tienda responda**: "Pro" (`comun.pro`) en la versalita de la hoja y en la fila de Ajustes hasta la primera respuesta de la tienda en esa instalación. Es la palabra del nivel, no un nombre de producto; roza "el nombre sale de StoreKit". Falta el sí del dueño o la alternativa (título vacío).
+- **`pro.pendiente`** ("Pendiente de aprobación familiar…") atribuye todo estado pendiente a Pedir para comprar, y StoreKit devuelve `.pending` también con la autenticación reforzada del banco. Propuesta, sin aplicar porque es copy cerrado de la guía 10 §5e.10: "Pendiente de aprobación. Se abrirá solo cuando llegue." / "Waiting for approval. It will open on its own."
+- **El recibo no tiene control de cierre** ("Ahora no" no existe en él), igual que Ajustes (08 §9.13): no hay cadena de cierre en el catálogo. Con VoiceOver queda el gesto de escape; con Control por botón, el del sistema.
+- **"Lo que no hay" usa el botón de volver del sistema**: en iOS 26 es un círculo de cristal, lo único redondo de la hoja; en iOS 17 y 18 no está capturado. Alternativa: ocultarlo y poner una `TextAction` "Ajustes".
+- **Háptica fuera de Ajustes** se aparta de PLAN-SIMPLE §4.3 (superficie 18): falta el sí explícito o la nota en el plan.
+- **`AppLinks` vacío**: sin identificador ni dirección, 1.0 saldría sin "Escribir una reseña" ni "Escribir al autor". Está en la lista de envío de `docs/ROADMAP.md`; nada lo impide en código.
+- **Atrasar el reloj antes de abrir la app** sigue alargando la prueba. Cerrarlo pide un reloj que la persona no pueda mover (el reloj continuo del sistema, guardado en el registro), y eso toca el manifiesto de privacidad (categoría de tiempo de arranque): decisión del dueño.
+
+### Aplazado a S-08 y S-09
+
+- **S-08:** las capturas de referencia de la página siguen escenificadas con Pro comprado; la página de una instalación nueva (`-pageState restFree`) ya se puede capturar. Capturas en 375 pt de xL a xxxL.
+- **S-09:** la ficha y las notas para revisión salen de `docs/ROADMAP.md`, ya al día con el reparto de 1.0.
+
+### Sin verificar tras la tarea 3
+
+- **Dispositivo y sandbox**: el orden real en que StoreKit entrega la compra y la lectura de derechos, cuánto tarda el diálogo de `AppStore.sync()`, y `StoreKitError.unsupported` en iOS 17.0 a 18.3 (solo se ha ejecutado en el simulador de iOS 26.5).
+- **VoiceOver real**: la prioridad alta de los anuncios y los 3 s de "Gracias" no se han oído.
+- **El despertar de las 21:00** está probado por su efecto (`nightWindowChanged()` y `NightWindow.nextBorder`), no esperando a la hora.
+- **Capturas** (`.build/shots/`, sin versionar): hoja Pro en 402×874, 393×852, 390×844 y 375×667, AX3 y AX5 también en 375, xxxLarge, la hoja sobre Ajustes y sobre Capas y la página de una instalación nueva. Los simuladores de 393, 390 y 375 se crearon para la ocasión y se borraron.

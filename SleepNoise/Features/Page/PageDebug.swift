@@ -12,6 +12,8 @@ import SwiftUI
 enum PageDebugState: String, CaseIterable {
     /// First use: the house mix as it loads, nothing playing.
     case rest
+    /// The same on a new install as it is: nothing bought, no trial.
+    case restFree
     /// Playing the first-use mix: two layers.
     case playingTwo
     /// Playing five layers: three rows and "and 2 more".
@@ -160,6 +162,10 @@ enum PageDebugState: String, CaseIterable {
     case proOffer
     /// The same while something is playing.
     case proOfferPlaying
+    /// The same over Settings, which stays under it.
+    case proOfferSettings
+    /// The same over Layers, which stays under it.
+    case proOfferLayers
     /// The trial is running or used up: the purchase alone.
     case proTrial
     /// The store has not answered yet: a dash and the purchase disabled.
@@ -216,7 +222,8 @@ enum PageDebugState: String, CaseIterable {
     /// The Pro sheet is what the launch shows.
     var opensPro: Bool {
         switch self {
-        case .proOffer, .proOfferPlaying, .proTrial, .proLoading, .proUnavailable, .proBuying, .proPending,
+        case .proOffer, .proOfferPlaying, .proOfferSettings, .proOfferLayers, .proTrial, .proLoading,
+             .proUnavailable, .proBuying, .proPending,
              .proFailed, .proUnconfirmed, .proRestoring, .proNothing, .proThanks, .proReceipt,
              .proReceiptFamily, .proReceiptReview:
             return true
@@ -226,7 +233,8 @@ enum PageDebugState: String, CaseIterable {
 
     var opensSettings: Bool {
         switch self {
-        case .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNight, .settingsNotHere:
+        case .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNight, .settingsNotHere,
+             .proOfferSettings:
             return true
         default: return false
         }
@@ -250,8 +258,8 @@ enum PageDebugState: String, CaseIterable {
     var isFreeTier: Bool {
         switch self {
         case .layersSix, .layersEnd, .tideLocked, .mixes, .mixesRename, .mixesDelete, .mixesFourth, .mixesTrimmed,
-             .mixesTrimmedLong, .mixesNightFree, .mixesEnd,
-             .proOffer, .proOfferPlaying, .proLoading, .proUnavailable, .proBuying, .proPending, .proFailed,
+             .mixesTrimmedLong, .mixesNightFree, .mixesEnd, .restFree,
+             .proOffer, .proOfferPlaying, .proOfferSettings, .proOfferLayers, .proLoading, .proUnavailable, .proBuying, .proPending, .proFailed,
              .proUnconfirmed, .proRestoring, .proNothing, .proThanks,
              .settings, .settingsLoading, .settingsNight, .settingsNotHere:
             return true
@@ -322,7 +330,7 @@ enum PageArguments {
 
     static var opensLayers: Bool {
         switch state {
-        case .layers, .layersSix, .layersCap, .layersEnd, .nightLayers: return true
+        case .layers, .layersSix, .layersCap, .layersEnd, .nightLayers, .proOfferLayers: return true
         default: return false
         }
     }
@@ -494,12 +502,11 @@ enum PageStage {
         }
         let trialStorage = InMemoryTrialStorage()
         if let consumed = state.trialConsumed {
+            // A trial that is used up is found over at this launch, and
+            // its note becomes due.
             _ = trialStorage.createTrial(TrialRecord(
                 startedAt: now.addingTimeInterval(-consumed), lastSeen: now, consumed: consumed
             ))
-            // The end of the trial was found by the session before this
-            // launch: its note is due.
-            if consumed >= NightTrial.length { defaults.set(true, forKey: PurchaseManager.endNoteKey) }
         }
         let purchases = PurchaseManager(
             defaults: defaults,
@@ -517,11 +524,11 @@ enum PageStage {
         let model = MixerModel(purchases: purchases, defaults: defaults, now: { clock.date })
 
         switch state {
-        case .rest, .playingTwo, .layers, .error, .error2, .error3, .largeType,
+        case .rest, .restFree, .playingTwo, .layers, .error, .error2, .error3, .largeType,
              .timerRest, .tideRest, .tideLocked, .mixesEmpty, .mixesTrimmed, .mixesTrimmedLong,
              .pageSpeaker, .pageCapped,
              .trialNight1, .trialNight3, .trialNight7, .trialLastDay, .trialNight8, .trialAtNight,
-             .proOffer, .proOfferPlaying, .proTrial, .proLoading, .proUnavailable, .proBuying, .proPending,
+             .proOffer, .proOfferPlaying, .proOfferSettings, .proOfferLayers, .proTrial, .proLoading, .proUnavailable, .proBuying, .proPending,
              .proFailed, .proUnconfirmed, .proRestoring, .proNothing, .proThanks, .proReceipt,
              .proReceiptFamily, .proReceiptReview,
              .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNotHere,
@@ -632,8 +639,8 @@ enum PageStage {
     static func didAppear(_ model: MixerModel) {
         guard let state = PageArguments.state else { return }
         switch state {
-        case .rest, .layersSix, .layersEnd, .timerRest, .timerHour, .timerLength, .tideRest, .tideLocked,
-             .mixesEmpty,
+        case .rest, .restFree, .layersSix, .layersEnd, .timerRest, .timerHour, .timerLength, .tideRest,
+             .tideLocked, .mixesEmpty,
              .trialNight1, .trialNight3, .trialNight7, .trialLastDay, .trialNight8, .trialAtNight,
              .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNight, .settingsNotHere:
             break
@@ -643,6 +650,12 @@ enum PageStage {
         case .proOfferPlaying:
             if !model.isPlaying { model.play() }
             model.offerPro()
+        case .proOfferSettings, .proOfferLayers:
+            Task { @MainActor in
+                // Once the sheet that stays under it is up.
+                try? await Task.sleep(for: .milliseconds(1200))
+                model.offerPro()
+            }
         case .proBuying, .proPending, .proFailed, .proUnconfirmed, .proThanks:
             model.offerPro()
             let purchases = model.purchases
@@ -657,7 +670,7 @@ enum PageStage {
             let holds = state == .proRestoring
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(1200))
-                // "Looking…" lasts until the limit of the restore.
+                // "Looking…" lasts for as long as the App Store takes.
                 stageStore?.hangs = holds
                 await purchases.restore()
             }

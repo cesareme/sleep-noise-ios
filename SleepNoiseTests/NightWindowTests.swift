@@ -19,6 +19,31 @@ final class NightWindowTests: XCTestCase {
         return try XCTUnwrap(calendar.date(from: components))
     }
 
+    // Red if the next border is not the first 21:00 or 07:00 after the
+    // moment, or if a border answers itself: whoever waits for it would
+    // never wake, or would spin.
+    func testNextBorderIsTheFirstEdgeAfterTheMoment() throws {
+        let madrid = try calendar("Europe/Madrid")
+        let cases: [((Int, Int, Int), (Int, Int))] = [
+            ((17, 12, 0), (17, 21)),
+            ((17, 20, 59), (17, 21)),
+            ((17, 21, 0), (18, 7)),
+            ((18, 3, 10), (18, 7)),
+            ((18, 7, 0), (18, 21)),
+        ]
+        for (from, to) in cases {
+            let moment = try date(2026, 11, from.0, from.1, from.2, in: madrid)
+            let border = NightWindow.nextBorder(after: moment, calendar: madrid)
+            XCTAssertEqual(border, try date(2026, 11, to.0, to.1, 0, in: madrid), "\(from)")
+            XCTAssertGreaterThan(border, moment)
+            XCTAssertNotEqual(
+                NightWindow.contains(border, calendar: madrid),
+                NightWindow.contains(border.addingTimeInterval(-1), calendar: madrid),
+                "\(from): the window changes at the border"
+            )
+        }
+    }
+
     // Red if either edge moves or flips: 21:00:00 must be inside, 07:00:00 outside.
     func testWindowEdges() throws {
         let madrid = try calendar("Europe/Madrid")

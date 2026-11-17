@@ -18,6 +18,19 @@ enum NightWindow {
         return hour >= startHour || hour < endHour
     }
 
+    /// The next moment the window begins or ends: the first 21:00 or 07:00
+    /// after `date`, local time.
+    static func nextBorder(after date: Date, calendar: Calendar = .current) -> Date {
+        let borders = [startHour, endHour].compactMap { hour in
+            calendar.nextDate(
+                after: date,
+                matching: DateComponents(hour: hour, minute: 0, second: 0),
+                matchingPolicy: .nextTime
+            )
+        }
+        return borders.min() ?? date.addingTimeInterval(3_600)
+    }
+
     /// `contains` for the present moment. The clock comes in as a closure so
     /// that callers never read `Date()` on their own and tests can pin it.
     static func isNight(calendar: Calendar = .current, now: () -> Date = { Date() }) -> Bool {

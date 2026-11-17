@@ -36,7 +36,7 @@ final class ProStoreTests: XCTestCase {
         _ store: ScriptedProStore,
         defaults: UserDefaults? = nil,
         access: TestAccess = .free,
-        timeouts: StoreTimeouts = StoreTimeouts(product: 0.05, restore: 0.05)
+        timeouts: StoreTimeouts = StoreTimeouts(product: 0.05)
     ) throws -> PurchaseManager {
         PurchaseManager.onDoubles(
             defaults: try defaults ?? makeDefaults(),
@@ -256,22 +256,94 @@ final class ProStoreTests: XCTestCase {
         XCTAssertEqual(offlineFree.notice, .storeUnavailable)
     }
 
-    /// Red if Restore can wait for ever (`AppStore.sync()` has no timeout),
-    /// or if what arrives after the limit is lost.
-    func testRestoreGivesUpAfterItsLimitAndStillTakesWhatArrivesLate() async throws {
+    /// Red if Restore gives up while the App Store is still asking for the
+    /// password: "the store isn't responding" over the system's dialog,
+    /// the button free for a second sync, and the true line never said.
+    func testRestoreWaitsForTheAppStoreAndThenSaysWhatItFound() async throws {
+        // Nothing bought: the line that is due is "no purchase found".
+        let empty = makeStore()
+        empty.hangs = true
+        let none = try manager(empty)
+        let looking = Task { await none.restore() }
+        try await waitUntil { empty.syncCount == 1 }
+        // Well past the limit the product has: restore has none.
+        try await Task.sleep(for: .milliseconds(150))
+        XCTAssertEqual(none.activity, .restoring, "still looking: the dialog is up")
+        XCTAssertNil(none.notice, "nothing is said before the store answers")
+        await none.restore()
+        XCTAssertEqual(empty.syncCount, 1, "a second tap starts no second sync")
+
+        empty.release()
+        await looking.value
+        XCTAssertEqual(none.activity, .idle)
+        XCTAssertFalse(none.isPro)
+        XCTAssertEqual(none.notice, .nothingToRestore)
+
+        // A purchase that arrives late is thanked, not passed in silence.
+        let late = makeStore()
+        late.hangs = true
+        late.entitlementAfterSync = .entitled(bought)
+        let purchases = try manager(late)
+        let restoring = Task { await purchases.restore() }
+        try await waitUntil { late.syncCount == 1 }
+        try await Task.sleep(for: .milliseconds(150))
+        XCTAssertFalse(purchases.isPro)
+        XCTAssertNil(purchases.notice)
+
+        late.release()
+        await restoring.value
+        XCTAssertTrue(purchases.isPro)
+        XCTAssertEqual(purchases.receipt, bought)
+        XCTAssertEqual(purchases.notice, .restored)
+    }
+
+    /// Red if a reading of the entitlements that was asked for before the
+    /// purchase went through can take the purchase back: the scene comes
+    /// forward when the payment sheet closes, and that reading says
+    /// "nothing" about a transaction that did not exist yet.
+    func testAnOldReadingDoesNotUndoAPurchase() async throws {
         let store = makeStore()
-        store.hangs = true
-        store.entitlementAfterSync = .entitled(bought)
+        store.purchaseResult = .purchased(bought)
         let purchases = try manager(store)
-        await purchases.restore()
-        XCTAssertEqual(purchases.notice, .storeUnavailable)
-        XCTAssertEqual(purchases.activity, .idle, "the button is free again")
+        await purchases.refresh()
         XCTAssertFalse(purchases.isPro)
 
+        // The refresh of the return to the foreground reads "nothing"...
+        store.holdsEntitlement = true
+        let reads = store.entitlementReadCount
+        let refresh = Task { await purchases.refresh() }
+        try await waitUntil { store.entitlementReadCount > reads }
+        // ...the purchase comes back meanwhile...
+        await purchases.purchase()
+        XCTAssertTrue(purchases.isPro)
+        // ...and the old reading arrives after it.
         store.release()
-        try await waitUntil { purchases.isPro }
+        await refresh.value
+        XCTAssertTrue(purchases.isPro, "the sheet does not sell again what was just paid for")
+        XCTAssertTrue(purchases.hasFullAccess)
         XCTAssertEqual(purchases.receipt, bought)
-        XCTAssertEqual(purchases.notice, .storeUnavailable, "the line is not rewritten behind the person")
+        XCTAssertEqual(purchases.notice, .purchased)
+
+        // The same for an approval that arrives by itself during a refresh.
+        let other = makeStore()
+        let waiting = try manager(other)
+        waiting.start()
+        await waiting.refresh()
+        other.holdsEntitlement = true
+        let before = other.entitlementReadCount
+        let reading = Task { await waiting.refresh() }
+        try await waitUntil { other.entitlementReadCount > before }
+        other.holdsEntitlement = false
+        other.send(.entitled(shared))
+        try await waitUntil { waiting.isPro }
+        other.release()
+        await reading.value
+        XCTAssertTrue(waiting.isPro)
+
+        // A reading asked for after the grant is the truth again.
+        other.entitlement = .nothing
+        await waiting.refresh()
+        XCTAssertFalse(waiting.isPro, "a refund still takes Pro away")
     }
 
     /// Red if a sync that finds nothing leaves a cached Pro in place: after

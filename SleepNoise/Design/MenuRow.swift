@@ -8,6 +8,9 @@ struct MenuRow<Options: View>: View {
     var value: String
     /// What VoiceOver reads as the value, when it is not the visible one.
     var spokenValue: String?
+    /// The step of the value: the body's, or the one of the values of the
+    /// editorial rows it sits among.
+    var valueStep = TypeStep.body
     @ViewBuilder var options: Options
 
     @Environment(\.nightPhase) private var phase
@@ -54,7 +57,7 @@ struct MenuRow<Options: View>: View {
     private var mark: some View {
         HStack(spacing: Grid.unit) {
             Text(verbatim: value)
-                .step(.body)
+                .step(valueStep)
                 .monospacedDigit()
             Image(systemName: "chevron.up.chevron.down")
                 .font(.footnote.weight(.medium))

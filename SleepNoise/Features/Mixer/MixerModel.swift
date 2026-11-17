@@ -82,6 +82,10 @@ final class MixerModel: ObservableObject {
     /// The Pro sheet is asked for. Only `offerPro()` raises it, and never at
     /// night.
     @Published private(set) var showPaywall = false
+    /// Goes up when the hour crosses a border of the night window with the
+    /// app open. Nothing reads its value: publishing it is what makes the
+    /// views read `canSell` again.
+    @Published private(set) var saleClock = 0
     /// Paused, and why. Nil at rest and once a night has ended.
     @Published private(set) var pauseCause: PauseCause?
     /// Starts that failed in a row, for the ladder of the error line.
@@ -201,6 +205,7 @@ final class MixerModel: ObservableObject {
     private var offerTimer: Timer?
     private var dimTimer: Timer?
     private var noteTask: Task<Void, Never>?
+    private var nightWindowWatch: Task<Void, Never>?
     /// The levels the loaded mix came with. Its title is worked out from
     /// these, not from the live levels, which the tide may have raised.
     private var loadedMixRecipe: [SoundID: Float]?
@@ -279,6 +284,7 @@ final class MixerModel: ObservableObject {
             // never edits their list would never register any.
             SleepNoiseShortcuts.updateAppShortcutParameters()
         }
+        watchNightWindow()
         installSessionHandlers()
         nowPlaying.install(
             onPlay: { [weak self] in self?.play() },
@@ -372,12 +378,63 @@ final class MixerModel: ObservableObject {
     }
 
     /// A Pro sheet that was already up when the night began comes down: the
-    /// gate is not only for new requests. Called when the app comes forward
-    /// and when the night page begins.
+    /// gate is not only for new requests. Called when the app comes forward,
+    /// when the night page begins and when the hour reaches the night
+    /// window with the app open (`nightWindowChanged()`).
+    ///
+    /// A purchase that is already with the App Store is not pulled from
+    /// under its confirmation: the sheet waits for it and comes down after.
     func closeSaleIfNight() {
-        if showPaywall, !canSell {
+        if showPaywall, !canSell, purchases.activity != .purchasing {
             showPaywall = false
         }
+    }
+
+    /// "Buy" in the Pro sheet. It passes the same gate as the sheet itself:
+    /// a sheet left open until the night begins sells nothing, it comes
+    /// down in silence. A purchase begun by day is seen through.
+    func purchasePro() async {
+        guard canSell else {
+            closeSaleIfNight()
+            return
+        }
+        await purchases.purchase()
+        if !purchases.isPro {
+            // Not bought, and the night may have begun meanwhile.
+            closeSaleIfNight()
+        }
+    }
+
+    /// The hour crossed a border of the night window with the app open.
+    /// Whatever is drawn from `canSell` (the word of the trial, its note,
+    /// the price in Settings) is drawn again, and a Pro sheet that was up
+    /// comes down.
+    func nightWindowChanged() {
+        saleClock += 1
+        closeSaleIfNight()
+    }
+
+    /// Wakes once at the next border of the night window, and again at the
+    /// one after, for as long as the app is in front. Nothing else redraws
+    /// a page that is open and still when the clock reaches 21:00.
+    private func watchNightWindow() {
+        nightWindowWatch?.cancel()
+        guard audio.isLive else { return }
+        nightWindowWatch = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let wait = self?.secondsToNightWindowBorder() else { return }
+                try? await Task.sleep(for: .seconds(wait))
+                guard !Task.isCancelled else { return }
+                self?.nightWindowChanged()
+            }
+        }
+    }
+
+    private func secondsToNightWindowBorder() -> TimeInterval {
+        let now = now()
+        let border = NightWindow.nextBorder(after: now, calendar: calendar)
+        // Half a second past it, so the hour has changed on waking.
+        return max(1, border.timeIntervalSince(now) + 0.5)
     }
 
     /// The page keeps one ink from now on (C40). Called when the person
@@ -467,6 +524,7 @@ final class MixerModel: ObservableObject {
             // What the page was saying about the trial until this Play.
             purchases.playWasAsked(now: now)
         }
+        var isNewNight = false
         if asked, !nightIsOpen(at: now) {
             beginNewNight()
             // The one moment the trial is evaluated: a new night starts
@@ -476,6 +534,7 @@ final class MixerModel: ObservableObject {
             // plays trimmed from its first sample and nothing is said.
             if !isSmallHours {
                 purchases.evaluateTrialAtSessionStart(now: now)
+                isNewNight = true
             }
         }
         var capped = false
@@ -541,6 +600,11 @@ final class MixerModel: ObservableObject {
                 breathing.end()
             }
             return false
+        }
+        if isNewNight {
+            // Only now is it a session: one that did not sound uses up
+            // none of the seven that say "always free".
+            purchases.sessionDidStart()
         }
         isPlaying = true
         pauseCause = nil
@@ -1793,6 +1857,7 @@ final class MixerModel: ObservableObject {
             forgetLostRouteIfStale(at: now)
         }
         closeSaleIfNight()
+        watchNightWindow()
     }
 
     /// The scene is no longer active: nothing resumes unasked from here.

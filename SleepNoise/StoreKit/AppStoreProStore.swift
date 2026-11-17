@@ -53,14 +53,20 @@ final class AppStoreProStore: ProStore {
     nonisolated static func result(for error: Error) -> ProPurchaseResult {
         if error is Product.PurchaseError { return .failed }
         if let storeError = error as? StoreKitError {
+            // `.unsupported` exists from iOS 18.4 and the app runs on 17:
+            // it is only named where it exists. It happens before any
+            // payment, like the other two that fail.
+            if #available(iOS 18.4, *), case .unsupported = storeError { return .failed }
             switch storeError {
             case .userCancelled:
                 return .cancelled
-            case .notAvailableInStorefront, .notEntitled, .unsupported:
+            case .notAvailableInStorefront, .notEntitled:
                 return .failed
             case .networkError, .systemError, .unknown:
                 return .unconfirmed
-            @unknown default:
+            default:
+                // A case this build does not know: nothing says the
+                // payment did not happen.
                 return .unconfirmed
             }
         }

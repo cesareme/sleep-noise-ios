@@ -335,6 +335,9 @@ extension PurchaseManager {
             _ = trialStorage.createTrial(
                 TrialRecord(startedAt: now, lastSeen: now, consumed: NightTrial.length + 86_400)
             )
+            // Found over by a session long before the test: its end has
+            // been said already.
+            defaults.set(true, forKey: PurchaseManager.endEvaluatedKey)
         }
         return PurchaseManager(
             defaults: defaults,

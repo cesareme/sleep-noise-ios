@@ -69,9 +69,12 @@ enum NightTrialStatus: Equatable {
 /// - The change to `.ended` is never announced inside `NightWindow` (08
 ///   §2.5): most sessions start there, so the note waits for daytime.
 /// - Winding the clock back never gives time back. It can still stretch the
-///   trial: an evaluation with the clock behind the last one consumes nothing
-///   and moves the reference point. `observe(now:)` at launch and on return to
-///   the foreground narrows that gap; it does not close it.
+///   trial: an observation with the clock behind the last one consumes
+///   nothing and moves the reference point. `observe(now:)` at launch and on
+///   return to the foreground narrows that gap; it does not close it. Someone
+///   who sets the date back before opening the app every evening keeps the
+///   trial open: the first observation already sees the false clock. Closing
+///   it needs a clock the person cannot set (open, see ESTADO.md).
 ///
 /// The type reads no clock of its own: every moment is passed in.
 struct NightTrial {
