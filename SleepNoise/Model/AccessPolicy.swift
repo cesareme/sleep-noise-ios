@@ -10,8 +10,8 @@ import Foundation
 /// fan, thunder, campfire, brook, cabin, the breathing tide and saved mixes
 /// without a limit.
 ///
-/// One carve-out: in Small Hours the tide plays for everyone, as part of a
-/// fixed recipe that sells nothing.
+/// One carve-out: in Small Hours the fixed recipe, low ocean with the tide,
+/// plays for everyone and sells nothing.
 ///
 /// `hasFullAccess` is `PurchaseManager.hasFullAccess`: purchased OR trial active.
 enum AccessPolicy {
@@ -25,6 +25,14 @@ enum AccessPolicy {
 
     static func soundIsIncluded(_ sound: SoundID, hasFullAccess: Bool) -> Bool {
         hasFullAccess || freeSounds.contains(sound)
+    }
+
+    /// The sound for a given session: as above, except that in Small Hours the
+    /// sound of the fixed recipe plays for everyone (C05). No other Pro sound
+    /// opens there.
+    static func soundIsIncluded(_ sound: SoundID, hasFullAccess: Bool, inSmallHours: Bool) -> Bool {
+        soundIsIncluded(sound, hasFullAccess: hasFullAccess)
+            || (inSmallHours && sound == SmallHoursRecipe.standard.sound)
     }
 
     /// The timer is free in full (C03): the answer only says whether the

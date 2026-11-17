@@ -41,6 +41,25 @@ final class AccessPolicyTests: XCTestCase {
         XCTAssertFalse(AccessPolicy.breathingIsIncluded(hasFullAccess: false))
     }
 
+    /// Small Hours plays its fixed recipe for everyone (C05): the sound of
+    /// the recipe is open there, and only that sound, and only there.
+    func testSmallHoursRecipeSoundIsOpenInSmallHours() {
+        let recipeSound = SmallHoursRecipe.standard.sound
+        XCTAssertFalse(AccessPolicy.freeSounds.contains(recipeSound), "otherwise there is no carve-out to test")
+        XCTAssertTrue(AccessPolicy.soundIsIncluded(recipeSound, hasFullAccess: false, inSmallHours: true))
+        XCTAssertFalse(AccessPolicy.soundIsIncluded(recipeSound, hasFullAccess: false, inSmallHours: false))
+        XCTAssertFalse(AccessPolicy.soundIsIncluded(recipeSound, hasFullAccess: false))
+
+        let openInSmallHours = Set(SoundID.allCases.filter {
+            AccessPolicy.soundIsIncluded($0, hasFullAccess: false, inSmallHours: true)
+        })
+        XCTAssertEqual(openInSmallHours, AccessPolicy.freeSounds.union([recipeSound]))
+        for sound in SoundID.allCases {
+            XCTAssertTrue(AccessPolicy.soundIsIncluded(sound, hasFullAccess: true, inSmallHours: true))
+            XCTAssertTrue(AccessPolicy.soundIsIncluded(sound, hasFullAccess: true, inSmallHours: false))
+        }
+    }
+
     func testPresetTiersFollowTheSoundsInsideThem() {
         let free: [SoundPreset] = [.steadyRain, .nightWind]
         for preset in free {
@@ -232,6 +251,26 @@ final class NightAndShortcutTests: XCTestCase {
         XCTAssertEqual(model.levels, before)
         XCTAssertNil(model.activePreset)
         XCTAssertNil(model.timer.selectedMinutes)
+    }
+
+    /// The whole timer is free (C03): red if a paid length, or a cap below
+    /// the technical ceiling, comes back in the model.
+    func testFreeTierSetsAnyTimerLengthWithoutThePaywall() throws {
+        let defaults = try makeDefaults()
+        let model = try makeFreeTierModel(defaults: defaults)
+
+        XCTAssertNil(model.armTimer(minutes: 90))
+        XCTAssertEqual(model.timer.selectedMinutes, 90)
+        XCTAssertEqual(defaults.object(forKey: timerKey) as? Int, 90)
+
+        model.selectTimer(minutes: AccessPolicy.maxTimerMinutes)
+        XCTAssertEqual(model.timer.selectedMinutes, AccessPolicy.maxTimerMinutes)
+        XCTAssertEqual(defaults.object(forKey: timerKey) as? Int, AccessPolicy.maxTimerMinutes)
+
+        model.clampTimerToEntitlement()
+        XCTAssertEqual(model.timer.selectedMinutes, AccessPolicy.maxTimerMinutes)
+        XCTAssertFalse(model.showPaywall)
+        XCTAssertFalse(model.isPlaying)
     }
 
     func testShortcutsReadTheTrialClockBeforeDeciding() throws {
