@@ -15,7 +15,7 @@ Resumen: 1 en curso (S-04), 9 pendientes, 2 integrados (S-01 y S-02). PR abierto
 | S-03 | Lógica pura con tests: `NightWindow`, reloj de la prueba, receta de Madrugada (mitad A) y `AccessPolicy` (mitad B) | Cursor | Claude | 1 | `cursor/s-03a-logica-pura`, `cursor/s-03b-politica-acceso` | pendiente | - |
 | S-04 | Tokens Grafito, Horizonte (con nivel RMS desde el hilo de audio), Disco, filas, página principal y Capas | Claude | Cursor (CI) | 2 | `claude/s-04-pagina-grafito` | en curso | - |
 | S-05 | Códec de mezclas v2, mezclas de la casa, políticas de interrupción y de ruta | Cursor | Claude | 2 | `cursor/s-05-mezclas-politicas` | pendiente | - |
-| S-06 | Noche, Madrugada, Temporizador, Marea y Mezclas en Grafito (con ganancia maestra con rampa) | Claude | Cursor (CI) | 2-3 | `claude/s-06-noche-temporizador` | pendiente | - |
+| S-06 | Noche, Madrugada, Temporizador, Marea y Mezclas en Grafito (con ganancia maestra con rampa) | Claude | Cursor (CI) | 2-3 | `claude/s-06-noche-temporizador` | en curso | - |
 | S-07 | Hoja Pro, prueba de 7 noches, recibo y estados de la tienda; sandbox | Claude | Cursor (CI) | 3 | `claude/s-07-hoja-pro` | pendiente | - |
 | S-08 | Catálogo de cadenas EN y ES, test de interfaz que genera las capturas | Claude | Cursor (CI) | 3 | `claude/s-08-cadenas-capturas` | pendiente | - |
 | S-09 | Ficha de App Store EN y ES, notas para revisión, "Lo que no hay", política de privacidad | Cursor | Claude + dueño | 3 | `cursor/s-09-ficha` | pendiente | - |
@@ -73,6 +73,7 @@ S-04 retiró las que vivían en la pantalla antigua (`trial.intro.*`, `trial.end
 ### Madrugada (S-06)
 
 - La revisión añadió `AccessPolicy.soundIsIncluded(_:hasFullAccess:inSmallHours:)`, que el brief no pedía: en Madrugada el sonido de la receta (`SmallHoursRecipe.standard.sound`, océano) suena para todos, igual que la Marea. `MixerModel.currentGains()` y `isSilent` usan hoy la firma de dos argumentos: si Madrugada se cablea por ese camino sin la firma nueva, quien no tiene Pro oye silencio.
+- **Hecho en S-06 (cimientos).** Madrugada no pasa por la mezcla: `SmallHoursController.gains(hasFullAccess:)` y la Marea de la sesión usan las firmas `inSmallHours`, y `MixerModel.currentGains()` devuelve la receta mientras `isSmallHours`. Test: `SmallHoursModelTests.testItPlaysTheRecipeForEveryoneAndTouchesNothingOfThePerson`.
 
 ## Lo que S-04 deja abierto
 
@@ -92,6 +93,7 @@ De la entrega de la página y de Capas (17-11-2026). Quien abra el paquete indic
 
 - La tinta nocturna es por procedencia (C40): `MixerModel.beginNightSession()`, que ya llama `leaveBedtime()`. Hoy nada entra en Noche, así que la página nocturna solo se ve con `-pageState night`. Vive en memoria: falta decidir qué es "la sesión" y guardarla.
 - La venta se cierra por `NightWindow` y, además, mientras dure la página nocturna (`SaleGate`). Toda petición de la hoja Pro pasa por `MixerModel.offerPro()`.
+- **Hecho en S-06 (cimientos): qué es "la sesión".** La noche es la sesión de audio: va del Play hasta que acaba sola (fin del temporizador, 20 minutos en pausa por `SessionPause`, la ventana de la mañana o el fin de Madrugada). No se guarda: tras un reinicio no suena nada y no hay sesión. La página nocturna dura hasta que la persona toca el nombre o hasta que la app pasa a primer plano de día (fuera de `NightWindow`) con esa noche ya terminada; mientras se mira no la cambia ningún reloj (`MixerModel.appDidBecomeActive()`, tests en `BedtimeModelTests`). A confirmar por el dueño.
 
 ### Prueba (S-07)
 
@@ -120,7 +122,7 @@ De la revisión de la página y de Capas (17-11-2026). Lo que sigue no se arregl
 
 ### S-06 (Noche, Temporizador, Marea y Mezclas)
 
-- **Temporizador de 45 minutos en el primer uso** (03 §5 #8, 05 fila "Noche 1"). Hoy la fila dice "Apagado" y el primer Play suena sin fin. Hay que distinguir el primer uso de un "Apagado" elegido por la persona.
+- **Temporizador de 45 minutos en el primer uso** (03 §5 #8, 05 fila "Noche 1"). Hoy la fila dice "Apagado" y el primer Play suena sin fin. Hay que distinguir el primer uso de un "Apagado" elegido por la persona. **Hecho en S-06 (cimientos):** `TimerChoice.firstUse` rige mientras no haya nada guardado; "Apagado" es una elección que se guarda (`MixerModel.chooseTimer`).
 - **La identidad de la mezcla cargada no sobrevive al reinicio.** Quien carga una mezcla guardada y vuelve a abrir la app ve "Esta noche" con los niveles de su mezcla, y pierde el "· sin Océano" del título recortado. Guardar nombre base, receta e id de la mezcla de la casa junto a los niveles.
 - **Mezclas de la casa.** La hoja Mezclas solo lista las guardadas: "Mar y viento", "Marrón y hoguera" y "Pared" no se cargan desde ninguna pantalla, y "Rosa y lluvia" no se recupera tras la primera edición.
 - **Nombre automático de la mezcla** (`mezcla.nombre.auto.*`, guía §4.2). Al guardar, el campo se precarga con el nombre que la mezcla ya tiene, o con "Esta noche".
@@ -136,3 +138,35 @@ De la revisión de la página y de Capas (17-11-2026). Lo que sigue no se arregl
 ### S-08 (cadenas y capturas)
 
 - Las capturas de referencia en inglés son cuatro (`page-en-rest`, `page-en-timer`, `page-en-layersSix`, `page-en-layersEnd`): el resto del inglés no se ha mirado en pantalla.
+
+## Lo que S-06 lleva hecho
+
+### Tarea 1 · Cimientos de audio y modelo (17-11-2026)
+
+Sin vistas nuevas. Las hojas antiguas (Temporizador, Marea, Mezclas, Pro) siguen compilando sobre el modelo nuevo; las tareas siguientes de S-06 las sustituyen.
+
+- **Ganancia maestra** (C51): `EngineCommand.masterTarget`, `masterRampSamples` y `masterGeneration`, aplicada después del `softClip` (cambia el nivel, no el timbre). Las dos ganancias del render (envolvente y maestro) cuentan muestras enteras con `SampleRamp` (C31).
+- **Temporizador de dos modos** (C03, C22): `TimerChoice` (`.off`, `.untilAsleep`, `.blanket`) y `SleepTimerController` con reloj inyectado. Fundido final de un cuarto de la noche con techo de 15 minutos; Manto baja 6 dB a los 45 minutos por el maestro, en un minuto. "+15 min" sin tope y nunca crea un temporizador (C47).
+- **Madrugada** (C05, C60): `SmallHoursController` y `MixerModel.startSmallHours()`. No toca la mezcla, el temporizador ni la Marea de la persona, no arranca la prueba y no vende a ninguna hora.
+- **Interrupciones y ruta** (C48, C49): `InterruptionTracker`, `MorningWindow`, `RoutePolicy` y `SessionPause` cableados en `MixerModel` a través de `AudioSessionObserving`, con `CXCallObserver` para distinguir la llamada.
+- **Noche** (C40, C46, C47): atenuación a los 60 s, "Mantener encendida" (por defecto mientras carga), eje vertical como nivel de sesión.
+
+Decisiones tomadas al construir, a confirmar:
+
+- **Duración del fundido final.** C31 dice "10 a 15 minutos" sin decir cuándo cada uno: se aplica un cuarto de la duración con techo de 15 (10 minutos a los 40, 15 desde una hora). Una noche de menos de 40 minutos funde ese mismo cuarto.
+- **Rampa del Manto.** C22 fija los −6 dB y los 45 minutos, no la rampa: un minuto, como proponía 07.
+- **Manto y "+15 min".** C50 deja el "+15" vacío en Manto para la Live Activity (1.1); en la app suma a la hora de fin de esa noche sin tocar la hora elegida.
+- **Suelo del nivel de sesión** en 0,05 (`MixerModel.minimumSessionLevel`): el arrastre de Noche baja la noche, no la apaga. El nivel es la ganancia tal cual (0,4 son −8 dB).
+- **"En pausa · AirPods"** (`pagina.estado.pausa.airpods`) no se usa: la pausa pedida con auriculares puestos dice "En pausa · auriculares", porque no se puede afirmar que sean AirPods.
+- **Interrupción sin `.ended`.** Se cierra al volver la app a primer plano, salvo que haya una llamada en curso u otra app sonando: nada se reanuda encima de otro audio.
+- **`CallKit` en China.** `CXCallObserver` es la decisión de C48; antes de publicar en China continental hay que comprobar si la tienda de allí sigue rechazando las apps que enlazan `CallKit`.
+
+Sin hacer en esta tarea, y de quién es:
+
+- Las vistas: fila y línea de estado de la página para Manto ("Sonando · hasta las %@", `temporizador.estado.manto`), "Seguir por el altavoz" y "Sonando · al %lld" en la segunda línea, Noche, Madrugada y las hojas nuevas (tareas 2 a 4 de S-06).
+- "Pasar sola a Noche" al bloquear o a 1 y 3 minutos (C47): es de la vista de Noche y de Ajustes; el modelo solo tiene `enterBedtime()`.
+- Aplicar `isIdleTimerDisabled`: la vista de Noche pregunta a `bedtimeKeepsScreenAwake(isCharging:)` con el estado de la batería.
+- El intent `SmallHours` y retirar `IntentReply.timerNeedsPro` (superficie 24).
+- La Marea sigue subiendo el océano a 50 y la identidad de la mezcla sigue sin sobrevivir al reinicio: son de las tareas de Marea y de Mezclas.
+- Sin verificar en dispositivo: el audio real (rampa del maestro, fundido largo), las interrupciones y los cambios de ruta de verdad, y `CXCallObserver`. Todo lo anterior está probado con dobles y render offline.
+
