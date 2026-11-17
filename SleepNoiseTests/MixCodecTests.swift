@@ -3,10 +3,11 @@ import XCTest
 
 /// Mix format v2 and the move from what v1 stored.
 final class MixCodecTests: XCTestCase {
-    /// Two mixes exactly as a v1 build wrote them (`JSONEncoder` on the old
+    /// Two mixes shaped as a v1 build wrote them (`JSONEncoder` on the old
     /// `Codable` `SavedMix`): every sound listed, zeros included, the date in
     /// seconds since the reference date. The third spells a `Float` the long
-    /// way, as older encoders did.
+    /// way, as older encoders did. Written by hand; `V1Mix` below ties the
+    /// format to the real encoder.
     private let v1Blob = """
     [{"id":"5B1F0C52-6E0B-4B44-9D0C-0D6C0E3A7A11","name":"Hotel","createdAt":785000123.456789,\
     "levels":[{"value":0,"sound":"white"},{"value":0,"sound":"pink"},{"value":0.3,"sound":"brown"},\
@@ -21,6 +22,15 @@ final class MixCodecTests: XCTestCase {
     {"id":"0A1B2C3D-4E5F-4A6B-8C7D-9E0F1A2B3C4D","name":"Fan","createdAt":700000000,\
     "levels":[{"sound":"fan","value":0.699999988079071},{"sound":"pink","value":0.20000000298023224}]}]
     """
+
+    /// The `SavedMix` of v1 builds, as it was declared, so the tests can
+    /// store what `JSONEncoder` really wrote for it.
+    private struct V1Mix: Codable {
+        var id: UUID
+        var name: String
+        var levels: [MixLevel]
+        var createdAt: Date
+    }
 
     private func mix(
         _ uuid: String,
@@ -150,12 +160,36 @@ final class MixCodecTests: XCTestCase {
         ]
         for (raw, expected) in cases {
             XCTAssertEqual(MixCodec.bounded(raw), expected, "\(raw)")
-            // On the way out, whatever the mix in memory holds.
-            let saved = try mix("5B1F0C52-6E0B-4B44-9D0C-0D6C0E3A7A11", "Edge", [.pink: raw], at: 1)
+            // On the way out, whatever the mix in memory holds: a layer this
+            // version knows and one it does not. Encoding never fails on a
+            // level that is not a number.
+            let saved = try mix(
+                "5B1F0C52-6E0B-4B44-9D0C-0D6C0E3A7A11", "Edge", [.pink: raw], at: 1,
+                unknown: [UnknownMixLayer(id: "glacier", level: raw)]
+            )
             let written = try XCTUnwrap(try MixCodec.decode(try MixCodec.encode([saved])).first)
             XCTAssertEqual(written.value(for: .pink), expected, "\(raw)")
+            XCTAssertEqual(
+                written.unknownLayers, expected > 0 ? [UnknownMixLayer(id: "glacier", level: expected)] : [],
+                "\(raw): bounded, and not written when silent"
+            )
             XCTAssertEqual(MixCodec.normalized(saved), written, "\(raw)")
         }
+
+        // An unknown layer is written once, and never under a known id.
+        let crowded = try mix(
+            "5B1F0C52-6E0B-4B44-9D0C-0D6C0E3A7A11", "Crowded", [.rain: 0.5], at: 1,
+            unknown: [
+                UnknownMixLayer(id: "glacier", level: 0.2),
+                UnknownMixLayer(id: "glacier", level: 0.9),
+                UnknownMixLayer(id: "rain", level: 0.9),
+                UnknownMixLayer(id: "pink", level: 0.9),
+            ]
+        )
+        let once = try XCTUnwrap(try MixCodec.decode(try MixCodec.encode([crowded])).first)
+        XCTAssertEqual(once.unknownLayers, [UnknownMixLayer(id: "glacier", level: 0.2)])
+        XCTAssertEqual(audible(once), [.rain: 0.5])
+        XCTAssertEqual(MixCodec.normalized(crowded), once)
 
         // On the way in, whatever the document holds.
         let wild = """
@@ -178,6 +212,81 @@ final class MixCodecTests: XCTestCase {
         let read = try XCTUnwrap(try MixCodec.decode(Data(twice.utf8)).first)
         XCTAssertEqual(audible(read), [.rain: 0.2])
         XCTAssertEqual(read.unknownLayers, [UnknownMixLayer(id: "glacier", level: 0.1)])
+    }
+
+    func testARepeatedMixIdCountsOnce() throws {
+        let twice = """
+        {"version":2,"mixes":[\
+        {"id":"5B1F0C52-6E0B-4B44-9D0C-0D6C0E3A7A11","name":"First","createdAt":1,"layers":[{"id":"rain","level":0.2}]},\
+        {"id":"9C2E7A10-1F4D-4E0A-8B7C-3A5D2E9F4B22","name":"Other","createdAt":2,"layers":[]},\
+        {"id":"5B1F0C52-6E0B-4B44-9D0C-0D6C0E3A7A11","name":"Second","createdAt":3,"layers":[{"id":"pink","level":0.9}]}]}
+        """
+        let read = try MixCodec.read(Data(twice.utf8))
+        XCTAssertEqual(read.mixes.map(\.name), ["First", "Other"])
+        XCTAssertEqual(audible(read.mixes[0]), [.rain: 0.2])
+        XCTAssertEqual(Set(read.mixes.map(\.id)).count, read.mixes.count, "one row per id in the list")
+        XCTAssertFalse(read.isComplete, "something was left out")
+        XCTAssertEqual(try MixCodec.decode(Data(twice.utf8)), read.mixes)
+    }
+
+    func testNamesAreStoredTrimmedAndCut() throws {
+        let long = String(repeating: "abcde", count: 12)
+        let cases: [(String, String)] = [
+            ("Hotel", "Hotel"),
+            ("  Hotel \n", "Hotel"),
+            ("Tormenta de domingo", "Tormenta de domingo"),
+            (long, String(long.prefix(40))),
+            ("", ""),
+            (" \t\n ", ""),
+        ]
+        XCTAssertEqual(MixCodec.maxNameLength, 40)
+        for (raw, expected) in cases {
+            XCTAssertEqual(MixCodec.cleanName(raw), expected, "\"\(raw)\"")
+            // On the way out and on the way in.
+            let saved = try mix("5B1F0C52-6E0B-4B44-9D0C-0D6C0E3A7A11", raw, [.pink: 0.5], at: 1)
+            XCTAssertEqual(try MixCodec.decode(try MixCodec.encode([saved])).first?.name, expected, "\"\(raw)\"")
+            let stored: [String: Any] = ["id": "5B1F0C52-6E0B-4B44-9D0C-0D6C0E3A7A11", "name": raw, "createdAt": 1]
+            let document: [String: Any] = ["version": 2, "mixes": [stored.merging(["layers": [Any]()]) { $1 }]]
+            let read = try MixCodec.read(try JSONSerialization.data(withJSONObject: document))
+            XCTAssertEqual(read.mixes.map(\.name), [expected], "\"\(raw)\": the mix is kept, whatever its name")
+            XCTAssertTrue(read.isComplete)
+        }
+    }
+
+    func testReadSaysWhenSomethingWasLeftOut() throws {
+        let whole = #"{"version":2,"mixes":[{"id":"5B1F0C52-6E0B-4B44-9D0C-0D6C0E3A7A11","name":"A","createdAt":1,"#
+            + #""layers":[{"id":"glacier","level":0.4},{"id":"rain","level":0.5}]}]}"#
+        XCTAssertTrue(try MixCodec.read(Data(whole.utf8)).isComplete, "an unknown id is kept, so nothing is missing")
+        XCTAssertTrue(try MixCodec.read(Data(v1Blob.utf8)).isComplete)
+        XCTAssertTrue(try MixCodec.read(try MixCodec.encode([])).isComplete)
+
+        let incomplete = [
+            // A mix that cannot be read.
+            #"{"version":2,"mixes":[{"id":"not-a-uuid","name":"A","createdAt":1,"layers":[]}]}"#,
+            // A layer that cannot be read.
+            #"{"version":2,"mixes":[{"id":"5B1F0C52-6E0B-4B44-9D0C-0D6C0E3A7A11","name":"A","createdAt":1,"#
+                + #""layers":[{"id":"rain","level":"loud"}]}]}"#,
+            // The same in a v1 list.
+            #"[{"id":"5B1F0C52-6E0B-4B44-9D0C-0D6C0E3A7A11","name":"A","createdAt":1,"levels":[{"sound":"rain"}]}]"#,
+            #"[{"id":"5B1F0C52-6E0B-4B44-9D0C-0D6C0E3A7A11","name":"A","createdAt":1,"levels":[]},{"name":"B"}]"#,
+        ]
+        for text in incomplete {
+            XCTAssertFalse(try MixCodec.read(Data(text.utf8)).isComplete, text)
+        }
+    }
+
+    func testLiveLevelsAreReadByIdAndUnknownSoundsLeftOut() throws {
+        let stored = #"[{"sound":"pink","value":0.3},{"sound":"glacier","value":0.8},{"sound":"rain","value":7},"#
+            + #"{"sound":"rain","value":0.1},{"value":0.5},{"sound":"brown","value":"loud"},{"sound":"wind","value":0}]"#
+        XCTAssertEqual(MixCodec.decodeLevels(Data(stored.utf8)), [.pink: 0.3, .rain: 1, .wind: 0])
+        XCTAssertEqual(MixCodec.decodeLevels(Data("[]".utf8)), [:])
+        for text in ["", "not json", #"{"version":2,"mixes":[]}"#, #""pink""#] {
+            XCTAssertNil(MixCodec.decodeLevels(Data(text.utf8)), text)
+        }
+        // What the mixer wrote with `JSONEncoder` reads back whole.
+        let written = SoundID.allCases.enumerated().map { MixLevel(sound: $1, value: Float($0) / 16) }
+        let read = try XCTUnwrap(MixCodec.decodeLevels(try JSONEncoder().encode(written)))
+        XCTAssertEqual(read, Dictionary(uniqueKeysWithValues: written.map { ($0.sound, $0.value) }))
     }
 
     func testWhatCannotBeReadIsSkippedAndTheRestLoads() throws {
@@ -246,6 +355,43 @@ final class MixCodecTests: XCTestCase {
         XCTAssertEqual(defaults.data(forKey: MixStore.legacyStorageKey), old)
     }
 
+    /// The same move, from data the real v1 encoder wrote: `JSONEncoder()`
+    /// with its defaults over the old `Codable` type, as `MixStore.persist`
+    /// did in v1 builds.
+    func testStoreReadsWhatTheV1EncoderWrote() throws {
+        let old = [
+            V1Mix(
+                id: UUID(), name: "Lluvia/café · «niebla» \"2\"",
+                levels: SoundID.allCases.enumerated().map { MixLevel(sound: $1, value: Float($0) / 10) },
+                createdAt: Date(timeIntervalSinceReferenceDate: 785_000_123.456789)
+            ),
+            V1Mix(
+                id: UUID(), name: "Fan",
+                levels: SoundID.allCases.map { MixLevel(sound: $0, value: $0 == .fan ? 0.7 : 0) },
+                createdAt: Date(timeIntervalSinceReferenceDate: 700_000_000)
+            ),
+            V1Mix(
+                id: UUID(), name: "One third",
+                levels: SoundID.allCases.map { MixLevel(sound: $0, value: $0 == .rain ? 1 / 3 : 0) },
+                createdAt: Date(timeIntervalSinceReferenceDate: 0.1)
+            ),
+        ]
+        let defaults = try makeDefaults()
+        defaults.set(try JSONEncoder().encode(old), forKey: MixStore.legacyStorageKey)
+
+        for store in [MixStore(defaults: defaults), MixStore(defaults: defaults)] {
+            XCTAssertEqual(store.mixes.count, old.count)
+            for (read, written) in zip(store.mixes, old) {
+                XCTAssertEqual(read.id, written.id)
+                XCTAssertEqual(read.name, written.name)
+                XCTAssertEqual(read.createdAt, written.createdAt, written.name)
+                XCTAssertEqual(read.levels, written.levels.map { MixLevel(sound: $0.sound, value: min(1, $0.value)) })
+                XCTAssertTrue(read.unknownLayers.isEmpty)
+            }
+        }
+        XCTAssertNil(defaults.data(forKey: MixStore.unreadStorageKey), "everything was read")
+    }
+
     func testOnceV2ExistsTheOldListDoesNotComeBack() throws {
         let defaults = try makeDefaults()
         defaults.set(Data(v1Blob.utf8), forKey: MixStore.legacyStorageKey)
@@ -280,10 +426,61 @@ final class MixCodecTests: XCTestCase {
             let defaults = try makeDefaults()
             defaults.set(Data(text.utf8), forKey: MixStore.storageKey)
             XCTAssertTrue(MixStore(defaults: defaults).mixes.isEmpty, text)
+            XCTAssertEqual(defaults.data(forKey: MixStore.storageKey), Data(text.utf8), "\(text): loading writes nothing")
         }
         let defaults = try makeDefaults()
         defaults.set(Data("not json".utf8), forKey: MixStore.legacyStorageKey)
         XCTAssertTrue(MixStore(defaults: defaults).mixes.isEmpty)
         XCTAssertNil(defaults.data(forKey: MixStore.storageKey), "nothing is written for a list that did not load")
+    }
+
+    /// A save must not be the end of what this version could not read: a
+    /// document from a later format, a damaged one, one with skipped entries.
+    func testWhatTheStoreCouldNotReadSurvivesASave() throws {
+        let later = #"{"version":3,"mixes":[{"id":"5B1F0C52-6E0B-4B44-9D0C-0D6C0E3A7A11","title":"North","tide":true}]}"#
+        let partial = #"{"version":2,"mixes":[{"id":"not-a-uuid","name":"Lost","createdAt":1,"layers":[]},"#
+            + #"{"id":"9C2E7A10-1F4D-4E0A-8B7C-3A5D2E9F4B22","name":"Kept","createdAt":2,"layers":[]}]}"#
+        XCTAssertEqual(MixStore.unreadStorageKey, "sleepnoise.mixes.v2.unread")
+        for (text, names) in [(later, []), ("not json", []), (partial, ["Kept"])] as [(String, [String])] {
+            let defaults = try makeDefaults()
+            let original = Data(text.utf8)
+            defaults.set(original, forKey: MixStore.storageKey)
+
+            let store = MixStore(defaults: defaults)
+            XCTAssertEqual(store.mixes.map(\.name), names, text)
+            guard case .saved = store.save(name: "Tonight", levels: [.pink: 0.4], hasFullAccess: true) else {
+                return XCTFail("Full access saves another mix")
+            }
+            store.delete(try XCTUnwrap(store.mixes.last).id)
+
+            XCTAssertNotEqual(defaults.data(forKey: MixStore.storageKey), original, "the list was written again")
+            XCTAssertEqual(defaults.data(forKey: MixStore.unreadStorageKey), original, "\(text): still there, as it was")
+            // And it stays there on the next launches, when the list reads whole.
+            XCTAssertEqual(MixStore(defaults: defaults).mixes, store.mixes)
+            XCTAssertEqual(defaults.data(forKey: MixStore.unreadStorageKey), original, text)
+        }
+
+        // A list that reads whole sets nothing aside.
+        let defaults = try makeDefaults()
+        defaults.set(try MixCodec.encode([try mix("5B1F0C52-6E0B-4B44-9D0C-0D6C0E3A7A11", "A", [.pink: 0.5], at: 1)]),
+                     forKey: MixStore.storageKey)
+        XCTAssertEqual(MixStore(defaults: defaults).mixes.map(\.name), ["A"])
+        XCTAssertNil(defaults.data(forKey: MixStore.unreadStorageKey))
+    }
+
+    func testAStoredMixWithoutANameGetsTheDefaultOne() throws {
+        let unnamed = #"{"version":2,"mixes":["#
+            + #"{"id":"5B1F0C52-6E0B-4B44-9D0C-0D6C0E3A7A11","name":"  ","createdAt":3,"layers":[{"id":"rain","level":0.5}]},"#
+            + #"{"id":"9C2E7A10-1F4D-4E0A-8B7C-3A5D2E9F4B22","name":"Hotel","createdAt":2,"layers":[]},"#
+            + #"{"id":"0A1B2C3D-4E5F-4A6B-8C7D-9E0F1A2B3C4D","name":"","createdAt":1,"layers":[]}]}"#
+        let defaults = try makeDefaults()
+        defaults.set(Data(unnamed.utf8), forKey: MixStore.storageKey)
+
+        let store = MixStore(defaults: defaults)
+        XCTAssertEqual(store.mixes.map(\.name), [MixStore.defaultName(3), "Hotel", MixStore.defaultName(1)])
+        XCTAssertEqual(audible(store.mixes[0]), [.rain: 0.5], "the mix itself is kept")
+        XCTAssertFalse(MixStore.defaultName(1).isEmpty)
+        XCTAssertNotEqual(MixStore.defaultName(1), MixStore.defaultName(3))
+        XCTAssertNil(defaults.data(forKey: MixStore.unreadStorageKey), "nothing was left out")
     }
 }
