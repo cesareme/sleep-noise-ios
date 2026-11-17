@@ -502,7 +502,7 @@ Rama `claude/s-08-cadenas-capturas`, apilada sobre S-07.
 - **Lint de copy** (`CopyLintTests`): las dos listas negras de la guía 10 (§0.4 y §0.5) enteras, por idioma y sobre valores; cifras de precio, porcentajes, recuentos de texturas, exclamaciones, emojis, interrogaciones fuera de sus dos claves y dígitos escritos a mano (solo "7 noches", "+15 min" y el singular "1 noche"). Trece falsos positivos declarados uno a uno, cada uno atado a su clave, su idioma y su frase; uno declarado que deje de encontrarse hace fallar el test. Los titulares de las capturas (`docs/store/ficha-*.md`) pasan por el mismo lint.
 - **La contradicción de "Until I sleep" está cerrada** en la guía 10 (§0.2 y §0.5): el nombre del modo es "Until I sleep" (§5e.6, C15, reconciliación §3) y lo vetado es la forma larga anterior, "Until I fall asleep", junto con "Sleep timer". El sinónimo de Siri `atajo.modo.dormirme.sinonimo` ("until I fall asleep") queda como falso positivo declarado: Siri lo entiende y nunca se ve.
 - **Capturas de tienda**: `scripts/screenshots.sh` y `scripts/screenshots/ShotComposer.swift` (notas en `scripts/screenshots/README.md`). Doce PNG de 1320 × 2868 px en `.build/store-shots/<idioma>/`, con el titular de la ficha compuesto sobre el lienzo de 11 §2.2, más la pantalla sola en `raw/`. Estados nuevos: `storePlaying`, `storeLayers`, `storeTide`, `storeNight`; `-storeShot` oculta la barra de estado y el indicador de inicio. Las doce se miraron una a una en ES y EN.
-- **La segunda línea de la captura 3 cabe**: "Arrastra sobre el nombre para cambiar el nivel." mide 330 pt de 376 a 17 pt. No hace falta la variante corta que 11 §9 dejaba pendiente.
+- **La segunda línea de la captura 3 cabe**: "Arrastra sobre el nombre para cambiar el nivel." mide 355 pt de 376 a 17 pt (la cifra anterior, 330, salía de una fuente creada a 51 pt; ver la corrección). No hace falta la variante corta que 11 §9 dejaba pendiente.
 - **Firma sin datos en el repo**: `Config/Signing.xcconfig` (versionado) incluye `Config/Local.xcconfig` (ignorado por Git) si existe. Sin él, simulador y CI compilan igual.
 - **Noche en AX3 sobre 667 pt** (pendiente de S-06): el solape existía, en español y en inglés. Ahora lo que Noche enseña se dispone por encima de sus acciones y el estado baja de tamaño (hasta la mitad) antes de meterse bajo "Seguir por el altavoz"; la hora conserva el suyo. Mirado en un simulador de iPhone SE (3.ª generación) de AX1 a AX3 y en 956 pt de Large a AX5.
 - **Página en 375 pt de xL a xxxL** (pendiente de S-07): mirada en ES y EN con instalación nueva y con prueba; nada se solapa ni se corta. La fila del Temporizador queda bajo la barra y se alcanza desplazando.
@@ -510,22 +510,62 @@ Rama `claude/s-08-cadenas-capturas`, apilada sobre S-07.
 ### Decisiones de S-08, a confirmar
 
 - **La captura 1 es de tarde (20:15), no de las 23:57 de 11 §3.2**: dentro de `NightWindow` la página no nombra la prueba, y la captura la necesita ("prueba · quedan 6 noches"). Las capturas 3 y 4 van a la misma hora.
-- **La captura 2 es una instalación nueva tal cual** (`restFree`): "Rosa y lluvia" en silencio y la Marea con "Apagada · pro". Es lo que ve quien abre la app por primera vez, y deja a la vista qué es de Pro (directriz 2.3.2).
-- **La pantalla de dentro es la de 6,9 pulgadas a 0,764**, no la de 393 pt a 0,855 de 11 §2.2: margen inferior de 30 pt y texto un 10 % más pequeño que en la maqueta. Si el dueño prefiere la proporción de 11, basta capturar en un iPhone 17 Pro y quitar la comprobación de tamaño de la pantalla sola.
+- **La captura 2** era una instalación nueva tal cual (`restFree`, "Rosa y lluvia"). Cambiada en la corrección: ver abajo.
+- **La pantalla de dentro** era la de 6,9 pulgadas a 0,764. Cambiada en la corrección a la de un iPhone 17 Pro a 0,836: ver abajo.
 - **"Small hours" sigue con minúscula en la segunda palabra**, como fija la guía (§0.2, §5e.8), también en los títulos de los Atajos.
 - **El inglés no se ha reescrito**: los valores coinciden letra a letra con la guía 10 §5e. Las cadenas que conviene que lea un hablante nativo de en-US están en el informe de entrega del paquete y aquí abajo.
 
 ### Para un hablante nativo de en-US
 
-`temporizador.dormirme` "Until I sleep" (un nativo diría "Until I'm asleep" o "Until I fall asleep"; lo fija C15) · `temporizador.manto` "Blanket" (reconciliación §6.4) · `madrugada.titulo` "Small hours" · `mezclas.vacio` "Tonight's mix is saved from its name." · `pro.prueba.empezar.nota` y `ax.prueba.empezar.pista` "no card is asked" · `pro.fallo.sin_confirmar` "Restore purchase opens it." · `pro.fallo` "Couldn't complete." · `pro.pendiente` "It will open on its own." · `capas.cero` "costs nothing" (quiere decir batería, se puede leer como precio) · `capas.cabin.detalle` "aircraft at cruise" · `capas.campfire.detalle` "embers, no crackle" · `marea.retirada` "It has receded. The sea goes on." · `marea.ritmo` "Start at 12 a minute" junto a "6 per minute" · `ax.nombre.pista` "Hold to save or rename." (Apple escribe "Touch and hold") · `ax.autor.pista` "Opens your mail." · `siri.mezcla.cual` "Which of your mixes?" · `mezcla.casa.marron_hoguera` "Brown and fire" · `lo_que_no_hay.resena` "We won't ask you to rate it." · titular de la captura 4 "The sea breathes six times a minute."
+`temporizador.dormirme` "Until I sleep" (un nativo diría "Until I'm asleep" o "Until I fall asleep"; lo fija C15) · `temporizador.manto` "Blanket" (reconciliación §6.4) · `capas.seccion.camas` "beds" (en una app de dormir se lee como camas de verdad; lo fija el glosario) · `madrugada.titulo` "Small hours" · `mezclas.vacio` "Tonight’s mix is saved from its name." · `capas.cabin.detalle` "aircraft at cruise" · `capas.campfire.detalle` "embers, no crackle" · `marea.retirada` "It has receded. The sea goes on." · `siri.mezcla.cual` "Which of your mixes?" · `mezcla.casa.marron_hoguera` "Brown and fire" · `lo_que_no_hay.resena` "We won’t ask you to rate it." · titular de la captura 4 "The sea breathes six times a minute." Las demás de la primera lista se reescribieron en la corrección.
 
 ### Abierto
 
 - **Noche en AX4 y AX5 sobre 667 pt con la oferta del altavoz**: el estado, ya a la mitad de tamaño, sigue tocando "Seguir por el altavoz". Pide la disposición apilada de 07 §6 (reloj arriba, Horizonte debajo), que no está construida. "Terminó a las…" con "Madrugada · 20 min" en AX5 queda muy justo.
-- **El titular y la segunda línea de la captura 1** ("Un solo pago." / "sin tarjeta") siguen pendientes del sí del dueño por la directriz 2.3.7 (`docs/store/README.md`).
+- **El titular y la segunda línea de la captura 1** ("Un solo pago." / "sin tarjeta") siguen pendientes del sí del dueño por la directriz 2.3.7 (`docs/store/README.md`). Ver "Aplazado: necesita al dueño" en la corrección.
 
 ### Sin verificar
 
 - Las capturas en App Store Connect y en un iPhone real; el juego es-419.
 - El cambio de Noche en un iPhone SE real y con VoiceOver.
 - La firma con un equipo de verdad: sin `Config/Local.xcconfig` todo compila igual; con él no se ha archivado nada.
+
+## Corrección de S-08 (17-11-2026)
+
+Diecinueve hallazgos de la revisión. Todos comprobados contra el código, el catálogo y las doce capturas; ninguno era falso. Las doce capturas se regeneraron y se miraron una a una. `scripts/verify.sh` en verde con 657 tests (suelo subido de 650 a 657).
+
+### Hecho
+
+- **"A la 1:30", no "a las 1:30".** Nueve cadenas fijaban "a las %@" / "hasta las %@" y la hora llega como "1:30". Cada una tiene ahora una segunda clave con el sufijo `.una` ("Se funde a la %@"); la elige `HourPhrase.key(_:at:)` (`SleepNoise/Design/HourPhrase.swift`) mirando la hora ya formateada, así que vale en 24 horas ("1:30", "01:30"; no "13:30") y en 12 ("1:30 p. m."). `HourPhraseTests` pasa 01:30 y 13:30 por la página, Noche, el Temporizador y la Marea, y comprueba que ninguna otra cadena española fija "las" delante de un `%`.
+- **"SleepNoise Off" ya no es una frase de Siri.** La segunda variante de `SetTimer` era "${applicationName} ${mode}": con el modo Apagado quitaba el temporizador y dejaba el sonido toda la noche. Ahora es "${applicationName} timer ${mode}" / "Temporizador ${mode} en ${applicationName}" (código, catálogo y guía §5e.14).
+- **El lint caza la afirmación más corriente**: `(duerm|dorm|descans)\w* mejor`; `sleep\w* better`, `better (night|rest)`, `deep(er|ly)? sleep`, `sleep\w* deep\w*`. Pasa por todos los bloques de texto de las dos fichas, no solo por los titulares, con sus diez falsos positivos declarados (las ausencias, "sin suscripcion" en las palabras clave y los diagnósticos de la opción A de las palabras clave). `siete .*pro` pasa a `siete (\w+ ){0,2}pro`. `testNoMedicalClaimsInEitherLanguage` mira valores y palabras enteras, no el JSON crudo ("oscura" casaba con "cura "). La guía ya no declara "no close strikes".
+- **Signos tipográficos**: ’ en los diecisiete valores ingleses que llevaban apóstrofo recto, “%@” y «%@» en `mezclas.eliminar.titulo`, y en los bloques de `ficha-en.md`. `CatalogAuditTests` y el lint de las fichas fallan con un `'` o un `"` rectos.
+- **Inglés reescrito** (catálogo y guía §5e): "trial · final night" y "Final night with everything…" ("last night" es anoche); "Start at 12 per minute"; "no card is needed"; "The purchase didn’t go through. Nothing was charged."; "…Restore purchase will open Pro."; "Pro opens on its own once it’s approved."; "…and uses no power."; "Opens your email app."
+- **VoiceOver**: el nivel de una fila tiene acciones propias, `ax.nivel.subir` / `.bajar` ("Increase" / "Decrease"; "Move up" / "Move down" quedan para reordenar mezclas); las pistas de pulsación larga dicen el gesto entero ("Toca dos veces y mantén pulsado para volver." / "Double-tap and hold to go back."); "Ajustar con deslizador"; "Apagada, requiere Pro", como la fila.
+- **`capas.fan.detalle`** deja de repetir el nombre: "lejano y constante" / "far and steady".
+- **Las capturas 1 y 2 ya no son la misma página.** La 2 usa el estado nuevo `storeFirstUse`: sin compra ni prueba, en silencio, "Esta noche" con Lluvia 30 · Rosa 50, que es lo que dibujan 11 §2.4 y su §12 (C33), y conserva "Apagada · pro". La 1 sigue con "Rosa y lluvia" (Lluvia 55 · Rosa 20) sonando. `StoreShotTests` falla si las dos vuelven a llevar los mismos niveles.
+- **El script trabaja en un simulador suyo.** `scripts/screenshots.sh` crea uno (`xcrun simctl create`, tipo "iPhone 17 Pro"), lo pone en oscuro y lo borra al acabar, también con Ctrl-C, con un fallo o si lo matan (`trap cleanup EXIT`). Ya no elige un simulador por nombre ni toca el de otro; uno existente solo con `SN_SHOT_UDID`. Un simulador recién creado enseña avisos del sistema encima de la app (salió "Ready for Apple Intelligence" sobre la captura 2): cada pantalla se toma dos veces con ocho segundos entre medias y, si la franja de arriba no coincide, se repite. El aviso salió en una de tres ejecuciones, antes de existir la comprobación; con ella no volvió a salir, así que la repetición solo está probada comparando a mano aquella toma con una limpia.
+- **La pantalla es la de un iPhone 17 Pro a 0,836** (11 §4.4 pide ese simulador): el texto de 13 pt queda en 32,6 px, frente a los 29,8 px de antes y los 33 de 11 §2.2. La pantalla sola de `raw/` mide 1206 × 2622 y no se sube; la compuesta, 1320 × 2868.
+- **El compositor dibuja los pasos 2 y 6 como la app**: el 3× lo lleva el contexto y las fuentes se crean a 28 y 17 pt. La segunda línea de la captura 3 mide 355 pt de 376, no 330.
+- **Las fichas describen lo que sale**: notas "Pantalla:" de las seis capturas en ES y EN, fuera el bloque del pie de la captura 6 (la página no lo tiene) y la nota de la variante corta de la captura 3.
+
+### Decisiones tomadas al corregir, a confirmar
+
+- **La captura 2 vuelve a 11 §2.4 ("Esta noche", Lluvia 30 · Rosa 50) en lugar de cambiar la 1.** La revisión proponía dejar la 2 como instalación nueva y cargar "Mar y viento" en la 1; eso contradice 11 §2.3, que nombra "Rosa y lluvia", y necesita al dueño. La 2 no es la primera apertura al pie de la letra (esa carga "Rosa y lluvia"): es la página de quien aún no ha comprado ni probado, con dos niveles movidos. Si el dueño prefiere la otra, es una línea en `PageDebug.swift`.
+- **Las pistas de VoiceOver juntan dos hallazgos**: "Toca dos veces y mantén pulsado", que es como lo escribe el sistema en español.
+- **`pro.fallo` en inglés** también se enseña cuando la persona cancela: "The purchase didn’t go through." vale para los dos casos.
+
+### Aplazado: necesita al dueño
+
+- **Antes de enviar, directriz 2.3.2.** Las capturas 3 (océano sonando) y 4 (Marea) enseñan funciones de Pro y nada en la imagen lo dice; la descripción por defecto tampoco. La enmienda del tercer párrafo ("Después, Pro, que añade las demás texturas, la Marea y mezclas sin límite, es un solo pago…") está redactada en las dos fichas y en la guía §5e.15, y las fichas dicen que no se aplica sin el sí del dueño. Recomendación del corrector: aplicarla.
+- **Antes de enviar, directriz 2.3.7.** El titular y la segunda línea de la captura 1 ("Un solo pago." / "sin tarjeta") son condiciones de pago. La reserva está redactada ("Fabricado en tu iPhone." / "Siete noches con todo."): basta poner esos dos bloques los primeros en "Captura 1" de cada ficha y volver a ejecutar el script.
+- **La captura 6 sigue medio vacía y la 4 un quinto.** En la 6 la última línea queda al 55 % del alto de la pantalla. 11 §2.8 dibujaba la lista en el paso 2 con filas de 72 pt y hairlines hasta el pie; PLAN-SIMPLE §4.3 la dejó en "página de texto corta" y así se construyó en S-07. Rehacerla es un cambio de la app, fuera de S-08: o entra como tarea antes de enviar, o el dueño acepta la página actual. La hoja de Marea no tiene un detent más bajo: la 4 se queda como está salvo que el dueño pida otra cosa.
+- **"beds" y "Blanket"** a la revisión de un hablante nativo de en-US, con el resto de la lista de arriba.
+- **Opción A o B de las palabras clave** (la A nombra diagnósticos; por defecto vale la B). El lint la deja pasar como falso positivo declarado hasta que el dueño elija.
+
+### Sin verificar
+
+- Las frases nuevas de Siri dichas en un iPhone, y las pistas de VoiceOver oídas.
+- Que un aviso del sistema que dure más de ocho segundos no se cuele en las dos tomas: la comprobación compara dos tomas, no sabe qué hay debajo. Las doce capturas se miran antes de subirlas.
+- Lo que ya estaba sin verificar: App Store Connect, un iPhone real, es-419.
+

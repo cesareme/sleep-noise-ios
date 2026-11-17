@@ -91,7 +91,8 @@ enum TideSheetText {
         time: (Date) -> String = { $0.formatted(date: .omitted, time: .shortened) }
     ) -> String? {
         guard status.showsWater, let end else { return nil }
-        return String(format: localized("marea.retira.hora"), time(end))
+        let hour = time(end)
+        return String(format: localized(HourPhrase.key("marea.retira.hora", at: hour)), hour)
     }
 
     /// The pace on the right of its row: "Calm · 6", "Gentle · 8", or the

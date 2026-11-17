@@ -202,9 +202,9 @@ final class PageLogicTests: XCTestCase {
             (.paused, "Paused", "En pausa"),
             (.pausedHeadphones, "Paused · headphones", "En pausa · auriculares"),
             (.pausedCall, "Paused · call", "En pausa · llamada"),
-            (.error(attempt: 1), "Couldn't start the sound. Tap to try again.",
+            (.error(attempt: 1), "Couldn’t start the sound. Tap to try again.",
              "No se ha podido iniciar el sonido. Toca para reintentar."),
-            (.error(attempt: 2), "If it still won't play, close the app and open it again.",
+            (.error(attempt: 2), "If it still won’t play, close the app and open it again.",
              "Si sigue sin sonar, cierra la app y vuelve a abrirla."),
             (.error(attempt: 3), "Close any app using the microphone and try again.",
              "Cierra las apps que usen el micrófono y vuelve a intentarlo."),
@@ -234,7 +234,7 @@ final class PageLogicTests: XCTestCase {
 
     func testTrialWordSaysTheNightsThatAreLeft() {
         for (language, five, last, free) in [
-            ("en", "trial · 5 nights left", "trial · last night", "always free"),
+            ("en", "trial · 5 nights left", "trial · final night", "always free"),
             ("es", "prueba · quedan 5 noches", "prueba · última noche", "gratis siempre"),
         ] {
             let strings = catalog(language)
@@ -266,7 +266,7 @@ final class PageLogicTests: XCTestCase {
             (.brown, "Brown, low rumble", "Marrón, retumbo grave"),
             (.rain, "Rain, on the roof", "Lluvia, sobre el tejado"),
             (.wind, "Wind, through trees", "Viento, entre árboles"),
-            (.fan, "Fan, distant fan", "Ventilador, ventilador lejano"),
+            (.fan, "Fan, far and steady", "Ventilador, lejano y constante"),
             (.ocean, "Ocean, slow swell", "Océano, oleaje lento"),
             (.thunder, "Thunder, distant, no strikes nearby", "Trueno, lejano, sin rayos cerca"),
             (.campfire, "Campfire, embers, no crackle", "Hoguera, brasas, sin chasquidos"),

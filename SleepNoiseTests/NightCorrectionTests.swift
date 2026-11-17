@@ -782,8 +782,14 @@ final class NightDetailTests: XCTestCase {
 
     func testTheHintOfTheNameSaysRenameToo() throws {
         let strings = try TimerCatalogTests.catalog()
-        XCTAssertEqual(TimerCatalogTests.values("ax.nombre.pista", "es", in: strings), ["Mantén para guardar o renombrar."])
-        XCTAssertEqual(TimerCatalogTests.values("ax.nombre.pista", "en", in: strings), ["Hold to save or rename."])
+        // With VoiceOver a long press is a double tap held (S-08).
+        XCTAssertEqual(
+            TimerCatalogTests.values("ax.nombre.pista", "es", in: strings),
+            ["Toca dos veces y mantén pulsado para guardar o renombrar."]
+        )
+        XCTAssertEqual(
+            TimerCatalogTests.values("ax.nombre.pista", "en", in: strings), ["Double-tap and hold to save or rename."]
+        )
         XCTAssertTrue(TimerCatalogTests.values("ax.agua.valor", "es", in: strings).isEmpty, "retired: it went stale")
     }
 }

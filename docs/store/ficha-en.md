@@ -89,7 +89,7 @@ The sea breathes six times a minute.
 
 At three in the morning, nothing.
 
-What's not here.
+What’s not here.
 ```
 
 Recuento: 756 de 4000. Los cuatro primeros párrafos son los de la guía; los seis últimos son los titulares de las capturas, en orden, porque VoiceOver no lee las capturas (documento 11 §2.10). "Breathing tide" solo se escribe aquí, en prosa de ficha (C15).
@@ -118,14 +118,14 @@ Recuento: 207. Con ella la descripción pasa de 756 a 818; con las dos enmiendas
 SleepNoise: a black page, one line that breathes with the real sound, and a Night screen that is all button.
 Named mixes, four from the house. A timer that fades instead of cutting. Small hours: twenty minutes of sea that recedes on its own.
 Seven nights with everything. After that, Pro is one payment. Free stays free.
-If something won't play, Settings › Write to the author. We'd like to know.
+If something won’t play, Settings › Write to the author. We’d like to know.
 ```
 
 Recuento: 396 de 4000. App Store Connect no pide este campo en la primera versión de una app (a comprobar al crear la ficha); el texto queda listo para la nota de TestFlight y como base de la 1.0.1. Tres cambios respecto a la plantilla de la guía, para no prometer lo que `docs/PLAN-SIMPLE-1.0.md` §4.3 y §4.4 dejan fuera: no dice que la app esté rediseñada, porque es la primera versión en la tienda; Madrugada no se anuncia desde la pantalla de bloqueo del iPhone, porque no hay widgets ni Live Activity; y el aviso de fallos lleva a "Escribir al autor", porque el Diagnóstico pasa a 1.1.
 
 ## Capturas
 
-Seis, en este orden, solo iPhone y solo fondo negro (C57). Sin vídeo de vista previa en 1.0. Las genera `scripts/screenshots.sh` (S-08), que lee de este fichero el titular (el primer bloque de cada captura) y su segunda línea (el bloque que sigue a "Subtítulo de la captura:").
+Seis, en este orden, solo iPhone y solo fondo negro (C57). Sin vídeo de vista previa en 1.0. Las genera `scripts/screenshots.sh` (S-08), que lee de este fichero el titular (el primer bloque de cada captura) y su segunda línea (el bloque que sigue a "Subtítulo de la captura:"). Cada nota "Pantalla:" dice lo que sale en la captura generada (`scripts/screenshots/README.md`), no lo que dibujaba la maqueta.
 
 ### Captura 1 · la página sonando
 
@@ -133,7 +133,7 @@ Seis, en este orden, solo iPhone y solo fondo negro (C57). Sin vídeo de vista p
 One payment.
 ```
 
-Recuento: 12 de 41. Pantalla: mezcla de la casa "Rosa y lluvia" cargada, sonando, con el estado de la prueba en la cabecera.
+Recuento: 12 de 41. Pantalla: mezcla de la casa "Rosa y lluvia" cargada (Lluvia 55 · Rosa 20), sonando a las 20:15, con "trial · 6 nights left" en la cabecera y el estado "Playing · fades at 9:00 PM" (en español, "prueba · quedan 6 noches" y "Sonando · se funde a las 21:00").
 
 Riesgo anotado: la directriz 2.3.7 pide que nombre, subtítulo y capturas no lleven precios ni condiciones. Este titular y "no card" en su subtítulo son condiciones de pago; los fija C57 y no se cambian sin el sí del dueño. Reserva lista si App Review lo discute o el dueño lo prefiere, titular y subtítulo:
 
@@ -163,7 +163,7 @@ Recuento: 38 de 42.
 One tap and it plays.
 ```
 
-Recuento: 21 de 41. Pantalla: la página tal como se abre la primera vez: mezcla "Esta noche", en silencio, cabecera vacía, el Disco en Play.
+Recuento: 21 de 41. Pantalla: la página de quien no ha comprado nada ni ha empezado la prueba, en reposo: mezcla "Tonight" (Rain 30 · Pink 50, la del documento 11 §2.4), en silencio, cabecera vacía, el Disco en Play y la fila de la Marea con "Off · pro". No es la primera apertura al pie de la letra, que carga "Rosa y lluvia": con ella las capturas 1 y 2 enseñaban la misma página.
 
 ### Captura 3 · la hoja Capas bajo el dedo
 
@@ -171,7 +171,7 @@ Recuento: 21 de 41. Pantalla: la página tal como se abre la primera vez: mezcla
 Six layers at once. One line each.
 ```
 
-Recuento: 34 de 41. Pantalla: la hoja "Todas las capas" con seis capas sonando y un dedo arrastrando un nivel. Seis capas a la vez no se pueden tener con las cinco texturas gratuitas: la captura se hace con la prueba en marcha (documento 11 §12) y enseña algo que después es de Pro. La directriz 2.3.2 pide que descripción y capturas dejen claro qué requiere compra; ver la nota de la descripción.
+Recuento: 34 de 41. Pantalla: la hoja "Layers" con seis capas sonando (blanco, rosa, marrón, lluvia, viento y océano) y la fila de la lluvia bajo el dedo, a 52. Seis capas a la vez no se pueden tener con las cinco texturas gratuitas: la captura se hace con la prueba en marcha (documento 11 §12) y enseña algo que después es de Pro. La directriz 2.3.2 pide que descripción y capturas dejen claro qué requiere compra; ver la nota de la descripción.
 
 Subtítulo de la captura:
 
@@ -187,7 +187,7 @@ Recuento: 41 de 42.
 The sea breathes six times a minute.
 ```
 
-Recuento: 36 de 41. Pantalla: la hoja de Marea con la línea de agua en movimiento y el ritmo a seis por minuto. La Marea es de Pro: vale lo dicho en la captura 3. La captura se hace sin la frase sobre estudios de variabilidad cardiaca (`marea.evidencia`) y sin el enlace "Qué sabemos" que el documento 11 §2.6 dibuja en esa hoja: "Qué sabemos" pasa a 1.1 (`docs/PLAN-SIMPLE-1.0.md` §4.4) y esa frase, dentro de una captura, sería una afirmación fisiológica en la ficha. Depende de cómo salga la hoja en S-06 (`README.md`, "Antes de enviar").
+Recuento: 36 de 41. Pantalla: la hoja de Marea con la línea de agua detenida en la subida de la tercera respiración, "guiding · 6 per minute", "Recedes at 8:27 PM" y las filas Tide, Pace, Descent y "Recedes after". La Marea es de Pro: vale lo dicho en la captura 3. La captura se hace sin la frase sobre estudios de variabilidad cardiaca (`marea.evidencia`) y sin el enlace "Qué sabemos" que el documento 11 §2.6 dibuja en esa hoja: "Qué sabemos" pasa a 1.1 (`docs/PLAN-SIMPLE-1.0.md` §4.4) y esa frase, dentro de una captura, sería una afirmación fisiológica en la ficha. La hoja de 1.0 no las lleva.
 
 ### Captura 5 · Noche sola
 
@@ -195,25 +195,19 @@ Recuento: 36 de 41. Pantalla: la hoja de Marea con la línea de agua en movimien
 At three in the morning, nothing.
 ```
 
-Recuento: 33 de 41. Pantalla: la pantalla Noche: negra, con la palabra de estado y nada más.
+Recuento: 33 de 41. Pantalla: la pantalla Noche, negra: el Horizonte, la hora (3:07), el estado "Fades at 3:42 AM" y "+15 min" al pie. Nada más.
 
 ### Captura 6 · la página "Lo que no hay"
 
 ```text en
-What's not here.
+What’s not here.
 ```
 
-Recuento: 16 de 41. Pantalla: la página real de la app con la lista de ausencias y el pie.
+Recuento: 16 de 41. Pantalla: la página real de la app, dentro de la hoja de Ajustes: el título, la lista de ausencias (una por línea) y "We won’t ask you to rate it." No lleva pie: la página construida no lo tiene (repetiría sus tres primeras líneas) y la app no muestra su peso.
 
 Lista que se ve en la captura (es la de la página, no un campo de la tienda):
 
 ```text en
 No subscription · No account · No tracking · No ads · No score · No streak · No tutorial
-```
-
-Pie de la captura, con el peso real de la app en lugar de `{MB}`:
-
-```text en
-Data Not Collected · {MB} MB
 ```
 

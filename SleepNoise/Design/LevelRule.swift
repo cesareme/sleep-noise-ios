@@ -517,8 +517,8 @@ private struct LevelRuleAccessibility: ViewModifier {
                 }
                 .accessibilityAction(named: Text("ax.accion.silenciar")) { level = 0 }
                 .accessibilityAction(named: Text("ax.accion.maximo")) { level = 1 }
-                .accessibilityAction(named: Text("ax.accion.subir")) { level = LevelMath.stepped(level, up: true) }
-                .accessibilityAction(named: Text("ax.accion.bajar")) { level = LevelMath.stepped(level, up: false) }
+                .accessibilityAction(named: Text("ax.nivel.subir")) { level = LevelMath.stepped(level, up: true) }
+                .accessibilityAction(named: Text("ax.nivel.bajar")) { level = LevelMath.stepped(level, up: false) }
                 .accessibilityAction(named: Text("ax.accion.deslizador")) { onSlider() }
         }
     }

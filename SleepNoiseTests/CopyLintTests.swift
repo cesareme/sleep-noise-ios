@@ -25,7 +25,7 @@ final class CopyLintTests: XCTestCase {
         "modo noche", "modo madrugada", "luna", "escudo", "tu instrumento", "envolvente", "chips?",
         "perfil de entorno", "lluvia fina", "cama rosa", "mar lento", "noche de fuego", "control fino",
         "tormenta lejana", "v1", "v2", "oleaje", "amanecer", "siesta", "ranuras?", "lanzamiento",
-        "once texturas", "siete .*pro", "preajustes?",
+        "once texturas", #"siete (?:\w+ ){0,2}pro"#, "preajustes?",
     ]
 
     /// §0.5, English. "until I fall asleep" is what the guide means by its
@@ -43,7 +43,7 @@ final class CopyLintTests: XCTestCase {
 
     /// §0.4, Spanish: what is never claimed or hinted.
     static let claimsSpanish = [
-        #"duerm\w+ mejor"#, "calidad del sueño", "más rápido", "clínicamente", "científicamente",
+        #"(?:duerm|dorm|descans)\w* mejor"#, "calidad del sueño", "más rápido", "clínicamente", "científicamente",
         #"probad\w+"#, "sueño profundo", "ondas lentas", "ondas cerebrales", "memoria", #"trata\w*"#,
         #"cura\w*"#, #"alivi\w*"#, #"tratamiento\w*"#, "grado médico", "acúfenos", "tinnitus", "nervio vago",
         "sistema nervioso", "estrés", "fase ligera", "fases", "alarma inteligente", "bebés?",
@@ -53,7 +53,8 @@ final class CopyLintTests: XCTestCase {
 
     /// §0.4, English.
     static let claimsEnglish = [
-        "sleep better", "sleep quality", "faster", "clinically", "scientifically", "proven",
+        #"sleep\w* better"#, #"better (?:night|rest)"#, #"deep(?:er|ly)? sleep"#, #"sleep\w* deep\w*"#,
+        "sleep quality", "faster", "clinically", "scientifically", "proven",
         "slow[- ]wave", "brain ?waves?", "memory", #"treat\w*"#, #"cure\w*"#, #"reliev\w*"#, "relief",
         "medical[- ]grade", "tinnitus", "vagus", "nervous system", "stress", "light sleep",
         "sleep stages?", "sleep phases?", "smart alarm", "baby", "babies", "recommended by", "adapts to",
@@ -114,7 +115,28 @@ final class CopyLintTests: XCTestCase {
             key: "atajo.modo.dormirme.sinonimo", language: "en",
             rule: "until I fall asleep", within: "until I fall asleep"
         ),
+        // The store listing (docs/store/ficha-*.md) says the same absences
+        // as the page: in the description and in the list of capture 6.
+        Allowed(key: storeKey, language: "es", rule: #"suscri\w*"#, within: "Sin suscripción"),
+        Allowed(key: storeKey, language: "es", rule: #"puntuaci\w+"#, within: "Sin puntuación"),
+        Allowed(key: storeKey, language: "es", rule: "rachas?", within: "Sin racha"),
+        Allowed(key: storeKey, language: "en", rule: #"subscri\w*"#, within: "No subscription"),
+        Allowed(key: storeKey, language: "en", rule: "scores?", within: "No score"),
+        Allowed(key: storeKey, language: "en", rule: "streaks?", within: "No streak"),
+        // The keywords field is not shown in the store and has no accents.
+        Allowed(key: storeKeywordsKey, language: "es", rule: #"suscri\w*"#, within: "sin suscripcion"),
+        // Option A of the keywords, the one of document 11, names
+        // diagnoses. The owner has not chosen it: option B, without them,
+        // is the default (see the note of the field in each listing).
+        Allowed(key: storeKeywordsKey, language: "es", rule: #"insomn\w*"#, within: "insomnio"),
+        Allowed(key: storeKeywordsKey, language: "en", rule: #"insomn\w*"#, within: "insomnia"),
+        Allowed(key: storeKeywordsKey, language: "en", rule: "tinnitus", within: "tinnitus"),
     ]
+
+    /// What a false positive of the store listing is tied to: any block of
+    /// text, or a block of keywords.
+    static let storeKey = "docs/store"
+    static let storeKeywordsKey = "docs/store keywords"
 
     /// Question marks: only the system's delete confirmation and Siri's
     /// question when it has to choose (guide §0.1, rule 3).
@@ -205,6 +227,28 @@ final class CopyLintTests: XCTestCase {
         return (found, used, read)
     }
 
+    /// Every block of text of the store listing of one language: name,
+    /// subtitle, promotional text, keywords, description, what is new, the
+    /// headlines of the captures and their reserves (guide §0.4: the whole
+    /// listing, not only what is composed over the screens).
+    private func lintListing(_ language: String) throws -> (found: [Finding], used: Set<Allowed>, read: Int) {
+        let name = "ficha-\(language).md"
+        let url = CatalogSource.root.appendingPathComponent("docs/store/\(name)")
+        let blocks = StoreListing.blocks(try String(contentsOf: url, encoding: .utf8))
+        var found: [Finding] = []
+        var used: Set<Allowed> = []
+        for (index, block) in blocks.enumerated() {
+            let result = Self.lint(
+                block.text, language: language,
+                key: block.isKeywords ? Self.storeKeywordsKey : Self.storeKey,
+                place: "\(name), block \(index + 1)"
+            )
+            found.append(contentsOf: result.found)
+            used.formUnion(result.used)
+        }
+        return (found, used, blocks.count)
+    }
+
     // MARK: Tests
 
     func testSpanishKeepsOffBothBlackLists() throws {
@@ -223,6 +267,7 @@ final class CopyLintTests: XCTestCase {
     /// the lint waiting for the word to come back somewhere else.
     func testEveryDeclaredFalsePositiveIsStillThere() throws {
         let used = try lintCatalogs("es").used.union(try lintCatalogs("en").used)
+            .union(try lintListing("es").used).union(try lintListing("en").used)
         for allowed in Self.allowed {
             XCTAssertTrue(used.contains(allowed), "\(allowed.key) [\(allowed.language)] no longer says \"\(allowed.within)\"")
         }
@@ -291,6 +336,16 @@ final class CopyLintTests: XCTestCase {
             ("¡Hola", "es", "an exclamation mark"),
             ("Sleep \u{1F319}", "en", "an emoji"),
             ("Sleep timer", "en", "sleep timer"),
+            // The claim as it is most often made.
+            ("Para dormir mejor", "es", #"(?:duerm|dorm|descans)\w* mejor"#),
+            ("Descansa mejor", "es", #"(?:duerm|dorm|descans)\w* mejor"#),
+            ("Duerme mejor esta noche", "es", #"(?:duerm|dorm|descans)\w* mejor"#),
+            ("A better night's sleep", "en", #"better (?:night|rest)"#),
+            ("Better rest, every night", "en", #"better (?:night|rest)"#),
+            ("Sleeping better", "en", #"sleep\w* better"#),
+            ("Deeper sleep", "en", #"deep(?:er|ly)? sleep"#),
+            ("Sleep deeply", "en", #"sleep\w* deep\w*"#),
+            ("Las siete texturas Pro", "es", #"siete (?:\w+ ){0,2}pro"#),
             ("Lock it", "en", "lock"),
         ]
         for (text, language, rule) in cases {
@@ -303,6 +358,9 @@ final class CopyLintTests: XCTestCase {
             ("The clock", "en"), ("Until I sleep", "en"), ("Mezcla", "es"), ("Pon ${mix} en ${applicationName}", "es"),
             ("%1$@ at %2$lld", "en"), ("Start the trial · 7 nights", "en"), ("three mixes", "en"),
             ("Small hours", "en"), ("Blanket", "en"), ("Tide", "en"),
+            // Seven nights and Pro in the next sentence is not "seven Pro".
+            ("Siete noches con todo, sin tarjeta. Después, Pro es un solo pago", "es"),
+            ("The sea goes on. Better than nothing is not a claim", "en"),
         ] {
             XCTAssertEqual(Self.lint(text, language: language, key: nil, place: "sample").found, [], text)
         }
@@ -338,16 +396,63 @@ final class CopyLintTests: XCTestCase {
         }
     }
 
-    // MARK: Kept from before S-08
-
-    func testNoMedicalClaimsInEitherLanguage() throws {
-        for name in CatalogSource.catalogs {
-            let url = CatalogSource.root.appendingPathComponent("SleepNoise/Resources/\(name)")
-            let text = try String(contentsOf: url, encoding: .utf8).lowercased()
-            for banned in ["insomn", "ansiedad", "anxiety", "terap", "treat", "cure", "cura ", "coherencia cardíaca", "stay under"] {
-                XCTAssertFalse(text.contains(banned), "\(name) contains \"\(banned)\"")
+    /// The whole listing of the store, block by block, through the same
+    /// lint: the description and the promotional text make the claims a
+    /// headline has no room for. Typographic apostrophes and quotation
+    /// marks, as in the app.
+    func testTheStoreListingsPassTheLint() throws {
+        for language in CatalogSource.languages {
+            let result = try lintListing(language)
+            XCTAssertGreaterThan(result.read, 20, "ficha-\(language).md should have been read")
+            XCTAssertEqual(result.found.map(\.description), [], language)
+            let url = CatalogSource.root.appendingPathComponent("docs/store/ficha-\(language).md")
+            for block in StoreListing.blocks(try String(contentsOf: url, encoding: .utf8)) {
+                XCTAssertFalse(block.text.contains("'"), "ficha-\(language).md: \(block.text)")
+                XCTAssertFalse(block.text.contains("\""), "ficha-\(language).md: \(block.text)")
             }
         }
+    }
+
+    func testTheReaderOfTheListingTakesOnlyBlocksOfText() {
+        let blocks = StoreListing.blocks("""
+        # Title
+        ```text es
+        One
+        two
+        ```
+        Prose with 'quotes'.
+        ```text es keywords
+        a,b
+        ```
+        ```yaml
+        not: copy
+        ```
+        """)
+        XCTAssertEqual(blocks.map(\.text), ["One\ntwo", "a,b"])
+        XCTAssertEqual(blocks.map(\.isKeywords), [false, true])
+    }
+
+    // MARK: Kept from before S-08
+
+    /// The stems of a diagnosis or a treatment, in either language, in
+    /// what people read of either language: values and whole words, never
+    /// the keys or the comments of the catalogs ("oscura" is not "cura").
+    func testNoMedicalClaimsInEitherLanguage() throws {
+        let banned = [
+            #"insomn\w*"#, "ansiedad", "anxiety", #"terap\w*"#, #"therap\w*"#, #"treat\w*"#, #"cur[ae]\w*"#,
+            "coherencia cardíaca", "stay under",
+        ]
+        var checked = 0
+        for value in try CatalogSource.allValues() {
+            checked += 1
+            for rule in banned {
+                XCTAssertTrue(Self.hits(rule, in: value.copy).isEmpty, "\(value.place) says \"\(rule)\": \(value.text)")
+            }
+        }
+        XCTAssertGreaterThan(checked, 500)
+        XCTAssertFalse(Self.hits(#"cur[ae]\w*"#, in: "No cura nada").isEmpty)
+        XCTAssertTrue(Self.hits(#"cur[ae]\w*"#, in: "La página oscura").isEmpty)
+        XCTAssertTrue(Self.hits(#"treat\w*"#, in: "It retreats by itself").isEmpty)
     }
 
     /// A mix is never a "preset", and no mix is named after a promise (deep
@@ -416,5 +521,39 @@ enum StoreHeadlines {
             }
         }
         return headlines
+    }
+}
+
+/// The blocks of text of a store listing (`docs/store/ficha-<language>.md`):
+/// what is pasted into App Store Connect. A block opens with "```text";
+/// its info line says "keywords" for the keywords field.
+enum StoreListing {
+    struct Block: Equatable {
+        var text: String
+        var isKeywords: Bool
+    }
+
+    static func blocks(_ markdown: String) -> [Block] {
+        var blocks: [Block] = []
+        var lines: [String]?
+        var isOpen = false
+        var isKeywords = false
+        for line in markdown.components(separatedBy: "\n") {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("```") {
+                if isOpen {
+                    if let lines { blocks.append(Block(text: lines.joined(separator: "\n"), isKeywords: isKeywords)) }
+                    lines = nil
+                    isOpen = false
+                } else {
+                    isOpen = true
+                    lines = trimmed.hasPrefix("```text") ? [] : nil
+                    isKeywords = trimmed.contains("keywords")
+                }
+            } else if isOpen {
+                lines?.append(trimmed)
+            }
+        }
+        return blocks
     }
 }

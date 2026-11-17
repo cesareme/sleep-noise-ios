@@ -40,6 +40,9 @@ final class CatalogAuditTests: XCTestCase {
             XCTAssertEqual(value.text, value.text.trimmingCharacters(in: .whitespacesAndNewlines), value.place)
             XCTAssertFalse(value.text.contains("  "), value.place)
             XCTAssertFalse(value.text.contains("..."), "\(value.place): the ellipsis is one character")
+            // Typographic marks: ’ in English, “ ” and « » around a name.
+            XCTAssertFalse(value.text.contains("'"), "\(value.place): the apostrophe is ’")
+            XCTAssertFalse(value.text.contains("\""), "\(value.place): quotation marks are “ ” or « »")
         }
     }
 
@@ -166,7 +169,8 @@ final class CatalogAuditTests: XCTestCase {
     /// Keys the code builds from a value instead of writing them out.
     private static var builtKeys: Set<String> {
         // `SoundID.detailKey`: "capas.\(rawValue).detalle".
-        Set(SoundID.allCases.map(\.detailKey))
+        // `HourPhrase.key`: the key and ".una".
+        Set(SoundID.allCases.map(\.detailKey)).union(HourPhrase.keys.map { $0 + HourPhrase.oneSuffix })
     }
 
     /// The literals a release build compiles.
@@ -359,7 +363,7 @@ final class CatalogAuditTests: XCTestCase {
             ("mezclas.titulo", "Mixes", "Mezclas"),
             ("mezcla.nombre.vacio", "Tonight", "Esta noche"),
             ("barra.noche", "Night", "Noche"),
-            ("lo_que_no_hay.titulo", "What's not here", "Lo que no hay"),
+            ("lo_que_no_hay.titulo", "What’s not here", "Lo que no hay"),
             ("pro.restaurar", "Restore purchase", "Restaurar compra"),
             ("pro.prueba.estado.gratis", "always free", "gratis siempre"),
         ]

@@ -11,7 +11,7 @@ import SwiftUI
 /// and `-pageType <size>` to force a Dynamic Type size.
 ///
 /// The six captures of the store (11 §2.3 to §2.8) are `storePlaying`,
-/// `restFree`, `storeLayers`, `storeTide`, `storeNight` and
+/// `storeFirstUse`, `storeLayers`, `storeTide`, `storeNight` and
 /// `settingsNotHere`, launched with `-storeShot`, which hides the status
 /// bar and the home indicator (11 §2.2). `scripts/screenshots.sh` takes
 /// them in both languages.
@@ -220,6 +220,10 @@ enum PageDebugState: String, CaseIterable {
     /// Capture 1: the house mix playing in the evening, on the second day
     /// of the trial, with the timer of the first use.
     case storePlaying
+    /// Capture 2: the page of someone who has bought nothing and started
+    /// no trial, at rest, with tonight's mix as document 11 §2.4 draws it:
+    /// rain 30 and pink 50.
+    case storeFirstUse
     /// Capture 3: Layers with six sounding, during the trial, and the rain
     /// under a finger.
     case storeLayers
@@ -278,7 +282,7 @@ enum PageDebugState: String, CaseIterable {
     var isFreeTier: Bool {
         switch self {
         case .layersSix, .layersEnd, .tideLocked, .mixes, .mixesRename, .mixesDelete, .mixesFourth, .mixesTrimmed,
-             .mixesTrimmedLong, .mixesNightFree, .mixesEnd, .restFree,
+             .mixesTrimmedLong, .mixesNightFree, .mixesEnd, .restFree, .storeFirstUse,
              .proOffer, .proOfferPlaying, .proOfferSettings, .proOfferLayers, .proLoading, .proUnavailable, .proBuying, .proPending, .proFailed,
              .proUnconfirmed, .proRestoring, .proNothing, .proThanks,
              .settings, .settingsLoading, .settingsNight, .settingsNotHere:
@@ -506,6 +510,9 @@ enum PageStage {
         return Calendar.current.date(from: components) ?? Date()
     }
 
+    /// Tonight's mix in capture 2 (11 §2.4): rain 30 and pink 50.
+    static let storeFirstUseLevels: [SoundID: Float] = [.rain: 0.3, .pink: 0.5]
+
     /// The product a staged launch shows. The app itself never writes a
     /// name or a price: these stand in for the App Store in the captures.
     static let stagedProduct = ProProduct(
@@ -587,6 +594,11 @@ enum PageStage {
              .smallHours, .smallHoursPlain, .smallHoursWinding, .smallHoursPaused:
             // Night shows the timer of the first use: 45 minutes.
             break
+        case .storeFirstUse:
+            // Not the house mix that capture 1 plays: two free layers at
+            // other levels, so the first two captures of the store do not
+            // show the same page twice.
+            setLevels(model, storeFirstUseLevels)
         case .storeLayers:
             // Six at once: the five free ones and the ocean, which the
             // trial opens. Rain is the one under the finger.
@@ -697,8 +709,8 @@ enum PageStage {
     static func didAppear(_ model: MixerModel) {
         guard let state = PageArguments.state else { return }
         switch state {
-        case .rest, .restFree, .layersSix, .layersEnd, .timerRest, .timerHour, .timerLength, .tideRest,
-             .tideLocked, .mixesEmpty,
+        case .rest, .restFree, .storeFirstUse, .layersSix, .layersEnd, .timerRest, .timerHour, .timerLength,
+             .tideRest, .tideLocked, .mixesEmpty,
              .trialNight1, .trialNight3, .trialNight7, .trialLastDay, .trialNight8, .trialAtNight,
              .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNight, .settingsNotHere:
             break

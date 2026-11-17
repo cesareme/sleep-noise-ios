@@ -12,6 +12,11 @@
 //   shot-composer --ficha docs/store/ficha-es.md --index 1 \
 //                 --screen raw.png --out 01-page-playing.png
 //   shot-composer --ficha docs/store/ficha-es.md --list
+//   shot-composer --same-top first.png second.png
+//
+// --same-top compares the top of two takes of the same screen and exits 0
+// when they match: a banner of the system passing through (a simulator that
+// has just been created has things to say) makes them differ.
 //
 // --keep-home-indicator leaves the bottom strip of the screen as captured.
 //
@@ -25,6 +30,9 @@ import ImageIO
 import UniformTypeIdentifiers
 
 // MARK: - Canvas (pt on a 440 × 956 canvas, exported at 3×: the 6.9" class)
+//
+// The screen may come from any iPhone: it is laid 336 pt wide, whatever its
+// own width (402 pt on the default simulator of the script: 0.836).
 
 let scale: CGFloat = 3
 let canvasSize = CGSize(width: 440, height: 956)
@@ -122,10 +130,13 @@ func fail(_ message: String) -> Never {
     exit(1)
 }
 
-/// The system face at a size in px: SF Pro, Display from 20 pt up, with the
-/// tracking the system gives it (tracking 0 in the spec).
+/// The system face at its size in pt, as the app draws it: SF Pro, Display
+/// from 20 pt up, with the optical size and the tracking the system gives
+/// that size (tracking 0 in the spec). The canvas is scaled, not the font: a
+/// font made at three times the size would be the cut and the tracking of
+/// 84 pt and 51 pt, narrower than the 28 and the 17 of the app.
 func line(_ text: String, size: CGFloat, weight: NSFont.Weight, ink: CGColor) -> CTLine {
-    let font = NSFont.systemFont(ofSize: size * scale, weight: weight)
+    let font = NSFont.systemFont(ofSize: size, weight: weight)
     let attributes: [NSAttributedString.Key: Any] = [
         .font: font,
         NSAttributedString.Key(kCTForegroundColorAttributeName as String): ink,
@@ -134,7 +145,7 @@ func line(_ text: String, size: CGFloat, weight: NSFont.Weight, ink: CGColor) ->
 }
 
 func width(_ line: CTLine) -> CGFloat {
-    CGFloat(CTLineGetTypographicBounds(line, nil, nil, nil)) / scale
+    CGFloat(CTLineGetTypographicBounds(line, nil, nil, nil))
 }
 
 /// Breaks a headline into at most two lines no wider than the column. One
@@ -176,6 +187,7 @@ var screenPath: String?
 var outPath: String?
 var lists = false
 var keepsHomeIndicator = false
+var takes: [String] = []
 
 var arguments = Array(CommandLine.arguments.dropFirst())
 while !arguments.isEmpty {
@@ -190,9 +202,55 @@ while !arguments.isEmpty {
     case "--screen": screenPath = value()
     case "--out": outPath = value()
     case "--list": lists = true
+    case "--same-top": takes = [value(), value()]
     case "--keep-home-indicator": keepsHomeIndicator = true
     default: fail("unknown argument \(flag)")
     }
+}
+
+// MARK: - Two takes of one screen
+
+/// The top of a take as bytes: where the system lays a banner, from the
+/// edge down to a sixth of the height. Nothing of the app moves there in
+/// the staged states of the store.
+func top(of path: String) -> (bytes: [UInt8], width: Int, height: Int) {
+    guard
+        let source = CGImageSourceCreateWithURL(URL(fileURLWithPath: path) as CFURL, nil),
+        let image = CGImageSourceCreateImageAtIndex(source, 0, nil),
+        let band = image.cropping(to: CGRect(x: 0, y: 0, width: image.width, height: image.height / 6)),
+        let space = CGColorSpace(name: CGColorSpace.sRGB)
+    else { fail("cannot read \(path)") }
+    var bytes = [UInt8](repeating: 0, count: band.width * band.height * 4)
+    let drawn = bytes.withUnsafeMutableBytes { buffer -> Bool in
+        guard let context = CGContext(
+            data: buffer.baseAddress, width: band.width, height: band.height, bitsPerComponent: 8,
+            bytesPerRow: band.width * 4, space: space, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+        ) else { return false }
+        context.draw(band, in: CGRect(x: 0, y: 0, width: band.width, height: band.height))
+        return true
+    }
+    guard drawn else { fail("cannot draw \(path)") }
+    return (bytes, band.width, band.height)
+}
+
+if takes.count == 2 {
+    let (first, second) = (top(of: takes[0]), top(of: takes[1]))
+    guard first.width == second.width, first.height == second.height else { exit(3) }
+    var different = 0
+    var index = 0
+    while index < first.bytes.count {
+        // A pixel counts when a channel moves by more than a tenth.
+        if abs(Int(first.bytes[index]) - Int(second.bytes[index])) > 24
+            || abs(Int(first.bytes[index + 1]) - Int(second.bytes[index + 1])) > 24
+            || abs(Int(first.bytes[index + 2]) - Int(second.bytes[index + 2])) > 24 {
+            different += 1
+        }
+        index += 4
+    }
+    // A banner covers a third of the band; antialiasing, a handful of pixels.
+    let share = Double(different) / Double(first.width * first.height)
+    print(String(format: "%.4f", share))
+    exit(share < 0.002 ? 0 : 3)
 }
 
 guard let ficha else { fail("--ficha is required") }
@@ -232,12 +290,19 @@ guard
     )
 else { fail("cannot create the canvas") }
 
+// Everything below is drawn in pt: the context carries the 3×.
+context.scaleBy(x: scale, y: scale)
+context.setAllowsFontSubpixelPositioning(true)
+context.setShouldSubpixelPositionFonts(true)
+context.setAllowsFontSubpixelQuantization(false)
+context.setShouldSubpixelQuantizeFonts(false)
+
 context.setFillColor(Token.negro)
-context.fill(CGRect(x: 0, y: 0, width: pixelWidth, height: pixelHeight))
+context.fill(CGRect(origin: .zero, size: canvasSize))
 
 /// Draws a line of text with its baseline at `baseline` pt from the top.
 func draw(_ text: CTLine, x: CGFloat, baseline: CGFloat) {
-    context.textPosition = CGPoint(x: x * scale, y: CGFloat(pixelHeight) - baseline * scale)
+    context.textPosition = CGPoint(x: x, y: canvasSize.height - baseline)
     CTLineDraw(text, context)
 }
 
@@ -258,9 +323,9 @@ if let subtitle = headline.subtitle {
         fail("the second line of capture \(index) is \(Int(width(text).rounded(.up))) pt wide, over \(Int(textWidth)): \(subtitle)")
     }
     // Centred in its box by the metrics of the face, as a line of 17/22.
-    let font = NSFont.systemFont(ofSize: secondSize * scale, weight: .regular)
-    let ascent = CTFontGetAscent(font) / scale
-    let descent = CTFontGetDescent(font) / scale
+    let font = NSFont.systemFont(ofSize: secondSize, weight: .regular)
+    let ascent = CTFontGetAscent(font)
+    let descent = CTFontGetDescent(font)
     let box = secondBox.upperBound - secondBox.lowerBound
     let baseline = secondBox.lowerBound + (box - (ascent + descent)) / 2 + ascent
     draw(text, x: textX, baseline: baseline.rounded())
@@ -270,10 +335,10 @@ let screenHeight = (screenWidth * CGFloat(screen.height) / CGFloat(screen.width)
 guard screenY + screenHeight <= canvasSize.height else { fail("the screen does not fit the canvas") }
 context.interpolationQuality = .high
 context.draw(screen, in: CGRect(
-    x: screenX * scale,
-    y: CGFloat(pixelHeight) - (screenY + screenHeight) * scale,
-    width: screenWidth * scale,
-    height: screenHeight * scale
+    x: screenX,
+    y: canvasSize.height - (screenY + screenHeight),
+    width: screenWidth,
+    height: screenHeight
 ))
 
 // The home indicator. The capture asks the system to hide it (11 §2.2) and
@@ -295,12 +360,13 @@ if keepsHomeIndicator == false {
     )
     let sample = CGRect(x: band.minX - 8, y: band.minY, width: 1, height: band.height)
     if let column = screen.cropping(to: sample) {
-        let factor = screenWidth * scale / sourceWidth
-        let top = screenY * scale + band.minY * factor
+        // Source pixels to canvas pt.
+        let factor = screenWidth / sourceWidth
+        let top = screenY + band.minY * factor
         context.interpolationQuality = .none
         context.draw(column, in: CGRect(
-            x: screenX * scale + band.minX * factor,
-            y: CGFloat(pixelHeight) - top - band.height * factor,
+            x: screenX + band.minX * factor,
+            y: canvasSize.height - top - band.height * factor,
             width: band.width * factor,
             height: band.height * factor
         ))

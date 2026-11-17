@@ -117,9 +117,11 @@ enum NightStatus: Equatable {
         case .playing:
             return localized("noche.estado.sonando")
         case .fadesAt(let date):
-            return String(format: localized("noche.estado.funde"), time(date))
+            let hour = time(date)
+            return String(format: localized(HourPhrase.key("noche.estado.funde", at: hour)), hour)
         case .until(let date):
-            return String(format: localized("noche.estado.hasta"), time(date))
+            let hour = time(date)
+            return String(format: localized(HourPhrase.key("noche.estado.hasta", at: hour)), hour)
         case .fading(let minutes):
             return String(format: localized("noche.estado.fundiendo"), locale: locale, Int64(minutes))
         case .level(let percent):
@@ -131,7 +133,8 @@ enum NightStatus: Equatable {
         case .pausedCall:
             return localized("pagina.estado.pausa.llamada")
         case .ended(let date):
-            return String(format: localized("noche.estado.termino"), time(date))
+            let hour = time(date)
+            return String(format: localized(HourPhrase.key("noche.estado.termino", at: hour)), hour)
         case .noSound:
             return localized("noche.estado.sin_sonido")
         }

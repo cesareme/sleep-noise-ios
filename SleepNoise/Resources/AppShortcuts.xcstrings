@@ -82,7 +82,7 @@
             "state": "translated",
             "values": [
               "Set ${mode} in ${applicationName}",
-              "${applicationName} ${mode}"
+              "${applicationName} timer ${mode}"
             ]
           }
         },
@@ -91,7 +91,7 @@
             "state": "translated",
             "values": [
               "Pon ${mode} en ${applicationName}",
-              "${applicationName} ${mode}"
+              "Temporizador ${mode} en ${applicationName}"
             ]
           }
         }
