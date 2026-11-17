@@ -103,6 +103,9 @@ final class MixerModel: ObservableObject {
     private(set) var loadedMixBaseName: String?
     /// House mix last loaded, until the person edits a level.
     @Published private(set) var activeHouseMix: HouseMix?
+    /// The saved mix that is loaded as it was saved, until the person edits
+    /// a level or deletes it.
+    @Published private(set) var loadedSavedMixID: UUID?
     /// Night screen is covering the interface. Audio keeps running when this
     /// turns off.
     @Published private(set) var isBedtime = false
@@ -148,19 +151,16 @@ final class MixerModel: ObservableObject {
     private let now: () -> Date
     private let calendar: Calendar
     private let levelsKey = "sleepnoise.levels.v1"
+    /// Which mix the stored levels are, while they are still that mix: its
+    /// name, the recipe it came with and where it came from.
+    nonisolated static let loadedMixKey = "sleepnoise.loadedMix.v1"
     /// Where the timer lived when it was only a length in minutes.
     nonisolated static let legacyTimerKey = "sleepnoise.timerMinutes.v1"
     nonisolated static let timerKey = "sleepnoise.timer.v2"
     nonisolated static let keepScreenOnKey = "sleepnoise.night.keepScreenOn.v1"
     nonisolated static let nightIntroKey = "sleepnoise.night.introShown.v1"
-    /// Length the timer Shortcut uses when none was asked for and the timer
-    /// chosen in the app is not a length.
-    static let fallbackTimerMinutes = 60
-    /// Level of a sound that a Shortcut plays on its own.
-    static let soloSoundLevel: Float = 0.65
     private var didStart = false
-    /// The timer the person chose, as it is stored. A Shortcut may run
-    /// another one for a night; this comes back when that night is over.
+    /// The timer the person chose, as it is stored.
     private var storedTimer: TimerChoice
     /// The interruption that is open, if any (`InterruptionPolicy`).
     private var interruptions: InterruptionTracker
@@ -219,6 +219,9 @@ final class MixerModel: ObservableObject {
         keepScreenOn = defaults.string(forKey: Self.keepScreenOnKey).flatMap(KeepScreenOn.init) ?? .whileCharging
         if let stored = Self.loadLevels(defaults: defaults, key: levelsKey) {
             levels = stored
+            // The levels may still be a mix that was loaded: it keeps its
+            // name, and what it plays without, across a restart.
+            restoreLoadedMix()
         } else {
             // First use, no onboarding: the house mix "Pink and rain" loaded
             // as it is. Both its layers are free, so it is never trimmed.
@@ -281,11 +284,7 @@ final class MixerModel: ObservableObject {
         // published.
         let hadName = loadedMixName != nil
         if isPlayingFallback { isPlayingFallback = false }
-        if hadName { loadedMixName = nil }
-        loadedMixBaseName = nil
-        loadedMixRecipe = nil
-        if loadedMixWasStripped { loadedMixWasStripped = false }
-        if activeHouseMix != nil { activeHouseMix = nil }
+        if hadName { forgetLoadedMix() }
         if liveLevelGestures == 0 {
             persistLevels()
         }
@@ -388,13 +387,16 @@ final class MixerModel: ObservableObject {
     /// is paused, or begins a new one when none is open or the pause lasted
     /// too long (`SessionPause`). Whatever interruption was open is
     /// forgotten: what the person chose meanwhile wins.
-    func play() {
+    ///
+    /// `startsTrial` is false for a Shortcut: a trial never begins from an
+    /// intent (AGENTS §5.7).
+    func play(startsTrial: Bool = true) {
         startIfNeeded()
         interruptions.cancel()
         heldByInterruption = false
         guard !isPlaying else { return }
         audioError = nil
-        guard startSound(asked: true) else {
+        guard startSound(asked: true, startsTrial: startsTrial) else {
             // Whatever night was open stays as it was, its timer included:
             // the page says the sound did not start, and the line retries.
             purchases.refreshAccess(canDowngrade: true)
@@ -409,7 +411,11 @@ final class MixerModel: ObservableObject {
     /// tide's window instead of guiding a sleeper again, never raises the
     /// fallback layer and never changes the session level.
     @discardableResult
-    private func startSound(asked: Bool, fadeIn requested: TimeInterval? = nil) -> Bool {
+    private func startSound(
+        asked: Bool,
+        fadeIn requested: TimeInterval? = nil,
+        startsTrial: Bool = true
+    ) -> Bool {
         let now = now()
         let current = sessionObserver.currentRoute
         // Whoever resumes unasked has already decided it is the same night:
@@ -484,7 +490,7 @@ final class MixerModel: ObservableObject {
         startFailures = 0
         cancelExpiry()
         clearSpeakerOffer()
-        if !isSmallHours {
+        if !isSmallHours, startsTrial {
             purchases.startTrialIfNeeded()
         }
         nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
@@ -575,8 +581,6 @@ final class MixerModel: ObservableObject {
         sessionRoute = nil
         lostOutputAt = nil
         timer.reset()
-        // A timer a Shortcut ran for one night gives way to the stored one.
-        if timer.choice != storedTimer { timer.choose(storedTimer) }
         let wasSmallHours = isSmallHours
         if wasSmallHours {
             smallHours.end()
@@ -622,7 +626,6 @@ final class MixerModel: ObservableObject {
         applyTimer(choice)
     }
 
-    /// Tonight's timer, stored or not.
     private func applyTimer(_ choice: TimerChoice) {
         let wasDipped = timer.blanketGain < 1
         let wasFading = timer.isFading
@@ -701,17 +704,49 @@ final class MixerModel: ObservableObject {
         return nil
     }
 
+    // MARK: Mixes
+
+    /// What the save field starts with: the name the mix already has, or
+    /// the one its layers give it (copy guide §4.2).
+    var suggestedMixName: String {
+        loadedMixBaseName ?? MixAutoName.name(levels: levels)
+    }
+
+    /// Three saved mixes are free; a fourth needs full access.
+    var canSaveMix: Bool {
+        AccessPolicy.canSave(existingCount: mixStore.mixes.count, hasFullAccess: purchases.hasFullAccess)
+    }
+
+    /// The mix that is loaded as it was loaded: a house mix or a saved one.
+    /// Nil once a level is edited: the mix is "Tonight" then.
+    var loadedMix: MixReference? {
+        if let activeHouseMix { return .house(activeHouseMix) }
+        if let loadedSavedMixID { return .saved(loadedSavedMixID) }
+        return nil
+    }
+
+    /// Saves the live mix under a name, whole: a Pro layer that is muted
+    /// keeps its level in the recipe (C23). A name left empty is the one
+    /// the field started with. A fourth mix without access is a request for
+    /// the Pro sheet, which the night refuses; nothing is lost either way.
     func saveCurrent(name: String) -> SaveMixResult {
-        let result = mixStore.save(name: name, levels: levels, hasFullAccess: purchases.hasFullAccess)
+        let asked = MixCodec.cleanName(name)
+        let result = mixStore.save(
+            name: asked.isEmpty ? suggestedMixName : asked,
+            levels: levels,
+            hasFullAccess: purchases.hasFullAccess
+        )
         switch result {
         case .saved(let mix):
-            loadedMixName = mix.name
-            loadedMixBaseName = mix.name
-            loadedMixRecipe = levels
-            loadedMixWasStripped = false
-            if isPlaying {
-                nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
-            }
+            // The live mix is that saved mix from now on. Nothing about the
+            // sound or the rows of the page changes.
+            setIdentity(
+                .saved(mix.id),
+                name: mix.name,
+                load: MixLoad(levels: levels, hasFullAccess: purchases.hasFullAccess)
+            )
+            refreshNowPlayingTitle()
+            shortcutMixesDidChange()
         case .needsPro:
             offerPro()
         case .emptyName:
@@ -725,14 +760,10 @@ final class MixerModel: ObservableObject {
     /// its title says what it plays without. Never a sheet.
     @discardableResult
     func apply(_ mix: SavedMix) -> Bool {
-        var next = Self.defaultLevels()
-        for level in mix.levels {
-            next[level.sound] = level.value
-        }
+        let next = mix.levelsBySound
         let load = MixLoad(levels: next, hasFullAccess: purchases.hasFullAccess)
         levels = next
-        activeHouseMix = nil
-        setLoadedMix(name: mix.name, load: load)
+        setLoadedMix(.saved(mix.id), name: mix.name, load: load)
         persistLevels()
         if isPlaying {
             engine.updateGains(currentGains())
@@ -741,19 +772,174 @@ final class MixerModel: ObservableObject {
         return load.isTrimmed
     }
 
+    /// Gives a saved mix another name. If it is the loaded one, the page
+    /// and the lock screen follow. A name left empty changes nothing.
+    @discardableResult
+    func renameMix(_ id: UUID, to name: String) -> Bool {
+        guard let stored = mixStore.rename(id, to: name) else { return false }
+        if loadedSavedMixID == id, let recipe = loadedMixRecipe {
+            setIdentity(
+                .saved(id),
+                name: stored,
+                load: MixLoad(levels: recipe, hasFullAccess: purchases.hasFullAccess)
+            )
+            refreshNowPlayingTitle()
+        }
+        shortcutMixesDidChange()
+        return true
+    }
+
+    /// Deletes a saved mix. If it is the loaded one, what sounds is not
+    /// touched: the live mix is "Tonight" again.
+    func deleteMix(_ id: UUID) {
+        mixStore.delete(id)
+        if loadedSavedMixID == id {
+            forgetLoadedMix()
+            refreshNowPlayingTitle()
+        }
+        shortcutMixesDidChange()
+    }
+
+    /// Moves a saved mix one place up or down its list.
+    func moveMix(_ id: UUID, by offset: Int) {
+        if mixStore.move(id, by: offset) {
+            shortcutMixesDidChange()
+        }
+    }
+
+    /// "Clear" (08 §2.2): every layer at zero and the mix is "Tonight".
+    /// What was sounding leaves like a pause and the night is over, so the
+    /// page says "Silent", not "Paused". The saved mix it came from is not
+    /// touched; loading a mix undoes it.
+    func clearMix() {
+        guard !isSmallHours else { return }
+        interruptions.cancel()
+        heldByInterruption = false
+        forgetLoadedMix()
+        if isPlaying {
+            // The engine fades with the gains it has: the levels below are
+            // not sent to it.
+            endPlayback(engineAction: .stop(fadeOut: PlaybackFade.pause), canDowngrade: true)
+        }
+        closeNight(endedAt: nil)
+        levels = Self.defaultLevels()
+        isPlayingFallback = false
+        mixRevision += 1
+        persistLevels()
+    }
+
     /// Every whole replacement of `levels` by a mix ends here: the title
-    /// follows the mix as it was loaded, and an ocean level the tide meant
-    /// to put back belongs to the mix that is gone.
-    private func setLoadedMix(name: String, load: MixLoad) {
-        loadedMixBaseName = name
-        loadedMixRecipe = load.levels
-        loadedMixName = load.title(name: name)
-        loadedMixWasStripped = load.isTrimmed
+    /// follows the mix as it was loaded, and the page chooses its rows
+    /// again.
+    private func setLoadedMix(_ reference: MixReference, name: String, load: MixLoad) {
+        setIdentity(reference, name: name, load: load)
         isPlayingFallback = false
         mixRevision += 1
     }
 
-    // MARK: House mixes, Shortcuts, Night
+    /// Which mix the live levels are, and under what name. Stored, so the
+    /// mix keeps its name and its trimmed title across a restart.
+    private func setIdentity(_ reference: MixReference, name: String, load: MixLoad) {
+        switch reference {
+        case .house(let mix):
+            if activeHouseMix != mix { activeHouseMix = mix }
+            if loadedSavedMixID != nil { loadedSavedMixID = nil }
+        case .saved(let id):
+            if activeHouseMix != nil { activeHouseMix = nil }
+            if loadedSavedMixID != id { loadedSavedMixID = id }
+        }
+        loadedMixBaseName = name
+        loadedMixRecipe = load.levels
+        let title = load.title(name: name)
+        if loadedMixName != title { loadedMixName = title }
+        if loadedMixWasStripped != load.isTrimmed { loadedMixWasStripped = load.isTrimmed }
+        persistLoadedMix()
+    }
+
+    /// The live mix is no longer the one that was loaded: it is "Tonight".
+    private func forgetLoadedMix() {
+        if loadedMixName != nil { loadedMixName = nil }
+        loadedMixBaseName = nil
+        loadedMixRecipe = nil
+        if loadedMixWasStripped { loadedMixWasStripped = false }
+        if activeHouseMix != nil { activeHouseMix = nil }
+        if loadedSavedMixID != nil { loadedSavedMixID = nil }
+        defaults.removeObject(forKey: Self.loadedMixKey)
+    }
+
+    /// The identity as it is stored. The name of a house mix is not kept:
+    /// it is read from the catalog again, in whatever language the app
+    /// speaks then.
+    private struct StoredMixIdentity: Codable {
+        var house: String?
+        var saved: UUID?
+        var name: String
+        var recipe: [MixLevel]
+    }
+
+    private func persistLoadedMix() {
+        guard let name = loadedMixBaseName, let recipe = loadedMixRecipe, loadedMix != nil else {
+            defaults.removeObject(forKey: Self.loadedMixKey)
+            return
+        }
+        let stored = StoredMixIdentity(
+            house: activeHouseMix?.rawValue,
+            saved: loadedSavedMixID,
+            name: name,
+            recipe: SoundID.allCases.compactMap { sound in
+                let level = recipe[sound] ?? 0
+                return level > 0 ? MixLevel(sound: sound, value: level) : nil
+            }
+        )
+        guard let data = try? JSONEncoder().encode(stored) else { return }
+        defaults.set(data, forKey: Self.loadedMixKey)
+    }
+
+    /// Reads the identity back at launch. A house mix this version does not
+    /// know, or a saved mix that is no longer in the list, is forgotten:
+    /// the levels stay and the mix is "Tonight".
+    private func restoreLoadedMix() {
+        guard let data = defaults.data(forKey: Self.loadedMixKey) else { return }
+        guard let stored = try? JSONDecoder().decode(StoredMixIdentity.self, from: data) else {
+            defaults.removeObject(forKey: Self.loadedMixKey)
+            return
+        }
+        var recipe = Self.defaultLevels()
+        for level in stored.recipe {
+            recipe[level.sound] = MixCodec.bounded(level.value)
+        }
+        let name: String
+        if let mix = stored.house.flatMap(HouseMix.init(rawValue:)) {
+            activeHouseMix = mix
+            name = mix.localizedName
+        } else if let mix = stored.saved.flatMap({ mixStore.mix($0) }) {
+            loadedSavedMixID = mix.id
+            name = mix.name
+        } else {
+            defaults.removeObject(forKey: Self.loadedMixKey)
+            return
+        }
+        let load = MixLoad(levels: recipe, hasFullAccess: purchases.hasFullAccess)
+        loadedMixBaseName = name
+        loadedMixRecipe = recipe
+        loadedMixName = load.title(name: name)
+        loadedMixWasStripped = load.isTrimmed
+    }
+
+    /// The lock screen follows the name of the mix, playing or paused. Not
+    /// before the first Play: until then the app is not what is playing.
+    private func refreshNowPlayingTitle() {
+        guard didStart else { return }
+        nowPlaying.update(isPlaying: isPlaying, title: nowPlayingTitle)
+    }
+
+    /// The mixes a Shortcut can name changed: Siri learns them again.
+    private func shortcutMixesDidChange() {
+        guard audio.isLive else { return }
+        SleepNoiseShortcuts.updateAppShortcutParameters()
+    }
+
+    // MARK: House mixes
 
     /// Replaces the mix with a house mix, without starting playback. A house
     /// mix is never refused and never raises the paywall: without full access
@@ -768,8 +954,7 @@ final class MixerModel: ObservableObject {
         purchases.refreshAccess(canDowngrade: !isPlaying)
         let load = mix.load(hasFullAccess: purchases.hasFullAccess)
         levels = load.levels
-        activeHouseMix = mix
-        setLoadedMix(name: mix.localizedName, load: load)
+        setLoadedMix(.house(mix), name: mix.localizedName, load: load)
         persistLevels()
         if isPlaying {
             engine.updateGains(currentGains())
@@ -778,96 +963,87 @@ final class MixerModel: ObservableObject {
         return load
     }
 
-    /// Loads a house mix and plays it. With nothing playing and no layer
-    /// left to hear, it does not start a silent night.
+    /// Loads a mix and plays it: a row of the Mixes sheet, or a Shortcut.
+    /// What was sounding gives way to it under the same envelope; with
+    /// nothing playing it starts like a Play, so a mix whose every layer
+    /// needs Pro comes up with the fallback layer (the instrument always
+    /// sounds). It never raises the Pro sheet and never touches the timer
+    /// (C18).
     @discardableResult
-    func playHouseMix(_ mix: HouseMix) -> IntentOutcome {
-        leaveSmallHoursForTheMix()
-        let load = loadHouseMix(mix)
+    func playMix(_ reference: MixReference, startsTrial: Bool = true) -> IntentOutcome {
+        switch reference {
+        case .house(let mix):
+            leaveSmallHoursForTheMix()
+            loadHouseMix(mix)
+        case .saved(let id):
+            guard let mix = mixStore.mix(id) else { return .notFound }
+            leaveSmallHoursForTheMix()
+            purchases.refreshAccess(canDowngrade: !isPlaying)
+            apply(mix)
+        }
         if isPlaying { return .started }
-        if load.isSilent { return .nothingToPlay }
-        play()
-        return audioError == nil ? .started : .failed
+        play(startsTrial: startsTrial)
+        return isPlaying ? .started : .failed
     }
 
-    /// Shortcuts: play one sound on its own. A Pro sound needs full access;
-    /// without it nothing changes and no paywall is raised, because the
-    /// request may come by voice in the dark. The intent answers in words
-    /// instead. `play()` does the one-time setup, so a refused request has
-    /// no side effects.
+    // MARK: Shortcuts
+
+    /// Shortcuts: play the last mix, with the timer the person chose. If
+    /// something is already sounding, nothing changes. Like every Shortcut,
+    /// it never raises the Pro sheet and never starts a trial: what needs
+    /// Pro without access does not sound, and nothing is said about it.
     @discardableResult
-    func playSound(_ sound: SoundID) -> IntentOutcome {
-        leaveSmallHoursForTheMix()
+    func playFromShortcut() -> IntentOutcome {
         purchases.refreshAccess(canDowngrade: !isPlaying)
-        guard AccessPolicy.soundIsIncluded(sound, hasFullAccess: purchases.hasFullAccess) else {
-            return .needsPro
-        }
-        var next = Dictionary(uniqueKeysWithValues: SoundID.allCases.map { ($0, Float(0)) })
-        next[sound] = Self.soloSoundLevel
-        levels = next
-        activeHouseMix = nil
-        // One sound on its own is named after the sound and has no recipe to
-        // be trimmed from: it is never "Ocean · without Ocean".
-        loadedMixName = sound.localizedName
-        loadedMixBaseName = sound.localizedName
-        loadedMixRecipe = nil
-        loadedMixWasStripped = false
-        isPlayingFallback = false
-        mixRevision += 1
-        persistLevels()
-        return startOrUpdate()
-    }
-
-    /// Length the timer Shortcut runs: the one asked for, else the length
-    /// already chosen in the app, else `fallbackTimerMinutes` (the app's
-    /// timer is off, or a blanket).
-    func timerMinutes(requested: Int?) -> Int {
-        requested ?? timer.selectedMinutes ?? Self.fallbackTimerMinutes
-    }
-
-    /// Shortcuts: start the timer and the bed. A length outside the allowed
-    /// range, or a Pro length without access, leaves the current timer
-    /// alone, and a silent mix is not started. Only a length that was asked
-    /// for becomes the stored choice; with none, the chosen one (or the
-    /// fallback) runs tonight and the stored choice is not touched.
-    @discardableResult
-    func startTimer(minutes requested: Int?) -> IntentOutcome {
-        leaveSmallHoursForTheMix()
-        if let refusal = armTimer(minutes: requested) { return refusal }
         if isPlaying { return .started }
-        play()
-        return audioError == nil ? .started : .failed
+        play(startsTrial: false)
+        return isPlaying ? .started : .failed
     }
 
-    /// Everything `startTimer` does short of starting the engine. Returns the
-    /// refusal, or nil once the timer is set.
-    func armTimer(minutes requested: Int?) -> IntentOutcome? {
+    /// Shortcuts: load a mix by name and play it.
+    @discardableResult
+    func playMixFromShortcut(_ reference: MixReference) -> IntentOutcome {
+        playMix(reference, startsTrial: false)
+    }
+
+    /// Shortcuts: set the timer the way its sheet does. The mode is stored,
+    /// with the length or the hour that mode already had; `minutes`, when
+    /// the Shortcut carries one, is the length of "Until I sleep". The whole
+    /// timer is free (C03). A mode that counts starts the mix if it was at
+    /// rest; "Off" only sets it.
+    @discardableResult
+    func setTimerFromShortcut(mode: TimerMode, minutes: Int? = nil) -> IntentOutcome {
         purchases.refreshAccess(canDowngrade: !isPlaying)
-        let minutes = timerMinutes(requested: requested)
-        guard (1...AccessPolicy.maxTimerMinutes).contains(minutes) else { return .outOfRange }
-        guard AccessPolicy.timerIsIncluded(minutes: minutes, hasFullAccess: purchases.hasFullAccess) else {
-            return .needsPro
+        var choice = storedTimer.with(mode: mode)
+        if mode == .untilAsleep, let minutes {
+            // Through the initialiser, which keeps the length in range.
+            choice = TimerChoice(
+                mode: mode,
+                minutes: minutes,
+                endHour: choice.endHour,
+                endMinute: choice.endMinute
+            )
         }
-        if !isPlaying && isSilent { return .nothingToPlay }
-        if requested != nil {
-            selectTimer(minutes: minutes)
-        } else {
-            // For tonight only: the stored choice comes back when this
-            // night is over.
-            var tonight = timer.choice.with(mode: .untilAsleep)
-            tonight.minutes = minutes
-            applyTimer(tonight)
+        guard mode != .off else {
+            chooseTimer(choice)
+            return .applied
         }
-        return nil
+        leaveSmallHoursForTheMix()
+        chooseTimer(choice)
+        if isPlaying { return .started }
+        play(startsTrial: false)
+        return isPlaying ? .started : .failed
     }
 
-    /// Shortcuts: stop. Also cancels a resume that was waiting for the end of
-    /// an interruption. Reports when there was nothing to stop.
-    func stopFromShortcut() -> IntentOutcome {
+    /// Shortcuts: pause. Also cancels a resume that was waiting for the end
+    /// of an interruption. Reports when there was nothing to pause.
+    func pauseFromShortcut() -> IntentOutcome {
         let wasActive = isPlaying || heldByInterruption
         pause()
         return wasActive ? .stopped : .nothingPlaying
     }
+
+    // MARK: Night
 
     /// Covers the interface with the Night screen, starting the current mix
     /// if it was at rest, the way Play does: a mix where nothing would sound
@@ -1012,8 +1188,8 @@ final class MixerModel: ObservableObject {
         closeNight(endedAt: nil)
     }
 
-    /// A request to play the mix (a Shortcut) while Small Hours has the
-    /// engine: the recipe gives way.
+    /// A request to play the mix (a row of Mixes, a Shortcut) while Small
+    /// Hours has the engine: the recipe gives way.
     private func leaveSmallHoursForTheMix() {
         guard isSmallHours else { return }
         if isPlaying {
@@ -1044,25 +1220,13 @@ final class MixerModel: ObservableObject {
         }
     }
 
-    private func startOrUpdate() -> IntentOutcome {
-        if isPlaying {
-            engine.updateGains(currentGains())
-            nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
-            return .started
-        }
-        play()
-        return audioError == nil ? .started : .failed
-    }
-
     /// Outside the app the mix goes by the title the page shows, so a
     /// trimmed mix says what is not playing there too.
     var nowPlayingTitle: String {
         // Small Hours is not the mix: it goes by its own name.
         if isSmallHours { return Localized.string("madrugada.titulo") }
-        if let loadedMixName, !loadedMixName.isEmpty {
-            return loadedMixName
-        }
-        return String(localized: "nowplaying.title")
+        // "Tonight" while the live mix has no name of its own.
+        return PageTitle.text(loadedMixName: loadedMixName)
     }
 
     var isSilent: Bool {

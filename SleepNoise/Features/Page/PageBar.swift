@@ -2,14 +2,16 @@ import SwiftUI
 
 /// The bottom bar (03 §4.11): "Mixes", the Disc and "Night".
 ///
-/// Always there, on the page and in the Layers sheet: nothing blocks the
-/// sound. Words in plain ink and the Disc in the middle; no tint, no icon
-/// outside the Disc. "Night" always works: with the mix at rest it starts
-/// the sound and covers the page in the same gesture.
+/// Always there, on the page and in the Layers and Mixes sheets: nothing
+/// blocks the sound. Words in plain ink and the Disc in the middle; no tint,
+/// no icon outside the Disc. "Night" always works: with the mix at rest it
+/// starts the sound and covers the page in the same gesture.
 struct PageBar: View {
     @ObservedObject var model: MixerModel
     @ObservedObject var timer: SleepTimerController
-    var onMixes: () -> Void
+    /// Nil on the Mixes sheet itself: its place stays empty there, because
+    /// the word would do nothing and the title already says it.
+    var onMixes: (() -> Void)?
     var onNight: () -> Void
 
     @Environment(\.nightPhase) private var phase
@@ -23,7 +25,9 @@ struct PageBar: View {
     var body: some View {
         ZStack {
             HStack(spacing: 0) {
-                mixes
+                if let onMixes {
+                    mixes(onMixes)
+                }
                 Spacer(minLength: Grid.largeTarget + Grid.inner * 2)
                 night
             }
@@ -42,8 +46,8 @@ struct PageBar: View {
         .overlay(alignment: .top) { Hairline() }
     }
 
-    private var mixes: some View {
-        word("barra.mezclas", glyph: "square.stack", alignment: .leading, action: onMixes)
+    private func mixes(_ action: @escaping () -> Void) -> some View {
+        word("barra.mezclas", glyph: "square.stack", alignment: .leading, action: action)
             .accessibilityLabel(Text("barra.mezclas"))
             .accessibilityIdentifier("openMixes")
     }

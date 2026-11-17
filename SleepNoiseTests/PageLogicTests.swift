@@ -337,7 +337,7 @@ final class PageLogicTests: XCTestCase {
             "ax.mas.pista", "ax.nombre.pista", "ax.nombre.pista.noche", "ax.accion.guardar",
             "ax.accion.volver.dia", "ax.marea.off.pro", "ax.marea.pista.pro", "ax.prueba.pista",
             "ax.reintentar", "trial.chip.daysFormat",
-            "mixes.save.title", "common.save", "common.cancel",
+            "mezcla.guardar.titulo", "common.save", "common.cancel",
             "mezcla.menu.guardar.pro", "ax.guardar.pro", "ax.guardar.pro.pista", "marea.oceano.subido",
         ] + SoundID.allCases.flatMap { [$0.nameKey, $0.detailKey] }
         for language in ["en", "es"] {

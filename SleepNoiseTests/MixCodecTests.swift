@@ -468,7 +468,7 @@ final class MixCodecTests: XCTestCase {
         XCTAssertNil(defaults.data(forKey: MixStore.unreadStorageKey))
     }
 
-    func testAStoredMixWithoutANameGetsTheDefaultOne() throws {
+    func testAStoredMixWithoutANameIsNamedAfterItsLayers() throws {
         let unnamed = #"{"version":2,"mixes":["#
             + #"{"id":"5B1F0C52-6E0B-4B44-9D0C-0D6C0E3A7A11","name":"  ","createdAt":3,"layers":[{"id":"rain","level":0.5}]},"#
             + #"{"id":"9C2E7A10-1F4D-4E0A-8B7C-3A5D2E9F4B22","name":"Hotel","createdAt":2,"layers":[]},"#
@@ -477,10 +477,11 @@ final class MixCodecTests: XCTestCase {
         defaults.set(Data(unnamed.utf8), forKey: MixStore.storageKey)
 
         let store = MixStore(defaults: defaults)
-        XCTAssertEqual(store.mixes.map(\.name), [MixStore.defaultName(3), "Hotel", MixStore.defaultName(1)])
+        // One layer is its name; a mix with nothing in it is "Tonight".
+        let empty = MixAutoName.name(levels: [:])
+        XCTAssertEqual(store.mixes.map(\.name), [SoundID.rain.localizedName, "Hotel", empty])
         XCTAssertEqual(audible(store.mixes[0]), [.rain: 0.5], "the mix itself is kept")
-        XCTAssertFalse(MixStore.defaultName(1).isEmpty)
-        XCTAssertNotEqual(MixStore.defaultName(1), MixStore.defaultName(3))
+        XCTAssertFalse(empty.isEmpty)
         XCTAssertNil(defaults.data(forKey: MixStore.unreadStorageKey), "nothing was left out")
     }
 }

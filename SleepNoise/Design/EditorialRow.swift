@@ -98,7 +98,7 @@ struct EditorialRow: View {
 }
 
 /// Pressed: `grafito` behind the whole row for 200 ms, square corners.
-private struct PressedReliefStyle: ButtonStyle {
+struct PressedReliefStyle: ButtonStyle {
     @Environment(\.inkSurface) private var surface
 
     func makeBody(configuration: Configuration) -> some View {

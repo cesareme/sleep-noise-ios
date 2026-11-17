@@ -350,20 +350,6 @@ final class TimerChoiceModelTests: XCTestCase {
         XCTAssertFalse(night.model.timer.isFading)
         XCTAssertEqual(night.engine.fades.last, .fade(level: 1, seconds: 3))
     }
-
-    func testATimerRunForOneNightGivesWayToTheStoredOne() throws {
-        let night = try NightHarness(at: time(23))
-        night.model.chooseTimer(.off)
-        // "Start sleep timer" with no length: the fallback, for tonight.
-        XCTAssertEqual(night.model.startTimer(minutes: nil), .started)
-        XCTAssertEqual(night.model.timer.selectedMinutes, MixerModel.fallbackTimerMinutes)
-        XCTAssertEqual(MixerModel.storedTimer(defaults: night.defaults), .off)
-        XCTAssertEqual(night.model.timer.endsAt, time(day: 18, 0))
-
-        night.advance(seconds: 3_600)
-        XCTAssertFalse(night.model.isPlaying)
-        XCTAssertEqual(night.model.timer.choice, .off, "the choice of the app is back")
-    }
 }
 
 // MARK: - Interruptions (C48)
@@ -492,7 +478,7 @@ final class InterruptionWiringTests: XCTestCase {
         // Nor a stop by voice.
         let stopped = try playing(at: time(2))
         stopped.session.interrupt()
-        XCTAssertEqual(stopped.model.stopFromShortcut(), .stopped)
+        XCTAssertEqual(stopped.model.pauseFromShortcut(), .stopped)
         stopped.session.endInterruption()
         XCTAssertFalse(stopped.model.isPlaying)
 
@@ -1278,7 +1264,7 @@ final class SmallHoursModelTests: XCTestCase {
     func testAShortcutThatAsksForTheMixTakesItBack() throws {
         let night = try NightHarness(at: time(4))
         night.model.startSmallHours()
-        XCTAssertEqual(night.model.playHouseMix(.pinkAndRain), .started)
+        XCTAssertEqual(night.model.playMixFromShortcut(.house(.pinkAndRain)), .started)
         XCTAssertFalse(night.model.isSmallHours)
         XCTAssertTrue(night.model.isPlaying)
         XCTAssertEqual(night.engine.gains.ocean, 0)

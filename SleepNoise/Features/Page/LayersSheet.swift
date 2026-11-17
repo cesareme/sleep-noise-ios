@@ -68,7 +68,6 @@ struct LayersSheet: View {
             set: { if !$0 { model.dismissPro() } }
         )) {
             PaywallView(purchases: purchases)
-                .tint(Palette.amber)
                 .onDisappear { purchases.clearNotice() }
         }
     }

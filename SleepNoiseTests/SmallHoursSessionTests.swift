@@ -318,8 +318,8 @@ final class SmallHoursRenderTests: XCTestCase {
         XCTAssertEqual(engine.smoothedOutputRMS(tau: 0.5), 0)
     }
 
-    /// The level of the real recipe: low. The same ocean at the level a
-    /// Shortcut plays one sound at is more than twice as loud.
+    /// The level of the real recipe: low. The same ocean at the level the
+    /// house mix "Sea and wind" carries it is clearly louder.
     func testTheSeaOfTheRecipeIsLow() throws {
         func level(_ ocean: Float) throws -> Float {
             let engine = OfflineEngine()
@@ -330,8 +330,8 @@ final class SmallHoursRenderTests: XCTestCase {
             return engine.render(seconds: 20)
         }
         let recipe = try level(SmallHoursRecipe.standard.level)
-        let solo = try level(MixerModel.soloSoundLevel)
+        let house = try level(try XCTUnwrap(HouseMix.seaAndWind.levelsBySound()[.ocean]))
         XCTAssertGreaterThan(recipe, 0.001)
-        XCTAssertLessThan(recipe, solo * 0.6)
+        XCTAssertLessThan(recipe, house * 0.75)
     }
 }

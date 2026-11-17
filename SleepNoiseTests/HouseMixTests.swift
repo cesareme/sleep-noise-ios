@@ -227,11 +227,7 @@ final class HouseMixModelTests: XCTestCase {
                 "\(mix.rawValue): outside the app it says what is not playing too"
             )
             XCTAssertFalse(model.isPlaying, "loading does not start playback")
-            if load.isSilent {
-                XCTAssertEqual(model.playHouseMix(mix), .nothingToPlay, "\(mix.rawValue): no silent night")
-                XCTAssertFalse(model.isPlaying)
-                XCTAssertFalse(model.showPaywall)
-            }
+            XCTAssertFalse(load.isSilent, "\(mix.rawValue): every house mix has a free layer")
         }
 
         // The levels survive a relaunch, Pro layers included.

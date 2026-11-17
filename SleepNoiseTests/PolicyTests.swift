@@ -159,8 +159,9 @@ final class MixStoreTests: XCTestCase {
     }
 }
 
-/// The Night model and the Shortcut entry points of the mixer. Every path
-/// exercised here returns before the audio engine would start.
+/// The Night model and the access rules of the mixer. Every path exercised
+/// here returns before the audio engine would start. The Shortcut entry
+/// points are in `ShortcutTests`, on doubles.
 @MainActor
 final class NightAndShortcutTests: XCTestCase {
     private let day0 = Date(timeIntervalSinceReferenceDate: 700_000_000)
@@ -186,12 +187,6 @@ final class NightAndShortcutTests: XCTestCase {
         return MixerModel(purchases: purchases, defaults: defaults)
     }
 
-    /// A timer length the free tier does not include, or nil when every
-    /// length is free and there is nothing to refuse.
-    private var lengthThatNeedsPro: Int? {
-        AccessPolicy.timerIsIncluded(minutes: 45, hasFullAccess: false) ? nil : 45
-    }
-
     func testNightEntryPlan() {
         XCTAssertTrue(BedtimeScreenPolicy.startsPlayback(isPlaying: false), "Night starts the mix that was at rest")
         XCTAssertFalse(BedtimeScreenPolicy.startsPlayback(isPlaying: true))
@@ -214,32 +209,13 @@ final class NightAndShortcutTests: XCTestCase {
         XCTAssertNil(MixerModel.storedTimer(defaults: night.defaults), "and does not store one")
     }
 
-    func testShortcutsRefuseProRequestsInWordsWithoutThePaywall() throws {
-        let model = try makeFreeTierModel()
-        let before = model.levels
-        let houseMixBefore = model.activeHouseMix
-
-        XCTAssertEqual(model.playSound(.thunder), .needsPro)
-        if let minutes = lengthThatNeedsPro {
-            XCTAssertEqual(model.startTimer(minutes: minutes), .needsPro)
-        }
-        XCTAssertEqual(model.startTimer(minutes: 0), .outOfRange)
-        XCTAssertEqual(model.startTimer(minutes: AccessPolicy.maxTimerMinutes + 1), .outOfRange)
-
-        XCTAssertFalse(model.showPaywall)
-        XCTAssertFalse(model.isPlaying)
-        XCTAssertEqual(model.levels, before)
-        XCTAssertEqual(model.activeHouseMix, houseMixBefore)
-        XCTAssertEqual(model.timer.choice, .firstUse, "a refused request leaves the timer alone")
-    }
-
     /// The whole timer is free (C03): red if a paid length, or a cap below
     /// the technical ceiling, comes back in the model.
     func testFreeTierSetsAnyTimerLengthWithoutThePaywall() throws {
         let defaults = try makeDefaults()
         let model = try makeFreeTierModel(defaults: defaults)
 
-        XCTAssertNil(model.armTimer(minutes: 90))
+        model.selectTimer(minutes: 90)
         XCTAssertEqual(model.timer.selectedMinutes, 90)
         XCTAssertEqual(MixerModel.storedTimer(defaults: defaults), .untilAsleep(90))
 
@@ -251,123 +227,6 @@ final class NightAndShortcutTests: XCTestCase {
         XCTAssertEqual(model.timer.selectedMinutes, AccessPolicy.maxTimerMinutes)
         XCTAssertFalse(model.showPaywall)
         XCTAssertFalse(model.isPlaying)
-    }
-
-    func testShortcutsReadTheTrialClockBeforeDeciding() throws {
-        // The trial ran out while the app was suspended and nothing has
-        // looked at the clock since: access still reads as full.
-        let defaults = try makeDefaults()
-        let purchases = PurchaseManager(defaults: defaults, now: day0)
-        purchases.startTrialIfNeeded(now: day0)
-        XCTAssertTrue(purchases.hasFullAccess)
-        let model = MixerModel(purchases: purchases, defaults: defaults)
-
-        XCTAssertEqual(model.playSound(.thunder), .needsPro)
-        XCTAssertFalse(purchases.hasFullAccess)
-        XCTAssertFalse(model.isPlaying)
-
-        for entry in ["house mix", "timer"] {
-            let stale = try makeDefaults()
-            let clock = PurchaseManager(defaults: stale, now: day0)
-            clock.startTrialIfNeeded(now: day0)
-            let other = MixerModel(purchases: clock, defaults: stale)
-            if entry == "house mix" {
-                let withPro = try XCTUnwrap(HouseMix.allCases.first { $0.load(hasFullAccess: false).isTrimmed })
-                XCTAssertTrue(other.loadHouseMix(withPro).isTrimmed, "loaded with the access the clock gives now")
-            } else {
-                for sound in SoundID.allCases {
-                    other.levels[sound] = 0
-                }
-                XCTAssertEqual(other.startTimer(minutes: 30), .nothingToPlay)
-            }
-            XCTAssertFalse(clock.hasFullAccess, entry)
-            XCTAssertFalse(other.isPlaying, entry)
-        }
-    }
-
-    func testTheTimerShortcutDoesNotStartASilentNight() throws {
-        let defaults = try makeDefaults()
-        let model = try makeFreeTierModel(defaults: defaults)
-        for sound in SoundID.allCases {
-            model.levels[sound] = 0
-        }
-        XCTAssertEqual(model.startTimer(minutes: 30), .nothingToPlay)
-        XCTAssertEqual(model.startTimer(minutes: nil), .nothingToPlay)
-        XCTAssertFalse(model.isPlaying)
-        XCTAssertEqual(model.timer.choice, .firstUse)
-        XCTAssertNil(MixerModel.storedTimer(defaults: defaults))
-
-        // Pro layers that are muted without access do not count as sound.
-        model.levels[.ocean] = 0.65
-        XCTAssertEqual(model.startTimer(minutes: 30), .nothingToPlay)
-    }
-
-    func testTheTimerShortcutWithoutALengthKeepsTheStoredChoice() throws {
-        let defaults = try makeDefaults()
-        let model = try makeFreeTierModel(defaults: defaults)
-
-        // Nothing chosen: the timer of the first night runs (03 §5 #8), and
-        // nothing is stored for it.
-        XCTAssertEqual(model.timerMinutes(requested: nil), TimerChoice.defaultMinutes)
-        XCTAssertNil(model.armTimer(minutes: nil))
-        XCTAssertEqual(model.timer.selectedMinutes, TimerChoice.defaultMinutes)
-        XCTAssertNil(MixerModel.storedTimer(defaults: defaults))
-
-        // The timer chosen in the app is not a length (Off, or a blanket):
-        // the fallback runs tonight and the stored choice is not touched.
-        for chosen in [TimerChoice.off, .blanket(hour: 7)] {
-            model.chooseTimer(chosen)
-            XCTAssertEqual(model.timerMinutes(requested: nil), MixerModel.fallbackTimerMinutes)
-            XCTAssertNil(model.armTimer(minutes: nil))
-            XCTAssertEqual(model.timer.selectedMinutes, MixerModel.fallbackTimerMinutes)
-            XCTAssertEqual(MixerModel.storedTimer(defaults: defaults), chosen)
-        }
-
-        // A length chosen in the app is the one that runs, and it stays.
-        model.selectTimer(minutes: 30)
-        XCTAssertEqual(MixerModel.storedTimer(defaults: defaults)?.untilAsleepMinutes, 30)
-        XCTAssertEqual(model.timerMinutes(requested: nil), 30)
-        XCTAssertNil(model.armTimer(minutes: nil))
-        XCTAssertEqual(model.timer.selectedMinutes, 30)
-        XCTAssertEqual(MixerModel.storedTimer(defaults: defaults)?.untilAsleepMinutes, 30)
-
-        // Only a length written into the Shortcut replaces it.
-        XCTAssertNil(model.armTimer(minutes: 15))
-        XCTAssertEqual(model.timer.selectedMinutes, 15)
-        XCTAssertEqual(MixerModel.storedTimer(defaults: defaults)?.untilAsleepMinutes, 15)
-        XCTAssertFalse(model.isPlaying)
-    }
-
-    func testStopWithNothingPlayingSaysSoAndStaysInTheBackground() throws {
-        let model = try makeFreeTierModel()
-        XCTAssertEqual(model.stopFromShortcut(), .nothingPlaying)
-        XCTAssertFalse(StopPlaybackIntent.openAppWhenRun)
-    }
-
-    func testRepliesNameWhatIsFree() {
-        let sound = IntentReply.soundNeedsPro(.thunder)
-        XCTAssertTrue(sound.contains(SoundID.thunder.localizedName))
-        for free in SoundID.allCases where AccessPolicy.soundIsIncluded(free, hasFullAccess: false) {
-            XCTAssertTrue(sound.contains(free.localizedName), "\(sound) should name \(free.rawValue)")
-        }
-
-        // The reply reads the gate, not a list of its own.
-        let timer = IntentReply.timerNeedsPro(minutes: 45)
-        XCTAssertTrue(timer.contains("45"))
-        for minutes in [15, 30, 60] where AccessPolicy.timerIsIncluded(minutes: minutes, hasFullAccess: false) {
-            XCTAssertTrue(timer.contains(String(minutes)), "\(timer) should name \(minutes)")
-        }
-
-        XCTAssertTrue(IntentReply.timerOutOfRange().contains(String(AccessPolicy.maxTimerMinutes)))
-    }
-
-    func testEverySoundCanBeAskedFor() {
-        let sounds = IntentSound.caseDisplayRepresentations.keys
-        XCTAssertEqual(Set(sounds.map(\.soundID)), Set(SoundID.allCases))
-        XCTAssertEqual(sounds.count, SoundID.allCases.count)
-        for sound in sounds {
-            XCTAssertEqual(sound.rawValue, sound.soundID.rawValue)
-        }
     }
 
     func testAMixLoadedDuringTheTrialIsMarkedStrippedWhenItEnds() throws {

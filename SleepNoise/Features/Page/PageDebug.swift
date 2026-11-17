@@ -112,6 +112,40 @@ enum PageDebugState: String, CaseIterable {
     /// Paused by a touch.
     case smallHoursPaused
 
+    // The Mixes sheet over the page.
+    /// Without access: two saved mixes, the first one loaded and sounding,
+    /// and the four of the house.
+    case mixes
+    /// Nothing saved: the sentence in the place of "yours".
+    case mixesEmpty
+    /// The alert that saves the live mix, with its name already in.
+    case mixesSave
+    /// The alert that renames a saved mix.
+    case mixesRename
+    /// Three saved and no access: the live mix says "pro".
+    case mixesFourth
+    /// Opened from the night page: one ink.
+    case mixesNight
+    /// The page after loading a house mix with a Pro layer, without access.
+    case mixesTrimmed
+
+    var opensMixes: Bool {
+        switch self {
+        case .mixes, .mixesEmpty, .mixesSave, .mixesRename, .mixesFourth, .mixesNight: return true
+        default: return false
+        }
+    }
+
+    /// Staged without access: the trial ran out and nothing was bought.
+    var isFreeTier: Bool {
+        switch self {
+        case .layersSix, .layersEnd, .tideLocked, .mixes, .mixesRename, .mixesFourth, .mixesTrimmed:
+            return true
+        default:
+            return false
+        }
+    }
+
     /// The Night screen is what the launch shows.
     var isNightScreen: Bool {
         switch self {
@@ -151,7 +185,7 @@ enum PageDebugState: String, CaseIterable {
     /// Staged in the small hours, on the night page.
     var isNight: Bool {
         switch self {
-        case .night, .nightLayers, .nightTide, .timerNight, .tideNight: return true
+        case .night, .nightLayers, .nightTide, .timerNight, .tideNight, .mixesNight: return true
         default: return isNightScreen || isSmallHours
         }
     }
@@ -182,6 +216,7 @@ enum PageArguments {
         if opensLayers { return .layers }
         if state.opensTimer { return .timer }
         if state.opensTide { return .tide }
+        if state.opensMixes { return .mixes }
         return nil
     }
 
@@ -211,6 +246,25 @@ enum PageArguments {
         case "accessibility5": return .accessibility5
         default: return state == .largeType ? .accessibility2 : nil
         }
+    }
+}
+
+/// What a staged Mixes sheet opens over itself.
+enum MixesArguments {
+    /// The alert a capture asks for, or nil.
+    @MainActor
+    static func naming(_ model: MixerModel) -> MixNaming? {
+        var naming = MixNaming()
+        switch PageArguments.state {
+        case .mixesSave:
+            naming.beginSave(model)
+        case .mixesRename:
+            guard let mix = model.mixStore.mixes.first else { return nil }
+            naming.beginRename(mix)
+        default:
+            return nil
+        }
+        return naming
     }
 }
 
@@ -268,7 +322,7 @@ enum PageStage {
         let defaults = UserDefaults(suiteName: suiteName) ?? .standard
         defaults.removePersistentDomain(forName: suiteName)
         let purchases = PurchaseManager(defaults: defaults)
-        if state == .layersSix || state == .layersEnd || state == .tideLocked {
+        if state.isFreeTier {
             // The trial ran out long ago and nothing was bought.
             let start = Date().addingTimeInterval(-30 * 86_400)
             purchases.startTrialIfNeeded(now: start)
@@ -284,7 +338,7 @@ enum PageStage {
 
         switch state {
         case .rest, .playingTwo, .layers, .error, .error2, .error3, .largeType,
-             .timerRest, .tideRest, .tideLocked,
+             .timerRest, .tideRest, .tideLocked, .mixesEmpty, .mixesTrimmed,
              .nightEnter, .nightTimer, .nightDimmed, .nightFading, .nightPaused, .nightSpeaker,
              .nightLevel, .nightEnded, .nightError,
              .smallHours, .smallHoursPlain, .smallHoursWinding, .smallHoursPaused:
@@ -335,19 +389,47 @@ enum PageStage {
         case .layersEnd:
             // Thunder was saved at 20 while the trial lasted; it keeps it.
             setLevels(model, [.rain: 0.45, .wind: 0.25, .thunder: 0.2, .pink: 0.3])
+        case .mixes, .mixesRename, .mixesNight:
+            // The first of the person's mixes is the one that is loaded.
+            if let hotel = saveMixes(model, count: 2) {
+                model.apply(hotel)
+            }
+            if state == .mixesNight { model.beginNightSession() }
+        case .mixesSave:
+            setLevels(model, [.rain: 0.45, .wind: 0.25, .pink: 0.3])
+        case .mixesFourth:
+            saveMixes(model, count: AccessPolicy.freeSavedMixLimit)
+            setLevels(model, [.rain: 0.45, .wind: 0.25, .pink: 0.3])
         }
         return (purchases, model)
+    }
+
+    /// Mixes saved while the trial lasted, as a person would name them: the
+    /// second one keeps a Pro layer. Returns the first of the list.
+    @discardableResult
+    private static func saveMixes(_ model: MixerModel, count: Int) -> SavedMix? {
+        let mixes: [(String, [SoundID: Float])] = [
+            ("Hotel", [.rain: 0.45, .brown: 0.3]),
+            ("Ventilador y lluvia", [.rain: 0.5, .fan: 0.3, .brown: 0.2]),
+            ("Siesta de agosto", [.wind: 0.35, .white: 0.15]),
+        ]
+        // A save goes to the top of the list: the last one saved is first.
+        for (name, levels) in mixes.prefix(count).reversed() {
+            _ = model.mixStore.save(name: name, levels: levels, hasFullAccess: true)
+        }
+        return model.mixStore.mixes.first
     }
 
     /// Lays the levels down as an edited mix ("Tonight"). Written straight
     /// into the model: a Pro layer keeps a level here without asking for
     /// the Pro sheet.
     private static func setLevels(_ model: MixerModel, _ levels: [SoundID: Float]) {
+        // One real edit first: the mix loses the name it loaded with. A
+        // level written as it was is not an edit, so this one always moves.
+        model.setLevel(.rain, (model.levels[.rain] ?? 0) > 0.5 ? 0 : 1)
         for sound in SoundID.allCases {
             model.levels[sound] = levels[sound] ?? 0
         }
-        // One real edit: the mix loses the name it loaded with and is stored.
-        model.setLevel(.rain, levels[.rain] ?? 0)
     }
 
     /// Moves the pinned clock of a staged Night or Small Hours and lets
@@ -364,8 +446,13 @@ enum PageStage {
     static func didAppear(_ model: MixerModel) {
         guard let state = PageArguments.state else { return }
         switch state {
-        case .rest, .layersSix, .layersEnd, .timerRest, .timerHour, .timerLength, .tideRest, .tideLocked:
+        case .rest, .layersSix, .layersEnd, .timerRest, .timerHour, .timerLength, .tideRest, .tideLocked,
+             .mixesEmpty:
             break
+        case .mixesTrimmed:
+            // "Sea and wind" without access: it plays without the ocean and
+            // its name says so. Never a sheet.
+            model.playMix(.house(.seaAndWind))
         case .timerFading:
             if !model.isPlaying { model.play() }
             // Eight minutes from the end: the final fade is under way.
@@ -432,7 +519,8 @@ enum PageStage {
             for _ in 0..<3 { model.debugFailStart() }
         case .playingTwo, .playingFive, .night, .timer, .layers, .layersCap, .largeType,
              .nightLayers, .tide, .nightTide, .timerAsleep, .timerBlanket, .timerNight,
-             .tideGuiding, .tideDescent, .tideNight:
+             .tideGuiding, .tideDescent, .tideNight,
+             .mixes, .mixesSave, .mixesRename, .mixesFourth, .mixesNight:
             if !model.isPlaying { model.play() }
         }
     }

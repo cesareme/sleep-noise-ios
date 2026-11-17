@@ -27,8 +27,11 @@ struct PageView: View {
     @State private var capacity = PageLayers.fullCapacity
     @State private var sheet: PageSheet?
     @State private var sliderDismissal = 0
-    @State private var showsSave = false
-    @State private var draftName = ""
+    /// The alert that saves the live mix or renames the loaded one.
+    @State private var naming = MixNaming()
+    /// Saves that went through, and the word that says so for three seconds.
+    @State private var saves = 0
+    @State private var showsSaved = false
     /// Bumped when the app comes forward, so what depends on the hour (what
     /// may be sold) is read again.
     @State private var clock = 0
@@ -45,7 +48,7 @@ struct PageView: View {
     }
 
     private var phase: NightPhase { model.isNightSession ? .nightPage : .day }
-    private var presentsSomething: Bool { sheet != nil || model.showPaywall || showsSave }
+    private var presentsSomething: Bool { sheet != nil || model.showPaywall || naming.isPresented }
     /// Night or Small Hours is over the page: it is not seen or touched.
     private var isCovered: Bool { model.isBedtime || model.isSmallHours }
 
@@ -129,7 +132,7 @@ struct PageView: View {
             // when it arrived by itself (a lock, a Shortcut) comes down.
             if covered {
                 sheet = nil
-                showsSave = false
+                naming.isPresented = false
             }
         }
         .onReceive(NotificationCenter.default.publisher(
@@ -176,8 +179,8 @@ struct PageView: View {
             clock += 1
         }
         .onChange(of: model.showPaywall) { _, asked in
-            // The tide sheet and the old Mixes sheet do not present the Pro
-            // sheet themselves: they step aside for it.
+            // The tide and the Mixes sheets do not present the Pro sheet
+            // themselves: they step aside for it.
             if asked, let sheet, sheet != .layers { self.sheet = nil }
         }
         .sheet(item: $sheet) { which in
@@ -185,15 +188,22 @@ struct PageView: View {
         }
         .sheet(isPresented: proBinding(when: sheet == nil)) {
             PaywallView(purchases: purchases)
-                .tint(Palette.amber)
                 .onDisappear { purchases.clearNotice() }
         }
-        .alert("mixes.save.title", isPresented: $showsSave) {
-            TextField("mezcla.guardar.campo", text: $draftName)
-            Button("common.save") {
-                _ = model.saveCurrent(name: draftName)
-            }
-            Button("common.cancel", role: .cancel) {}
+        .mixNaming($naming, model: model) { _ in
+            saves += 1
+        }
+        .sensoryFeedback(.success, trigger: saves) { _, _ in
+            MotionGate.allows(phase)
+        }
+        .task(id: saves) {
+            // "Saved" takes the state line for three seconds (08 §2.2):
+            // never a new line, never a question.
+            guard saves > 0 else { return }
+            AccessibilityNotification.Announcement(Localized.string("mezclas.guardada")).post()
+            showsSaved = true
+            try? await Task.sleep(for: .seconds(3))
+            showsSaved = false
         }
     }
 
@@ -208,8 +218,13 @@ struct PageView: View {
                 .padding(.top, metrics.headerTop)
             name
                 .padding(.top, metrics.airUnderHeader)
-            StatusLine(model: model, timer: model.timer, hasFullAccess: purchases.hasFullAccess)
-                .padding(.top, Grid.unit * 2 + 2)
+            StatusLine(
+                model: model,
+                timer: model.timer,
+                hasFullAccess: purchases.hasFullAccess,
+                note: showsSaved ? Localized.string("mezclas.guardada") : nil
+            )
+            .padding(.top, Grid.unit * 2 + 2)
         }
         .padding(.horizontal, Grid.margin)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -226,11 +241,11 @@ struct PageView: View {
     }
 
     /// A fourth mix without access: the menu says so before the touch.
-    private var saveNeedsPro: Bool {
-        !AccessPolicy.canSave(
-            existingCount: model.mixStore.mixes.count,
-            hasFullAccess: purchases.hasFullAccess
-        )
+    private var saveNeedsPro: Bool { !model.canSaveMix }
+
+    /// The loaded mix is one the person saved: its name can be changed.
+    private var loadedSavedMix: SavedMix? {
+        model.loadedSavedMixID.flatMap { model.mixStore.mix($0) }
     }
 
     private var name: some View {
@@ -256,21 +271,10 @@ struct PageView: View {
                 if model.isNightSession { model.endNightSession() }
             }
             .contextMenu {
-                if saveNeedsPro {
-                    // At night the touch does nothing, so no hint offers Pro.
-                    Button {
-                        beginSave()
-                    } label: {
-                        Text("mezcla.menu.guardar.pro")
-                    }
-                    .accessibilityLabel(Text("ax.guardar.pro"))
-                    .accessibilityHint(model.canSell ? Text("ax.guardar.pro.pista") : Text(verbatim: ""))
-                } else {
-                    Button {
-                        beginSave()
-                    } label: {
-                        Text("mezcla.menu.guardar")
-                    }
+                // Saving, renaming and clearing are things of the day: on
+                // the night page a long press does nothing (08 §2.2).
+                if !model.isNightSession {
+                    nameMenu
                 }
             }
             .accessibilityElement(children: .ignore)
@@ -279,21 +283,69 @@ struct PageView: View {
             .accessibilityHint(Text(model.isNightSession ? "ax.nombre.pista.noche" : "ax.nombre.pista"))
             .accessibilityAddTraits(model.isNightSession ? .isButton : .isHeader)
             .accessibilityActions {
-                Button {
-                    beginSave()
-                } label: {
-                    Text(saveNeedsPro ? "ax.guardar.pro" : "ax.accion.guardar")
-                }
-                // The way back exists only on the night page (05 §5b).
+                // On the night page the only action is the way back (05 §5b).
                 if model.isNightSession {
                     Button {
                         model.endNightSession()
                     } label: {
                         Text("ax.accion.volver.dia")
                     }
+                } else {
+                    Button {
+                        beginSave()
+                    } label: {
+                        Text(saveNeedsPro ? "ax.guardar.pro" : "ax.accion.guardar")
+                    }
+                    if let mix = loadedSavedMix {
+                        Button {
+                            naming.beginRename(mix)
+                        } label: {
+                            Text("comun.renombrar")
+                        }
+                    }
+                    Button {
+                        model.clearMix()
+                    } label: {
+                        Text("mezcla.menu.vaciar")
+                    }
                 }
             }
             .accessibilityIdentifier("mixName")
+    }
+
+    /// The menu of the name: save, rename the loaded mix if it is one of
+    /// the person's, and clear.
+    @ViewBuilder private var nameMenu: some View {
+        if saveNeedsPro {
+            // While nothing may be sold the touch does nothing, so no hint
+            // offers Pro.
+            Button {
+                beginSave()
+            } label: {
+                Text("mezcla.menu.guardar.pro")
+            }
+            .accessibilityLabel(Text("ax.guardar.pro"))
+            .accessibilityHint(model.canSell ? Text("ax.guardar.pro.pista") : Text(verbatim: ""))
+        } else {
+            Button {
+                beginSave()
+            } label: {
+                Text("mezcla.menu.guardar")
+            }
+        }
+        if let mix = loadedSavedMix {
+            Button {
+                naming.beginRename(mix)
+            } label: {
+                Text("comun.renombrar")
+            }
+        }
+        Button {
+            model.clearMix()
+        } label: {
+            Text("mezcla.menu.vaciar")
+        }
+        .accessibilityHint(Text("ax.vaciar.pista"))
     }
 
     // MARK: Rows
@@ -351,10 +403,15 @@ struct PageView: View {
                 .modifier(DebugDynamicType())
                 #endif
         case .mixes:
-            SavedMixesView(store: model.mixStore) { mix in
-                model.apply(mix)
+            MixesSheet(model: model, purchases: purchases) {
+                sheet = nil
+            } onNight: {
+                enterNight()
             }
-            .tint(Palette.amber)
+            .environment(\.nightPhase, phase)
+            #if DEBUG
+            .modifier(DebugDynamicType())
+            #endif
         }
     }
 
@@ -375,16 +432,12 @@ struct PageView: View {
     }
 
     private func beginSave() {
-        guard AccessPolicy.canSave(
-            existingCount: model.mixStore.mixes.count,
-            hasFullAccess: purchases.hasFullAccess
-        ) else {
+        guard model.canSaveMix else {
+            // Dropped while nothing may be sold: the mix stays as it is.
             model.offerPro()
             return
         }
-        // The field starts from the name the mix already has.
-        draftName = model.loadedMixBaseName ?? title
-        showsSave = true
+        naming.beginSave(model)
     }
 }
 
@@ -476,6 +529,9 @@ private struct StatusLine: View {
     @ObservedObject var model: MixerModel
     @ObservedObject var timer: SleepTimerController
     let hasFullAccess: Bool
+    /// A word that takes the line for a moment ("Saved"). The error line,
+    /// which is a button, is never covered by it.
+    var note: String?
 
     @Environment(\.nightPhase) private var phase
     @Environment(\.dynamicTypeSize) private var dynamicType
@@ -500,7 +556,7 @@ private struct StatusLine: View {
 
     var body: some View {
         let status = self.status
-        let text = status.text()
+        let text = status.isRetry ? status.text() : note ?? status.text()
         Group {
             if case .error(let attempt) = status {
                 Button {
