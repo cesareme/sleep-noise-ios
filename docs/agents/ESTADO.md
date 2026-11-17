@@ -6,12 +6,12 @@ Solo lo edita Claude Code, en el mismo PR que cambia un estado o en el siguiente
 
 Estados: pendiente, en curso, en revisión, cambios, integrado, atascado, cancelado.
 
-Resumen: 2 en curso, 10 pendientes, 0 integrados. PR abiertos del plan: 0 de 2.
+Resumen: 0 en curso, 10 pendientes, 2 integrados (S-01 y S-02). PR abiertos del plan: 0 de 2.
 
 | Id | Paquete | Autor | Revisor | Semana | Rama | Estado | PR |
 |---|---|---|---|---|---|---|---|
-| S-01 | `scripts/verify.sh`, CI de macOS, `AGENTS.md` corto, solo iPhone | Claude | Cursor (lectura) | 1 | `claude/s-01-verify-ci` | en curso | - |
-| S-02 | Rescate del PR #3: motor, texturas, modelo e intents compilando | Claude | Cursor (CI) | 1 | `claude/s-02-rescate-pr3` | en curso | - |
+| S-01 | `scripts/verify.sh`, CI de macOS, `AGENTS.md` corto, solo iPhone | Claude | Cursor (lectura) | 1 | `claude/s-01-verify-ci` | fusionado 17-11 | 5 |
+| S-02 | Rescate del PR #3: motor, texturas, modelo e intents compilando | Claude | Cursor (CI) | 1 | `claude/s-02-rescate-pr3` | fusionado 17-11 | 6 |
 | S-03 | Lógica pura con tests: `NightWindow`, reloj de la prueba, receta de Madrugada (mitad A) y `AccessPolicy` (mitad B) | Cursor | Claude | 1 | `cursor/s-03a-logica-pura`, `cursor/s-03b-politica-acceso` | pendiente | - |
 | S-04 | Tokens Grafito, Horizonte (con nivel RMS desde el hilo de audio), Disco, filas, página principal y Capas | Claude | Cursor (CI) | 2 | `claude/s-04-grafito-pagina` | pendiente | - |
 | S-05 | Códec de mezclas v2, mezclas de la casa, políticas de interrupción y de ruta | Cursor | Claude | 2 | `cursor/s-05-mezclas-politicas` | pendiente | - |
@@ -28,7 +28,7 @@ Notas:
 - S-03 va en dos PR. La mitad A puede empezar cuando S-01 esté en `main`; la mitad B espera a S-02 (PLAN-SIMPLE §10). Brief: `docs/briefs/S-03.md`.
 - Las ramas de los paquetes pendientes son nombres propuestos: se fijan al lanzar cada paquete.
 - Pendiente del dueño tras fusionar S-01: proteger `main` y marcar el check `verify` de la CI como obligatorio. En ese momento conviene añadir `.github/CODEOWNERS` para `scripts/`, `.github/` y `project.yml`: hoy la CI solo avisa cuando un PR toca la puerta, no lo impide.
-- El PR #3 es anterior al plan y sigue abierto hasta que S-02 lo cierre. Nadie empuja a su rama ni lo fusiona, así que no cuenta para el límite de dos PR (por eso el resumen dice "del plan"). Es la lectura del integrador: si el dueño prefiere contarlo, S-03a no abre su PR hasta que S-02 cierre el PR #3.
+- El PR #3 se cerró el 17-11-2026 al fusionar S-02 (PR 6), que lo sustituye.
 - Mínimo de tests: `scripts/verify-min-tests.txt` (hoy 49). Claude lo sube al total nuevo al fusionar cada paquete que añade tests.
 - El lint de la lista negra de palabras (`docs/design/10-GUIA-DE-COPY.md` §0.5) todavía no existe: `CopyLintTests` solo cubre los términos médicos. Propuesta del integrador: entra con S-08, ampliando `CopyLintTests` junto al catálogo de cadenas. Hasta entonces el punto 4 de la definición de hecho se revisa a mano.
-- La mitad B del brief S-03 se revalida contra `main` cuando S-02 esté fusionado, antes de lanzarla.
+- La mitad B del brief S-03 se revalidó contra `main` el 17-11-2026, con S-02 ya fusionado. Las dos mitades se pueden lanzar; la B después de que entre la A, por el límite de un PR de Cursor.
