@@ -92,6 +92,8 @@ struct RenderState {
     var fadeTo: Float = 0
     var fadeProgress: Float = 1
     var fadeStep: Float = 0
+    /// Curve of the fade in progress: a `FadeShape`.
+    var fadeShape: Int32 = FadeShape.smooth
     var appliedEnvelopeGeneration: UInt32 = 0
     var gainCoefficient: Float = 0.002
     var sampleRate: Float = 48_000
@@ -153,6 +155,7 @@ struct RenderState {
         fadeTo = 0
         fadeProgress = 1
         fadeStep = 0
+        fadeShape = FadeShape.smooth
         breathWeight = 0
         breathWeightTarget = 0
         breathValue = 0
@@ -166,7 +169,11 @@ struct RenderState {
         if command.envelopeGeneration != appliedEnvelopeGeneration {
             appliedEnvelopeGeneration = command.envelopeGeneration
             if command.rampSamples >= 0 {
-                beginFade(to: command.envelopeTarget, samples: command.rampSamples)
+                beginFade(
+                    to: command.envelopeTarget,
+                    samples: command.rampSamples,
+                    shape: command.envelopeShape
+                )
             }
         }
         advanceFade()
@@ -261,7 +268,8 @@ struct RenderState {
         return softClip((frame.left + frame.right) * 0.7071)
     }
 
-    private mutating func beginFade(to target: Float, samples: Int32) {
+    private mutating func beginFade(to target: Float, samples: Int32, shape: Int32) {
+        fadeShape = shape
         if samples <= 1 {
             envelope = target
             fadeFrom = target
@@ -285,7 +293,7 @@ struct RenderState {
             envelope = fadeTo
             return
         }
-        let shaped = FadeCurve.unity(fadeProgress)
+        let shaped = FadeCurve.shaped(fadeProgress, shape: fadeShape)
         envelope = fadeFrom + (fadeTo - fadeFrom) * shaped
     }
 }

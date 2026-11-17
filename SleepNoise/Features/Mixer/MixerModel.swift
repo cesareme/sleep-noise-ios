@@ -143,7 +143,10 @@ final class MixerModel: ObservableObject {
         }
     }
 
-    func pause(resumeLater: Bool) {
+    /// `fade` is how long the bed takes to leave: the person's own pause is
+    /// never a cut (`PlaybackFade.pause`); an interruption and a lost output
+    /// pass their own, shorter one.
+    func pause(resumeLater: Bool, fade: TimeInterval = PlaybackFade.pause) {
         if resumeLater {
             if isPlaying {
                 resumeAfterInterruption = true
@@ -154,7 +157,7 @@ final class MixerModel: ObservableObject {
         guard isPlaying else { return }
         // An interruption that intends to resume is not the end of the night:
         // a trial that ran out meanwhile waits until the session really ends.
-        endPlayback(engineAction: .stop(fadeOut: 0.04), canDowngrade: !resumeAfterInterruption)
+        endPlayback(engineAction: .stop(fadeOut: fade), canDowngrade: !resumeAfterInterruption)
     }
 
     func selectTimer(minutes: Int?) {
@@ -533,7 +536,7 @@ final class MixerModel: ObservableObject {
 
     private func installSessionHandlers() {
         sessionObserver.onInterruptionBegan = { [weak self] in
-            self?.pause(resumeLater: true)
+            self?.pause(resumeLater: true, fade: PlaybackFade.interruption)
         }
         sessionObserver.onInterruptionEnded = { [weak self] shouldResume in
             guard let self else { return }
@@ -546,7 +549,7 @@ final class MixerModel: ObservableObject {
             self.resumeAfterInterruption = false
         }
         sessionObserver.onHeadphonesUnplugged = { [weak self] in
-            self?.pause(resumeLater: false)
+            self?.pause(resumeLater: false, fade: PlaybackFade.lostOutput)
         }
         sessionObserver.onRouteChange = { [weak self] in
             guard let self, self.isPlaying else { return }

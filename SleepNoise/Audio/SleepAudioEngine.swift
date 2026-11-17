@@ -5,8 +5,11 @@ import Foundation
 /// The source-node callback only reads the seqlock and runs `RenderState.processStereo`.
 final class SleepAudioEngine {
     /// Seconds the bed takes to rise from silence when Play is pressed. A sleep
-    /// app is used in the dark; a soft onset is kinder than a 30 ms step.
-    static let defaultFadeIn: TimeInterval = 1.5
+    /// app is used in the dark; a soft onset is kinder than a 30 ms step. It
+    /// eases out (`FadeShape.easeOut`): most of the level is there in the
+    /// first half, so one touch is heard at once, and it settles without a
+    /// bump. The Horizon is born from the hairline over the same time.
+    static let defaultFadeIn: TimeInterval = 0.8
 
     /// Volume of the graph's mixer: always 1 in a release build. A debug build
     /// launched with `-silentOutput` renders, meters and publishes as usual
@@ -35,6 +38,7 @@ final class SleepAudioEngine {
     /// publishes so they never cancel or restart a fade.
     private var envelopeTarget: Float = 0
     private var envelopeRamp: Int32 = -1
+    private var envelopeShape: Int32 = FadeShape.smooth
     private var envelopeGeneration: UInt32 = 0
     private var stopToken = 0
     private var wantsRunning = false
@@ -85,8 +89,8 @@ final class SleepAudioEngine {
         }
 
         lastGains = gains
-        let ramp = Int32(max(1, sampleRate * max(0.03, seconds)))
-        publishEnvelope(target: 1, ramp: ramp)
+        let ramp = PlaybackFade.samples(max(0.03, seconds), sampleRate: sampleRate)
+        publishEnvelope(target: 1, ramp: ramp, shape: FadeShape.easeOut)
         if !engine.isRunning {
             do {
                 try engine.start()
@@ -139,15 +143,15 @@ final class SleepAudioEngine {
     }
 
     func fadeOut(over seconds: TimeInterval) {
-        let samples = Int32(max(1, seconds * sampleRate))
-        publishEnvelope(target: 0, ramp: samples)
+        publishEnvelope(target: 0, ramp: PlaybackFade.samples(seconds, sampleRate: sampleRate))
     }
 
     /// New envelope request: bumps the envelope generation so the render
     /// state starts the fade even if a later publish overwrites this command.
-    private func publishEnvelope(target: Float, ramp: Int32) {
+    private func publishEnvelope(target: Float, ramp: Int32, shape: Int32 = FadeShape.smooth) {
         envelopeTarget = target
         envelopeRamp = ramp
+        envelopeShape = shape
         envelopeGeneration &+= 1
         publishCurrent()
     }
@@ -157,6 +161,7 @@ final class SleepAudioEngine {
             gains: lastGains,
             envelopeTarget: envelopeTarget,
             rampSamples: envelopeRamp,
+            envelopeShape: envelopeShape,
             generation: 0,
             envelopeGeneration: envelopeGeneration,
             breath: lastBreath
@@ -190,8 +195,7 @@ final class SleepAudioEngine {
         lastGains = gains
         try buildGraph(sampleRate: rate)
         if envelopeTarget > 0 {
-            let ramp = Int32(max(1, sampleRate * 0.03))
-            publishEnvelope(target: 1, ramp: ramp)
+            publishEnvelope(target: 1, ramp: PlaybackFade.samples(0.03, sampleRate: sampleRate))
         } else {
             // A sleep-timer fade-out is in progress: keep it, just refresh the rest.
             publishCurrent()
