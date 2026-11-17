@@ -20,6 +20,14 @@ Sleep sounds. Pay once.
 
 Recuento: 23 de 30.
 
+Riesgo anotado: "Pay once." es una condición de precio dentro de un subtítulo, y la directriz 2.3.7 pide que nombre, subtítulo y capturas no lleven precios ni condiciones. Además no dice lo mismo que el subtítulo español. Lo fija la guía §5e.15 y no se cambia sin el sí del dueño. Reserva lista, igual que el español:
+
+```text en
+Sleep sounds
+```
+
+Recuento: 12 de 30. Con la reserva, "pay" y "once" dejan de estar en el subtítulo y podrían entrar en las palabras clave.
+
 ## Texto promocional
 
 ```text en
@@ -27,6 +35,14 @@ Sleep sound that never loops, made on your iPhone. Seven nights with everything,
 ```
 
 Recuento: 102 de 170.
+
+"Never loops" es una afirmación de hecho que `main` no sostiene todavía (`README.md`, "Antes de enviar"). Si el cambio de audio y su test no llegan, o si el dueño lo prefiere, este es el texto de reserva, que solo dice lo que ya se puede comprobar:
+
+```text en
+No audio files, no loops: the sound is made on your iPhone as it plays. Seven nights with everything, no card. One payment.
+```
+
+Recuento: 123 de 170.
 
 ## Palabras clave
 
@@ -38,7 +54,7 @@ Opción A, la de `11-ICONO-Y-APP-STORE.md` §5.e:
 brown noise,white,pink,rain,wind,ocean,fan,breathing,generative,insomnia,tinnitus,snoring,loop
 ```
 
-Recuento: 94 de 100. Lleva dos palabras de diagnóstico que la guía de copy solo admite en este campo, que no se enseña a nadie (§0.4 de la guía).
+Recuento: 94 de 100. Lleva tres palabras de salud: dos de diagnóstico (`insomnia` y `tinnitus`) y `snoring`, que el documento 11 añade en inglés y ninguna fuente declara.
 
 Opción B, sin esas palabras:
 
@@ -46,7 +62,11 @@ Opción B, sin esas palabras:
 brown noise,white,pink,rain,wind,ocean,fan,breathing,generative,loop,thunder,campfire,brook,timer
 ```
 
-Recuento: 97 de 100. Elige el dueño. Si no dice nada, vale la A, que es la que fija el documento 11. En las dos, "noise" se mantiene como en el documento 11: el nombre se escribe en una sola palabra y la tienda no lo parte.
+Recuento: 97 de 100.
+
+Elige el dueño. **Si no dice nada, vale la B.** La A es la que fija el documento 11, pero las fuentes se contradicen y hasta que el dueño lo resuelva vale la lectura más estricta: `AGENTS.md` §5.4 veta la primera de esas palabras sin excepción; la guía de copy §0.4 reserva el nombre del diagnóstico a las notas de revisión y su §5e.15 lo admite en este campo; el informe §5.2 y el documento 11 §2.10 lo admiten solo aquí. El campo no se enseña en la tienda, pero el revisor sí lo ve, y las notas de revisión le dicen "The app makes no health claims". La B nombra texturas de Pro que dependen de la escucha del dueño (`README.md`, "Antes de enviar").
+
+En las dos, "noise" se mantiene como en el documento 11: el nombre se escribe en una sola palabra y la tienda no lo parte.
 
 ## Descripción
 
@@ -74,6 +94,24 @@ What's not here.
 
 Recuento: 756 de 4000. Los cuatro primeros párrafos son los de la guía; los seis últimos son los titulares de las capturas, en orden, porque VoiceOver no lee las capturas (documento 11 §2.10). "Breathing tide" solo se escribe aquí, en prosa de ficha (C15).
 
+Dos enmiendas propuestas, que no se aplican sin el sí del dueño porque el texto por defecto es el de la guía, letra a letra.
+
+Primera frase de reserva, por el mismo motivo que la del texto promocional (sustituye a la que va hasta los dos puntos):
+
+```text en
+SleepNoise makes the sound on your iPhone, as it plays, with no audio files and no loops:
+```
+
+Recuento: 89. Con ella la descripción pasa de 756 a 770.
+
+Tercer párrafo, para la directriz 2.3.2. La descripción presenta la Marea y las capturas 3 y 4 enseñan funciones de Pro sin decir que lo son; hoy solo se deduce de la lista de lo gratis. Enmienda propuesta, también en la guía §5e.15:
+
+```text en
+Seven nights with everything, no card. After that, Pro, which adds the other textures, the Tide and unlimited mixes, is one payment; white, pink, brown, rain, wind, the whole timer and three mixes stay free.
+```
+
+Recuento: 207. Con ella la descripción pasa de 756 a 818; con las dos enmiendas, a 832.
+
 ## Novedades de la 1.0
 
 ```text en
@@ -97,6 +135,20 @@ One payment.
 
 Recuento: 12 de 41. Pantalla: mezcla de la casa "Rosa y lluvia" cargada, sonando, con el estado de la prueba en la cabecera.
 
+Riesgo anotado: la directriz 2.3.7 pide que nombre, subtítulo y capturas no lleven precios ni condiciones. Este titular y "no card" en su subtítulo son condiciones de pago; los fija C57 y no se cambian sin el sí del dueño. Reserva lista si App Review lo discute o el dueño lo prefiere, titular y subtítulo:
+
+```text en
+Made on your iPhone.
+```
+
+Recuento: 20 de 41.
+
+```text en
+Seven nights with everything.
+```
+
+Recuento: 29 de 42. Si se usa la reserva, cambia también el quinto párrafo de la descripción, que repite este titular.
+
 Subtítulo de la captura:
 
 ```text en
@@ -119,7 +171,7 @@ Recuento: 21 de 41. Pantalla: la página tal como se abre la primera vez: mezcla
 Six layers at once. One line each.
 ```
 
-Recuento: 34 de 41. Pantalla: la hoja "Todas las capas" con seis capas sonando y un dedo arrastrando un nivel.
+Recuento: 34 de 41. Pantalla: la hoja "Todas las capas" con seis capas sonando y un dedo arrastrando un nivel. Seis capas a la vez no se pueden tener con las cinco texturas gratuitas: la captura se hace con la prueba en marcha (documento 11 §12) y enseña algo que después es de Pro. La directriz 2.3.2 pide que descripción y capturas dejen claro qué requiere compra; ver la nota de la descripción.
 
 Subtítulo de la captura:
 
@@ -135,7 +187,7 @@ Recuento: 41 de 42.
 The sea breathes six times a minute.
 ```
 
-Recuento: 36 de 41. Pantalla: la hoja de Marea con la línea de agua en movimiento y el ritmo a seis por minuto.
+Recuento: 36 de 41. Pantalla: la hoja de Marea con la línea de agua en movimiento y el ritmo a seis por minuto. La Marea es de Pro: vale lo dicho en la captura 3. La captura se hace sin la frase sobre estudios de variabilidad cardiaca (`marea.evidencia`) y sin el enlace "Qué sabemos" que el documento 11 §2.6 dibuja en esa hoja: "Qué sabemos" pasa a 1.1 (`docs/PLAN-SIMPLE-1.0.md` §4.4) y esa frase, dentro de una captura, sería una afirmación fisiológica en la ficha. Depende de cómo salga la hoja en S-06 (`README.md`, "Antes de enviar").
 
 ### Captura 5 · Noche sola
 

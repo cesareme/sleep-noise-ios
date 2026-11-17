@@ -9,7 +9,7 @@ Respuestas para los cuestionarios de App Store Connect que no son texto de ficha
 | ¿Tú o tus socios externos recogéis datos de esta app? | No, no recogemos datos de esta app |
 | Etiqueta que resulta | "Data Not Collected" (en español, "No se recopilan datos"; literal a comprobar) |
 | ¿Usa la app datos para hacer seguimiento? | No. No hay aviso de seguimiento ni identificador de publicidad |
-| URL de la política de privacidad | La de GitHub Pages; ver `README.md`. Es obligatoria |
+| URL de la política de privacidad | La de GitHub Pages; ver `README.md`. Es obligatoria, y la directriz 5.1.1(i) pide además que la política se pueda leer dentro de la app: en 1.0 ese sitio es la página "Lo que no hay" (`README.md`, "Antes de enviar") |
 
 Por qué es cierto:
 
@@ -18,15 +18,15 @@ Por qué es cierto:
 | La app no hace peticiones de red propias | Ningún uso de `URLSession`, `URLRequest` ni `Network` en `SleepNoise/` |
 | No hay código de terceros | `project.yml` no declara paquetes ni dependencias |
 | No hay cuenta, analítica ni anuncios | No existe código para ello; los únicos marcos son los de Apple (`AVFoundation`, `MediaPlayer`, `StoreKit`, `AppIntents`, `Security`, `SwiftUI`) |
-| Mezclas y ajustes se quedan en el iPhone | `UserDefaults`; el manifiesto declara la razón `CA92.1` |
+| Mezclas y ajustes se guardan en el iPhone y la app no los envía a nadie | `UserDefaults`; el manifiesto declara la razón `CA92.1`. Entran en la copia de seguridad del iPhone que la persona haga con Apple, que no es recogida de datos por la app |
 | El manifiesto de privacidad coincide | `SleepNoise/Resources/PrivacyInfo.xcprivacy`: `NSPrivacyTracking` en `false`, sin dominios y sin tipos de datos recogidos |
-| La compra la gestiona Apple | `StoreKit` 2; la app solo recibe de Apple si la compra existe |
+| La compra la gestiona Apple | `StoreKit` 2; la app recibe de Apple la transacción firmada y de ella lee el identificador del producto y si está revocada (`PurchaseManager`). No lleva nombre, correo ni datos de pago |
 | No pide permisos | `Info.plist` no tiene claves de descripción de uso |
 
 Matices que conviene tener presentes:
 
 - El estado de la prueba irá al llavero del iPhone (`kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, sin sincronizar). No sale del iPhone, así que no es recogida. Hoy `main` todavía lo guarda en `UserDefaults`; lo cambia S-07.
-- "Escribir al autor" abrirá el correo de la persona. Un mensaje que alguien decide enviar desde su propia app de correo no es recogida de datos por la app. La fila todavía no existe en `main`.
+- "Escribir al autor" abrirá el correo de la persona. Un mensaje que alguien decide enviar desde su propia app de correo no es recogida de datos por la app, pero quien lo recibe sí trata un dato personal: por eso la política dice quién responde, cuánto se guarda el mensaje y cómo pedir que se borre. La fila todavía no existe en `main`.
 - Los informes de ventas de App Store Connect son agregados y no identifican a nadie.
 - La respuesta deja de valer si entra red, un SDK, un informe de diagnóstico que salga de la app o iCloud. Cualquiera de esos cambios obliga a repasar este cuestionario antes de enviar.
 
@@ -38,13 +38,13 @@ Resultado esperado: 4+, la más baja.
 |---|---|
 | Violencia, contenido sexual o desnudos, lenguaje soez, alcohol, tabaco o drogas, terror, apuestas y concursos | Ninguno |
 | Acceso web sin restricciones | No. No hay navegador ni vista web (ningún `WKWebView` ni `SafariServices`) |
-| Contenido generado por usuarios, mensajería o chat | No. Las mezclas guardadas no salen del iPhone |
+| Contenido generado por usuarios, mensajería o chat | No. Las mezclas guardadas no se comparten ni se envían a nadie |
 | Publicidad | No |
 | Información de salud o bienestar | Ninguna. La app no da consejos ni mide nada |
 | Controles parentales o verificación de edad dentro de la app | No hay; no hacen falta |
 | Hecha para niños (categoría Kids) | No |
 
-A comprobar: Apple cambió el cuestionario y los tramos de edad en 2025, y los literales de arriba son por tema, no palabra por palabra. Si la hoja de Marea sale con la frase sobre estudios de respiración que recoge la guía de copy (`marea.evidencia`), la pregunta sobre temas de salud o bienestar se responde con el nivel más bajo que no sea "ninguno", y se anota aquí.
+A comprobar: Apple cambió el cuestionario y los tramos de edad en 2025, y los literales de arriba son por tema, no palabra por palabra. Si la hoja de Marea sale con la frase sobre estudios de respiración que recoge la guía de copy (`marea.evidencia`), la pregunta sobre temas de salud o bienestar se responde con el nivel más bajo que no sea "ninguno", y se anota aquí. Esa frase tampoco debe verse en la captura 4 (`README.md`, "Antes de enviar").
 
 ## 3. Cumplimiento de exportación
 

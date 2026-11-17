@@ -64,17 +64,20 @@ SleepNoise Pro is the only in-app purchase of the app: a non-consumable, paid on
 It adds ocean, fan, thunder, campfire, brook and cabin, the Tide (the sea paced to a slow breath) and saved mixes without a limit. White, pink, brown, rain and wind, the whole timer and three saved mixes are free for everyone.
 To reach it: on the main page tap "All layers", then tap a texture marked "pro". The Pro sheet shows the price, the Buy button and "Restore purchase".
 By design the app sells nothing at night: the Pro sheet does not open between 21:00 and 07:00 on the iPhone's clock. Please test between 07:00 and 21:00, local time on the iPhone.
-The seven-night trial that starts on the same sheet is local to the iPhone and is not a StoreKit product: nothing is charged and no payment method is requested.
+The sheet also stays closed, at any hour, on the night page: the main page as you find it when you come back from the Night screen. Tap the name of the mix at the top of the page to go back to the day page, then tap a texture marked "pro".
+The same sheet also starts the seven-night trial, which is described in the review notes of the app.
 ```
 
-Recuento: 833 caracteres. El tope del campo es amplio (4000, a comprobar en pantalla).
+Recuento: 1013 caracteres. El tope del campo es amplio (4000, a comprobar en pantalla).
 
 ## Captura para revisión
 
-App Store Connect pide una captura del producto para el revisor (no se publica). Vale la hoja Pro con el precio a la vista, hecha en un iPhone o en el simulador entre las 07:00 y las 21:00, que es cuando la hoja se abre.
+App Store Connect pide una captura del producto para el revisor (no se publica). Vale la hoja Pro con el precio a la vista, hecha en un iPhone o en el simulador entre las 07:00 y las 21:00 y fuera de la página nocturna, que es cuando la hoja se abre.
 
 ## Lo que queda fuera de este fichero
 
 - `SleepNoise/Resources/SleepNoise.storekit` es solo para pruebas locales y hoy no coincide con esta página: `familyShareable` está en `false`, las descripciones pasan de 45 caracteres y el precio de prueba es otro. Corregirlo es código y le toca a S-07.
 - La nota de arriba nombra el botón "Restore purchase" y la prueba que empieza en la hoja Pro. En `main` el botón todavía dice "Restore purchases" y la prueba todavía empieza con Play. Ver `notas-revision.md`, tabla de estado.
+- La nota no explica cómo funciona la prueba: eso se dice una sola vez, en las notas de la app (`notas-revision.md`, "Riesgo 3.1.1").
+- La nota nombra las seis texturas de Pro, que dependen de la escucha del dueño (`README.md`, "Antes de enviar").
 - Contrato de apps de pago, banco y fiscalidad: los firma el dueño. Sin ellos el producto no se puede enviar.
