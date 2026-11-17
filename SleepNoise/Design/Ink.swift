@@ -132,7 +132,7 @@ enum NightPhase: Equatable {
 }
 
 /// What a view is drawn on. Sheets are `hoja` with `trazo-hoja` hairlines;
-/// the page and the Layers sheet are black with `trazo`.
+/// the page is black with `trazo`.
 enum InkSurface: Equatable {
     case black
     case sheet

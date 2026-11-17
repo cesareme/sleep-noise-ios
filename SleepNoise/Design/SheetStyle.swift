@@ -6,9 +6,9 @@ import SwiftUI
 /// indicator and no Close button: it is dismissed with the gesture. The
 /// header is a step-3 title on the left over a hairline.
 ///
-/// A sheet is never black on black. The one exception is Layers, which does
-/// what the page does and therefore shares its black and its `trazo`
-/// hairlines: pass `.black` for it.
+/// A sheet is never black on black (PLAN-SIMPLE §4.1), Layers included.
+/// `.black` stays as a surface for whoever needs the page's black and its
+/// `trazo` hairlines; no sheet of 1.0 asks for it.
 struct GrafitoSheet<Content: View>: View {
     var title: String
     var surface = InkSurface.sheet

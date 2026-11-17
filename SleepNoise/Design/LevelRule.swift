@@ -24,6 +24,9 @@ struct LevelRule: View {
     let subtitle: String
     @Binding var level: Float
     var isLocked = false
+    /// A few words in the dead channel under the row ("Six at once"). They
+    /// fade in and out in place; the channel never answers a touch.
+    var channelNote: String?
     /// Tap on a locked row. Nil means the tap does nothing (night).
     var onLockedTap: (() -> Void)?
 
@@ -71,7 +74,7 @@ struct LevelRule: View {
                 }
             // Dead channel: no gesture starts here, so a scroll always has
             // somewhere to begin between two rows.
-            Color.clear.frame(height: Grid.layerChannel)
+            channel
         }
         .sensoryFeedback(.selection, trigger: zeroCrossings) { _, _ in
             MotionGate.allows(phase)
@@ -79,6 +82,21 @@ struct LevelRule: View {
         .sensoryFeedback(.impact(weight: .light, intensity: 0.6), trigger: maxArrivals) { _, _ in
             MotionGate.allows(phase)
         }
+    }
+
+    /// The channel keeps its height whatever it says, so the row below
+    /// never moves.
+    private var channel: some View {
+        Text(verbatim: channelNote ?? " ")
+            .step(.secondary)
+            .foregroundStyle(Ink.secondary(phase))
+            .lineLimit(1)
+            .opacity(channelNote == nil ? 0 : 1)
+            .animation(Motion.contentCurve, value: channelNote)
+            .frame(maxWidth: .infinity, minHeight: Grid.layerChannel, alignment: .leading)
+            .padding(.horizontal, Grid.margin)
+            .accessibilityHidden(channelNote == nil)
+            .allowsHitTesting(false)
     }
 
     // MARK: Touch area

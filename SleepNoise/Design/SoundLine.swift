@@ -155,7 +155,9 @@ struct SoundLineMark: View {
                 Rectangle()
                     .fill(color)
                     .frame(height: thickness)
-                    .opacity(SoundLevelScale.opacity(level: level) * Double(presence))
+                    // At night the light does not breathe: only the
+                    // thickness follows the sound.
+                    .opacity((phase.isNight ? 1 : SoundLevelScale.opacity(level: level)) * Double(presence))
                     .animation(.linear(duration: tick), value: rms)
                     .animation(Motion.controlCurve, value: ownsAccent)
             }
