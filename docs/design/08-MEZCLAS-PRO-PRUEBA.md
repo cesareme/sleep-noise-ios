@@ -362,7 +362,7 @@ Se abre desde la última fila de Mezclas (2.1). Es hoja porque 03 §3.1 pone Aju
 | Pie de privacidad | paso 8 | `texto2` | 1 línea | `lo_que_no_hay.pie` "Sin suscripción. Sin cuenta. Sin rastreo." (C09; 03 §5 #32: en la hoja Pro y en Ajustes). Estático; no es botón; la página "Lo que no hay" está a una fila de distancia |
 | Versión | paso 9 Medium tabular | `texto2` | 1 línea | `ajustes.version` "Versión {versión} · {MB} MB". El tamaño es el de descarga fijado en build (script sobre el .ipa de referencia en `Info.plist`), nunca `Bundle` en runtime (C53, 10 §5e.12). Pulsación larga = copiar (menú "Copiar" del sistema): es lo que se pega en un correo de soporte |
 
-Lo que Ajustes **no** tiene: duración de Madrugada (receta fija, C05), apariencia (Papel 1.1, C32), idioma, "Debajo de otro audio" (1.1, C44; entonces fila con Preguntar / Siempre / Nunca), "Tus mezclas en iCloud" (1.1, C09), restaurar compra (vive en la hoja Pro), valoración (C55), enlaces a redes, "novedades" (1.1), precio escrito a mano (el valor de la fila Pro es `displayPrice`), "abrir sin sonar" (C33).
+Lo que Ajustes **no** tiene: duración de Madrugada (receta fija, C05), apariencia (Papel 1.1, C32), idioma, "Debajo de otro audio" (1.1, C44; entonces fila con Preguntar / Siempre / Nunca), "Tus mezclas en iCloud" (1.1, C09), restaurar compra de día (vive en la hoja Pro; mientras no se puede vender y sin Pro, Ajustes sí tiene la fila "Restaurar compra" bajo "pro", sin precio y sin hoja: D-08, 17-11-2026), valoración (C55), enlaces a redes, "novedades" (1.1), precio escrito a mano (el valor de la fila Pro es `displayPrice`), "abrir sin sonar" (C33).
 
 ### 2.8 Pantalla 30 · Diagnóstico y "Enviar informe" (empujada dentro de Ajustes)
 

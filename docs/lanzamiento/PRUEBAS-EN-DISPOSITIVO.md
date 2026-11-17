@@ -32,7 +32,7 @@ Tiempo: unas 3 horas repartidas, más una noche.
 **Dos avisos:**
 
 - Los estados de depuración (`-pageState …`) sirven para capturas, no para estas pruebas: usan un reloj fijo, una tienda de guion y unos ajustes aparte. Aquí se prueba la app de verdad.
-- **De 21:00 a 07:00 la app no vende**: la hoja Pro no se abre, y tampoco en la página nocturna ni en Madrugada. Las pruebas 8 y 9 se hacen de día. La 4 se hace de noche, o cambiando la hora del iPhone.
+- **De 21:00 a 07:00 la app no vende**: la hoja Pro no se abre, y tampoco en la página nocturna ni en Madrugada. Las pruebas 8 y 9 se hacen de día, salvo los pasos de "Restaurar compra" en Ajustes (8.A, pasos 18 a 20b, y 8.B, paso 5b), que piden la noche o cambiar la hora del iPhone. La 4 se hace de noche, o cambiando la hora del iPhone.
 
 **Cómo apuntar.** Cada tabla tiene una columna "Resultado": **sí** (pasó lo esperado), **no** (pasó otra cosa: cuál) o **no probado**. Un "no" lleva modelo de iPhone, versión de iOS, build y los pasos exactos.
 
@@ -58,10 +58,13 @@ Son dos medidas, porque se estorban: con el iPhone enchufado al Mac, el porcenta
 | 6 | Duerme. Si te despiertas, anota la hora y si sonaba | | |
 | 7 | Cuando suene el despertador | El despertador se oye; SleepNoise calla. Al apagarlo, SleepNoise **no vuelve**: con Manto, desde una hora antes de su fin una interrupción da la noche por terminada. La franja de 05:00 a 11:00 solo rige sin Manto: si el fin del Manto queda a más de una hora del despertador, SleepNoise vuelve tras la alarma (prueba 2, paso 14) | |
 | 8 | Apunta hora y porcentaje de batería | Ver la nota de abajo | |
-| 9 | Abre la app, ya pasadas las 07:00 | No se ha cerrado sola durante la noche. Con la noche terminada y de día, Noche ya no está delante: queda la página de día, "En silencio", sin ninguna hoja y sin que suene nada. Si la abres antes de las 07:00, Noche sigue ahí y dice "Terminó a las …" con la hora del despertador o la del Manto | |
+| 9 | Abre la app, ya pasadas las 07:00 | Con la noche terminada y de día, Noche ya no está delante: se funde sola a la página de día, "En silencio" (o, en ese mismo sitio, la nota de la prueba si es tu última noche o ya ha terminado), sin ninguna hoja y sin que suene nada. **Esta pantalla ya no demuestra que la app aguantó la noche**: es la misma que enseña un arranque en frío después de un cierre. Eso lo dicen el paso 5 (la grabación), el 10 (tiempo en segundo plano) y el 12 (datos de análisis) | |
+| 9b | Mientras Noche se funde (unos dos segundos), toca donde estaba "Madrugada · 20 min" | No arranca nada: ni Madrugada ni el Play de la página, que queda justo debajo. Pasado el fundido, la página responde como siempre | |
 | 10 | Ajustes del iPhone, Batería: mira la parte de SleepNoise y su tiempo en segundo plano | Tiempo en segundo plano cercano a las horas dormidas | |
 | 11 | Toca el iPhone al despertar | No está caliente | |
 | 12 | Ajustes, Privacidad y seguridad, Análisis y mejoras, Datos de análisis: busca entradas con el nombre de la app (*comprobar en la pantalla*) | Ninguna de esa noche | |
+
+Sobre el paso 9: desde que Noche cede sola por la mañana (`DECISIONES.md`, D-52), la hora a la que terminó la noche y qué la terminó ("Terminó a las …", con la hora del despertador o la del Manto) solo se leen **antes de las 07:00**. Para no perder ese dato, haz la primera noche real con el despertador y el fin del Manto antes de las 07:00 (por ejemplo, despertador a las 06:30 y Manto hasta las 06:50) y abre la app antes de esa hora: Noche sigue ahí y dice "Terminó a las …". Con esa hora también sabes que el proceso seguía vivo cuando sonó el despertador.
 
 Sobre el paso 8: el plan no fija una cifra de batería. Como orientación de esta guía, que no es una cifra del plan: si una noche de ocho horas con la pantalla apagada se lleva más de una quinta parte de la batería, enséñaselo a Claude con los datos del paso 10.
 
@@ -264,6 +267,7 @@ Las herramientas están en Xcode: el gestor de transacciones (menú Debug, Store
 | 18 | A las 21:05, sin Pro: Mezclas, Ajustes | Bajo "pro", la fila del producto no lleva precio y no abre nada. Debajo hay una fila "Restaurar compra". De día esa fila no existe | |
 | 19 | Con la transacción borrada, toca esa fila | La fila dice "Buscando…" y después, debajo, el aviso de que no hay ninguna compra con esa cuenta. La hoja Pro no se abre y nada de lo de abajo cambia de sitio | |
 | 20 | Lo mismo en la página nocturna, de día (entra en Noche, vuelve con la pulsación larga, Mezclas, Ajustes) | La fila "Restaurar compra" está también, a cualquier hora | |
+| 20b | Con **VoiceOver**, a las 21:05 y sin Pro: activa "Restaurar compra" | Dice "Buscando" al empezar y el resultado al terminar. Mientras busca la fila se anuncia atenuada, y el foco sigue en ella cuando llega la respuesta | |
 
 ### 8.B Sandbox (producto real de App Store Connect)
 
@@ -278,7 +282,9 @@ Antes: el producto del paso 6 de `GUIA.md` existe, el acuerdo de apps de pago es
 | 3 | Comprar, con la cuenta de sandbox | No se cobra nada. "Gracias. Todo abierto." | |
 | 4 | Borra la app, reinstala y toca "Restaurar compra" | Puede pedir la contraseña de la cuenta. "Buscando…" dura lo que tarde; Pro vuelve | |
 | 5 | Borra la app, reinstala y **no** toques Restaurar; espera un minuto con la app abierta | Apunta si Pro vuelve solo: la app lee los derechos al arrancar | |
-| 5b | **De noche** (entre las 21:00 y las 07:00, o cambiando la hora): borra la app, reinstala y, si Pro no ha vuelto solo, Mezclas, Ajustes, "Restaurar compra" | Puede pedir la contraseña. "Buscando…" en la fila y después "Gracias. Todo abierto." debajo; la fila de arriba pasa a ser el recibo, sin precio. La hoja Pro no se abre. Si Pro ya había vuelto solo, la fila "Restaurar compra" no está: también es correcto | |
+| 5b | **De noche** (entre las 21:00 y las 07:00, o cambiando la hora): borra la app, reinstala y, si Pro no ha vuelto solo, Mezclas, Ajustes, "Restaurar compra" | Puede pedir la contraseña. "Buscando…" en la fila y después "Gracias. Todo abierto." debajo. Nada cambia de sitio: la fila de arriba sigue con el nombre solo y "Restaurar compra" se queda donde estaba, ya sin responder al toque. Al cerrar Ajustes y volver a abrirlo, la fila de arriba es el recibo y "Restaurar compra" ya no está. La hoja Pro no se abre. Si Pro ya había vuelto solo, la fila "Restaurar compra" no está: también es correcto | |
+| 5c | De noche, sin Pro: toca "Restaurar compra" y **cancela** el diálogo de la cuenta de Apple, si sale | La fila vuelve a "Restaurar compra" sin ninguna línea debajo: no habla de compras ni de cobros. Se puede volver a tocar | |
+| 5d | De noche, sin Pro: toca "Restaurar compra" y, mientras pide la contraseña o busca, cierra Ajustes y vuelve a abrirlo | La fila dice "Buscando…" y, cuando la tienda contesta, deja debajo su línea, igual que si no lo hubieras cerrado | |
 | 6 | Con una segunda cuenta de sandbox que no ha comprado: Restaurar | El aviso de que no hay ninguna compra con esa cuenta | |
 | 7 | Modo avión; abre la hoja Pro en una instalación nueva | Precio "—"; tras unos 8 segundos, "La tienda no responde. Nada cambia". Si sonaba, sigue sonando. Comprar no hace daño | |
 | 8 | Modo avión, con Pro ya comprado; cierra y abre la app | Sigue con Pro: no depende de la red | |
@@ -348,7 +354,7 @@ Si te saltas este orden lo verás enseguida: después de la prueba 9, el paso 8 
 | 3 | **Sin borrar la app**, lanza el build nuevo desde Xcode | Arranca sin cerrarse | |
 | 4 | Mira la página | Los niveles son los que dejaste. No suena sola | |
 | 5 | Abre Mezclas | Tu mezcla está, con su nombre y sus niveles, bajo "tuyas", junto a las cuatro de la casa | |
-| 5b | Si en el build antiguo dejaste **más de seis capas** por encima de cero: abre "Todas las capas" y pulsa Play | Suenan las seis de nivel más alto. Las demás conservan su número, en tinta secundaria, sin tinta en su línea y con "Seis a la vez" debajo. Al bajar a cero una de las seis, entra la siguiente por nivel. Nada se ha borrado: la mezcla guardada sigue entera | |
+| 5b | Si en el build antiguo dejaste **más de seis capas** por encima de cero: abre "Todas las capas" y pulsa Play | Suenan las seis de nivel más alto. Las demás conservan su número, en tinta secundaria, sin tinta en su línea y con "Seis a la vez" debajo. Al bajar a cero una de las seis, entra la siguiente por nivel; si la vuelves a subir sin levantar el dedo, vuelve. Nada se ha borrado: la mezcla guardada sigue entera. En la página, mientras suena, la línea de estado nombra las que esperan ("Sonando · sin …") y la fila "Todas las capas" añade "Seis a la vez" si alguna de ellas no tiene fila | |
 | 6 | Mira el Temporizador | Conserva lo que tenías. Si lo tenías apagado, sigue en "Apagado", no en los 45 minutos de una instalación nueva | |
 | 7 | Mira la Marea | Conserva ritmo y duración | |
 | 8 | Mira la cabecera, de día | La prueba antigua sigue como estaba, con el tiempo que llevaba gastado, contada ahora en noches | |
