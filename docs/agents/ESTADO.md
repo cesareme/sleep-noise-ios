@@ -6,14 +6,14 @@ Solo lo edita Claude Code, en el mismo PR que cambia un estado o en el siguiente
 
 Estados: pendiente, en curso, en revisión, cambios, integrado, atascado, cancelado.
 
-Resumen: 0 en curso, 10 pendientes, 2 integrados (S-01 y S-02). PR abiertos del plan: 0 de 2.
+Resumen: 1 en curso (S-04), 9 pendientes, 2 integrados (S-01 y S-02). PR abiertos del plan: 0 de 2.
 
 | Id | Paquete | Autor | Revisor | Semana | Rama | Estado | PR |
 |---|---|---|---|---|---|---|---|
 | S-01 | `scripts/verify.sh`, CI de macOS, `AGENTS.md` corto, solo iPhone | Claude | Cursor (lectura) | 1 | `claude/s-01-verify-ci` | fusionado 17-11 | 5 |
 | S-02 | Rescate del PR #3: motor, texturas, modelo e intents compilando | Claude | Cursor (CI) | 1 | `claude/s-02-rescate-pr3` | fusionado 17-11 | 6 |
 | S-03 | Lógica pura con tests: `NightWindow`, reloj de la prueba, receta de Madrugada (mitad A) y `AccessPolicy` (mitad B) | Cursor | Claude | 1 | `cursor/s-03a-logica-pura`, `cursor/s-03b-politica-acceso` | pendiente | - |
-| S-04 | Tokens Grafito, Horizonte (con nivel RMS desde el hilo de audio), Disco, filas, página principal y Capas | Claude | Cursor (CI) | 2 | `claude/s-04-grafito-pagina` | pendiente | - |
+| S-04 | Tokens Grafito, Horizonte (con nivel RMS desde el hilo de audio), Disco, filas, página principal y Capas | Claude | Cursor (CI) | 2 | `claude/s-04-pagina-grafito` | en curso | - |
 | S-05 | Códec de mezclas v2, mezclas de la casa, políticas de interrupción y de ruta | Cursor | Claude | 2 | `cursor/s-05-mezclas-politicas` | pendiente | - |
 | S-06 | Noche, Madrugada, Temporizador, Marea y Mezclas en Grafito (con ganancia maestra con rampa) | Claude | Cursor (CI) | 2-3 | `claude/s-06-noche-temporizador` | pendiente | - |
 | S-07 | Hoja Pro, prueba de 7 noches, recibo y estados de la tienda; sandbox | Claude | Cursor (CI) | 3 | `claude/s-07-hoja-pro` | pendiente | - |
@@ -53,15 +53,10 @@ paywall.benefit.timer.detail
 paywall.trial.activeFormat
 paywall.trial.notStartedFormat
 paywall.trial.endedDetail
-trial.intro.detailFormat
-trial.intro.runningFormat
-trial.ended.detailFormat
-trial.ended.detailNoPrice
 intent.timerNeedsProFormat
-mixes.stripped
 ```
 
-`paywall.trial.activeFormat` y `trial.intro.runningFormat` son las que ve hoy toda instalación nueva mientras corre la prueba.
+S-04 retiró las que vivían en la pantalla antigua (`trial.intro.*`, `trial.ended.*`, `mixes.stripped`), junto con el resto de cadenas que solo usaba ella. `paywall.trial.activeFormat` es la que ve hoy toda instalación nueva que abre la hoja Pro mientras corre la prueba. `timer.locked` ya no se enseña: la página abre la hoja del temporizador con todas las duraciones libres.
 
 ### Textos fuera del catálogo
 
@@ -80,3 +75,33 @@ mixes.stripped
 ### Madrugada (S-06)
 
 - La revisión añadió `AccessPolicy.soundIsIncluded(_:hasFullAccess:inSmallHours:)`, que el brief no pedía: en Madrugada el sonido de la receta (`SmallHoursRecipe.standard.sound`, océano) suena para todos, igual que la Marea. `MixerModel.currentGains()` y `isSilent` usan hoy la firma de dos argumentos: si Madrugada se cablea por ese camino sin la firma nueva, quien no tiene Pro oye silencio.
+
+## Lo que S-04 deja abierto
+
+De la entrega de la página y de Capas (17-11-2026). Quien abra el paquete indicado lo lee antes de empezar.
+
+### Decisiones tomadas al construir, a confirmar
+
+- **Capas va sobre `hoja`**, como pide PLAN-SIMPLE §4.1 ("nunca hojas negras sobre negro"). 03 §4.10 y 05 §2.7 la querían sobre `negro`. Sobre `hoja` el relieve `grafito` del Disco y de la pista bajo el dedo casi no se distingue (1E1D1B sobre 1C1C1E). Si se prefiere el negro, es un argumento en `LayersSheet` (`grafitoSheet(surface:)`).
+- **La barra inferior** es "Mezclas" y el Disco; el sitio de "Noche" queda vacío hasta S-06. Marea y Temporizador son filas de la página, como en la maqueta. La barra es propia (no `ToolbarItemGroup`), para que se vea igual en iOS 17 y 26.
+- **La línea de estado** elige así cuando coinciden varias cosas: fundiendo, capa por defecto ("rosa a 40"), hora del temporizador, "sin {capa}", "Sonando".
+- **"y N más"** cuenta las capas por encima de cero que no tienen fila, también las Pro que conservan nivel.
+- **Play con la mezcla en silencio** (vacía o toda Pro sin acceso) sube rosa a 40 como nivel real (05 §2.12). Los intents siguen negándose a empezar una noche en silencio.
+
+### Página nocturna (S-06)
+
+- La tinta nocturna es por procedencia (C40): `MixerModel.beginNightSession()`, que ya llama `leaveBedtime()`. Hoy nada entra en Noche, así que la página nocturna solo se ve con `-pageState night`. Vive en memoria: falta decidir qué es "la sesión" y guardarla.
+- La venta se cierra por `NightWindow` y, además, mientras dure la página nocturna (`SaleGate`). Toda petición de la hoja Pro pasa por `MixerModel.offerPro()`.
+
+### Prueba (S-07)
+
+- La cabecera de la página enseña la prueba de 7 días de hoy con las cadenas del chip antiguo (`trial.chip.*`), como palabra de estado. Es la única entrada a la hoja Pro mientras todo está abierto. La tarjeta de bienvenida y la de "prueba terminada" se fueron con la pantalla antigua: la prueba sigue empezando con Play hasta S-07, y ahora solo lo dice la hoja Pro.
+- Los renglones de la nota de una vez (noche 7 y noche 8) no se construyeron: dependen de `NightTrial`. La cabecera tiene su renglón fijo.
+
+### Lo que la página no hace todavía
+
+- Marea: la banda de 120 pt y la línea de agua, "Se retira a las", y que el interruptor arranque el sonido (S-06). El interruptor arma la Marea como hasta ahora.
+- Línea 2: "Seguir por el altavoz", "Sonando · al 40", "En pausa · llamada", "· AirPods" y el fin de sesión a los 20 minutos en pausa dependen de cablear `RoutePolicy` e `InterruptionPolicy` (S-06).
+- Menú del nombre: solo "Guardar como mezcla…". Renombrar y Vaciar, con Mezclas (S-06).
+- Descomposición del Horizonte por pulsación larga, TipKit del segundo arrastre, fila Timbre (1.1) y "Enviar informe".
+- Una mezcla guardada con más de seis capas se carga entera: el tope solo impide añadir la séptima.
