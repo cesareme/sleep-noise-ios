@@ -6,20 +6,20 @@ Solo lo edita Claude Code, en el mismo PR que cambia un estado o en el siguiente
 
 Estados: pendiente, en curso, en revisión, cambios, integrado, atascado, cancelado.
 
-Resumen: 1 en curso (S-04), 9 pendientes, 2 integrados (S-01 y S-02). PR abiertos del plan: 0 de 2.
+Resumen: 9 integrados (S-01 a S-07, S-09 y S-10), 1 en revisión (S-08), 2 pendientes que dependen del dueño (S-11 beta y S-12 envío). Por indicación del dueño, Claude hizo también los paquetes asignados a Cursor. Guía del dueño: `docs/lanzamiento/`.
 
 | Id | Paquete | Autor | Revisor | Semana | Rama | Estado | PR |
 |---|---|---|---|---|---|---|---|
 | S-01 | `scripts/verify.sh`, CI de macOS, `AGENTS.md` corto, solo iPhone | Claude | Cursor (lectura) | 1 | `claude/s-01-verify-ci` | fusionado 17-11 | 5 |
 | S-02 | Rescate del PR #3: motor, texturas, modelo e intents compilando | Claude | Cursor (CI) | 1 | `claude/s-02-rescate-pr3` | fusionado 17-11 | 6 |
-| S-03 | Lógica pura con tests: `NightWindow`, reloj de la prueba, receta de Madrugada (mitad A) y `AccessPolicy` (mitad B) | Cursor | Claude | 1 | `cursor/s-03a-logica-pura`, `cursor/s-03b-politica-acceso` | pendiente | - |
-| S-04 | Tokens Grafito, Horizonte (con nivel RMS desde el hilo de audio), Disco, filas, página principal y Capas | Claude | Cursor (CI) | 2 | `claude/s-04-pagina-grafito` | en curso | - |
-| S-05 | Códec de mezclas v2, mezclas de la casa, políticas de interrupción y de ruta | Cursor | Claude | 2 | `cursor/s-05-mezclas-politicas` | pendiente | - |
-| S-06 | Noche, Madrugada, Temporizador, Marea y Mezclas en Grafito (con ganancia maestra con rampa) | Claude | Cursor (CI) | 2-3 | `claude/s-06-noche-temporizador` | en curso | - |
-| S-07 | Hoja Pro, prueba de 7 noches, recibo y estados de la tienda; sandbox | Claude | Cursor (CI) | 3 | `claude/s-07-pro-prueba` | en revisión | - |
+| S-03 | Lógica pura con tests: `NightWindow`, reloj de la prueba, receta de Madrugada (mitad A) y `AccessPolicy` (mitad B) | Claude (era Cursor) | Claude | 1 | `claude/s-03-logica-pura` | fusionado 17-11 | 8 |
+| S-04 | Tokens Grafito, Horizonte (con nivel RMS desde el hilo de audio), Disco, filas, página principal y Capas | Claude | Cursor (CI) | 2 | `claude/s-04-pagina-grafito` | fusionado 17-11 | 10 |
+| S-05 | Códec de mezclas v2, mezclas de la casa, políticas de interrupción y de ruta | Claude (era Cursor) | Claude | 2 | `claude/s-05-mezclas-politicas` | fusionado 17-11 | 9 |
+| S-06 | Noche, Madrugada, Temporizador, Marea y Mezclas en Grafito (con ganancia maestra con rampa) | Claude | Cursor (CI) | 2-3 | `claude/s-06-noche-temporizador` | fusionado 17-11 | 11 |
+| S-07 | Hoja Pro, prueba de 7 noches, recibo y estados de la tienda; sandbox | Claude | Cursor (CI) | 3 | `claude/s-07-pro-prueba` | fusionado 17-11 | 14 |
 | S-08 | Catálogo de cadenas EN y ES, test de interfaz que genera las capturas | Claude | Cursor (CI) | 3 | `claude/s-08-cadenas-capturas` | en revisión | - |
-| S-09 | Ficha de App Store EN y ES, notas para revisión, "Lo que no hay", política de privacidad | Cursor | Claude + dueño | 3 | `cursor/s-09-ficha` | pendiente | - |
-| S-10 | Icono "La regla y la marea" | Claude o diseñador | Dueño | 3 | `claude/s-10-icono` | pendiente | - |
+| S-09 | Ficha de App Store EN y ES, notas para revisión, "Lo que no hay", política de privacidad | Claude (era Cursor) | Claude + dueño | 3 | `claude/s-09-ficha` | fusionado 17-11 | 12 |
+| S-10 | Icono "La regla y la marea" | Claude | Dueño | 3 | `claude/s-10-icono` | fusionado 17-11, pendiente de aprobar por el dueño | 13 |
 | S-11 | Correcciones de la beta | Claude | Cursor (CI) | 4 | `claude/s-11-beta` | pendiente | - |
 | S-12 | Build de lanzamiento y envío | Claude + dueño | Dueño | 4 | `claude/s-12-lanzamiento` | pendiente | - |
 
