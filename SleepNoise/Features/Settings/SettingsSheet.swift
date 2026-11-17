@@ -9,7 +9,9 @@ import SwiftUI
 /// sells, rates or asks.
 ///
 /// Opened from the night page it takes its one ink, and the Pro row is
-/// words: nothing sells at night.
+/// words: nothing sells at night. Without Pro, "Restore purchase" is then a
+/// row of its own under it (`SettingsRestoreRow`): what was paid for is
+/// never out of reach until the morning.
 struct SettingsSheet: View {
     @ObservedObject var model: MixerModel
     @ObservedObject var purchases: PurchaseManager
@@ -18,6 +20,9 @@ struct SettingsSheet: View {
     @Environment(\.openURL) private var openURL
     @ScaledMetric(relativeTo: .footnote) private var headerLine: CGFloat = 18
     @State private var path: [SettingsPage]
+    /// "Restore purchase" was pressed in this visit: the row and its line
+    /// stay until the sheet closes.
+    @State private var askedRestore = false
 
     init(model: MixerModel, purchases: PurchaseManager) {
         self.model = model
@@ -47,6 +52,7 @@ struct SettingsSheet: View {
     var body: some View {
         // Read once per draw; the model checks again on the tap.
         let canSell = model.canSell
+        let restore = restoreRow(canSell: canSell)
         NavigationStack(path: $path) {
             VStack(spacing: 0) {
                 SheetHeader(title: Localized.string("ajustes.titulo"))
@@ -58,8 +64,13 @@ struct SettingsSheet: View {
                         header(Localized.string("ajustes.seccion.pro"))
                             .padding(.top, Grid.group)
                         proRow(canSell: canSell)
+                        if restore.exists {
+                            restoreAction(restore)
+                            restoreResult(restore)
+                        }
                         header(SettingsText.aboutHeader(appName: Self.appName))
-                            .padding(.top, Grid.group)
+                            // The place of the restore line is air already.
+                            .padding(.top, restore.exists ? Grid.inner : Grid.group)
                         EditorialRow(title: Localized.string("lo_que_no_hay.titulo")) {
                             path.append(.whatIsNotHere)
                         }
@@ -102,6 +113,28 @@ struct SettingsSheet: View {
                 .modifier(DebugDynamicType())
                 #endif
         }
+        .onChange(of: restore.resultKey) { _, key in
+            // About what was paid for: said over whatever is being read.
+            guard let key else { return }
+            var words = AttributedString(ProSheetText.spoken(Localized.string(key)))
+            words.accessibilitySpeechAnnouncementPriority = .high
+            AccessibilityNotification.Announcement(words).post()
+        }
+        .onDisappear {
+            // The line of this visit says nothing about the next one, in
+            // Settings or in the Pro sheet.
+            if askedRestore, purchases.activity == .idle { purchases.clearNotice() }
+        }
+        #if DEBUG
+        .task {
+            // A capture of the row after its answer: pressed once the
+            // sheet is up and the store has given the name.
+            guard SettingsArguments.restoresOnAppear else { return }
+            try? await Task.sleep(for: .milliseconds(1200))
+            PageStage.stageRestore()
+            restorePurchase()
+        }
+        #endif
     }
 
     private func header(_ text: String) -> some View {
@@ -159,6 +192,65 @@ struct SettingsSheet: View {
     }
 }
 
+extension SettingsSheet {
+    private func restoreRow(canSell: Bool) -> SettingsRestoreRow {
+        SettingsRestoreRow(
+            isPro: purchases.isPro,
+            canSell: canSell,
+            activity: purchases.activity,
+            notice: purchases.notice,
+            isPlaying: model.isPlaying,
+            askedHere: askedRestore
+        )
+    }
+
+    /// "Restore purchase": it asks the App Store and nothing else. It does
+    /// not go through the sale gate, because it sells nothing, and it never
+    /// raises the Pro sheet.
+    private func restorePurchase() {
+        askedRestore = true
+        Task { await purchases.restore() }
+    }
+
+    private func restoreAction(_ row: SettingsRestoreRow) -> some View {
+        let title = Localized.string(row.titleKey)
+        return EditorialRow(title: title, isInert: !row.isEnabled) {
+            restorePurchase()
+        }
+        .accessibilityLabel(Text(verbatim: ProSheetText.spoken(title)))
+        .accessibilityIdentifier("settings.restore")
+    }
+
+    /// What the restore brought, under its row. The place is always there,
+    /// as tall as its longest line: the rows below never move.
+    private func restoreResult(_ row: SettingsRestoreRow) -> some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(SettingsRestoreRow.resultKeys, id: \.self) { key in
+                restoreLine(key)
+                    .hidden()
+                    .accessibilityHidden(true)
+            }
+            if let key = row.resultKey {
+                restoreLine(key)
+                    .id(key)
+                    .transition(.opacity)
+                    .accessibilityIdentifier("settings.restore.result")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .padding(.horizontal, Grid.margin)
+        .padding(.top, Grid.unit * 2)
+        .animation(Motion.contentCurve, value: row.resultKey)
+    }
+
+    private func restoreLine(_ key: String) -> some View {
+        Text(verbatim: Localized.string(key))
+            .step(.note)
+            .foregroundStyle(Ink.secondary(phase))
+            .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
 /// What Settings pushes inside its own sheet.
 enum SettingsPage: Hashable {
     case whatIsNotHere
@@ -212,6 +304,11 @@ struct WhatIsNotHerePage: View {
 enum SettingsArguments {
     static var initialPath: [SettingsPage] {
         PageArguments.state == .settingsNotHere ? [.whatIsNotHere] : []
+    }
+
+    /// The capture is of "Restore purchase" after it was pressed.
+    static var restoresOnAppear: Bool {
+        PageArguments.state?.restoreOutcome != nil
     }
 }
 #endif

@@ -4142,7 +4142,7 @@
       }
     },
     "pro.restaurar": {
-      "comment": "Pro sheet: restore.",
+      "comment": "Pro sheet: restore. Also the row of Settings while nothing may be sold.",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -4538,7 +4538,7 @@
       }
     },
     "pro.buscando": {
-      "comment": "Pro sheet: the restore action while the App Store is asked.",
+      "comment": "Pro sheet and Settings: the restore action while the App Store is asked.",
       "extractionState": "manual",
       "localizations": {
         "en": {

@@ -112,3 +112,74 @@ struct SettingsProRow: Equatable {
         }
     }
 }
+
+/// "Restore purchase" in Settings: the way back to a purchase while the
+/// Pro sheet cannot go up.
+///
+/// The row exists without Pro whenever nothing may be sold: inside the
+/// night window, on the night page and in Small Hours. Restoring is not
+/// selling, so it carries no price and leads to no sheet: it asks the App
+/// Store, says "Looking…" in its own place and leaves one line under it
+/// with what came back. By day it does not exist: the Pro row opens the
+/// sheet, and Restore is there.
+///
+/// Once pressed it stays for the rest of the visit, whatever the hour and
+/// whatever the answer, so that the line is read where the row was.
+struct SettingsRestoreRow: Equatable {
+    static let titleKey = "pro.restaurar"
+    static let lookingKey = "pro.buscando"
+    static let restoredKey = "pro.gracias"
+    static let nothingKey = "pro.restaurar.no"
+    static let failedKey = "pro.fallo"
+
+    /// Every line the row can leave under itself. The view keeps the
+    /// height of the longest, so nothing under the row ever moves.
+    static let resultKeys = [
+        restoredKey, nothingKey, failedKey,
+        ProSheetContent.storeAwayKey, ProSheetContent.storeAwayInSilenceKey,
+    ]
+
+    var exists: Bool
+    /// "Restore purchase", or "Looking…" while the App Store is asked.
+    var titleKey: String
+    /// Nothing is in flight: the row answers. While it looks it is words.
+    var isEnabled: Bool
+    /// The catalog key of what the restore brought, or nil before it was
+    /// asked for here and while it is looking.
+    var resultKey: String?
+
+    init(
+        isPro: Bool,
+        canSell: Bool,
+        activity: StoreActivity,
+        notice: PurchaseNotice?,
+        isPlaying: Bool,
+        askedHere: Bool
+    ) {
+        exists = askedHere || (!isPro && !canSell)
+        titleKey = activity == .restoring ? Self.lookingKey : Self.titleKey
+        isEnabled = activity == .idle
+        resultKey = askedHere && activity == .idle
+            ? Self.resultKey(isPro: isPro, notice: notice, isPlaying: isPlaying)
+            : nil
+    }
+
+    private static func resultKey(isPro: Bool, notice: PurchaseNotice?, isPlaying: Bool) -> String? {
+        // Pro is there: whatever the App Store said on the way, it is open.
+        if isPro { return restoredKey }
+        switch notice {
+        case .restored:
+            return restoredKey
+        case .nothingToRestore:
+            return nothingKey
+        case .cancelled, .failed:
+            return failedKey
+        case .storeUnavailable:
+            // The app never says something is playing when nothing is.
+            return isPlaying ? ProSheetContent.storeAwayKey : ProSheetContent.storeAwayInSilenceKey
+        case .purchased, .pending, .unconfirmed, .trialNotStarted, nil:
+            // Lines of a purchase or of the trial: not this row's to say.
+            return nil
+        }
+    }
+}

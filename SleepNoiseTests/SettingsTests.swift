@@ -142,6 +142,216 @@ final class SettingsTests: XCTestCase {
         XCTAssertFalse(night.model.showPaywall, "no sheet was queued")
     }
 
+    // MARK: Restore purchase while nothing sells
+
+    private func restoreRow(
+        isPro: Bool = false,
+        canSell: Bool = false,
+        activity: StoreActivity = .idle,
+        notice: PurchaseNotice? = nil,
+        isPlaying: Bool = false,
+        askedHere: Bool = false
+    ) -> SettingsRestoreRow {
+        SettingsRestoreRow(
+            isPro: isPro,
+            canSell: canSell,
+            activity: activity,
+            notice: notice,
+            isPlaying: isPlaying,
+            askedHere: askedHere
+        )
+    }
+
+    /// The row as Settings builds it, from a model and its store.
+    private func restoreRow(_ night: NightHarness, askedHere: Bool) -> SettingsRestoreRow {
+        restoreRow(
+            isPro: night.purchases.isPro,
+            canSell: night.model.canSell,
+            activity: night.purchases.activity,
+            notice: night.purchases.notice,
+            isPlaying: night.model.isPlaying,
+            askedHere: askedHere
+        )
+    }
+
+    /// Red if someone who paid has no way to restore at night, or if the
+    /// row shows by day, where the Pro sheet already has it.
+    func testRestoreIsARowOnlyWithoutProWhileNothingSells() throws {
+        XCTAssertTrue(restoreRow().exists)
+        XCTAssertFalse(restoreRow(canSell: true).exists, "by day Restore is in the Pro sheet")
+        XCTAssertFalse(restoreRow(isPro: true).exists, "nothing to restore")
+        XCTAssertFalse(restoreRow(isPro: true, canSell: true).exists)
+
+        // The gate is the model's: the night window, the night page and
+        // Small Hours, and nothing else.
+        let night = try NightHarness(at: NightHarness.time(12), access: .free)
+        XCTAssertFalse(restoreRow(night, askedHere: false).exists)
+        for (hour, minute) in [(20, 59), (7, 0), (9, 0)] {
+            night.jump(to: NightHarness.time(hour, minute))
+            XCTAssertFalse(restoreRow(night, askedHere: false).exists, "\(hour):\(minute)")
+        }
+        for (hour, minute) in [(21, 0), (23, 30), (3, 42), (6, 59)] {
+            night.jump(to: NightHarness.time(hour, minute))
+            XCTAssertTrue(restoreRow(night, askedHere: false).exists, "\(hour):\(minute)")
+        }
+        night.jump(to: NightHarness.time(12))
+        night.model.beginNightSession()
+        XCTAssertTrue(restoreRow(night, askedHere: false).exists, "the night page, at any hour")
+        night.model.endNightSession()
+        XCTAssertFalse(restoreRow(night, askedHere: false).exists)
+        XCTAssertEqual(night.model.startSmallHours(), .started)
+        XCTAssertTrue(restoreRow(night, askedHere: false).exists, "Small Hours, at any hour")
+
+        // With Pro there is no row at any hour.
+        let bought = try NightHarness(at: NightHarness.time(23))
+        XCTAssertTrue(bought.purchases.isPro)
+        XCTAssertFalse(restoreRow(bought, askedHere: false).exists)
+    }
+
+    /// Red if the row carries a price, a figure or a way into the sheet:
+    /// its words are the action and nothing else.
+    func testTheRestoreRowIsWordsWithoutAPrice() {
+        XCTAssertEqual(SettingsRestoreRow.titleKey, "pro.restaurar")
+        let row = restoreRow()
+        XCTAssertEqual(row.titleKey, "pro.restaurar")
+        XCTAssertTrue(row.isEnabled)
+        XCTAssertNil(row.resultKey, "nothing is said before it is asked for")
+        for language in ["es", "en"] {
+            let lookup = ProCatalog.lookup(language)
+            for key in [SettingsRestoreRow.titleKey, SettingsRestoreRow.lookingKey] {
+                let words = lookup(key)
+                XCTAssertNotEqual(words, key, "\(language) \(key)")
+                XCTAssertNil(words.rangeOfCharacter(from: .decimalDigits), "\(language) \(key): no figure")
+                XCTAssertFalse(words.contains("%"), "\(language) \(key): nothing to fill in")
+            }
+            for key in SettingsRestoreRow.resultKeys {
+                XCTAssertNotEqual(lookup(key), key, "\(language) \(key)")
+            }
+        }
+        XCTAssertEqual(ProCatalog.lookup("es")("pro.restaurar"), "Restaurar compra")
+        XCTAssertEqual(ProCatalog.lookup("en")("pro.restaurar"), "Restore purchase")
+        // The Pro row beside it still has no price and opens nothing.
+        let pro = self.row(canSell: false)
+        XCTAssertFalse(pro.opensSheet)
+        XCTAssertNil(pro.value)
+    }
+
+    /// Red if a line left by something else (a purchase by day, a restore
+    /// in the Pro sheet) shows under a row nobody pressed, or if the row
+    /// goes away with its answer once it was pressed.
+    func testTheLineIsOnlyWhatThisVisitAskedFor() {
+        for notice in [PurchaseNotice.nothingToRestore, .restored, .storeUnavailable, .cancelled] {
+            XCTAssertNil(restoreRow(notice: notice).resultKey, "\(notice)")
+        }
+        XCTAssertEqual(restoreRow(notice: .nothingToRestore, askedHere: true).resultKey, "pro.restaurar.no")
+        XCTAssertEqual(restoreRow(notice: .cancelled, askedHere: true).resultKey, "pro.fallo")
+        XCTAssertEqual(restoreRow(notice: .failed, askedHere: true).resultKey, "pro.fallo")
+        XCTAssertEqual(
+            restoreRow(notice: .storeUnavailable, askedHere: true).resultKey, "pro.sin_tienda.silencio",
+            "the app never says something is playing when nothing is"
+        )
+        XCTAssertEqual(
+            restoreRow(notice: .storeUnavailable, isPlaying: true, askedHere: true).resultKey, "pro.sin_tienda"
+        )
+        // Lines of a purchase are not this row's to say.
+        for notice in [PurchaseNotice.purchased, .pending, .unconfirmed, .trialNotStarted] {
+            XCTAssertNil(restoreRow(notice: notice, askedHere: true).resultKey, "\(notice)")
+        }
+
+        // Restored: Pro is there, the row stays where it was and thanks.
+        let restored = restoreRow(isPro: true, notice: .restored, askedHere: true)
+        XCTAssertTrue(restored.exists)
+        XCTAssertEqual(restored.resultKey, "pro.gracias")
+        XCTAssertEqual(restored.titleKey, "pro.restaurar")
+        // And it stays if the morning comes with Settings open.
+        XCTAssertTrue(restoreRow(canSell: true, notice: .nothingToRestore, askedHere: true).exists)
+
+        // While it looks: "Looking…", nothing answers and nothing is said.
+        let looking = restoreRow(activity: .restoring, notice: nil, askedHere: true)
+        XCTAssertEqual(looking.titleKey, "pro.buscando")
+        XCTAssertFalse(looking.isEnabled)
+        XCTAssertNil(looking.resultKey)
+        XCTAssertFalse(restoreRow(activity: .purchasing).isEnabled)
+
+        // Every line the row can say has its place kept.
+        let said = ["pro.gracias", "pro.restaurar.no", "pro.fallo", "pro.sin_tienda", "pro.sin_tienda.silencio"]
+        XCTAssertEqual(Set(SettingsRestoreRow.resultKeys), Set(said))
+    }
+
+    /// Red if restoring at night does not reach the store, opens the Pro
+    /// sheet, or says something other than what the App Store answered.
+    func testRestoringAtNightAsksTheStoreAndNeverRaisesTheProSheet() async throws {
+        let bought = ProReceipt(purchaseDate: NightHarness.time(day: 10, 12), isFamilyShared: false)
+
+        // Nothing for this account.
+        let empty = try NightHarness(at: NightHarness.time(23), access: .free)
+        XCTAssertFalse(empty.model.canSell)
+        XCTAssertTrue(restoreRow(empty, askedHere: false).exists)
+        await empty.purchases.restore()
+        XCTAssertEqual(empty.store.syncCount, 1, "the real restore ran")
+        XCTAssertEqual(restoreRow(empty, askedHere: true).resultKey, "pro.restaurar.no")
+        XCTAssertFalse(empty.purchases.isPro)
+        XCTAssertFalse(empty.model.showPaywall)
+
+        // The dialog of the App Store was closed, and a store out of reach.
+        let cancelled = try NightHarness(at: NightHarness.time(3, 42), access: .free)
+        cancelled.store.syncResult = .cancelled
+        await cancelled.purchases.restore()
+        XCTAssertEqual(restoreRow(cancelled, askedHere: true).resultKey, "pro.fallo")
+        XCTAssertFalse(cancelled.model.showPaywall)
+
+        let away = try NightHarness(at: NightHarness.time(3, 42), access: .free)
+        away.store.syncResult = .unavailable
+        await away.purchases.restore()
+        XCTAssertEqual(restoreRow(away, askedHere: true).resultKey, "pro.sin_tienda.silencio")
+        away.model.play()
+        XCTAssertTrue(away.model.isPlaying)
+        await away.purchases.restore()
+        XCTAssertEqual(restoreRow(away, askedHere: true).resultKey, "pro.sin_tienda")
+        XCTAssertFalse(away.model.showPaywall)
+
+        // The purchase comes back: everything opens at once, at night, and
+        // the row says so without a sheet.
+        let night = try NightHarness(at: NightHarness.time(23), access: .free)
+        night.store.hangs = true
+        night.store.entitlementAfterSync = .entitled(bought)
+        let restoring = Task { await night.purchases.restore() }
+        try await waitUntil { night.store.syncCount == 1 }
+        let looking = restoreRow(night, askedHere: true)
+        XCTAssertEqual(looking.titleKey, "pro.buscando")
+        XCTAssertFalse(looking.isEnabled)
+        XCTAssertNil(looking.resultKey)
+        XCTAssertFalse(night.purchases.hasFullAccess)
+
+        night.store.release()
+        await restoring.value
+        XCTAssertTrue(night.purchases.isPro)
+        XCTAssertTrue(night.purchases.hasFullAccess)
+        XCTAssertEqual(night.purchases.receipt, bought)
+        let restored = restoreRow(night, askedHere: true)
+        XCTAssertTrue(restored.exists)
+        XCTAssertTrue(restored.isEnabled)
+        XCTAssertEqual(restored.resultKey, "pro.gracias")
+        XCTAssertFalse(night.model.showPaywall, "restoring is not selling: no sheet")
+        XCTAssertFalse(night.model.canSell, "and the night still sells nothing")
+        // The Pro row beside it is the receipt, still words at night.
+        let pro = SettingsProRow(
+            isPro: night.purchases.isPro,
+            displayName: "Store Name",
+            product: night.purchases.productState,
+            receipt: night.purchases.receipt,
+            canSell: night.model.canSell,
+            localized: ProCatalog.lookup("es"),
+            date: { _ in "<date>" },
+            spokenDate: { _ in "<long date>" },
+            locale: Locale(identifier: "es")
+        )
+        XCTAssertEqual(pro.title, "Store Name · gracias · <date>")
+        XCTAssertFalse(pro.opensSheet)
+        // A Pro layer answers now.
+        XCTAssertEqual(night.model.setLevel(.ocean, 0.3), .applied)
+    }
+
     // MARK: Night
 
     func testKeepScreenOnHasItsThreeOptionsInWords() {

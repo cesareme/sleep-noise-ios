@@ -215,8 +215,17 @@ enum PageDebugState: String, CaseIterable {
     case settingsPro
     /// Bought through the family.
     case settingsFamily
-    /// Opened from the night page: one ink, and the Pro row is words.
+    /// Opened from the night page: one ink, the Pro row is words and
+    /// "Restore purchase" is a row of its own under it.
     case settingsNight
+    /// The same after "Restore purchase": "Looking…".
+    case settingsNightRestoring
+    /// The App Store had nothing for this account: the longest line.
+    case settingsNightNothing
+    /// The purchase came back: the receipt line and "Thank you".
+    case settingsNightRestored
+    /// The store did not answer.
+    case settingsNightFailed
     /// "What's not here".
     case settingsNotHere
     /// The end of Mixes: "Settings", its last row.
@@ -265,7 +274,23 @@ enum PageDebugState: String, CaseIterable {
         case .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNight, .settingsNotHere,
              .proOfferSettings:
             return true
-        default: return false
+        default: return restoreOutcome != nil
+        }
+    }
+
+    /// How "Restore purchase" ends in a staged Settings at night, or nil
+    /// for a state that does not press it.
+    enum RestoreOutcome {
+        case looking, nothing, restored, storeAway
+    }
+
+    var restoreOutcome: RestoreOutcome? {
+        switch self {
+        case .settingsNightRestoring: return .looking
+        case .settingsNightNothing: return .nothing
+        case .settingsNightRestored: return .restored
+        case .settingsNightFailed: return .storeAway
+        default: return nil
         }
     }
 
@@ -295,7 +320,7 @@ enum PageDebugState: String, CaseIterable {
             return true
         default:
             // A staged trial is neither Pro nor a new install.
-            return trialConsumed != nil
+            return trialConsumed != nil || restoreOutcome != nil
         }
     }
 
@@ -342,7 +367,7 @@ enum PageDebugState: String, CaseIterable {
         case .night, .nightLayers, .nightTide, .timerNight, .tideNight, .mixesNight, .mixesNightFree,
              .trialAtNight, .settingsNight:
             return true
-        default: return isNightScreen || isSmallHours
+        default: return isNightScreen || isSmallHours || restoreOutcome != nil
         }
     }
 }
@@ -664,7 +689,8 @@ enum PageStage {
             model.beginNightSession()
         case .timer:
             model.selectTimer(minutes: 45)
-        case .nightLayers, .settingsNight:
+        case .nightLayers, .settingsNight, .settingsNightRestoring, .settingsNightNothing,
+             .settingsNightRestored, .settingsNightFailed:
             model.beginNightSession()
         case .tide:
             model.setBreathingEnabled(true)
@@ -732,6 +758,26 @@ enum PageStage {
         model.noteBedtimeTouch()
     }
 
+    /// Sets the staged store for the answer the capture is of, just before
+    /// Settings presses "Restore purchase".
+    static func stageRestore() {
+        guard let outcome = PageArguments.state?.restoreOutcome, let store = stageStore else { return }
+        switch outcome {
+        case .looking:
+            // "Looking…" lasts for as long as the App Store takes.
+            store.hangs = true
+        case .nothing:
+            store.syncResult = .synced
+        case .restored:
+            // Bought the day before the capture.
+            store.entitlementAfterSync = .entitled(ProReceipt(
+                purchaseDate: stageClock.date.addingTimeInterval(-86_400), isFamilyShared: false
+            ))
+        case .storeAway:
+            store.syncResult = .unavailable
+        }
+    }
+
     /// What a staged page does once it is on screen.
     static func didAppear(_ model: MixerModel) {
         guard let state = PageArguments.state else { return }
@@ -739,7 +785,9 @@ enum PageStage {
         case .rest, .restFree, .storeFirstUse, .layersSix, .layersEnd, .timerRest, .timerHour, .timerLength,
              .tideRest, .tideLocked, .mixesEmpty,
              .trialNight1, .trialNight3, .trialNight7, .trialLastDay, .trialNight8, .trialAtNight,
-             .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNight, .settingsNotHere:
+             .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNight, .settingsNotHere,
+             .settingsNightRestoring, .settingsNightNothing, .settingsNightRestored, .settingsNightFailed:
+            // Settings presses its own "Restore purchase" (`stageRestore`).
             break
         case .proOffer, .proTrial, .proLoading, .proUnavailable, .proReceipt, .proReceiptFamily,
              .proReceiptReview:
