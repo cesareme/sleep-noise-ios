@@ -1,0 +1,4 @@
+// Copy to Config/Local.xcconfig (ignored by Git) and write your own team:
+// the ten characters under Membership in the Apple Developer account.
+
+DEVELOPMENT_TEAM = ABCDE12345

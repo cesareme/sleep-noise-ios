@@ -91,11 +91,24 @@ enum TideSheetText {
         time: (Date) -> String = { $0.formatted(date: .omitted, time: .shortened) }
     ) -> String? {
         guard status.showsWater, let end else { return nil }
-        return String(format: localized("marea.retira.hora"), time(end))
+        let hour = time(end)
+        return String(format: localized(HourPhrase.key("marea.retira.hora", at: hour)), hour)
     }
 
-    /// The pace on the right of its row: "Calm · 6", "Gentle · 8", or the
-    /// bare figure for a pace that has no name.
+    /// The hour the line gives: the end of the guide's own window, or the
+    /// end of the night when the timer gets there first. The tide leaves
+    /// with the final fade, so it never recedes later than the page says
+    /// the sound ends. Nil when the guide has no end of its own.
+    static func recedesAt(guideEnd: Date?, timerEnd: Date?) -> Date? {
+        guard let guideEnd else { return nil }
+        guard let timerEnd else { return guideEnd }
+        return min(guideEnd, timerEnd)
+    }
+
+    /// The pace on the right of its row and in its menu: "Calm · 6",
+    /// "Gentle · 8", or the bare figure for a pace that has no name. The
+    /// short form is the one a system menu sets on one line beside its
+    /// tick.
     static func paceValue(_ rate: Int, localized: Lookup = standardLookup, locale: Locale = .current) -> String {
         switch rate {
         case BreathingSettings.calmRate:
@@ -106,7 +119,7 @@ enum TideSheetText {
         }
     }
 
-    /// The pace as an option of the menu, and as VoiceOver says it.
+    /// The pace in full, as VoiceOver says it.
     static func paceOption(_ rate: Int, localized: Lookup = standardLookup, locale: Locale = .current) -> String {
         switch rate {
         case BreathingSettings.calmRate:

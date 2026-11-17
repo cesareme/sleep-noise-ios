@@ -81,6 +81,12 @@ struct LevelRule: View {
                 }
                 // A row taken away with a finger on it still ends its drag.
                 .onDisappear { endDrag() }
+                #if DEBUG
+                .onAppear {
+                    // A capture draws this row as it is under a finger.
+                    if PageArguments.heldLayer?.rawValue == id { beginDrag() }
+                }
+                #endif
             // Dead channel: no gesture starts here, so a scroll always has
             // somewhere to begin between two rows.
             channel
@@ -511,8 +517,8 @@ private struct LevelRuleAccessibility: ViewModifier {
                 }
                 .accessibilityAction(named: Text("ax.accion.silenciar")) { level = 0 }
                 .accessibilityAction(named: Text("ax.accion.maximo")) { level = 1 }
-                .accessibilityAction(named: Text("ax.accion.subir")) { level = LevelMath.stepped(level, up: true) }
-                .accessibilityAction(named: Text("ax.accion.bajar")) { level = LevelMath.stepped(level, up: false) }
+                .accessibilityAction(named: Text("ax.nivel.subir")) { level = LevelMath.stepped(level, up: true) }
+                .accessibilityAction(named: Text("ax.nivel.bajar")) { level = LevelMath.stepped(level, up: false) }
                 .accessibilityAction(named: Text("ax.accion.deslizador")) { onSlider() }
         }
     }

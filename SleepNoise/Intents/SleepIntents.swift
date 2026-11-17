@@ -289,7 +289,7 @@ struct SleepNoiseShortcuts: AppShortcutsProvider {
             intent: SetTimerIntent(),
             phrases: [
                 "Set \(\.$mode) in \(.applicationName)",
-                "\(.applicationName) \(\.$mode)"
+                "\(.applicationName) timer \(\.$mode)"
             ],
             shortTitle: LocalizedStringResource("temporizador.titulo"),
             systemImageName: "timer"

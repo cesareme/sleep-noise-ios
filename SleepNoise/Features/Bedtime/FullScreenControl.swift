@@ -45,6 +45,10 @@ struct FullScreenControl<Content: View, Actions: View>: View {
     @State private var wokeAt: Date?
     @State private var showsRule = false
     @State private var ruleRelease = 0
+    /// How much of the bottom the night actions take. What the screen
+    /// shows is laid out above them: with the largest text on a short
+    /// screen the state has to fit there, not run under a button.
+    @State private var actionsHeight: CGFloat = 0
 
     /// The rule stays this long after the finger lifts.
     private static var ruleLinger: TimeInterval { Motion.stop }
@@ -57,10 +61,15 @@ struct FullScreenControl<Content: View, Actions: View>: View {
                 surface(height: layout.fullHeight)
                 Group {
                     content(layout)
+                        .padding(.bottom, insets.bottom + actionsHeight)
+                        // Its own box, whatever it holds: what does not
+                        // fit must never push the actions off the screen.
+                        .frame(height: layout.fullHeight, alignment: .top)
                         .allowsHitTesting(false)
                         .accessibilityHidden(true)
                     rule(layout)
                     actions()
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { actionsHeight = $0 }
                         .frame(maxHeight: .infinity, alignment: .bottom)
                         .padding(.bottom, insets.bottom)
                         .accessibilitySortPriority(3)

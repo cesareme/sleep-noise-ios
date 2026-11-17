@@ -110,7 +110,8 @@ enum TimerSheetText {
     ) -> String {
         switch head {
         case .counting(_, let end):
-            return String(format: localized("noche.estado.funde"), time(end))
+            let hour = time(end)
+            return String(format: localized(HourPhrase.key("noche.estado.funde", at: hour)), hour)
         case .blanket:
             guard dipIsAhead else { return " " }
             return String(
@@ -121,7 +122,10 @@ enum TimerSheetText {
         case .pausedBlanket(let end):
             // The figure says "Paused": the line says the hour, which a
             // pause does not move.
-            return sentence(String(format: localized("noche.estado.hasta"), time(end)), locale: locale)
+            let hour = time(end)
+            return sentence(
+                String(format: localized(HourPhrase.key("noche.estado.hasta", at: hour)), hour), locale: locale
+            )
         case .fading:
             return localized("temporizador.cabecera.fundiendo")
         case .paused(let minutes):
@@ -175,10 +179,11 @@ enum TimerSheetText {
         time: Clock = standardClock,
         locale: Locale = .current
     ) -> String {
-        String(
-            format: localized("temporizador.manto.detalle"),
+        let end = time(hour)
+        return String(
+            format: localized(HourPhrase.key("temporizador.manto.detalle", at: end)),
             locale: locale,
-            time(hour),
+            end,
             Int64((TimerMath.blanketDipAfter / 60).rounded())
         )
     }
@@ -231,7 +236,8 @@ enum TimerSheetText {
         case .untilAsleep:
             return String(format: localized("temporizador.estado.dormirme"), locale: locale, Int64(choice.minutes))
         case .blanket:
-            return String(format: localized("temporizador.estado.manto"), time(hour))
+            let end = time(hour)
+            return String(format: localized(HourPhrase.key("temporizador.estado.manto", at: end)), end)
         }
     }
 
@@ -263,7 +269,10 @@ enum TimerSheetText {
     ) -> String? {
         guard input.hasCount else { return nil }
         if input.choice.mode == .blanket {
-            return (input.endsAt ?? input.fixedEnd).map { String(format: localized("ax.anuncio.hasta"), time($0)) }
+            return (input.endsAt ?? input.fixedEnd).map { end in
+                let hour = time(end)
+                return String(format: localized(HourPhrase.key("ax.anuncio.hasta", at: hour)), hour)
+            }
         }
         return input.remaining.map {
             String.localizedStringWithFormat(localized("ax.anuncio.quedan"), minutes($0))

@@ -650,7 +650,7 @@
       }
     },
     "ax.accion.subir": {
-      "comment": "Accessibility action of a layer row: level up one step",
+      "comment": "Accessibility action of a saved mix: one place up in the list",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -668,13 +668,49 @@
       }
     },
     "ax.accion.bajar": {
-      "comment": "Accessibility action of a layer row: level down one step",
+      "comment": "Accessibility action of a saved mix: one place down in the list",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Move down"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bajar"
+          }
+        }
+      }
+    },
+    "ax.nivel.subir": {
+      "comment": "Accessibility action of a layer row: level up one step",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Increase"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subir"
+          }
+        }
+      }
+    },
+    "ax.nivel.bajar": {
+      "comment": "Accessibility action of a layer row: level down one step",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decrease"
           }
         },
         "es": {
@@ -698,7 +734,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ajuste con deslizador"
+            "value": "Ajustar con deslizador"
           }
         }
       }
@@ -847,6 +883,24 @@
         }
       }
     },
+    "pagina.estado.sonando.funde.una": {
+      "comment": "State line: playing with the sleep timer. %@ is the short time of the system. The hour reads \"one\" (1:30): Spanish says \"a la\", not \"a las\". See HourPhrase.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playing · fades at %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonando · se funde a la %@"
+          }
+        }
+      }
+    },
     "pagina.estado.sonando.sin": {
       "comment": "State line: playing without the Pro layers of the mix. %@ is one layer or a list, in lower case.",
       "extractionState": "manual",
@@ -944,7 +998,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Couldn't start the sound. Tap to try again."
+            "value": "Couldn’t start the sound. Tap to try again."
           }
         },
         "es": {
@@ -962,7 +1016,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "If it still won't play, close the app and open it again."
+            "value": "If it still won’t play, close the app and open it again."
           }
         },
         "es": {
@@ -1225,24 +1279,6 @@
         }
       }
     },
-    "mezcla.menu.guardar.pro": {
-      "comment": "Context menu of the mix name when one more saved mix needs Pro.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Save as a mix… · pro"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Guardar como mezcla… · pro"
-          }
-        }
-      }
-    },
     "mezcla.guardar.campo": {
       "comment": "Placeholder of the name field and VoiceOver label of the mix name.",
       "extractionState": "manual",
@@ -1340,7 +1376,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "What's at zero makes no sound and costs nothing."
+            "value": "What’s at zero makes no sound and uses no power."
           }
         },
         "es": {
@@ -1448,13 +1484,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "distant fan"
+            "value": "far and steady"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "ventilador lejano"
+            "value": "lejano y constante"
           }
         }
       }
@@ -1574,13 +1610,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hold to save or rename."
+            "value": "Double-tap and hold to save or rename."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mantén para guardar o renombrar."
+            "value": "Toca dos veces y mantén pulsado para guardar o renombrar."
           }
         }
       }
@@ -1646,7 +1682,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Double-tap to see Pro. The mix doesn't change."
+            "value": "Double-tap to see Pro. The mix doesn’t change."
           }
         },
         "es": {
@@ -1688,7 +1724,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Desactivada, requiere Pro"
+            "value": "Apagada, requiere Pro"
           }
         }
       }
@@ -1718,7 +1754,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Double-tap to see what's in Pro."
+            "value": "Double-tap to see what’s in Pro."
           }
         },
         "es": {
@@ -1736,7 +1772,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Couldn't start the sound. Try again"
+            "value": "Couldn’t start the sound. Try again"
           }
         },
         "es": {
@@ -1933,6 +1969,24 @@
         }
       }
     },
+    "temporizador.manto.detalle.una": {
+      "comment": "Subtitle of \"Blanket\": its hour, and the minutes after which the level eases down. The hour reads \"one\" (1:30): Spanish says \"a la\", not \"a las\". See HourPhrase.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "until %1$@ · eases down after %2$lld min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hasta la %1$@ · baja un poco a los %2$lld min"
+          }
+        }
+      }
+    },
     "temporizador.duracion": {
       "comment": "Timer sheet: row of the wheel of lengths.",
       "extractionState": "manual",
@@ -1987,6 +2041,24 @@
         }
       }
     },
+    "temporizador.estado.manto.una": {
+      "comment": "Setting of the timer row: a blanket and its hour. The hour reads \"one\" (1:30): Spanish says \"a la\", not \"a las\". See HourPhrase.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blanket · until %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manto · hasta la %@"
+          }
+        }
+      }
+    },
     "temporizador.nota": {
       "comment": "Note at the foot of the timer sheet.",
       "extractionState": "manual",
@@ -2023,6 +2095,24 @@
         }
       }
     },
+    "noche.estado.funde.una": {
+      "comment": "When the night ends, as an hour. The hour reads \"one\" (1:30): Spanish says \"a la\", not \"a las\". See HourPhrase.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fades at %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se funde a la %@"
+          }
+        }
+      }
+    },
     "noche.estado.fundiendo": {
       "comment": "The final fade is under way: whole minutes left.",
       "extractionState": "manual",
@@ -2055,6 +2145,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sonando · hasta las %@"
+          }
+        }
+      }
+    },
+    "pagina.estado.sonando.hasta.una": {
+      "comment": "State line: playing under a blanket, until its hour. The hour reads \"one\" (1:30): Spanish says \"a la\", not \"a las\". See HourPhrase.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playing · until %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonando · hasta la %@"
           }
         }
       }
@@ -2173,6 +2281,24 @@
         }
       }
     },
+    "ax.anuncio.hasta.una": {
+      "comment": "VoiceOver announcement after \"+15 min\" under a blanket. The hour reads \"one\" (1:30): Spanish says \"a la\", not \"a las\". See HourPhrase.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Until %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hasta la %@"
+          }
+        }
+      }
+    },
     "marea.instruccion": {
       "comment": "Tide sheet: the one sentence there is to know.",
       "extractionState": "manual",
@@ -2281,6 +2407,24 @@
         }
       }
     },
+    "marea.retira.hora.una": {
+      "comment": "Tide sheet: when the guide lets go, as an hour. The hour reads \"one\" (1:30): Spanish says \"a la\", not \"a las\". See HourPhrase.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recedes at %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se retira a la %@"
+          }
+        }
+      }
+    },
     "marea.retirada": {
       "comment": "Tide sheet: note for ten seconds after the guide ended by itself.",
       "extractionState": "manual",
@@ -2342,7 +2486,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Start at %lld a minute"
+            "value": "Start at %lld per minute"
           }
         },
         "es": {
@@ -2605,6 +2749,24 @@
         }
       }
     },
+    "noche.estado.hasta.una": {
+      "comment": "Night screen, state word under a blanket: the hour it sounds until. Lower case: it completes the clock above it. The hour reads \"one\" (1:30): Spanish says \"a la\", not \"a las\". See HourPhrase.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "until %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hasta la %@"
+          }
+        }
+      }
+    },
     "noche.estado.pausa": {
       "comment": "Night screen, state word: paused.",
       "extractionState": "manual",
@@ -2655,6 +2817,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Terminó a las %@"
+          }
+        }
+      }
+    },
+    "noche.estado.termino.una": {
+      "comment": "Night screen, state word once the night has ended by itself: the hour it ended. The hour reads \"one\" (1:30): Spanish says \"a la\", not \"a las\". See HourPhrase.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ended at %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terminó a la %@"
           }
         }
       }
@@ -2828,13 +3008,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Double-tap to pause. Hold to go back."
+            "value": "Double-tap to pause. Double-tap and hold to go back."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Toca dos veces para pausar. Mantén para volver."
+            "value": "Toca dos veces para pausar. Toca dos veces y mantén pulsado para volver."
           }
         }
       }
@@ -2846,13 +3026,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Double-tap to resume. Hold to go back."
+            "value": "Double-tap to resume. Double-tap and hold to go back."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Toca dos veces para reanudar. Mantén para volver."
+            "value": "Toca dos veces para reanudar. Toca dos veces y mantén pulsado para volver."
           }
         }
       }
@@ -2970,15 +3150,39 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Small hours, %lld minutes"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Small hours, %lld minute"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Small hours, %lld minutes"
+                }
+              }
+            }
           }
         },
         "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Madrugada, %lld minutos"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Madrugada, %lld minuto"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Madrugada, %lld minutos"
+                }
+              }
+            }
           }
         }
       }
@@ -3254,7 +3458,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tonight's mix is saved from its name."
+            "value": "Tonight’s mix is saved from its name."
           }
         },
         "es": {
@@ -3290,13 +3494,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete \"%@\"?"
+            "value": "Delete “%@”?"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "¿Eliminar \"%@\"?"
+            "value": "¿Eliminar «%@»?"
           }
         }
       }
@@ -3308,7 +3512,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tonight's mix doesn't change."
+            "value": "Tonight’s mix doesn’t change."
           }
         },
         "es": {
@@ -3488,13 +3692,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hold to save it."
+            "value": "Double-tap and hold to save it."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mantén para guardarla."
+            "value": "Toca dos veces y mantén pulsado para guardarla."
           }
         }
       }
@@ -3740,7 +3944,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Couldn't start the sound."
+            "value": "Couldn’t start the sound."
           }
         },
         "es": {
@@ -3872,7 +4076,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "trial · last night"
+            "value": "trial · final night"
           }
         },
         "es": {
@@ -3962,7 +4166,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thank you. Everything's open."
+            "value": "Thank you. Everything’s open."
           }
         },
         "es": {
@@ -3980,7 +4184,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Couldn't complete. Nothing was charged."
+            "value": "The purchase didn’t go through. Nothing was charged."
           }
         },
         "es": {
@@ -3998,7 +4202,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Couldn't confirm. If the App Store charged you, Restore purchase opens it."
+            "value": "Couldn’t confirm. If the App Store charged you, Restore purchase will open Pro."
           }
         },
         "es": {
@@ -4016,7 +4220,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Waiting for family approval. It will open on its own."
+            "value": "Waiting for family approval. Pro opens on its own once it’s approved."
           }
         },
         "es": {
@@ -4034,7 +4238,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The store isn't responding. Nothing changes: it keeps playing."
+            "value": "The store isn’t responding. Nothing changes: it keeps playing."
           }
         },
         "es": {
@@ -4052,7 +4256,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The store isn't responding. Nothing changes."
+            "value": "The store isn’t responding. Nothing changes."
           }
         },
         "es": {
@@ -4304,7 +4508,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lasts seven nights. Nothing is charged and no card is asked. When it ends, free stays free and your mixes are kept."
+            "value": "Lasts seven nights. Nothing is charged and no card is needed. When it ends, free stays free and your mixes are kept."
           }
         },
         "es": {
@@ -4466,7 +4670,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Last night with everything. Tomorrow, free stays free."
+            "value": "Final night with everything. Tomorrow, free stays free."
           }
         },
         "es": {
@@ -4706,7 +4910,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "What's not here"
+            "value": "What’s not here"
           }
         },
         "es": {
@@ -4760,7 +4964,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "We won't ask you to rate it."
+            "value": "We won’t ask you to rate it."
           }
         },
         "es": {
@@ -4850,7 +5054,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The store isn't responding."
+            "value": "The store isn’t responding."
           }
         },
         "es": {
@@ -4886,7 +5090,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nothing is charged and no card is asked."
+            "value": "Nothing is charged and no card is needed."
           }
         },
         "es": {
@@ -4922,7 +5126,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Opens your mail."
+            "value": "Opens your email app."
           }
         },
         "es": {

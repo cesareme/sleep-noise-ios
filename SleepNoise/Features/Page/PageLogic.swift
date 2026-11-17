@@ -179,9 +179,11 @@ enum PageStatus: Equatable {
         case .playing:
             return localized("pagina.estado.sonando")
         case .playingFadesAt(let date):
-            return String(format: localized("pagina.estado.sonando.funde"), time(date))
+            let hour = time(date)
+            return String(format: localized(HourPhrase.key("pagina.estado.sonando.funde", at: hour)), hour)
         case .playingUntil(let date):
-            return String(format: localized("pagina.estado.sonando.hasta"), time(date))
+            let hour = time(date)
+            return String(format: localized(HourPhrase.key("pagina.estado.sonando.hasta", at: hour)), hour)
         case .fading(let minutes):
             return String(format: localized("pagina.estado.fundiendo"), locale: locale, Int64(minutes))
         case .playingWithout(let sounds):

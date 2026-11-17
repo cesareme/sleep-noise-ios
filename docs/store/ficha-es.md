@@ -115,7 +115,7 @@ Recuento: 406 de 4000. App Store Connect no pide este campo en la primera versi�
 
 ## Capturas
 
-Seis, en este orden, solo iPhone y solo fondo negro (C57). Sin vídeo de vista previa en 1.0. Las genera el test de interfaz de S-08.
+Seis, en este orden, solo iPhone y solo fondo negro (C57). Sin vídeo de vista previa en 1.0. Las genera `scripts/screenshots.sh` (S-08), que lee de este fichero el titular (el primer bloque de cada captura) y su segunda línea (el bloque que sigue a "Subtítulo de la captura:"). Cada nota "Pantalla:" dice lo que sale en la captura generada (`scripts/screenshots/README.md`), no lo que dibujaba la maqueta.
 
 ### Captura 1 · la página sonando
 
@@ -123,7 +123,7 @@ Seis, en este orden, solo iPhone y solo fondo negro (C57). Sin vídeo de vista p
 Un solo pago.
 ```
 
-Recuento: 13 de 41. Pantalla: mezcla de la casa "Rosa y lluvia" cargada, sonando, con el estado de la prueba en la cabecera.
+Recuento: 13 de 41. Pantalla: mezcla de la casa "Rosa y lluvia" cargada (Lluvia 55 · Rosa 20), sonando a las 20:15, con "prueba · quedan 6 noches" en la cabecera y el estado "Sonando · se funde a las 21:00".
 
 Riesgo anotado: la directriz 2.3.7 pide que nombre, subtítulo y capturas no lleven precios ni condiciones. Este titular y "sin tarjeta" en su subtítulo son condiciones de pago; los fija C57 y no se cambian sin el sí del dueño. Reserva lista si App Review lo discute o el dueño lo prefiere, titular y subtítulo:
 
@@ -153,7 +153,7 @@ Recuento: 35 de 42.
 Un toque y suena.
 ```
 
-Recuento: 17 de 41. Pantalla: la página tal como se abre la primera vez: mezcla "Esta noche", en silencio, cabecera vacía, el Disco en Play.
+Recuento: 17 de 41. Pantalla: la página de quien no ha comprado nada ni ha empezado la prueba, en reposo: mezcla "Esta noche" (Lluvia 30 · Rosa 50, la del documento 11 §2.4), en silencio, cabecera vacía, el Disco en Play y la fila de la Marea con "Apagada · pro". No es la primera apertura al pie de la letra, que carga "Rosa y lluvia": con ella las capturas 1 y 2 enseñaban la misma página.
 
 ### Captura 3 · la hoja Capas bajo el dedo
 
@@ -161,7 +161,7 @@ Recuento: 17 de 41. Pantalla: la página tal como se abre la primera vez: mezcla
 Seis capas a la vez. Una línea cada una.
 ```
 
-Recuento: 40 de 41. Pantalla: la hoja "Todas las capas" con seis capas sonando y un dedo arrastrando un nivel. Seis capas a la vez no se pueden tener con las cinco texturas gratuitas: la captura se hace con la prueba en marcha (documento 11 §12) y enseña algo que después es de Pro. La directriz 2.3.2 pide que descripción y capturas dejen claro qué requiere compra; ver la nota de la descripción.
+Recuento: 40 de 41. Pantalla: la hoja "Capas" con seis capas sonando (blanco, rosa, marrón, lluvia, viento y océano) y la fila de la lluvia bajo el dedo, a 52. Seis capas a la vez no se pueden tener con las cinco texturas gratuitas: la captura se hace con la prueba en marcha (documento 11 §12) y enseña algo que después es de Pro. La directriz 2.3.2 pide que descripción y capturas dejen claro qué requiere compra; ver la nota de la descripción.
 
 Subtítulo de la captura:
 
@@ -169,7 +169,7 @@ Subtítulo de la captura:
 Arrastra sobre el nombre para cambiar el nivel.
 ```
 
-Recuento: 47 de 42. Supera el tope de maqueta: `11-ICONO-Y-APP-STORE.md` §9 deja la variante corta a quien monte la captura.
+Recuento: 47 de 42. Supera el tope de caracteres de la maqueta, pero cabe: mide 355 pt de los 376 de la columna a 17 pt (`shot-composer --list`), así que no hace falta variante corta.
 
 ### Captura 4 · Marea guiando
 
@@ -177,7 +177,7 @@ Recuento: 47 de 42. Supera el tope de maqueta: `11-ICONO-Y-APP-STORE.md` §9 dej
 El mar respira a seis por minuto.
 ```
 
-Recuento: 33 de 41. Pantalla: la hoja de Marea con la línea de agua en movimiento y el ritmo a seis por minuto. La Marea es de Pro: vale lo dicho en la captura 3. La captura se hace sin la frase sobre estudios de variabilidad cardiaca (`marea.evidencia`) y sin el enlace "Qué sabemos" que el documento 11 §2.6 dibuja en esa hoja: "Qué sabemos" pasa a 1.1 (`docs/PLAN-SIMPLE-1.0.md` §4.4) y esa frase, dentro de una captura, sería una afirmación fisiológica en la ficha. Depende de cómo salga la hoja en S-06 (`README.md`, "Antes de enviar").
+Recuento: 33 de 41. Pantalla: la hoja de Marea con la línea de agua detenida en la subida de la tercera respiración, "guiando · 6 por minuto", "Se retira a las 20:27" y las filas Marea, Ritmo, Descenso y "Se retira a los". La Marea es de Pro: vale lo dicho en la captura 3. La captura se hace sin la frase sobre estudios de variabilidad cardiaca (`marea.evidencia`) y sin el enlace "Qué sabemos" que el documento 11 §2.6 dibuja en esa hoja: "Qué sabemos" pasa a 1.1 (`docs/PLAN-SIMPLE-1.0.md` §4.4) y esa frase, dentro de una captura, sería una afirmación fisiológica en la ficha. La hoja de 1.0 no las lleva.
 
 ### Captura 5 · Noche sola
 
@@ -185,7 +185,7 @@ Recuento: 33 de 41. Pantalla: la hoja de Marea con la línea de agua en movimien
 A las tres de la mañana, nada.
 ```
 
-Recuento: 30 de 41. Pantalla: la pantalla Noche: negra, con la palabra de estado y nada más.
+Recuento: 30 de 41. Pantalla: la pantalla Noche, negra: el Horizonte, la hora (3:07), el estado "Se funde a las 3:42" y "+15 min" al pie. Nada más.
 
 ### Captura 6 · la página "Lo que no hay"
 
@@ -193,18 +193,12 @@ Recuento: 30 de 41. Pantalla: la pantalla Noche: negra, con la palabra de estado
 Lo que no hay.
 ```
 
-Recuento: 14 de 41. Pantalla: la página real de la app con la lista de ausencias y el pie.
+Recuento: 14 de 41. Pantalla: la página real de la app, dentro de la hoja de Ajustes: el título, la lista de ausencias (una por línea) y "No te pediremos que la valores." No lleva pie: la página construida no lo tiene (repetiría sus tres primeras líneas) y la app no muestra su peso.
 
 Lista que se ve en la captura (es la de la página, no un campo de la tienda):
 
 ```text es
 Sin suscripción · Sin cuenta · Sin rastreo · Sin anuncios · Sin puntuación · Sin racha · Sin tutorial
-```
-
-Pie de la captura, con el peso real de la app en lugar de `{MB}`:
-
-```text es
-No se recopilan datos · {MB} MB
 ```
 
 ## Si se abre también "Spanish (Mexico)"

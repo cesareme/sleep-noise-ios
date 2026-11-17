@@ -444,7 +444,7 @@ final class ProSheetTextTests: XCTestCase {
     /// given, or a state in other words than the guide's.
     func testThePurchaseSaysItsStateInWords() {
         for (language, buy, plain, buying, pending, thanks) in [
-            ("en", "Buy · ¤ 12,34", "Buy", "Buying…", "Pending", "Thank you. Everything's open."),
+            ("en", "Buy · ¤ 12,34", "Buy", "Buying…", "Pending", "Thank you. Everything’s open."),
             ("es", "Comprar · ¤ 12,34", "Comprar", "Comprando…", "Pendiente", "Gracias. Todo abierto."),
         ] {
             let strings = ProCatalog.lookup(language)
@@ -470,7 +470,7 @@ final class ProSheetTextTests: XCTestCase {
     func testVoiceOverReadsThePurchaseWithTheStoreNameAndPrice() {
         for (language, buy, plain, value, away, buying) in [
             ("en", "Buy Store Name, ¤ 12,34", "Buy Store Name", "price unavailable",
-             "The store isn't responding.", "Buying"),
+             "The store isn’t responding.", "Buying"),
             ("es", "Comprar Store Name, ¤ 12,34", "Comprar Store Name", "precio no disponible",
              "La tienda no responde.", "Comprando"),
         ] {
@@ -628,7 +628,7 @@ final class PageTrialTests: XCTestCase {
 
     func testVoiceOverReadsTheNightsAsASentence() {
         for (language, five, last, free) in [
-            ("en", "Trial, 5 nights left", "trial, last night", "always free"),
+            ("en", "Trial, 5 nights left", "trial, final night", "always free"),
             ("es", "Prueba, quedan 5 noches", "prueba, última noche", "gratis siempre"),
         ] {
             let strings = ProCatalog.lookup(language)
@@ -713,7 +713,7 @@ final class PageTrialTests: XCTestCase {
         XCTAssertNil(PageTrialNote.statusLine(nil, status: .silent, localized: strings))
         XCTAssertEqual(
             PageTrialNote.statusLine(.lastNight, status: .silent, localized: ProCatalog.lookup("en")),
-            "Last night with everything. Tomorrow, free stays free."
+            "Final night with everything. Tomorrow, free stays free."
         )
     }
 

@@ -27,7 +27,8 @@ open SleepNoise.xcodeproj
 
 In Xcode:
 
-1. Select the **SleepNoise** target, open **Signing & Capabilities**, and choose your Team. The simulator can run with “Sign to Run Locally” if you only need a local build.
+1. The simulator needs no signing. For a device or an archive, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and write your team id there (`DEVELOPMENT_TEAM = …`), then run `xcodegen generate` again.
+   Git ignores that file: `Config/Signing.xcconfig`, which the project uses, includes it only when it exists, so no team ever reaches the repository and CI builds without one.
 2. Scheme **SleepNoise** is already selected. Its Run action points at `SleepNoise/Resources/SleepNoise.storekit`.
 3. Pick an iPhone simulator, or an iPhone, on iOS 17 or newer.
 4. Product → Run (⌘R).
@@ -68,7 +69,9 @@ A TestFlight or App Store build ignores this file and uses App Store Connect.
 
 ```
 project.yml                  XcodeGen spec (app + unit tests)
+Config/Signing.xcconfig      Includes Config/Local.xcconfig (your team, not in Git)
 scripts/verify.sh            The gate: clean build, tests, no warnings
+scripts/screenshots.sh       The six App Store captures, in Spanish and English
 SleepNoise/App               Entry point and colors
 SleepNoise/Audio             Session, engine, Now Playing
 SleepNoise/Audio/DSP         Real-time generators, fade, mailbox, output meter
@@ -89,7 +92,9 @@ The same callback keeps a running mean square of what it outputs and stores it o
 
 A debug build launched with `-pageState <name>` opens the app in a fixed state for the reference captures, on its own defaults, a pinned clock and a scripted store (`PageDebugState` lists the names: `proOffer`, `proReceipt`, `trialNight7`, `settings`…). Launched with `-gallery` it opens the design gallery instead of the app: every Grafito component in its states. `-gallerySection <name>` shows one section, `-galleryType <size>` forces a Dynamic Type size and `-silentOutput` keeps the engine rendering without sending anything to the speaker.
 
-Saved mixes and the last slider positions are `Codable` values in `UserDefaults`. Strings live in `Localizable.xcstrings` (English and Spanish).
+`scripts/screenshots.sh` builds the app, installs it on the 6.9" simulator and writes the six App Store captures per language to `.build/store-shots/<language>/` at 1320 × 2868 px, each with its headline from `docs/store/` composed over black (notes in `scripts/screenshots/README.md`).
+
+Saved mixes and the last slider positions are `Codable` values in `UserDefaults`. Strings live in `Localizable.xcstrings` and `AppShortcuts.xcstrings` (English and Spanish). `CatalogAuditTests` and `CopyLintTests` read both catalogs and the Swift sources: every key translated and used, the same placeholders in both languages, plurals where a figure counts something, no text written in code, and none of the words the copy guide vetoes.
 
 ## Privacy
 

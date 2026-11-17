@@ -127,6 +127,9 @@ struct NightScreen: View {
             .minimumScaleFactor(0.6)
             .padding(.horizontal, Grid.margin)
             .frame(maxWidth: .infinity, minHeight: TypeStep.figure.scaledLineHeight(for: dynamicType))
+            // Where there is not room for everything, the hour keeps its
+            // size and the state under it gives way.
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private func word(_ status: NightStatus) -> some View {
@@ -139,10 +142,21 @@ struct NightScreen: View {
             .foregroundStyle(Ink.textNight)
             .multilineTextAlignment(.center)
             .lineLimit(3)
+            // With the largest text on a short screen, two lines of state
+            // do not fit above "Keep playing on speaker": they come down in
+            // size before they run under it.
+            .minimumScaleFactor(0.5)
             .contentTransition(rollsFigures && !reduceMotion ? .numericText() : .opacity)
             .animation(Motion.contentCurve, value: text)
             .padding(.horizontal, Grid.margin)
-            .frame(maxWidth: .infinity, minHeight: TypeStep.nightState.scaledLineHeight(for: dynamicType), alignment: .top)
+            // Its line is always there for the sentences under it. At the
+            // sizes that leave them out nothing is under it, and the box
+            // may be as short as the room above the actions.
+            .frame(
+                maxWidth: .infinity,
+                minHeight: hasRoomForIntro ? TypeStep.nightState.scaledLineHeight(for: dynamicType) : 0,
+                alignment: .top
+            )
     }
 
     /// The only two sentences of the night, the first time Night is seen:
@@ -178,7 +192,9 @@ struct NightScreen: View {
                 NightAction(title: LineTies.dotLeads(Localized.format("madrugada.estado", Int64(smallHoursMinutes)))) {
                     model.startSmallHours()
                 }
-                .accessibilityLabel(Text(verbatim: Localized.format("ax.la.madrugada", Int64(smallHoursMinutes))))
+                .accessibilityLabel(Text(verbatim: String.localizedStringWithFormat(
+                    Localized.string("ax.la.madrugada"), smallHoursMinutes
+                )))
                 .accessibilityInputLabels([
                     Text(verbatim: Localized.format("madrugada.estado", Int64(smallHoursMinutes))),
                     Text(verbatim: Localized.string("madrugada.titulo")),

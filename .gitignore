@@ -29,6 +29,7 @@ playground.xcworkspace
 Package.resolved
 
 # Secrets and signing material
+Config/Local.xcconfig
 *.mobileprovision
 *.p12
 *.cer

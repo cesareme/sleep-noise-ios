@@ -111,6 +111,9 @@ struct MixesSheet: View {
             }
             PageBar(model: model, timer: model.timer, onMixes: nil, onNight: onNight)
         }
+        // The keyboard of the naming alert does not lift the bar: nothing
+        // changes position (03 §3.7).
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .grafitoSheet(surface: .sheet)
         .accessibilityAction(.magicTap) { model.togglePlayback() }
         #if DEBUG
@@ -211,8 +214,11 @@ struct MixesSheet: View {
                 Button {
                     beginSave()
                 } label: {
-                    Text(live.needsPro ? "mezcla.menu.guardar.pro" : "mezcla.menu.guardar")
+                    Text("mezcla.menu.guardar")
+                    // Its second line, as in the menu of the name.
+                    if live.needsPro { Text("comun.pro") }
                 }
+                .disabled(live.needsPro && !canSell)
             }
         }
         .accessibilityActions {
@@ -458,6 +464,12 @@ struct MixNaming: Equatable {
         draft = mix.name
         isPresented = true
     }
+
+    /// What the field keeps of what was typed: no more characters than a
+    /// stored name has (`MixCodec.maxNameLength`).
+    static func bounded(_ typed: String) -> String {
+        typed.count > MixCodec.maxNameLength ? String(typed.prefix(MixCodec.maxNameLength)) : typed
+    }
 }
 
 private struct MixNamingAlert: ViewModifier {
@@ -482,6 +494,12 @@ private struct MixNamingAlert: ViewModifier {
                 }
             }
             Button("common.cancel", role: .cancel) {}
+        }
+        .onChange(of: naming.draft) { _, typed in
+            // The field stops at the length a name is stored with, so
+            // nothing is cut behind the person's back after "Save".
+            let kept = MixNaming.bounded(typed)
+            if kept != typed { naming.draft = kept }
         }
     }
 }

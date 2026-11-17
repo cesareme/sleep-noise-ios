@@ -93,6 +93,9 @@ final class MixerModel: ObservableObject {
     /// Play found nothing to sound and raised the fallback layer. Cleared by
     /// the next change of the mix.
     @Published private(set) var isPlayingFallback = false
+    /// Goes up each time the tide raises the ocean from silence. The mix
+    /// keeps its name; the page gives the layer a row if one is free.
+    @Published private(set) var tideOceanRaises = 0
     /// The page shows one ink: it came back from the Night screen. It lasts
     /// until the person leaves it; no clock ends it (C40).
     @Published private(set) var isNightSession = false
@@ -330,6 +333,9 @@ final class MixerModel: ObservableObject {
             if hadName {
                 nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
             }
+            // A level set without a finger (VoiceOver's steps): there is no
+            // lift to wait for.
+            if liveLevelGestures == 0 { endNightIfNothingSounds() }
         }
         return .applied
     }
@@ -345,7 +351,22 @@ final class MixerModel: ObservableObject {
         liveLevelGestures = max(0, liveLevelGestures - 1)
         if liveLevelGestures == 0 {
             persistLevels()
+            endNightIfNothingSounds()
         }
+    }
+
+    /// The last layer that sounded was taken to zero and let go: nothing
+    /// is left to play, so the night ends as "Clear" ends it. The bed
+    /// leaves like a pause and the page says "Silent", not "Playing" over
+    /// an engine and a timer that run on nothing. While the finger is
+    /// still down nothing ends: the level may come back up.
+    private func endNightIfNothingSounds() {
+        guard isPlaying, !isSmallHours, isSilent else { return }
+        interruptions.cancel()
+        heldByInterruption = false
+        // The engine fades with the gains it had a moment ago.
+        endPlayback(engineAction: .stop(fadeOut: PlaybackFade.pause), canDowngrade: true)
+        closeNight(endedAt: nil)
     }
 
     /// The layers that sound: above zero and included at this access level.
@@ -517,6 +538,14 @@ final class MixerModel: ObservableObject {
         fadeIn requested: TimeInterval? = nil
     ) -> Bool {
         let now = now()
+        if !asked, !isSmallHours, let end = timer.fixedEnd, end <= now {
+            // The blanket's hour came while the night was silent (earbuds
+            // out before seven, back after): the night ended then. Started
+            // again, the timer would take the hour for tomorrow's and play
+            // a whole day.
+            closeNight(endedAt: end)
+            return false
+        }
         let current = sessionObserver.currentRoute
         // Whoever resumes unasked has already decided it is the same night:
         // a call never ends it, however long it was (C48).
@@ -1502,6 +1531,7 @@ final class MixerModel: ObservableObject {
                 showBreathingNote(String(localized: "capas.tope"))
             } else {
                 writeLevel(.ocean, Self.tideOceanLevel)
+                tideOceanRaises += 1
                 showBreathingNote(String(
                     format: String(localized: "marea.oceano.subido"),
                     Int64((Self.tideOceanLevel * 100).rounded())
@@ -1829,6 +1859,7 @@ final class MixerModel: ObservableObject {
     /// and the app is opened by day.
     func appDidBecomeActive() {
         appIsActive = true
+        smallHours.figureIsWatched = true
         // The clock is sampled between sessions; the trial's answer still
         // changes only at the next session start.
         purchases.observeClock(now: now())
@@ -1863,6 +1894,8 @@ final class MixerModel: ObservableObject {
     /// The scene is no longer active: nothing resumes unasked from here.
     func appDidResignActive() {
         appIsActive = false
+        // Nobody reads the minutes of Small Hours behind a locked screen.
+        smallHours.figureIsWatched = false
     }
 
     /// One-shot on the main run loop. With doubles for audio nothing is

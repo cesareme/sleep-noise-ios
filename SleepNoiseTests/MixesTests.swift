@@ -738,7 +738,7 @@ final class MixesCatalogTests: XCTestCase {
         "mezclas.titulo", "mezclas.seccion.tuyas", "mezclas.seccion.casa", "mezclas.esta_noche",
         "mezclas.receta.capa", "mezclas.receta.pro", "mezclas.receta.separador", "mezclas.sonando",
         "mezclas.vacio", "mezclas.guardada", "mezclas.eliminar.titulo", "mezclas.eliminar.nota",
-        "mezcla.guardar.titulo", "mezcla.guardar.campo", "mezcla.menu.guardar", "mezcla.menu.guardar.pro",
+        "mezcla.guardar.titulo", "mezcla.guardar.campo", "mezcla.menu.guardar",
         "mezcla.menu.vaciar", "mezcla.nombre.auto.3", "mezcla.nombre.auto.mas", "mezcla.nombre.sin",
         "mezcla.nombre.vacio", "pagina.capas.y", "comun.renombrar", "comun.eliminar",
         "ax.mezcla.pista", "ax.esta_noche", "ax.esta_noche.pista", "ax.receta.pro", "ax.vaciar.pista",

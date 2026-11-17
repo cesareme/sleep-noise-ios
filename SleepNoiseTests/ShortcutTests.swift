@@ -525,7 +525,7 @@ final class ShortcutCatalogTests: XCTestCase {
         let spoken = strings.keys.filter { $0.hasPrefix("siri.") }.sorted()
         XCTAssertEqual(spoken, ["siri.error", "siri.mezcla.cual"])
         let expected = [
-            "siri.error": ["en": "Couldn't start the sound.", "es": "No se ha podido iniciar el sonido."],
+            "siri.error": ["en": "Couldn’t start the sound.", "es": "No se ha podido iniciar el sonido."],
             "siri.mezcla.cual": ["en": "Which of your mixes?", "es": "¿Cuál de tus mezclas?"],
         ]
         for (key, values) in expected {

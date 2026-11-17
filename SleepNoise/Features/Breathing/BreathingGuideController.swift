@@ -267,8 +267,20 @@ final class BreathingGuideController: ObservableObject {
     /// staged launch pins the clock: the breath then runs from the anchor
     /// in real time, so the line of a capture still moves.
     func onGuideClock(_ date: Date) -> Date {
-        date.addingTimeInterval(displayOffset)
+        #if DEBUG
+        if let held = debugHeldBreath, let anchor {
+            return anchor.addingTimeInterval(held)
+        }
+        #endif
+        return date.addingTimeInterval(displayOffset)
     }
+
+    #if DEBUG
+    /// Seconds into the guide at which a staged capture holds the display
+    /// of the breath, so the same frame is drawn every time. The audio is
+    /// not held.
+    var debugHeldBreath: TimeInterval?
+    #endif
 
     /// The sleep timer is fading the whole bed out: let the tide go with it so
     /// the last seconds are the natural sea, not a guided inhale.
