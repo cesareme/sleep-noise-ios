@@ -221,7 +221,11 @@ final class HouseMixModelTests: XCTestCase {
             XCTAssertEqual(model.activeHouseMix, mix)
             XCTAssertEqual(model.loadedMixWasStripped, load.isTrimmed, mix.rawValue)
             XCTAssertEqual(model.loadedMixName, load.title(name: mix.localizedName), mix.rawValue)
-            XCTAssertEqual(model.nowPlayingTitle, mix.localizedName, "\(mix.rawValue): its own name outside the app")
+            XCTAssertEqual(model.loadedMixBaseName, mix.localizedName, mix.rawValue)
+            XCTAssertEqual(
+                model.nowPlayingTitle, load.title(name: mix.localizedName),
+                "\(mix.rawValue): outside the app it says what is not playing too"
+            )
             XCTAssertFalse(model.isPlaying, "loading does not start playback")
             if load.isSilent {
                 XCTAssertEqual(model.playHouseMix(mix), .nothingToPlay, "\(mix.rawValue): no silent night")
@@ -239,6 +243,7 @@ final class HouseMixModelTests: XCTestCase {
         model.setLevel(free, 0.33)
         XCTAssertNil(model.activeHouseMix)
         XCTAssertNil(model.loadedMixName)
+        XCTAssertNil(model.loadedMixBaseName)
     }
 
     func testAHouseMixIsWholeWithAccessAndSaysWhatItLosesWithout() throws {
@@ -261,5 +266,112 @@ final class HouseMixModelTests: XCTestCase {
         XCTAssertEqual(model.activeHouseMix, mix, "still the same house mix, trimmed")
         XCTAssertEqual(model.levels, mix.levelsBySound(), "nothing is written when access goes")
         XCTAssertFalse(model.showPaywall)
+    }
+
+    /// The tide raises a silent ocean so it can be heard, and that keeps the
+    /// mix's identity. The title still follows the recipe: a layer the recipe
+    /// never had is not named as missing when access goes.
+    func testTheTitleFollowsTheRecipeNotALayerTheTideRaised() throws {
+        let defaults = try makeDefaults()
+        let purchases = PurchaseManager(defaults: defaults, now: day0)
+        let model = MixerModel(purchases: purchases, defaults: defaults)
+        let mix = HouseMix.pinkAndRain
+        XCTAssertFalse(mix.load(hasFullAccess: false).isTrimmed, "the recipe has no Pro layer")
+
+        model.loadHouseMix(mix)
+        model.setBreathingEnabled(true)
+        XCTAssertEqual(model.levels[.ocean], 0.5, "raised by the tide")
+        XCTAssertEqual(model.activeHouseMix, mix)
+
+        expire(purchases)
+        model.refreshEntitledAudio()
+        XCTAssertEqual(model.loadedMixName, mix.localizedName)
+        XCTAssertEqual(model.nowPlayingTitle, mix.localizedName)
+    }
+
+    /// Loading a mix replaces every level, the ocean the tide raised too:
+    /// switching the tide off afterwards must not put the old ocean back
+    /// into the new mix. "Sea and wind" has the ocean at the very level the
+    /// tide raises it to.
+    func testLoadingAMixForgetsTheOceanTheTideRaised() throws {
+        let seaAndWind = HouseMix.seaAndWind
+        XCTAssertEqual(seaAndWind.levelsBySound()[.ocean], 0.5)
+        var savedLevels = Dictionary(uniqueKeysWithValues: SoundID.allCases.map { ($0, Float(0)) })
+        savedLevels[.ocean] = 0.5
+        savedLevels[.rain] = 0.2
+        let saved = SavedMix(
+            id: UUID(),
+            name: "Shore",
+            levels: SoundID.allCases.map { MixLevel(sound: $0, value: savedLevels[$0] ?? 0) },
+            createdAt: day0
+        )
+
+        for house in [true, false] {
+            let name = house ? "house mix" : "saved mix"
+            let expected = house ? seaAndWind.levelsBySound() : savedLevels
+            let defaults = try makeDefaults()
+            let purchases = PurchaseManager(defaults: defaults, now: day0)
+            XCTAssertTrue(purchases.hasFullAccess)
+            let model = MixerModel(purchases: purchases, defaults: defaults)
+            XCTAssertEqual(model.levels[.ocean], 0, name)
+
+            model.setBreathingEnabled(true)
+            XCTAssertEqual(model.levels[.ocean], 0.5, "\(name): raised by the tide")
+            if house {
+                model.loadHouseMix(seaAndWind)
+            } else {
+                model.apply(saved)
+            }
+            model.setBreathingEnabled(false)
+            XCTAssertEqual(model.levels, expected, "\(name): the mix keeps its ocean")
+            XCTAssertEqual(MixerModel(purchases: purchases, defaults: defaults).levels, expected, "\(name): stored whole")
+        }
+
+        // Without a load in between the tide still undoes its own raise.
+        let defaults = try makeDefaults()
+        let model = MixerModel(purchases: PurchaseManager(defaults: defaults, now: day0), defaults: defaults)
+        model.setBreathingEnabled(true)
+        model.setBreathingEnabled(false)
+        XCTAssertEqual(model.levels[.ocean], 0)
+    }
+
+    /// A saved mix with Pro layers loads trimmed like a house mix: the title
+    /// says what it plays without, and the name itself is kept apart.
+    func testASavedMixWithProLayersLoadsTrimmed() throws {
+        let defaults = try makeDefaults()
+        let purchases = PurchaseManager(defaults: defaults, now: day0)
+        expire(purchases)
+        let model = MixerModel(purchases: purchases, defaults: defaults)
+        let pro = try XCTUnwrap(SoundID.allCases.first { !AccessPolicy.soundIsIncluded($0, hasFullAccess: false) })
+        let free = try XCTUnwrap(SoundID.allCases.first { AccessPolicy.soundIsIncluded($0, hasFullAccess: false) })
+        let mix = SavedMix(
+            id: UUID(),
+            name: "Hotel",
+            levels: [MixLevel(sound: free, value: 0.4), MixLevel(sound: pro, value: 0.7)],
+            createdAt: day0
+        )
+
+        XCTAssertTrue(model.apply(mix))
+        let trimmed = MixLoad(levels: model.levels, hasFullAccess: false)
+        XCTAssertEqual(trimmed.omitted, [pro])
+        XCTAssertEqual(model.loadedMixName, trimmed.title(name: "Hotel"))
+        XCTAssertNotEqual(model.loadedMixName, "Hotel")
+        XCTAssertEqual(model.loadedMixBaseName, "Hotel", "a save or a rename starts from the name alone")
+        XCTAssertEqual(model.nowPlayingTitle, model.loadedMixName)
+        XCTAssertTrue(model.loadedMixWasStripped)
+        XCTAssertEqual(model.levels[pro], 0.7, "the Pro layer keeps its level")
+        XCTAssertFalse(model.showPaywall)
+
+        // Whole with access, and trimmed again when the title is worked out
+        // after access changes.
+        let fresh = try makeDefaults()
+        let trial = PurchaseManager(defaults: fresh, now: day0)
+        let whole = MixerModel(purchases: trial, defaults: fresh)
+        XCTAssertFalse(whole.apply(mix))
+        XCTAssertEqual(whole.loadedMixName, "Hotel")
+        expire(trial)
+        whole.refreshEntitledAudio()
+        XCTAssertEqual(whole.loadedMixName, trimmed.title(name: "Hotel"))
+        XCTAssertEqual(whole.loadedMixBaseName, "Hotel")
     }
 }

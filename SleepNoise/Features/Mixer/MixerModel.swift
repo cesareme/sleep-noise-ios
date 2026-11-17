@@ -7,7 +7,12 @@ final class MixerModel: ObservableObject {
     @Published private(set) var isPlaying = false
     @Published var audioError: String?
     @Published var showPaywall = false
+    /// What the page and Now Playing call the loaded mix: its name, or
+    /// "<name> · without <layers>" when it plays trimmed.
     @Published private(set) var loadedMixName: String?
+    /// The loaded mix's own name, without the trimmed part: what a save or a
+    /// rename starts from.
+    private(set) var loadedMixBaseName: String?
     /// House mix last loaded, until the person edits a level.
     @Published private(set) var activeHouseMix: HouseMix?
     /// Night screen is covering the interface. Audio keeps running when this
@@ -39,6 +44,9 @@ final class MixerModel: ObservableObject {
     /// Ocean level before the tide raised it, restored if the tide is switched
     /// off again before the slider is touched.
     private var oceanBeforeTide: Float?
+    /// The levels the loaded mix came with. Its title is worked out from
+    /// these, not from the live levels, which the tide may have raised.
+    private var loadedMixRecipe: [SoundID: Float]?
 
     init(
         purchases: PurchaseManager,
@@ -82,6 +90,8 @@ final class MixerModel: ObservableObject {
         }
         levels[sound] = min(1, max(0, value))
         loadedMixName = nil
+        loadedMixBaseName = nil
+        loadedMixRecipe = nil
         loadedMixWasStripped = false
         activeHouseMix = nil
         if sound == .ocean { oceanBeforeTide = nil }
@@ -173,6 +183,8 @@ final class MixerModel: ObservableObject {
         switch result {
         case .saved(let mix):
             loadedMixName = mix.name
+            loadedMixBaseName = mix.name
+            loadedMixRecipe = levels
             loadedMixWasStripped = false
         case .needsPro:
             showPaywall = true
@@ -183,27 +195,39 @@ final class MixerModel: ObservableObject {
     }
 
     /// Loads a saved mix. Pro layers are muted (their levels are kept) when
-    /// they are not included; the mixer shows a note instead of a sheet.
+    /// they are not included: the mix loads trimmed, like a house mix, and
+    /// its title says what it plays without. Never a sheet.
     @discardableResult
     func apply(_ mix: SavedMix) -> Bool {
         var next = Self.defaultLevels()
         for level in mix.levels {
             next[level.sound] = level.value
         }
-        let stripped = Self.hasMutedLayers(next, hasFullAccess: purchases.hasFullAccess)
+        let load = MixLoad(levels: next, hasFullAccess: purchases.hasFullAccess)
         levels = next
-        loadedMixName = mix.name
-        loadedMixWasStripped = stripped
         activeHouseMix = nil
+        setLoadedMix(name: mix.name, load: load)
         persistLevels()
         if isPlaying {
             engine.updateGains(currentGains())
+            nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
         }
-        return stripped
+        return load.isTrimmed
     }
 
     func suggestedMixName() -> String {
-        String(format: String(localized: "mixes.defaultNameFormat"), Int64(mixStore.mixes.count + 1))
+        MixStore.defaultName(mixStore.mixes.count + 1)
+    }
+
+    /// Every whole replacement of `levels` by a mix ends here: the title
+    /// follows the mix as it was loaded, and an ocean level the tide meant
+    /// to put back belongs to the mix that is gone.
+    private func setLoadedMix(name: String, load: MixLoad) {
+        loadedMixBaseName = name
+        loadedMixRecipe = load.levels
+        loadedMixName = load.title(name: name)
+        loadedMixWasStripped = load.isTrimmed
+        oceanBeforeTide = nil
     }
 
     // MARK: House mixes, Shortcuts, Night
@@ -222,8 +246,7 @@ final class MixerModel: ObservableObject {
         let load = mix.load(hasFullAccess: purchases.hasFullAccess)
         levels = load.levels
         activeHouseMix = mix
-        loadedMixName = load.title(name: mix.localizedName)
-        loadedMixWasStripped = load.isTrimmed
+        setLoadedMix(name: mix.localizedName, load: load)
         persistLevels()
         if isPlaying {
             engine.updateGains(currentGains())
@@ -258,8 +281,13 @@ final class MixerModel: ObservableObject {
         next[sound] = Self.soloSoundLevel
         levels = next
         activeHouseMix = nil
+        // One sound on its own is named after the sound and has no recipe to
+        // be trimmed from: it is never "Ocean · without Ocean".
         loadedMixName = sound.localizedName
+        loadedMixBaseName = sound.localizedName
+        loadedMixRecipe = nil
         loadedMixWasStripped = false
+        oceanBeforeTide = nil
         persistLevels()
         return startOrUpdate()
     }
@@ -345,11 +373,9 @@ final class MixerModel: ObservableObject {
         return audioError == nil ? .started : .failed
     }
 
+    /// Outside the app the mix goes by the title the page shows, so a
+    /// trimmed mix says what is not playing there too.
     var nowPlayingTitle: String {
-        // Outside the app a house mix goes by its own name, whole or trimmed.
-        if let activeHouseMix {
-            return activeHouseMix.localizedName
-        }
         if let loadedMixName, !loadedMixName.isEmpty {
             return loadedMixName
         }
@@ -365,16 +391,17 @@ final class MixerModel: ObservableObject {
     func refreshEntitledAudio() {
         // A mix that was whole during the trial is a stripped one once the
         // trial ends: say so instead of keeping its name as if nothing had
-        // changed. A house mix names what it plays without, and gets its own
-        // name back when access returns.
-        if let mix = activeHouseMix {
-            loadedMixName = MixLoad(levels: levels, hasFullAccess: purchases.hasFullAccess)
-                .title(name: mix.localizedName)
+        // changed. Its title names what it plays without, and it gets its
+        // own name back when access returns. The title follows the mix as it
+        // was loaded: a layer the tide raised later is not part of its name.
+        if let name = loadedMixBaseName, let recipe = loadedMixRecipe {
+            loadedMixName = MixLoad(levels: recipe, hasFullAccess: purchases.hasFullAccess).title(name: name)
         }
         loadedMixWasStripped = loadedMixName != nil
             && Self.hasMutedLayers(levels, hasFullAccess: purchases.hasFullAccess)
         guard isPlaying else { return }
         engine.updateGains(currentGains())
+        nowPlaying.update(isPlaying: true, title: nowPlayingTitle)
         if !breathingIsIncluded {
             breathing.end()
         } else if breathing.settings.isEnabled, !breathing.isActive {
@@ -560,13 +587,10 @@ final class MixerModel: ObservableObject {
     }
 
     private static func loadLevels(defaults: UserDefaults, key: String) -> [SoundID: Float]? {
-        guard let data = defaults.data(forKey: key) else { return nil }
-        guard let payload = try? JSONDecoder().decode([MixLevel].self, from: data) else { return nil }
-        var levels = defaultLevels()
-        for entry in payload {
-            levels[entry.sound] = min(1, max(0, entry.value))
-        }
-        return levels
+        // Read by id, so a sound stored by a later version is left out and
+        // does not send the rest back to the factory levels.
+        guard let data = defaults.data(forKey: key), let stored = MixCodec.decodeLevels(data) else { return nil }
+        return defaultLevels().merging(stored) { _, stored in stored }
     }
 
     private static func defaultLevels() -> [SoundID: Float] {
