@@ -115,7 +115,7 @@ Recuento: 406 de 4000. App Store Connect no pide este campo en la primera versi�
 
 ## Capturas
 
-Seis, en este orden, solo iPhone y solo fondo negro (C57). Sin vídeo de vista previa en 1.0. Las genera el test de interfaz de S-08.
+Seis, en este orden, solo iPhone y solo fondo negro (C57). Sin vídeo de vista previa en 1.0. Las genera `scripts/screenshots.sh` (S-08), que lee de este fichero el titular (el primer bloque de cada captura) y su segunda línea (el bloque que sigue a "Subtítulo de la captura:").
 
 ### Captura 1 · la página sonando
 

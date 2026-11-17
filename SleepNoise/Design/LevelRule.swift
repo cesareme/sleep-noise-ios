@@ -81,6 +81,12 @@ struct LevelRule: View {
                 }
                 // A row taken away with a finger on it still ends its drag.
                 .onDisappear { endDrag() }
+                #if DEBUG
+                .onAppear {
+                    // A capture draws this row as it is under a finger.
+                    if PageArguments.heldLayer?.rawValue == id { beginDrag() }
+                }
+                #endif
             // Dead channel: no gesture starts here, so a scroll always has
             // somewhere to begin between two rows.
             channel

@@ -284,6 +284,10 @@ struct TideSheet: View {
             return
         }
         showsBreathWord = true
+        #if DEBUG
+        // A capture that holds the breath holds its word too.
+        if guide.debugHeldBreath != nil { return }
+        #endif
         try? await Task.sleep(for: .seconds(wait))
         if !Task.isCancelled { showsBreathWord = false }
     }

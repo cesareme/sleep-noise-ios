@@ -9,6 +9,12 @@ import SwiftUI
 /// on a pinned clock: midday, or the small hours for `night`. Add
 /// `-silentOutput` so the engine renders and meters without making a sound,
 /// and `-pageType <size>` to force a Dynamic Type size.
+///
+/// The six captures of the store (11 §2.3 to §2.8) are `storePlaying`,
+/// `restFree`, `storeLayers`, `storeTide`, `storeNight` and
+/// `settingsNotHere`, launched with `-storeShot`, which hides the status
+/// bar and the home indicator (11 §2.2). `scripts/screenshots.sh` takes
+/// them in both languages.
 enum PageDebugState: String, CaseIterable {
     /// First use: the house mix as it loads, nothing playing.
     case rest
@@ -210,6 +216,19 @@ enum PageDebugState: String, CaseIterable {
     /// The end of Mixes: "Settings", its last row.
     case mixesEnd
 
+    // The captures of the store that no other state stages (11 §3.2).
+    /// Capture 1: the house mix playing in the evening, on the second day
+    /// of the trial, with the timer of the first use.
+    case storePlaying
+    /// Capture 3: Layers with six sounding, during the trial, and the rain
+    /// under a finger.
+    case storeLayers
+    /// Capture 4: the tide sheet guiding at six a minute, held at the rise
+    /// of the third breath.
+    case storeTide
+    /// Capture 5: Night at 3:07 with thirty-five minutes left.
+    case storeNight
+
     var opensMixes: Bool {
         switch self {
         case .mixes, .mixesEmpty, .mixesSave, .mixesRename, .mixesDelete, .mixesFourth, .mixesNight,
@@ -246,6 +265,7 @@ enum PageDebugState: String, CaseIterable {
         let day: TimeInterval = 86_400
         switch self {
         case .trialNight1: return 0
+        case .storePlaying, .storeLayers, .storeTide: return day
         case .trialNight3, .trialAtNight, .proTrial: return 2 * day
         case .trialNight7: return 6 * day
         case .trialLastDay: return 6 * day + 18 * 3_600
@@ -273,7 +293,7 @@ enum PageDebugState: String, CaseIterable {
     var isNightScreen: Bool {
         switch self {
         case .nightEnter, .nightTimer, .nightDimmed, .nightKeepOn, .nightBlanket, .nightPlain,
-             .nightFading, .nightPaused, .nightSpeaker, .nightLevel, .nightEnded, .nightError:
+             .nightFading, .nightPaused, .nightSpeaker, .nightLevel, .nightEnded, .nightError, .storeNight:
             return true
         default:
             return false
@@ -300,7 +320,8 @@ enum PageDebugState: String, CaseIterable {
 
     var opensTide: Bool {
         switch self {
-        case .tideRest, .tideGuiding, .tideDescent, .tideDissolving, .tideLocked, .tideNight: return true
+        case .tideRest, .tideGuiding, .tideDescent, .tideDissolving, .tideLocked, .tideNight, .storeTide:
+            return true
         default: return false
         }
     }
@@ -330,7 +351,8 @@ enum PageArguments {
 
     static var opensLayers: Bool {
         switch state {
-        case .layers, .layersSix, .layersCap, .layersEnd, .nightLayers, .proOfferLayers: return true
+        case .layers, .layersSix, .layersCap, .layersEnd, .nightLayers, .proOfferLayers, .storeLayers:
+            return true
         default: return false
         }
     }
@@ -356,6 +378,22 @@ enum PageArguments {
 
     /// Layers opens at the end of its content.
     static var scrollsLayersToEnd: Bool { state == .layersEnd }
+
+    /// A capture for the store: the status bar and the home indicator are
+    /// not drawn. The hour, the battery and the signal would be the only
+    /// icons of the capture, and they are not the app's (11 §2.2).
+    static var isStoreShot: Bool { arguments.contains("-storeShot") }
+
+    /// The row a capture draws as if a finger were on it.
+    static var heldLayer: SoundID? {
+        state == .storeLayers ? .rain : nil
+    }
+
+    /// Seconds into the guide at which a capture holds the breath: the
+    /// third one, at 70 % of its rise (four seconds at six a minute).
+    static var heldBreath: TimeInterval? {
+        state == .storeTide ? 22.8 : nil
+    }
 
     /// The row that shows "Six at once" from the start, for the capture.
     static var capNoteSound: SoundID? {
@@ -445,14 +483,26 @@ enum PageStage {
     /// once the sheet is up.
     private static var stageStore: ScriptedProStore?
 
-    /// Midday on a fixed date, or 02:14 the next night, local time.
+    /// Midday on a fixed date, or 02:14 the next night, local time. The
+    /// captures of the store have their own hours: the evening before the
+    /// night window, where the trial still has its word, and 02:57 for
+    /// the Night that is looked at ten minutes later.
     static func clock(for state: PageDebugState) -> Date {
         var components = DateComponents()
         components.year = 2026
         components.month = 11
         components.day = 17
-        components.hour = state.isNight ? 2 : 12
-        components.minute = state.isNight ? 14 : 0
+        switch state {
+        case .storePlaying, .storeLayers:
+            (components.hour, components.minute) = (20, 15)
+        case .storeTide:
+            (components.hour, components.minute) = (20, 12)
+        case .storeNight:
+            (components.hour, components.minute) = (2, 57)
+        default:
+            components.hour = state.isNight ? 2 : 12
+            components.minute = state.isNight ? 14 : 0
+        }
         return Calendar.current.date(from: components) ?? Date()
     }
 
@@ -533,10 +583,18 @@ enum PageStage {
              .proReceiptFamily, .proReceiptReview,
              .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNotHere,
              .nightEnter, .nightTimer, .nightDimmed, .nightFading, .nightPaused, .nightSpeaker,
-             .nightLevel, .nightEnded, .nightError,
+             .nightLevel, .nightEnded, .nightError, .storePlaying, .storeNight,
              .smallHours, .smallHoursPlain, .smallHoursWinding, .smallHoursPaused:
             // Night shows the timer of the first use: 45 minutes.
             break
+        case .storeLayers:
+            // Six at once: the five free ones and the ocean, which the
+            // trial opens. Rain is the one under the finger.
+            setLevels(model, [.white: 0.2, .pink: 0.65, .brown: 0.2, .rain: 0.52, .wind: 0.3, .ocean: 0.3])
+        case .storeTide:
+            // The ocean is already in the mix, so the tide raises nothing.
+            setLevels(model, [.pink: 0.65, .rain: 0.4, .ocean: 0.3])
+            model.setBreathingEnabled(true)
         case .nightKeepOn:
             model.setKeepScreenOn(.always)
         case .nightBlanket:
@@ -702,6 +760,13 @@ enum PageStage {
             model.breathing.release(over: 10 * 60)
         case .nightEnter, .nightTimer, .nightBlanket, .nightPlain:
             model.enterBedtime()
+        case .storeNight:
+            model.enterBedtime()
+            // Ten minutes in: 3:07, and it fades at 3:42.
+            move(model, by: 10 * 60)
+        case .storeTide:
+            if !model.isPlaying { model.play() }
+            model.breathing.debugHeldBreath = PageArguments.heldBreath
         case .nightDimmed, .nightKeepOn:
             model.enterBedtime()
             // Once the scene is active, which counts as a touch: its
@@ -752,6 +817,7 @@ enum PageStage {
         case .error3:
             for _ in 0..<3 { model.debugFailStart() }
         case .playingTwo, .playingFive, .night, .timer, .layers, .layersCap, .largeType,
+             .storePlaying, .storeLayers,
              .nightLayers, .tide, .nightTide, .timerAsleep, .timerBlanket, .timerNight,
              .tideGuiding, .tideDescent, .tideNight,
              .mixes, .mixesSave, .mixesRename, .mixesDelete, .mixesFourth, .mixesNight, .mixesNightFree,

@@ -10,7 +10,7 @@ Paquete S-09. Todo lo que hay que pegar en App Store Connect para enviar la 1.0,
 4. **`ficha-en.md`** y **`ficha-es.md`**: página de la versión 1.0. El inglés (EE. UU.) es el idioma principal; el español (España) se añade como segunda localización.
 5. **`notas-revision.md`**: sección "App Review Information", lo último antes de enviar.
 
-Las capturas salen del test de interfaz de S-08 y el icono de S-10; aquí solo están los titulares.
+Las capturas las genera `scripts/screenshots.sh` (S-08), que lee los titulares de las dos fichas, y el icono es de S-10; aquí solo están los titulares.
 
 ## GitHub Pages
 

@@ -54,6 +54,14 @@ struct PageView: View {
     private var presentsSomething: Bool { sheet != nil || model.showPaywall || naming.isPresented }
     /// Night or Small Hours is over the page: it is not seen or touched.
     private var isCovered: Bool { model.isBedtime || model.isSmallHours }
+    /// Night and Small Hours draw no status bar and no home indicator.
+    private var hidesSystemBars: Bool {
+        #if DEBUG
+        // Nor does a capture for the store (11 §2.2).
+        if PageArguments.isStoreShot { return true }
+        #endif
+        return isCovered
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -133,8 +141,8 @@ struct PageView: View {
         .overlay {
             NightCover(model: model)
         }
-        .statusBarHidden(isCovered)
-        .persistentSystemOverlays(isCovered ? .hidden : .automatic)
+        .statusBarHidden(hidesSystemBars)
+        .persistentSystemOverlays(hidesSystemBars ? .hidden : .automatic)
         .onChange(of: isCovered) { _, covered in
             // Night never shares the screen with a sheet: whatever was up
             // when it arrived by itself (a lock, a Shortcut) comes down.
