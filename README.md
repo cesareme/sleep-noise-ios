@@ -1,107 +1,152 @@
 # SleepNoise
 
-Offline sleep-noise synthesizer for iPhone. Every sound is generated on the device with `AVAudioEngine` and an `AVAudioSourceNode`. There are no bundled audio files, no analytics, and no networking of our own. StoreKit is the only system service that contacts Apple, and only when someone loads or buys Pro.
+[![iOS 17 or later](https://img.shields.io/badge/iOS-17%2B-black)](project.yml)
+[![iPhone](https://img.shields.io/badge/iPhone-only-black)](project.yml)
+[![Swift 5.9](https://img.shields.io/badge/Swift-5.9-F05138)](project.yml)
+[![CI](https://github.com/cesareme/sleep-noise-ios/actions/workflows/ci.yml/badge.svg)](https://github.com/cesareme/sleep-noise-ios/actions/workflows/ci.yml)
 
-Free includes white, pink, and brown noise, the rain and wind textures, the whole sleep timer ("Until I sleep" with a fade at the end, or "Blanket" until an hour of the clock), and three saved mixes. Pro (`com.cesareme.sleepnoise.pro`, non-consumable) unlocks the rest of the generated sounds (fan, ocean, thunder, campfire, brook and cabin), the breathing tide, and unlimited saved mixes. A local seven-night trial of everything starts only from the Pro sheet ("Start the trial · 7 nights"), never with Play and never from a Shortcut: no card, no StoreKit product. Its state lives in the Keychain, it is evaluated when a night starts and never in the middle of one, and when it ends nothing saved is lost or rewritten. The page says how many nights are left, and says nothing at all about Pro or the trial between 21:00 and 07:00: nothing is sold at night.
+Sleep sound, synthesized on the iPhone as it plays, with one payment and nothing collected.
 
-The Pro sheet takes its name and its price from StoreKit (`displayName`, `displayPrice`); no string in the app carries either. Bought, the same sheet is the receipt. Settings is the last row of Mixes: "Keep screen on" for the Night screen, the state of Pro, and "What's not here". Two things stay hidden until their constants in `AppLinks` are filled in: "Write a review" needs the App Store id of the app, and "Write to the author" needs a public address.
+SleepNoise is an offline sleep-sound app for iPhone. Every sound is generated on the device with `AVAudioEngine` while it plays. There are no bundled audio files. The app is English and Spanish, dark, and built for the night table: a page, a mixer of up to six sounding layers, a timer that fades out, a Night screen, and Small Hours. It asks for no account.
 
-Siri and the Shortcuts app have five actions, in English and Spanish: play the last mix, pause, play a mix by name, set the timer, and Small Hours (twenty quiet minutes of low sea for whoever wakes in the night). None of them sells anything or starts the trial: what needs Pro without access simply does not sound.
+The interface direction is Grafito, documented in [`docs/design/03-DIRECCION-DE-DISENO-2026-11-16.md`](docs/design/03-DIRECCION-DE-DISENO-2026-11-16.md): one typeface, one accent that exists only while sound is playing or under a finger, and a Horizon whose thickness is the real output level.
 
-## Requirements
+## What is included
 
-- A Mac with Xcode 26.6, the version the CI gate runs (deployment target iOS 17, Swift 5.9 language mode)
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) 2.38 or newer
-- Homebrew
+Eleven generated sounds. Five stay free. Pro adds the other six, the Tide, and saved mixes past the third. The free list is only allowed to grow.
 
-This repository does not commit an `.xcodeproj`. XcodeGen builds it from `project.yml`.
+| | Free, always | Pro |
+|---|---|---|
+| Sounds | White, pink, brown, rain, wind | Ocean, fan, thunder, campfire, brook, cabin |
+| Tide | Small Hours only (see below) | The Tide on the page: the ocean paced to a breath, six per minute by default, then it recedes |
+| Timer | The whole timer, for any length from 1 to 360 minutes, or until an hour of the clock | The same timer. It is not part of Pro |
+| Saved mixes | Three | No limit |
+| House mixes | Pink and rain, Wall. Sea and wind, and Brown and fire, load with their Pro layers left out | All four, complete |
 
-## Build on a Mac
+A sounding mix never exceeds six layers. Extra layers keep their levels and stay silent until a slot opens. That rule is `LayerCap`.
+
+**Small Hours** is twenty minutes of low ocean with the Tide at eight breaths a minute. It plays for everyone and does not offer a purchase. A Shortcut can start it. On screen, it is offered when the Night screen was already up as the night ended.
+
+**Night.** From 21:00 to 07:00, local time, the Pro sheet and the trial stay closed. The app never asks for a rating. Restore stays available from Settings in that window, with no price and no sheet.
+
+**Shortcuts.** Five actions, in English and Spanish: play the last mix, pause, play a mix by name, set the timer, and Small Hours. None of them starts the trial or opens a purchase. A Pro sound without access simply does not play.
+
+The app makes no health claims. It does not measure sleep, and it does not read or write HealthKit. `Info.plist` sets the category to Health & Fitness.
+
+## Privacy
+
+The app collects no data. Mixes, levels, and settings stay on the iPhone. The seven-night trial record stays in the Keychain of that device and is not synced. Purchases are Apple's: StoreKit is the only network path, and it runs only when a price is loaded or a purchase is made or restored. There is no account, no analytics, no advertising, and no third-party SDK. The privacy manifest declares no tracking and no collected data types.
+
+The policy written for App Store Connect is [`docs/PRIVACY.md`](docs/PRIVACY.md). It is not ready to paste into App Store Connect until the owner's legal name, a contact address, and a retention period for email are filled in. The same blanks are in [`docs/privacy/index.md`](docs/privacy/index.md), the draft prepared for a public page.
+
+## Architecture
+
+The render callback does not allocate, lock, or touch reference-counted objects. The main thread publishes one value-type command through a seqlock. The callback reads it, and if the write moved mid-read it keeps the previous command. Left and right run independent generators so the noise is wide in stereo, while swells stay centred. A layer whose gain has settled at zero is skipped. Output is soft-clipped, then scaled by a master gain that never touches the system volume. The same callback publishes the output level for the Horizon.
+
+There are no sample loops in the bundle. The noise generator is a 32-bit state with fixed seeds, apart from the thunder schedule, which is chosen at launch. A very long run can therefore repeat, and two launches follow the same sequence except for thunder. The store notes treat "never loops" as a claim this version does not yet support. Detail, and a diagram of the pipeline, are in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+## Status and version
+
+| | |
+|---|---|
+| Marketing version | **1.0.0** (`MARKETING_VERSION` in `project.yml`) |
+| Build | **1** (`CURRENT_PROJECT_VERSION`) |
+| Bundle id | `com.cesareme.sleepnoise` |
+| In-app purchase | `com.cesareme.sleepnoise.pro`, non-consumable |
+| Git tags | None |
+| App Store | Not submitted |
+
+`CFBundleShortVersionString` and `CFBundleVersion` take the two project settings above. The version string is already 1.0.0 because that is the release being built. Nothing has been tagged or shipped.
+
+The 1.0 product surface is in the tree: the page and Layers, the timer, the Tide, Night, Small Hours, mixes, the Pro sheet and receipt, Settings, the five Shortcuts, the icon, English and Spanish strings, store-listing drafts, and screenshot tooling. The CI check `verify` ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) last succeeded on `main` for `5e9beb8` on 17 November 2026. The gate rebuilds the project, compiles Debug and the Release configuration that ships, and requires at least 700 tests (`scripts/verify-min-tests.txt`).
+
+Still open before submission, as recorded in the plan and the launch notes:
+
+- The textures have not been signed off by ear on a device. A full night on hardware, and a real StoreKit purchase, restore, Ask to Buy, and Family Sharing pass, are not recorded as done.
+- App Store Connect still has to be created: the app record, the non-consumable, its price, and Family Sharing. None of that lives in this repository.
+- The privacy URL cannot be filed until [`docs/PRIVACY.md`](docs/PRIVACY.md) names a controller, a contact address, and how long a reply email is kept. The in-app page "What's not here" does not yet carry that text.
+- "Write a review" and "Write to the author" stay hidden while `AppLinks` in `SleepNoise/Features/Pro/ProSheetLogic.swift` is empty.
+- The working name is SleepNoise. The plan schedules a final name check for 4 December 2026.
+- A short TestFlight beta, then submission.
+
+## Roadmap
+
+Dates below are the ones written in [`docs/PLAN-SIMPLE-1.0.md`](docs/PLAN-SIMPLE-1.0.md). They are a plan, not a result.
+
+**1.0 — App Store submission, mid-December 2026.** The plan targets Friday 11 December 2026, ahead of the App Review holiday pause. If that date slips, the same plan records 18 December 2026 as the fallback. After submission, the following weeks are Apple's review. 1.0 is the app described above: on-device synthesis, the free tier, one non-consumable, a local seven-night trial, English and Spanish, iPhone on iOS 17 or later.
+
+**1.1 — after launch.** Live Activity, StandBy and Dynamic Island, a Home Screen widget, Control Center, a light appearance, a timbre control, two short pages on what the app does and does not claim, a diagnostic the person can choose to send, and iCloud for mixes. The plan allows three to five weeks after launch and says each of these waits on real reviews and sales. The list does not add an account, ads, or analytics. iCloud and a chosen diagnostic would be the first sync and the first network path that is not StoreKit, and neither is in the app today.
+
+**1.2.** An Apple Watch remote for the iPhone session, HealthKit only with an explicit opt-in, and iPad if sales justify it. Reading or writing HealthKit would change the privacy label in that release.
+
+[`docs/ROADMAP.md`](docs/ROADMAP.md) is an earlier sketch of widgets and the watch. Where it still describes a 60-minute free timer, one saved mix, or six sounds in total, the table in this README and `AccessPolicy.swift` are the ones that match the code.
+
+## Business model
+
+One payment. The line in the product is "No subscription. No account. No tracking."
+
+Pro is a non-consumable, `com.cesareme.sleepnoise.pro`, intended to be shared with Family Sharing. The local StoreKit file marks it family-shareable. Turning that on in App Store Connect is still a launch task.
+
+The price on screen is whatever StoreKit returns as `displayPrice`. The app does not hard-code a figure. Two numbers exist in the repository, and they are not the same thing:
+
+- The development store (`SleepNoise/Resources/SleepNoise.storekit`) prices the product at **29.99** on the **US** storefront. That file is for local testing.
+- The product decision in the 1.0 plan is **€29.99** once, with no launch discount.
+
+The price that will ship is the one entered in App Store Connect. It is not in this repository, and there is no sales history here.
+
+The seven-night trial is local. It starts only from "Start the trial · 7 nights" on the Pro sheet, never from Play and never from a Shortcut. It stores two dates and the time consumed, in the Keychain, so a reinstall does not start it again. It is judged when a session starts: a trial that runs out in the middle of the night waits until the next start. When it ends, saved mixes stay as they are. There is no card and no StoreKit product for the trial.
+
+Between 21:00 and 07:00 the app does not sell. The sheet stays closed on the night page as well, whatever the clock says.
+
+## Build
+
+Requirements: a Mac with Xcode 26.6 (the version CI selects), [XcodeGen](https://github.com/yonaskolb/XcodeGen) 2.38 or newer, and Homebrew. Deployment target iOS 17. Swift language mode 5.9. This repository does not commit an `.xcodeproj`.
 
 ```bash
 brew install xcodegen
-cd sleep-noise-ios
 xcodegen generate
 open SleepNoise.xcodeproj
 ```
 
-In Xcode:
+The simulator needs no signing. For a device or an archive, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig`, set `DEVELOPMENT_TEAM`, and run `xcodegen generate` again. Git ignores the local file. `Config/Signing.xcconfig` includes it only when it exists, so CI builds with no team.
 
-1. The simulator needs no signing. For a device or an archive, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and write your team id there (`DEVELOPMENT_TEAM = …`), then run `xcodegen generate` again.
-   Git ignores that file: `Config/Signing.xcconfig`, which the project uses, includes it only when it exists, so no team ever reaches the repository and CI builds without one.
-2. Scheme **SleepNoise** is already selected. Its Run action points at `SleepNoise/Resources/SleepNoise.storekit`.
-3. Pick an iPhone simulator, or an iPhone, on iOS 17 or newer.
-4. Product → Run (⌘R).
+Scheme **SleepNoise** points its Run action at `SleepNoise/Resources/SleepNoise.storekit`. A run from Xcode uses that local store. A TestFlight or App Store build ignores the file.
 
-Background audio uses `UIBackgroundModes` → `audio` and `AVAudioSession` category `.playback`. That category keeps playing with the screen locked and ignores the Ring/Silent switch. Unplugging headphones pauses playback. A phone call pauses it and resumes afterward when the system says it should.
-
-Enable the In-App Purchase capability on the App ID in the developer portal before you ship. StoreKit purchases do not need an extra entitlement key. Create the non-consumable `com.cesareme.sleepnoise.pro` in App Store Connect with English and Spanish names; the price in the `.storekit` file is only for local testing.
-
-## Tests
-
-The gate is one script. Nothing is merged unless it ends in `VERIFY OK`:
+The gate, on a Mac:
 
 ```bash
-xcrun simctl list devices available
 SN_SIM='iPhone 17' scripts/verify.sh
 ```
 
-Use a simulator name that exists on your Mac. The script regenerates the project, does a clean build, runs the tests and prints `VERIFY OK · N tests` or `VERIFY FAIL · reason` as its last line; the full log is in `.build/verify.log`. It fails on a build error, a failing or skipped test, any compiler or App Intents metadata warning, or fewer tests than the floor in `scripts/verify-min-tests.txt`. `--fast` skips the clean step for a quick loop and does not count as the gate. Product → Test (⌘U) in Xcode is fine while you work, but it is not the gate either. CI runs the same script on every pull request (`.github/workflows/ci.yml`).
+Use a simulator name that exists on that Mac. The script prints `VERIFY OK · N tests` or `VERIFY FAIL · reason`. The log is `.build/verify.log`. `--fast` skips the clean build and is not the gate. CI runs `scripts/verify.sh --ci` on every pull request and on every push to `main`.
 
-The tests cover bounded, finite generator output, pink and brown spectral tilt, the smoothstep fade, the render mix, the parameter mailbox, the free/Pro gates, and saved-mix persistence.
-
-## StoreKit testing
-
-The scheme loads `SleepNoise/Resources/SleepNoise.storekit`, so a Run from Xcode uses a local store. You do not need a Sandbox Apple ID for that path.
-
-1. Run the app from Xcode.
-2. Between 07:00 and 21:00, open the Pro sheet: turn the tide on, raise a Pro layer in **All layers**, or go to **Mixes → Settings** and tap the Pro row. At night none of these opens anything; change the simulator's clock if you need to.
-3. Tap **Buy**. The local transaction completes immediately, the sheet says "Thank you" and closes.
-4. Fan, ocean, the tide and a fourth saved mix should open. **Mixes → Settings → Pro** now opens the receipt.
-5. Use **Debug → StoreKit → Manage Transactions** to delete the transaction and return to the free tier.
-6. Tap **Restore purchase**. With the transaction deleted, the app reports that there is nothing to restore. Buy again, then Restore on a fresh launch should turn Pro back on while the transaction still exists.
-7. "Start the trial · 7 nights" is offered once per device and lives in the Keychain, so it survives a reinstall: erase the simulator to see it again.
-8. The configuration’s storefront defaults to the US. Change it in Xcode’s StoreKit editor (or the transaction manager) to try the Spanish product localization (`es_ES`).
-
-A TestFlight or App Store build ignores this file and uses App Store Connect.
-
-## Layout
+## Repository
 
 ```
-project.yml                  XcodeGen spec (app + unit tests)
-Config/Signing.xcconfig      Includes Config/Local.xcconfig (your team, not in Git)
-scripts/verify.sh            The gate: clean build, tests, no warnings
-scripts/screenshots.sh       The six App Store captures, in Spanish and English
-SleepNoise/App               Entry point and colors
-SleepNoise/Audio             Session, engine, Now Playing
-SleepNoise/Audio/DSP         Real-time generators, fade, mailbox, output meter
-SleepNoise/Design            Grafito design system: tokens, components, debug gallery
-SleepNoise/Features          Page and layers, mixer model, timer, tide, Night,
-                             Small Hours, mixes, the Pro sheet, Settings
-SleepNoise/Intents           The five Shortcuts
-SleepNoise/Model             Sound ids, the free/Pro rules, the seven-night trial
-SleepNoise/StoreKit          Purchase manager and the store behind a protocol
-SleepNoise/Resources         Strings, assets, Info.plist, .storekit
-SleepNoiseTests              DSP, fade, policy, and persistence tests
-docs/ROADMAP.md              v1.1, v1.2, and the App Store checklist
+project.yml                 XcodeGen spec. Version, bundle id, iPhone-only
+Config/                     Signing include. The team id stays out of Git
+SleepNoise/App              Entry
+SleepNoise/Audio            Session, engine, Now Playing
+SleepNoise/Audio/DSP        Generators, mailbox, render state, fades
+SleepNoise/Design           Grafito tokens and components
+SleepNoise/Features         Page, mixer, timer, Tide, Night, Small Hours,
+                            mixes, Pro, Settings
+SleepNoise/Intents          The five Shortcuts
+SleepNoise/Model            Sounds, access, trial, night window, policies
+SleepNoise/StoreKit         Purchase manager behind a store protocol
+SleepNoise/Resources        Strings, icon, Info.plist, privacy manifest, store
+SleepNoiseTests             Unit tests, including spectral checks
+scripts/verify.sh           The gate
+scripts/screenshots.sh      Six App Store captures, English and Spanish
+docs/ARCHITECTURE.md        Audio pipeline
+docs/PRIVACY.md             Privacy policy draft
+docs/SECURITY.md            How to report a vulnerability
+docs/PLAN-SIMPLE-1.0.md     What 1.0 ships, and when
+docs/store/                 Listing drafts, review notes, Connect answers
+CHANGELOG.md                History reconstructed from merged pull requests
+LICENSE                     All rights reserved
 ```
 
-The render callback copies a value-type `RenderState` once per buffer and reads gains through a seqlock (`AtomicBridge.c`, with explicit fences on both sides). It does not allocate, take a lock, or touch reference-counted objects. Left and right channels run independent noise generators with shared LFO phases, so the beds are decorrelated in stereo while swells stay centred. Pink noise is Paul Kellet’s economy filter. Brown noise is a leaky integrator. Rain is a hiss bed plus five overlapping resonant droplet voices with Poisson arrivals; the fan is a drifting resonant whoosh with a quiet motor hum; the ocean is a rumble under two incommensurate swells plus a surf band whose crest leads the wave.
+## License
 
-The same callback keeps a running mean square of what it outputs and stores it once per buffer in one atomic word; the main thread reads it to draw the Horizon, the line whose thickness is the real level of the sound.
-
-A debug build launched with `-pageState <name>` opens the app in a fixed state for the reference captures, on its own defaults, a pinned clock and a scripted store (`PageDebugState` lists the names: `proOffer`, `proReceipt`, `trialNight7`, `settings`…). Launched with `-gallery` it opens the design gallery instead of the app: every Grafito component in its states. `-gallerySection <name>` shows one section, `-galleryType <size>` forces a Dynamic Type size and `-silentOutput` keeps the engine rendering without sending anything to the speaker.
-
-`scripts/screenshots.sh` builds the app, installs it on the 6.9" simulator and writes the six App Store captures per language to `.build/store-shots/<language>/` at 1320 × 2868 px, each with its headline from `docs/store/` composed over black (notes in `scripts/screenshots/README.md`).
-
-Saved mixes and the last slider positions are `Codable` values in `UserDefaults`. Strings live in `Localizable.xcstrings` and `AppShortcuts.xcstrings` (English and Spanish). `CatalogAuditTests` and `CopyLintTests` read both catalogs and the Swift sources: every key translated and used, the same placeholders in both languages, plurals where a figure counts something, no text written in code, and none of the words the copy guide vetoes.
-
-## Privacy
-
-The privacy manifest declares no tracking and no collected data. `UserDefaults` is listed under reason `CA92.1` because the app stores mixes on device. The App Store nutrition label should be **Data Not Collected**.
-
-## Verification status
-
-Built and tested on a Mac with Xcode 26.6 (iOS 26 SDK) against the iPhone 17 simulator: the project compiles with no warnings, all unit tests pass, and playback, the sleep timer, saved mixes, the Pro sheet in every state of a scripted store, Settings and both languages were looked at in the simulator. The audio has been analysed offline (level, spectrum, modulation, stereo correlation) but not yet heard on a device.
-
-Still to verify on hardware: background playback with the screen locked, route changes (pairing AirPods mid-session), phone-call interruptions, Now Playing controls, VoiceOver on every screen, and the real StoreKit purchase, restore, Ask to Buy and Family Sharing flows, which need a Run from Xcode with the `.storekit` configuration or the sandbox. See `docs/REVIEW-2026-11-15.md` for the review findings and `docs/ROADMAP.md` for the launch checklist.
+Copyright (c) 2026 cesareme. All rights reserved. The source is public so the product can be read. It is not open source. See [`LICENSE`](LICENSE).
