@@ -17,9 +17,9 @@ Crea un simulador propio para la ejecución (`SN_SHOT_DEVICE`, por defecto el ti
 
 **El simulador es del script.** Lo crea al empezar (`xcrun simctl create`) y lo borra al terminar, también si falla, si se interrumpe con Ctrl-C o si lo matan (`trap cleanup EXIT`). Así no hereda ajustes de otro simulador (Aumentar contraste, Negrita, 24 horas), no depende de que exista uno con cierto nombre y no toca ninguno que alguien esté usando: antes instalaba encima de la app de un simulador compartido, la terminaba y le fijaba y limpiaba la barra de estado. Para usar uno que ya existe hay que decirlo con `SN_SHOT_UDID`: entonces no se crea ni se borra nada, se instala la app sobre la que tenga y al acabar se limpia su barra de estado.
 
-**Cada pantalla se toma dos veces.** Un simulador recién creado enseña avisos del sistema encima de lo que haya ("Ready for Apple Intelligence" salió sobre la captura 2). Las dos tomas van separadas ocho segundos, más de lo que dura un aviso, y el compositor compara su sexto superior (`shot-composer --same-top`), donde nada de la app se mueve en estos seis estados. Si no coinciden, el script espera y repite, hasta tres veces. Aun así, las doce se miran antes de subirlas.
+**Cada pantalla se toma dos veces.** Un simulador recién creado enseña avisos del sistema encima de lo que haya ("Ready for Apple Intelligence" salió sobre la captura 2). Las dos tomas van separadas ocho segundos, más de lo que dura un aviso, y el compositor compara su sexto superior (`shot-composer --same-top`), donde nada de la app se mueve en estos siete estados. Si no coinciden, el script espera y repite, hasta tres veces. Aun así, las catorce se miran antes de subirlas.
 
-Nada se versiona ni se sube. Termina con `SHOTS OK · 12 captures` o `SHOTS FAIL · motivo`; el log está en `.build/screenshots.log`.
+Nada se versiona ni se sube. Termina con `SHOTS OK · 14 captures` o `SHOTS FAIL · motivo`; el log está en `.build/screenshots.log`.
 
 | Captura | Estado (`-pageState`) | Qué enseña |
 |---|---|---|
@@ -29,6 +29,7 @@ Nada se versiona ni se sube. Termina con `SHOTS OK · 12 captures` o `SHOTS FAIL
 | 04-tide | `storeTide` | Marea guiando a seis por minuto, detenida al 70 % de la subida de la tercera respiración |
 | 05-night | `storeNight` | Noche a las 3:07, se funde a las 3:42 |
 | 06-not-here | `settingsNotHere` | La página "Lo que no hay" |
+| 07-mixes | `storeMixes` | Mezclas de día a las 20:15, segundo día de la prueba: dos mezclas propias y las cuatro de la casa con su banda pintada (`HousePaint`, exploración 12 §6.1), "Rosa y lluvia" sonando. Titular común de la exploración, sin segunda línea: la de reserva de la exploración 12 §5 espera a una captura de la página pintada, porque las bandas de Mezclas son PNG de compilación (C04) |
 
 ## El lienzo
 

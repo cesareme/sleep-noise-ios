@@ -72,10 +72,11 @@ Se construye con la Dirección de diseño 03 tal cual. Lo esencial para los agen
 | 12-13 | Mezclas, guardar y renombrar | Formato v2, sin iCloud |
 | 14-15, 33 | Hoja Pro, prueba y recibo | Completa |
 | 16 | Primer uso | Sin onboarding, como dice el 03 |
-| 18 | Ajustes | Lista mínima: Noche, Háptica, Pro, Lo que no hay, Escribir al autor |
+| 18 | Ajustes | Lista mínima: Noche, Pintura (día: De día / Nunca, D-58), Háptica, Pro, Lo que no hay, Escribir al autor |
 | 24 | Siri y Atajos | Cinco intents: `PlayLastMix`, `Pause`, `PlayMix`, `SetTimer`, `SmallHours` |
 | 27 | Icono "La regla y la marea" | Completo |
-| 28 | Seis capturas y titulares de C57 | Sin vídeo de vista previa (1.1) |
+| 28 | Seis capturas y titulares de C57, más una séptima: Mezclas de día con las bandas pintadas | Sin vídeo de vista previa (1.1). La séptima es la de la exploración 12 (D-57, 19-11-2026), sin segunda línea: la de reserva espera a una captura de la página pintada (C04) |
+| 28 bis | Pigmento, camino A completo (exploración 12 §4.2 y §7; D-55 a D-58, 19-11-2026) | Las bandas pintadas de la casa en Mezclas (PNG generados en compilación, `scripts/paint/`); la ventana pintada de 240 pt alrededor del Horizonte en la página de día, generada en el iPhone y que respira con el RMS real y la Marea (`SleepNoise/Design/Paint/`, `PaintWindow`); las reglas de 4 pt en Capas; el ajuste "Pintura: de día / nunca"; y MetricKit al diagnóstico local. Una sola regla de día y noche (`PaintPolicy`): nada de 21:00 a 07:00, en la página nocturna, en Noche, en Madrugada, con `isLuminanceReduced` ni con Aumentar contraste. Nada en el icono ni en la hoja Pro. Condición de envío: la medida de batería con MetricKit de 20:00 a 21:00 y la prueba de cinco segundos (`PRUEBAS-EN-DISPOSITIVO.md` §11); ninguna cifra de batería se publica hasta medirla |
 | 32 | Lo que no hay | Página de texto corta |
 | 34 | Now Playing | Completo |
 
@@ -139,7 +140,7 @@ Si en la semana 2 se va más de 3 días tarde, se recorta en este orden, sin toc
 
 ## 9. Hoja de ruta después del lanzamiento
 
-- **1.1 (3 a 5 semanas después):** Live Activity, StandBy y Dynamic Island; widget "Dormir"; Centro de control; Papel (modo claro); Timbre; "Qué sabemos" y "Cómo se genera"; diagnóstico; iCloud.
+- **1.1 (3 a 5 semanas después):** Live Activity, StandBy y Dynamic Island; widget "Dormir"; Centro de control; Papel (modo claro); Timbre; "Qué sabemos" y "Cómo se genera"; diagnóstico; iCloud; de Pigmento, solo la brasa nocturna de la hoguera como experimento apagado por defecto (exploración 12 §9 n.º 7): la ventana, las reglas de Capas y el ajuste "Pintura" entraron en 1.0 (D-58).
 - **1.2:** Apple Watch, HealthKit, iPad si las ventas lo justifican.
 - Cada actualización se decide con datos reales: descargas, conversión de prueba a Pro y reseñas.
 

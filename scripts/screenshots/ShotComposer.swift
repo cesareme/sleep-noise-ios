@@ -47,7 +47,8 @@ let headlineLine: CGFloat = 34
 let headlineBaseline: CGFloat = 100
 let headlineMaxLines = 2
 
-/// Step 6: SF Pro Regular 17/22, always in the box y 152-174, one line.
+/// Step 6: SF Pro Regular 17/22, always in the box y 152-174, one line
+/// (captures 1 and 3).
 let secondSize: CGFloat = 17
 let secondBox: ClosedRange<CGFloat> = 152...174
 
@@ -256,7 +257,7 @@ if takes.count == 2 {
 guard let ficha else { fail("--ficha is required") }
 guard let markdown = try? String(contentsOfFile: ficha, encoding: .utf8) else { fail("cannot read \(ficha)") }
 let headlines = readHeadlines(markdown)
-guard headlines.count == 6 else { fail("\(ficha): expected six captures, found \(headlines.count)") }
+guard headlines.count == 7 else { fail("\(ficha): expected seven captures, found \(headlines.count)") }
 
 if lists {
     for (number, headline) in headlines.enumerated() {
@@ -269,7 +270,7 @@ if lists {
     exit(0)
 }
 
-guard let index, headlines.indices.contains(index - 1) else { fail("--index must be 1 to 6") }
+guard let index, headlines.indices.contains(index - 1) else { fail("--index must be 1 to 7") }
 guard let screenPath, let outPath else { fail("--screen and --out are required") }
 let headline = headlines[index - 1]
 

@@ -7,7 +7,13 @@ final class AppRoot: ObservableObject {
     let mixer: MixerModel
 
     init() {
+        // MetricKit, for the measure of the paint in the beta (exploration
+        // 12 §7 fase 3): its payloads go to the local log and nowhere else.
+        PaintMetricsSubscriber.shared.start()
         #if DEBUG
+        if PageArguments.dumpsPaintMetrics {
+            print(PaintMetricsLog.standard.dump())
+        }
         if let state = PageArguments.state {
             // A staged launch for the reference captures: its own defaults
             // and a pinned clock. See `PageStage`.

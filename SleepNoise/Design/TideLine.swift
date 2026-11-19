@@ -42,6 +42,22 @@ struct TideLine: View {
     /// The ink of the line when it is not the sheet's: on the page the
     /// water line is the Horizon, and carries the accent while it sounds.
     var ink: Color?
+    /// What the line of water carries behind it while the page is painted
+    /// (lenguaje §5: "the reserve goes with it"): nil over black.
+    var halo: Halo?
+
+    /// The dry backing of the line of water over the paint: a strip of
+    /// black at `reserveOpacity`, `reserve` points tall and centred on the
+    /// line, and a halo of pure black `thickness` points each side of it.
+    /// Drawn with the line, so it moves with the line, pixel for pixel.
+    /// The strip runs `bleed` points past each end of the line: the paint
+    /// is full bleed, so the strip is too, and does not read as a bar.
+    struct Halo: Equatable {
+        var thickness: CGFloat
+        var reserve: CGFloat
+        var reserveOpacity: Double
+        var bleed: CGFloat = 0
+    }
 
     @Environment(\.nightPhase) private var phase
     @Environment(\.scenePhase) private var scenePhase
@@ -124,10 +140,24 @@ struct TideLine: View {
     }
 
     private var water: some View {
-        Rectangle()
+        let thickness = Grid.pixelCeil(lineThickness, displayScale: displayScale)
+        return Rectangle()
             .fill(lineInk)
-            .frame(height: Grid.pixelCeil(lineThickness, displayScale: displayScale))
+            .frame(height: thickness)
             .frame(maxWidth: .infinity)
+            .background {
+                if let halo {
+                    // Centred on the line and taller than it: the strip
+                    // first, the halo over it, both under the water.
+                    Rectangle()
+                        .fill(.black.opacity(halo.reserveOpacity))
+                        .frame(height: halo.reserve)
+                        .padding(.horizontal, -halo.bleed)
+                    Rectangle()
+                        .fill(.black)
+                        .frame(height: thickness + halo.thickness * 2)
+                }
+            }
     }
 
     /// High and low water: two short hairlines at the trailing edge. They

@@ -4849,6 +4849,114 @@
         }
       }
     },
+    "ajustes.pintura": {
+      "comment": "Settings row: the painted window of the day page.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paint"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pintura"
+          }
+        }
+      }
+    },
+    "ajustes.pintura.dia": {
+      "comment": "Paint: by day.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "By day"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De día"
+          }
+        }
+      }
+    },
+    "ajustes.pintura.nunca": {
+      "comment": "Paint: never.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Never"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nunca"
+          }
+        }
+      }
+    },
+    "ajustes.pintura.nota": {
+      "comment": "Settings: note under the row Paint.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Painted on this iPhone, by day only."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se pinta en este iPhone, solo de día."
+          }
+        }
+      }
+    },
+    "ajustes.pintura.nota.apagada": {
+      "comment": "Settings: note under the row Paint while both accessibility switches keep it off.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off while Reduce Motion and Increase Contrast are both on."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apagada mientras Reducir movimiento y Aumentar contraste estén activos a la vez."
+          }
+        }
+      }
+    },
+    "ajustes.seccion.dia": {
+      "comment": "Settings: section header in small caps, the paint of the day page.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "day"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "día"
+          }
+        }
+      }
+    },
     "ajustes.seccion.pro": {
       "comment": "Settings: section header in small caps.",
       "extractionState": "manual",

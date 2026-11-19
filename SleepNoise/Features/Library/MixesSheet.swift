@@ -16,6 +16,14 @@ import SwiftUI
 /// and reordering are things of the day: on the night page a touch loads,
 /// and that is all.
 ///
+/// By day the four rows of the house carry their painted band, bled off
+/// the left edge (exploration 12 §6.1, decided 19-11-2026): the house
+/// paints, what is yours is yours. Whether a row is laid out with its band
+/// is decided when the sheet opens (`PaintPolicy`) and holds for the visit,
+/// so nothing moves; when the rule turns false with the sheet open (21:00,
+/// the night page) the band fades and does not come back by itself. Opened
+/// with the rule false, the row is exactly the row without paint.
+///
 /// The bar stays, so the Disc is always in reach.
 struct MixesSheet: View {
     @ObservedObject var model: MixerModel
@@ -30,10 +38,20 @@ struct MixesSheet: View {
 
     @Environment(\.nightPhase) private var phase
     @Environment(\.dynamicTypeSize) private var dynamicType
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.isLuminanceReduced) private var luminanceReduced
+    @Environment(\.scenePhase) private var scenePhase
     /// The box of a section header: 18 pt at Large.
     @ScaledMetric(relativeTo: .footnote) private var headerLine: CGFloat = 18
     @State private var naming = MixNaming()
     @State private var deleting: SavedMix?
+    /// What `PaintPolicy` said when the sheet opened: the layout of the
+    /// house rows for the whole visit. Nil until the first draw.
+    @State private var paintsOnOpen: Bool?
+    /// The band has faded with the sheet open and stays faded.
+    @State private var paintFaded = false
 
     private static let contentID = "mixes.content"
 
@@ -62,10 +80,33 @@ struct MixesSheet: View {
         ))
     }
 
+    /// The rule of the house paint, now. `saleClock` redraws the sheet at
+    /// 21:00 with the app in front; coming back to the foreground after
+    /// 21:00 does not touch the model's clock, so the scene phase is read
+    /// here too and the return redraws the sheet.
+    private var showsPaintNow: Bool {
+        _ = scenePhase
+        // The one rule of the paint, with the setting "never" and the two
+        // switches together, as the window and Layers read it. The sheet
+        // is in front, so nothing dims it.
+        let conditions = PaintConditions(
+            model: model,
+            isLuminanceReduced: luminanceReduced,
+            contrast: contrast,
+            reduceTransparency: reduceTransparency,
+            reduceMotion: reduceMotion,
+            sheetPresented: false,
+            scenePhase: .active
+        )
+        return PaintPolicy.phase(conditions).exists
+    }
+
     var body: some View {
         let list = self.list
         // Read once per draw; the model checks again on the tap.
         let canSell = model.canSell
+        let showsPaint = showsPaintNow
+        let paintsLayout = paintsOnOpen ?? showsPaint
         VStack(spacing: 0) {
             SheetHeader(title: Localized.string("mezclas.titulo"))
             ScrollViewReader { proxy in
@@ -88,7 +129,9 @@ struct MixesSheet: View {
                             MixRow(
                                 name: row.name,
                                 recipe: row.recipe,
-                                stateWord: row.isSounding ? Localized.string("mezclas.sonando") : nil
+                                stateWord: row.isSounding ? Localized.string("mezclas.sonando") : nil,
+                                paint: paintsLayout ? housePaint(of: row) : nil,
+                                paintShows: !paintFaded
                             ) {
                                 load(row.reference)
                             }
@@ -116,6 +159,18 @@ struct MixesSheet: View {
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .grafitoSheet(surface: .sheet)
         .accessibilityAction(.magicTap) { model.togglePlayback() }
+        .onAppear {
+            if paintsOnOpen == nil { paintsOnOpen = showsPaint }
+        }
+        .onChange(of: showsPaint) { _, shows in
+            // The band fades as a change of night phase does and does not
+            // come back: the row keeps its layout and the gap reads as a
+            // margin (content path, "fundir").
+            guard !shows, paintsLayout, !paintFaded else { return }
+            withAnimation(.easeInOut(duration: reduceMotion ? Motion.phaseReduced : Motion.phase)) {
+                paintFaded = true
+            }
+        }
         #if DEBUG
         .task {
             // Reference captures of the two alerts, once the sheet is up.
@@ -148,6 +203,12 @@ struct MixesSheet: View {
     }
 
     // MARK: Rows
+
+    /// The house mix a row of "from the house" is, for its band.
+    private func housePaint(of row: MixesList.Row) -> HouseMix? {
+        if case .house(let mix) = row.reference { return mix }
+        return nil
+    }
 
     private func header(_ key: String) -> some View {
         Text(verbatim: Localized.string(key))
@@ -338,10 +399,21 @@ struct MixesSheet: View {
 /// A row of the Mixes sheet: the name, the recipe under it in as many lines
 /// as it needs, and a state word on the line of the name. The whole row is
 /// the button; pressed, it shows the relief for 200 ms.
+///
+/// A row of the house may carry its painted band: 64 pt bled off the left
+/// edge, under a 12 % veil, the text 20 pt from it. The band is decoration:
+/// VoiceOver does not know it is there, and the row is as tall as without
+/// it. The band clips to the row from the top; at the text sizes where the
+/// row is taller than the piece, the piece grows with the row.
 private struct MixRow: View {
     var name: String
     var recipe: MixRecipe
     var stateWord: String?
+    /// The house mix whose band the row is laid out with, or nil for a row
+    /// without paint: a saved mix, or the house at night.
+    var paint: HouseMix?
+    /// False once the band has faded with the sheet open.
+    var paintShows = true
     /// A name the person wrote may shrink a little before it is cut.
     var isOwnName = false
     /// What VoiceOver reads instead of the name.
@@ -364,7 +436,7 @@ private struct MixRow: View {
             }
         }
         .overlay(alignment: .bottom) {
-            Hairline().padding(.horizontal, Grid.margin)
+            Hairline().padding(.leading, textLeading).padding(.trailing, Grid.margin)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: MixesList.spokenLabel(
@@ -405,9 +477,37 @@ private struct MixRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, Grid.unit * 3)
         .padding(.bottom, Grid.unit * 4)
-        .padding(.horizontal, Grid.margin)
+        .padding(.leading, textLeading)
+        .padding(.trailing, Grid.margin)
         .frame(minHeight: Grid.row(subtitle: true, dynamicType: dynamicType))
+        .background(alignment: .leading) {
+            if let paint { band(paint) }
+        }
         .contentShape(Rectangle())
+    }
+
+    /// Where the text starts: 20 pt from the edge, or 20 pt from the band.
+    private var textLeading: CGFloat {
+        paint == nil ? Grid.margin : HousePaint.textLeading
+    }
+
+    /// The painted band: a clear column the height of the row, with the
+    /// piece hung from its top and clipped to it. The piece is taller than
+    /// any row (`HousePaint.bandSize`), so it is drawn at 1:1 and the row
+    /// shows its top; `.fill` only covers a row taller than the piece.
+    private func band(_ mix: HouseMix) -> some View {
+        Color.clear
+            .frame(width: HousePaint.bandSize.width)
+            .overlay(alignment: .top) {
+                Image(HousePaint.bandName(mix))
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            }
+            .clipped()
+            .overlay(Color.black.opacity(HousePaint.veil))
+            .opacity(paintShows ? 1 : 0)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
 
     private var title: some View {

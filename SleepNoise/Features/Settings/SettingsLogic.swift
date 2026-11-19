@@ -14,6 +14,34 @@ enum SettingsText {
         }
     }
 
+    /// The row "Paint" of Settings (exploration 12 §7 fase 2), under its
+    /// own header, "day".
+    static let paintSectionKey = "ajustes.seccion.dia"
+    static let paintTitleKey = "ajustes.pintura"
+    /// The note under the row: what the paint is and when it goes.
+    static let paintNoteKey = "ajustes.pintura.nota"
+    /// The note while both accessibility switches keep it off.
+    static let paintAutoOffKey = "ajustes.pintura.nota.apagada"
+
+    static func paintKey(_ setting: PaintSetting) -> String {
+        switch setting {
+        case .byDay: return "ajustes.pintura.dia"
+        case .never: return "ajustes.pintura.nunca"
+        }
+    }
+
+    /// The value the row shows: what the paint goes by, in words. With
+    /// Reduce Motion and Increase Contrast both on it says "Never" whatever
+    /// is stored, and the note under it says why.
+    static func paintValueKey(stored: PaintSetting, reduceMotion: Bool, increaseContrast: Bool) -> String {
+        paintKey(PaintSetting.effective(stored, reduceMotion: reduceMotion, increaseContrast: increaseContrast))
+    }
+
+    static func paintNote(stored: PaintSetting, reduceMotion: Bool, increaseContrast: Bool) -> String {
+        let effective = PaintSetting.effective(stored, reduceMotion: reduceMotion, increaseContrast: increaseContrast)
+        return effective == stored ? paintNoteKey : paintAutoOffKey
+    }
+
     /// "about sleepnoise": the name is the bundle's, never a string here.
     static func aboutHeader(
         appName: String,
