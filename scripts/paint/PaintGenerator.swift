@@ -10,7 +10,9 @@
 // of random draws, same motifs and the same seed per house mix, so a piece can
 // be reproduced and compared with the mock-up.
 //
-// Run through scripts/paint/generate.sh from anywhere inside the checkout:
+// The brush itself (generator, palette, ribbon, canvas) is the app's own
+// SleepNoise/Design/Paint/Pigment.swift, compiled next to this file by
+// generate.sh. Run it from anywhere inside the checkout:
 //
 //   scripts/paint/generate.sh            the four house-mix bands (2x and 3x) into the asset catalog
 //   scripts/paint/generate.sh --proof    also real-size proofs of the bands in .build/shots/paint-*.png
@@ -23,244 +25,57 @@ import CoreGraphics
 import Foundation
 import ImageIO
 
-// MARK: - Pseudo-random generator (ported as is)
+// MARK: - The shared brush
 
-/// The LCG of the mock-ups: s = s * 1664525 + 1013904223 mod 2^32, returned
-/// as a double in [0, 1). Every random draw of the mock-up is made in the same
-/// order here, so a seed paints the same composition.
-struct LCG {
-    private var state: UInt32
+// The generator, the palette, the ribbon and the canvas live in
+// SleepNoise/Design/Paint/Pigment.swift, compiled next to this file by
+// generate.sh: the app paints its window with the very same code, so a seed
+// draws the same strokes here and on the page.
 
-    init(seed: UInt32) { state = seed }
+typealias LCG = Pigment.LCG
+typealias Tint = Pigment.Tint
+typealias Palette = Pigment.Palette
+typealias Canvas = Pigment.Canvas
+typealias P = Pigment.P
 
-    mutating func next() -> Double {
-        state = state &* 1664525 &+ 1013904223
-        return Double(state) / 4294967296
-    }
-}
-
-/// Value noise on a 64 x 64 lattice with smoothstep interpolation, tiled.
-struct ValueNoise {
-    private var grid: [Double]
-
-    init(_ rng: inout LCG) {
-        grid = (0..<(64 * 64)).map { _ in rng.next() }
-    }
-
-    func callAsFunction(_ x: Double, _ y: Double) -> Double {
-        func fade(_ t: Double) -> Double { t * t * (3 - 2 * t) }
-        let fx = floor(x), fy = floor(y)
-        let xi = Int(fx) & 63, yi = Int(fy) & 63
-        let xf = x - fx, yf = y - fy
-        let a = grid[yi * 64 + xi]
-        let b = grid[yi * 64 + ((xi + 1) & 63)]
-        let c = grid[((yi + 1) & 63) * 64 + xi]
-        let d = grid[((yi + 1) & 63) * 64 + ((xi + 1) & 63)]
-        let u = fade(xf), v = fade(yf)
-        return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v
-    }
-}
-
-// MARK: - Palette (lenguaje-pictorico.md §1)
-
-struct Tint {
-    let hex: UInt32
-
-    var r: Double { Double((hex >> 16) & 0xFF) / 255 }
-    var g: Double { Double((hex >> 8) & 0xFF) / 255 }
-    var b: Double { Double(hex & 0xFF) / 255 }
-
-    func cgColor(alpha: Double = 1) -> CGColor {
-        CGColor(srgbRed: CGFloat(r), green: CGFloat(g), blue: CGFloat(b), alpha: CGFloat(alpha))
-    }
-
-    /// The mock-up's `mix(h, "#000000", t)`: each channel rounded to 8 bits.
-    func towardsBlack(_ t: Double) -> Tint {
-        func channel(_ v: UInt32) -> UInt32 { UInt32((Double(v) * (1 - t)).rounded()) }
-        return Tint(hex: channel((hex >> 16) & 0xFF) << 16 | channel((hex >> 8) & 0xFF) << 8 | channel(hex & 0xFF))
-    }
-}
-
-let black = Tint(hex: 0x000000)
-
-/// Light to base. The lightest tint is the "touch of light"; the darkest the base.
-enum Palette {
-    static let white = [Tint(hex: 0xE3E0D8), Tint(hex: 0xA9B8C6), Tint(hex: 0x5E6B78)]
-    static let pink = [Tint(hex: 0xF3D2B8), Tint(hex: 0xE8A598), Tint(hex: 0xC77B8A), Tint(hex: 0x7A4A5E)]
-    static let brown = [Tint(hex: 0xD9A66B), Tint(hex: 0xB07A4A), Tint(hex: 0x7A4E2E), Tint(hex: 0x4A3222)]
-    static let rain = [Tint(hex: 0xB9CDD9), Tint(hex: 0x7FA7C9), Tint(hex: 0x4A6B8A), Tint(hex: 0x2E4A5E)]
-    static let fan = [Tint(hex: 0xD7DBE0), Tint(hex: 0xB8BFC9), Tint(hex: 0x7C8794), Tint(hex: 0x4F5862)]
-    static let ocean = [Tint(hex: 0xCFE7E0), Tint(hex: 0x3FA7B0), Tint(hex: 0x1F6F8B), Tint(hex: 0x0F3C56)]
-    static let thunder = [Tint(hex: 0xC9C4E8), Tint(hex: 0x8E7FB8), Tint(hex: 0x6A5A8E), Tint(hex: 0x3A3250)]
-    static let campfire = [Tint(hex: 0xFFB15C), Tint(hex: 0xF08A24), Tint(hex: 0xD9442B), Tint(hex: 0x5A2A14)]
-    static let stream = [Tint(hex: 0xBFE3C8), Tint(hex: 0x5FB08A), Tint(hex: 0x2F7A5A), Tint(hex: 0x1E4A3A)]
-    static let wind = [Tint(hex: 0xE8E0C4), Tint(hex: 0xC9C2A8), Tint(hex: 0x8FA07A), Tint(hex: 0x5F6B55)]
-    static let cabin = [Tint(hex: 0xD6CFC8), Tint(hex: 0xB9A9A0), Tint(hex: 0x8A7F96), Tint(hex: 0x5B5566)]
-}
-
-// MARK: - Drawing primitives
-
-let sRGB = CGColorSpace(name: CGColorSpace.sRGB)!
+let black = Pigment.black
+let sRGB = Pigment.sRGB
 
 func fail(_ message: String) -> Never {
     FileHandle.standardError.write(Data("paint: \(message)\n".utf8))
     exit(1)
 }
 
-/// A canvas in points with the origin top left, like the mock-up's canvas,
-/// rendered at `scale` device pixels per point.
-final class Canvas {
-    let width: Double
-    let height: Double
-    /// The height the composition is placed in: the whole canvas, or the
-    /// top part of a band that is painted taller than the row it is judged
-    /// in. Motifs that fill a field ignore it; the tongues of the campfire,
-    /// which rise from the lower half, are placed and counted within it.
-    let focus: Double
-    let scale: Double
-    let context: CGContext
-
-    init(width: Double, height: Double, scale: Double, focus: Double? = nil) {
-        self.width = width
-        self.height = height
-        self.focus = focus ?? height
-        self.scale = scale
-        let w = Int((width * scale).rounded()), h = Int((height * scale).rounded())
-        guard let context = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
-                                      space: sRGB, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)
-        else { fail("could not create a \(w)x\(h) bitmap") }
-        self.context = context
-        context.translateBy(x: 0, y: CGFloat(height * scale))
-        context.scaleBy(x: CGFloat(scale), y: CGFloat(-scale))
-        context.setShouldAntialias(true)
-        context.setAllowsAntialiasing(true)
-        context.interpolationQuality = .high
+func canvas(width: Double, height: Double, scale: Double, focus: Double? = nil) -> Canvas {
+    guard let cv = Canvas(width: width, height: height, scale: scale, focus: focus) else {
+        fail("could not create a \(Int(width * scale))x\(Int(height * scale)) bitmap")
     }
-
-    func fill(_ tint: Tint, alpha: Double = 1, rect: CGRect? = nil) {
-        context.setFillColor(tint.cgColor(alpha: alpha))
-        context.fill(rect ?? CGRect(x: 0, y: 0, width: width, height: height))
-    }
-
-    func image() -> CGImage { context.makeImage()! }
+    return cv
 }
 
-struct P { var x: Double; var y: Double }
-
-/// A ribbon: a centre line with a varying width, filled with a perpendicular
-/// gradient of three stops where two coincide (light to 0.38, base after, a
-/// shadow band on the last 0.12). The dry jump is the relief of the impasto.
 func ribbon(_ cv: Canvas, _ pts: [P], _ w: Double, _ light: Tint, _ base: Tint, _ alpha: Double, taper: Bool = false) {
-    guard pts.count >= 2 else { return }
-    var left: [P] = [], right: [P] = []
-    let last = pts.count - 1
-    for i in 0...last {
-        let p = pts[i], q = pts[min(i + 1, last)], o = pts[max(i - 1, 0)]
-        var dx = q.x - o.x, dy = q.y - o.y
-        var len = (dx * dx + dy * dy).squareRoot()
-        if len == 0 { len = 1 }
-        dx /= len; dy /= len
-        let t = Double(i) / Double(last)
-        let prof = taper ? (1 - 0.78 * t) : 0.35 + 0.65 * sin(Double.pi * min(1, t * 1.25)) * (1 - 0.25 * t)
-        let hw = w * prof * 0.5
-        left.append(P(x: p.x - dy * hw, y: p.y + dx * hw))
-        right.append(P(x: p.x + dy * hw, y: p.y - dx * hw))
-    }
-    let a = pts[0], b = pts[last]
-    let nx = -(b.y - a.y), ny = b.x - a.x
-    var nl = (nx * nx + ny * ny).squareRoot()
-    if nl == 0 { nl = 1 }
-    let m = P(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
-    let start = CGPoint(x: m.x - nx / nl * w / 2, y: m.y - ny / nl * w / 2)
-    let end = CGPoint(x: m.x + nx / nl * w / 2, y: m.y + ny / nl * w / 2)
-    let shadow = black.cgColor(alpha: alpha * 0.35)
-    let colors = [light.cgColor(alpha: alpha), light.cgColor(alpha: alpha), base.cgColor(alpha: alpha),
-                  base.cgColor(alpha: alpha), shadow, shadow] as CFArray
-    let locations: [CGFloat] = [0, 0.38, 0.38, 0.88, 0.88, 1]
-    guard let gradient = CGGradient(colorsSpace: sRGB, colors: colors, locations: locations) else { return }
-
-    let ctx = cv.context
-    ctx.saveGState()
-    ctx.beginPath()
-    ctx.move(to: CGPoint(x: left[0].x, y: left[0].y))
-    for p in left { ctx.addLine(to: CGPoint(x: p.x, y: p.y)) }
-    for p in right.reversed() { ctx.addLine(to: CGPoint(x: p.x, y: p.y)) }
-    ctx.closePath()
-    ctx.clip()
-    ctx.drawLinearGradient(gradient, start: start, end: end, options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
-    ctx.restoreGState()
+    Pigment.ribbon(cv.context, pts, w, light, base, alpha, taper: taper)
 }
 
-/// One-point specks of pure channels: the grain of the paste.
 func grain(_ cv: Canvas, _ R: inout LCG, _ alpha: Double) {
-    let n = cv.width * cv.height / 40
-    var i = 0.0
-    while i < n {
-        let r: CGFloat = R.next() > 0.5 ? 1 : 0
-        let g: CGFloat = R.next() > 0.5 ? 1 : 0
-        let b: CGFloat = R.next() > 0.5 ? 1 : 0
-        cv.context.setFillColor(CGColor(srgbRed: r, green: g, blue: b, alpha: CGFloat(alpha)))
-        let x = R.next() * cv.width, y = R.next() * cv.height
-        cv.context.fill(CGRect(x: x, y: y, width: 1, height: 1))
-        i += 1
-    }
+    Pigment.grain(cv.context, width: cv.width, height: cv.height, &R, alpha)
 }
 
-/// A stroke by 1D noise: a base direction and a deviation per step.
 func strokeNoise(_ x0: Double, _ y0: Double, _ ang: Double, _ len: Double, _ steps: Int, _ R: inout LCG, _ dev: Double) -> [P] {
-    var pts = [P(x: x0, y: y0)]
-    var x = x0, y = y0, a = ang
-    for _ in 1...steps {
-        a += (R.next() - 0.5) * dev
-        x += cos(a) * len / Double(steps)
-        y += sin(a) * len / Double(steps)
-        pts.append(P(x: x, y: y))
-    }
-    return pts
+    Pigment.strokeNoise(x0, y0, ang, len, steps, &R, dev)
 }
 
-/// A stroke along the curl of a 2D noise field, curvature capped at 0.3 rad
-/// per step and leaning to the horizontal so nothing closes into a spiral.
 func strokeFlow(_ x0: Double, _ y0: Double, _ len: Double, _ steps: Int, _ field: (Double, Double) -> Double,
                 _ scale: Double, _ drift: Double) -> [P] {
-    var pts = [P(x: x0, y: y0)]
-    var x = x0, y = y0
-    var prev: Double? = nil
-    for _ in 1...steps {
-        let e = 0.5
-        let dzdx = (field(x / scale + e / scale, y / scale) - field(x / scale - e / scale, y / scale)) / (2 * e)
-        let dzdy = (field(x / scale, y / scale + e / scale) - field(x / scale, y / scale - e / scale)) / (2 * e)
-        var a = atan2(-dzdx, dzdy)
-        a = atan2(sin(a) * 0.55, cos(a) * 0.55 + 1.0) + drift
-        if let p = prev {
-            var d = a - p
-            while d > Double.pi { d -= 2 * Double.pi }
-            while d < -Double.pi { d += 2 * Double.pi }
-            a = p + max(-0.3, min(0.3, d))
-        }
-        prev = a
-        x += cos(a) * len / Double(steps)
-        y += sin(a) * len / Double(steps)
-        pts.append(P(x: x, y: y))
-    }
-    return pts
+    Pigment.strokeFlow(x0, y0, len, steps, field, scale, drift)
 }
 
-/// Weighted choice of a tint index.
 func pick(_ R: inout LCG, _ c: [Tint], _ weights: [Double]) -> Int {
-    var s = 0.0
-    let r = R.next() * weights.reduce(0, +)
-    for i in 0..<c.count {
-        s += weights[i]
-        if r < s { return i }
-    }
-    return c.count - 1
+    Pigment.pick(&R, weights)
 }
 
-/// `for (i = 0; i < n; i++)` with a fractional n: ceil(n) iterations.
 func times(_ n: Double, _ body: () -> Void) {
-    var i = 0.0
-    while i < n { body(); i += 1 }
+    Pigment.times(n, body)
 }
 
 // MARK: - Motifs (one per texture, abstract before figurative)
@@ -349,7 +164,7 @@ enum Motif {
 
     static func ocean(_ cv: Canvas, _ R: inout LCG, _ c: [Tint]) {
         let W = cv.width, H = cv.height
-        let f = ValueNoise(&R), g = ValueNoise(&R)
+        let f = Pigment.ValueNoise(&R), g = Pigment.ValueNoise(&R)
         let field: (Double, Double) -> Double = { x, y in f(x, y) + 0.5 * g(x * 2, y * 2) }
         times(W * H / 48) {
             let x = R.next() * W, y = R.next() * H, len = 18 + R.next() * 18
@@ -469,12 +284,13 @@ let housePieces: [HousePiece] = [
 /// a 6 % grain, then the composition. Same seed, same drawing at any size;
 /// only the number of strokes follows the area.
 func paint(_ piece: HousePiece, width: Double, height: Double, scale: Double, focus: Double? = nil) -> CGImage {
-    let cv = Canvas(width: width, height: height, scale: scale, focus: focus)
+    let cv = canvas(width: width, height: height, scale: scale, focus: focus)
     var R = LCG(seed: piece.seed)
     cv.fill(piece.base[piece.base.count - 1].towardsBlack(0.45))
     grain(cv, &R, 0.06)
     piece.compose(cv, &R)
-    return cv.image()
+    guard let image = cv.image() else { fail("could not read the bitmap back") }
+    return image
 }
 
 // MARK: - Output

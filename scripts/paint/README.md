@@ -10,7 +10,7 @@ Las piezas pintadas de las cuatro mezclas de la casa: una banda de 64 × 288 pt 
 
 ## Cómo se pinta
 
-`PaintGenerator.swift` porta el JavaScript de `camino-contenido.html` (que a su vez copia la pincelada de `paleta.html`) a Swift con CoreGraphics, sin dependencias (ImageIO, del mismo SDK, solo para escribir el PNG):
+`PaintGenerator.swift` porta el JavaScript de `camino-contenido.html` (que a su vez copia la pincelada de `paleta.html`) a Swift con CoreGraphics, sin dependencias (ImageIO, del mismo SDK, solo para escribir el PNG). El pincel (generador, paleta, listón, lienzo) es el de la app, `SleepNoise/Design/Paint/Pigment.swift`: `generate.sh` lo compila junto al script, así que el catálogo y la ventana pintada de la página (`PaintScene`, `PaintRasterizer`) pintan con un solo código y un test (`PaintEngineTests`) compara la banda del catálogo con lo que pinta el pincel compartido en el simulador:
 
 - **Generador pseudoaleatorio.** El mismo congruencial lineal de las maquetas, `s = s × 1664525 + 1013904223 mod 2³²`, con los sorteos en el mismo orden, para que una semilla pinte la misma composición que la maqueta.
 - **Listón.** Curva central con ruido (o campo de flujo en el océano), grosor en huso (cónico en las lenguas de la hoguera) y relleno con gradiente perpendicular de tres paradas donde dos coinciden: tinta clara hasta el 38 %, tinta base después y banda de sombra en el último 12 %. El salto seco es el empaste; no hay desenfoque.
