@@ -108,6 +108,9 @@ final class PaintStore {
     private func cancelPending() {
         pending?.cancel()
         pending = nil
+        // The rasterizer keeps no request of its own either: nothing holds
+        // a raster but `raster`.
+        rasterizer.cancelAll()
         pendingTask?.cancel()
         pendingTask = nil
         wanted = nil

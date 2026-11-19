@@ -279,6 +279,8 @@ enum PageDebugState: String, CaseIterable {
     case windowReduceMotion
     /// At the third accessibility size: a window of 120 pt.
     case windowAX3
+    /// "Wall": the fourth house mix, the brown field alone.
+    case windowWall
 
     // The captures of the store that no other state stages (11 §3.2).
     /// Capture 1: the house mix playing in the evening, on the second day
@@ -739,7 +741,7 @@ enum PageStage {
              .nightLevel, .nightEnded, .nightEndedMorning, .nightError, .storePlaying, .storeNight,
              .smallHours, .smallHoursPlain, .smallHoursWinding, .smallHoursPaused,
              .windowPinkRainTide, .windowBrownFire, .windowSeaWind, .windowPaused, .windowEvening,
-             .windowNight, .windowContrast, .windowReduceMotion, .windowAX3:
+             .windowNight, .windowContrast, .windowReduceMotion, .windowAX3, .windowWall:
             // Night shows the timer of the first use: 45 minutes. The
             // window states load their mix once the page is up.
             break
@@ -956,6 +958,8 @@ enum PageStage {
             model.playMix(.house(.seaAndWind))
         case .windowEvening, .windowNight, .windowContrast, .windowReduceMotion, .windowAX3:
             model.playMix(.house(.pinkAndRain))
+        case .windowWall:
+            model.playMix(.house(.wall))
         case .windowPaused:
             model.playMix(.house(.pinkAndRain))
             Task { @MainActor in

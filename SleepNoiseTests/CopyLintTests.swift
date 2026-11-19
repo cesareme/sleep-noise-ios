@@ -391,11 +391,12 @@ final class CopyLintTests: XCTestCase {
                 // The canvas of the captures (11 §2.2): two lines at most.
                 XCTAssertLessThanOrEqual(headline.title.count, 41, headline.title)
             }
-            // The first, the third and the seventh carry a second line (11
-            // §2.2). The seventh got its back on 19-11-2026, with the painted
-            // window of the page: the paint is generated on the device.
+            // The first and the third carry a second line (11 §2.2). The
+            // seventh shows Mixes, whose bands are PNG made at build time:
+            // its reserve line ("made here, no files") waits for a capture
+            // of the painted page, where the code does what it says (C04).
             XCTAssertEqual(
-                headlines.map { $0.subtitle != nil }, [true, false, true, false, false, false, true], language
+                headlines.map { $0.subtitle != nil }, [true, false, true, false, false, false, false], language
             )
         }
     }

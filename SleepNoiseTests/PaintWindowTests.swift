@@ -50,7 +50,24 @@ final class PaintWindowTests: XCTestCase {
         )
         XCTAssertEqual(PaintVeil.opacity(atY: 147, geometry: g), 0.44, accuracy: 0.001)
         XCTAssertEqual(PaintVeil.opacity(atY: 5, geometry: g, reserves: reserves), 0.96)
-        XCTAssertEqual(PaintVeil.opacity(atY: 12, geometry: g, reserves: reserves), 0.71, accuracy: 0.001)
+        // Under the state line the 96 % lets go over 20 pt: no line of cut
+        // at the top of the window, the paint rises row by row.
+        XCTAssertEqual(PaintVeil.textRamp, 20)
+        XCTAssertEqual(PaintVeil.opacity(atY: 12, geometry: g, reserves: reserves), 0.96, accuracy: 0.001)
+        XCTAssertEqual(PaintVeil.opacity(atY: 22, geometry: g, reserves: reserves), 0.96 + (0.35 + 0.4 * 98 / 120 - 0.96) / 2, accuracy: 0.001)
+        XCTAssertEqual(PaintVeil.opacity(atY: 32, geometry: g, reserves: reserves), 0.35 + 0.4 * 88 / 120, accuracy: 0.001)
+        XCTAssertEqual(PaintVeil.opacity(atY: 32, geometry: g, reserves: reserves), PaintVeil.opacity(atY: 32, geometry: g))
+        previous = 1
+        for y in stride(from: 12, through: 32, by: 0.5) {
+            let value = PaintVeil.opacity(atY: y, geometry: g, reserves: reserves)
+            XCTAssertLessThanOrEqual(value, previous + 1e-9, "ramp at \(y)")
+            previous = value
+        }
+        // While the tide guides, the strip at the Horizon is not drawn: the
+        // line of water carries its own (`TideLine.Halo`).
+        XCTAssertEqual(PaintVeil.opacity(atY: g.horizonY, geometry: g, horizonReserve: false), 0.35, accuracy: 0.001)
+        XCTAssertEqual(PaintVeil.opacity(atY: g.horizonY + 12, geometry: g, horizonReserve: false), 0.39, accuracy: 0.001)
+        XCTAssertEqual(1 - (1 - 0.35) * (1 - PaintVeil.waterReserve), PaintVeil.reserve, accuracy: 0.001, "the strip of the water over the centre is the reserve")
         // AA for the secondary ink over the brightest tint of the house
         // palettes under the text veil: Y 0.59 of the rain's light tint.
         let textBackground = 0.59 * (1 - PaintVeil.text)
@@ -76,7 +93,10 @@ final class PaintWindowTests: XCTestCase {
         XCTAssertEqual(pair(at: g.horizonY + 12).first, 0.80)
         XCTAssertEqual(pair(at: 148).last, 0.96, "the rows")
         XCTAssertEqual(pair(at: 12).first, 0.96, "the state line")
-        XCTAssertEqual(PaintVeil.breaks(geometry: g, reserves: reserves), [12, g.horizonY - 12, g.horizonY + 12, 148])
+        XCTAssertEqual(PaintVeil.breaks(geometry: g, reserves: reserves), [12, 32, g.horizonY - 12, g.horizonY + 12, 148])
+        XCTAssertEqual(PaintVeil.breaks(geometry: g, reserves: reserves, horizonReserve: false), [12, 32, 148])
+        let guided = PaintVeil.stops(geometry: g, reserves: .none, horizonReserve: false)
+        XCTAssertFalse(guided.contains { abs($0.opacity - 0.80) < 1e-9 }, "no strip while the tide guides")
     }
 
     // MARK: The pulse
@@ -102,10 +122,14 @@ final class PaintWindowTests: XCTestCase {
         }
         XCTAssertEqual(pulse.liveOpacity, lit)
 
-        // Live again, after a long pause of the timeline: no jump.
+        // Live again, after a long pause of the timeline: no jump. The
+        // longest step moves the level half its range per second and the
+        // presence a third per second, no more.
+        let step = PaintPulse.longestStep
+        let bound = (PaintBreath.maxChangePerSecond + PaintBreath.liveMax / PaintBreath.death) * step
         pulse.isLive = true
         pulse.tick(rms: 0, at: t + 60)
-        XCTAssertGreaterThan(pulse.liveOpacity, lit - PaintBreath.maxChangePerSecond * PaintPulse.longestStep - 0.3)
+        XCTAssertGreaterThan(pulse.liveOpacity, lit - bound)
         pulse.reset()
         XCTAssertEqual(pulse.liveOpacity, 0)
         XCTAssertEqual(pulse.tideOffset, .zero)
@@ -118,6 +142,36 @@ final class PaintWindowTests: XCTestCase {
         pulse.tick(rms: 0, at: 1)
         XCTAssertEqual(pulse.liveOpacity, PaintBreath.stillOpacity)
         XCTAssertEqual(PaintBreath.stillOpacity, 0.65, accuracy: 0.001)
+
+        // Reduce Motion turned off with the paint on show: the layer steps
+        // down from its still light, it does not fall to the silence the
+        // follower never heard.
+        pulse.isLive = true
+        pulse.tick(rms: 0, at: 1.5)
+        XCTAssertGreaterThan(pulse.liveOpacity, PaintBreath.stillOpacity - bound)
+        XCTAssertLessThan(pulse.liveOpacity, PaintBreath.stillOpacity)
+    }
+
+    /// The latch of the night fade (`PaintLatch`): it arms only when there
+    /// was paint to fade, and it opens when the app comes back to the
+    /// front by day. The app opened at 22:30 without a Play and brought
+    /// back at 10:00 paints.
+    func testTheNightLatchArmsOnlyWhatWasPaintedAndOpensByDay() {
+        // 22:30, no Play yet: absent and final, but nothing to fade.
+        var c = PaintConditions(now: day(22, minute: 30))
+        c.calendar = calendar
+        XCTAssertEqual(PaintPolicy.phase(c), .absent)
+        XCTAssertTrue(PaintPolicy.fadeIsFinal(c))
+        XCTAssertFalse(PaintLatch.arms(fadeIsFinal: PaintPolicy.fadeIsFinal(c), paintExists: false))
+        // 20:59 with the paint on show, then 21:00 with the app in front:
+        // that is the fade that latches, and 07:00 does not open it.
+        XCTAssertTrue(PaintLatch.arms(fadeIsFinal: true, paintExists: true))
+        XCTAssertFalse(PaintLatch.arms(fadeIsFinal: false, paintExists: true), "a sheet or a switch is no night")
+        // Back to the front at 10:00: open. At 23:00: still shut.
+        XCTAssertTrue(PaintLatch.opensOnForeground(now: day(10), calendar: calendar))
+        XCTAssertFalse(PaintLatch.opensOnForeground(now: day(23), calendar: calendar))
+        XCTAssertFalse(PaintLatch.opensOnForeground(now: day(6, minute: 59), calendar: calendar))
+        XCTAssertTrue(PaintLatch.opensOnForeground(now: day(7), calendar: calendar))
     }
 
     @MainActor
@@ -133,9 +187,23 @@ final class PaintWindowTests: XCTestCase {
         pulse.tide = { _ in 0.5 }
         pulse.tick(rms: 0.1, at: 0.1)
         XCTAssertEqual(pulse.tideOffset.width, 0, accuracy: 0.001, "mid breath is home")
+        // Published on whole pixels of the screen: 0.7 pt at 3x is 2 px.
+        pulse.scale = 3
+        pulse.tide = { _ in 0.5 + 0.7 / 12 }
+        pulse.tick(rms: 0.1, at: 0.12)
+        XCTAssertEqual(pulse.tideOffset.width, 2.0 / 3, accuracy: 0.001)
+        pulse.tide = { _ in 0.5 + 0.8 / 12 }
+        pulse.tick(rms: 0.1, at: 0.13)
+        XCTAssertEqual(pulse.tideOffset.width, 2.0 / 3, accuracy: 0.001, "the same pixel: nothing is published")
         pulse.tide = nil
         pulse.tick(rms: 0.1, at: 0.15)
         XCTAssertEqual(pulse.tideOffset, .zero)
+        // Whether the tide guides is told apart from its breath.
+        XCTAssertFalse(pulse.tideGuides)
+        pulse.setTideGuides(true)
+        XCTAssertTrue(pulse.tideGuides)
+        pulse.setTideGuides(false)
+        XCTAssertFalse(pulse.tideGuides)
     }
 
     // MARK: The rule of Layers
@@ -147,6 +215,11 @@ final class PaintWindowTests: XCTestCase {
         XCTAssertEqual(PaintRule.opacity(level: 2), 1)
         XCTAssertEqual(PaintRule.width, 4)
         XCTAssertLessThan(PaintRule.leading + PaintRule.width, Grid.margin, "inside the margin: the name does not move")
+        // The dabs are the second dark tint at 90 %; white has three tints
+        // and its second one is light, so its dabs go at half strength and
+        // the rule stays a dark rule.
+        XCTAssertEqual(PaintRule.dabOpacity(tints: 4), 0.9)
+        XCTAssertEqual(PaintRule.dabOpacity(tints: Pigment.Motif.white.palette.count), 0.45)
     }
 
     func testTheDabsOfARuleAreFixedByTheSeedAndGrowWithTheRow() {
@@ -308,7 +381,7 @@ final class PaintWindowTests: XCTestCase {
         XCTAssertTrue(NightWindow.contains(PageStage.clock(for: .windowNight)))
         let painted: [PageDebugState] = [
             .windowPinkRainTide, .windowBrownFire, .windowSeaWind, .windowPaused, .windowEvening,
-            .windowContrast, .windowReduceMotion, .windowAX3,
+            .windowContrast, .windowReduceMotion, .windowAX3, .windowWall,
         ]
         for state in painted + [.windowNight] {
             XCTAssertFalse(state.isNight, "\(state)")

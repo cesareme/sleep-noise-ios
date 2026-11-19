@@ -29,6 +29,12 @@ enum PaintRule {
         var height: Double
     }
 
+    /// The dabs of a rule: the second dark tint at 90 %; with a palette of
+    /// three tints (white, whose second tint is a light one) at 45 %.
+    static func dabOpacity(tints: Int) -> Double {
+        tints < 4 ? 0.45 : 0.9
+    }
+
     /// 0.42 at zero, 1 at full level.
     static func opacity(level: Float) -> Double {
         let clamped = Double(min(1, max(0, level)))
@@ -69,13 +75,16 @@ struct PaintRuleMark: View {
         let palette = motif.palette
         let ground = palette[palette.count - 1]
         let dab = palette[palette.count - 2]
+        // A palette of three tints (white) has one dark tint: its dabs are
+        // the next one at half strength, so the rule stays a dark rule.
+        let dabOpacity = PaintRule.dabOpacity(tints: palette.count)
         GeometryReader { geometry in
             let height = geometry.size.height
             ZStack(alignment: .topLeading) {
                 Rectangle().fill(ground.color)
                 ForEach(Array(PaintRule.dabs(seed: seed, height: height).enumerated()), id: \.offset) { _, d in
                     Rectangle()
-                        .fill(dab.color.opacity(0.9))
+                        .fill(dab.color.opacity(dabOpacity))
                         .frame(height: Grid.pixelCeil(CGFloat(d.height), displayScale: displayScale))
                         .offset(y: Grid.pixelRound(CGFloat(d.y) * height, displayScale: displayScale))
                 }

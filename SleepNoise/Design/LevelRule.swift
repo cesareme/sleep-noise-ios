@@ -162,10 +162,16 @@ struct LevelRule: View {
             // In the margin, the height of the touch area: the name does
             // not move. A row that does not sound has a dry rule.
             if let paint {
-                PaintRuleMark(motif: paint.motif, seed: paint.seed, level: isLocked || isWaiting ? 0 : level)
-                    .padding(.leading, PaintRule.leading)
-                    .opacity(paint.shows ? 1 : 0)
-                    .animation(.easeInOut(duration: paint.fade), value: paint.shows)
+                // Faded with the night, the rule leaves the tree: nil, not
+                // opacity 0, like every view of the paint.
+                ZStack(alignment: .leading) {
+                    if paint.shows {
+                        PaintRuleMark(motif: paint.motif, seed: paint.seed, level: isLocked || isWaiting ? 0 : level)
+                            .padding(.leading, PaintRule.leading)
+                            .transition(.opacity)
+                    }
+                }
+                .animation(.easeInOut(duration: paint.fade), value: paint.shows)
             }
         }
         .animation(isDragging ? Motion.fingerInCurve : Motion.fingerOutCurve, value: isDragging)

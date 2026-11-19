@@ -78,4 +78,11 @@ struct PaintBreathFollower: Equatable {
     mutating func reset() {
         self = PaintBreathFollower()
     }
+
+    /// Sits at `opacity`, fully present: the still layer of the frozen
+    /// phase, so the first step out of it is a step, not a jump.
+    mutating func settle(at opacity: Double) {
+        level = min(PaintBreath.liveMax, max(PaintBreath.liveMin, opacity))
+        presence = 1
+    }
 }

@@ -221,11 +221,11 @@ What plays gets painted.
 
 Recuento: 24 de 41. Versión inglesa del titular común de la exploración 12 ("Lo que suena, se pinta."; §5 y §6.1), que la exploración solo escribe en español: a confirmar por el dueño. Pantalla: la hoja Mixes de día, a las 20:15 del segundo día de la prueba: "Yours" con dos mezclas guardadas y "From the house" con las cuatro mezclas, cada una con su banda pintada a sangre por la izquierda (`HousePaint`), y "Pink and rain" sonando. La pintura es la de la app, generada por código en tiempo de compilación (`scripts/paint/`), sin imágenes ajenas; de noche y en la página nocturna la hoja no la enseña (`PaintPolicy`). Va la última porque la exploración no sustituye ninguna de las seis de C57.
 
-Subtítulo de la captura:
+Sin segunda línea. Texto de reserva, por si el dueño añade una captura de la página de día pintada (`-pageState windowPinkRainTide`), que es la pantalla que lo sostiene:
 
 ```text en
 Made here, like the sound. No files.
 ```
 
-Recuento: 36 de 42. Versión inglesa propia del texto de reserva de la exploración 12 §5, acortado como el español: a confirmar por el dueño. Vuelve el 19-11-2026 porque ahora lo sostiene el código: la ventana pintada de la página se genera en el iPhone en tiempo de ejecución (`PaintRasterizer`); las bandas de Mezclas de esta captura son PNG generados en compilación por el mismo pincel.
+Recuento: 36 de 42. Versión inglesa propia del texto de reserva de la exploración 12 §5, acortado como el español: a confirmar por el dueño. No va bajo esta captura: las bandas de Mezclas que enseña son PNG generados en compilación por el mismo pincel, y la ficha solo afirma lo que el código hace en la pantalla que enseña (C04). La ventana de la página sí se genera en el iPhone en tiempo de ejecución (`PaintRasterizer`).
 

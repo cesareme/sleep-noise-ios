@@ -4910,13 +4910,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Generated on this iPhone, no images. By day only; it turns itself off with Reduce Motion and Increase Contrast both on."
+            "value": "Painted on this iPhone, by day only."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Generada en este iPhone, sin imágenes. Solo de día; se apaga sola con Reducir movimiento y Aumentar contraste a la vez."
+            "value": "Se pinta en este iPhone, solo de día."
           }
         }
       }

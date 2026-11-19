@@ -211,13 +211,13 @@ Lo que suena, se pinta.
 
 Recuento: 23 de 41. Titular común de la exploración 12 (§5 y §6.1; `docs/design/color/camino-contenido.md`), el mismo en los tres caminos. Pantalla: la hoja Mezclas de día, a las 20:15 del segundo día de la prueba: "Tuyas" con dos mezclas guardadas y "De la casa" con las cuatro mezclas, cada una con su banda pintada a sangre por la izquierda (`HousePaint`), y "Rosa y lluvia" sonando. La pintura es la de la app, generada por código en tiempo de compilación (`scripts/paint/`), sin imágenes ajenas; de noche y en la página nocturna la hoja no la enseña (`PaintPolicy`). Va la última porque la exploración no sustituye ninguna de las seis de C57: si el dueño prefiere que entre en los resultados de búsqueda, se cambia el orden en `scripts/screenshots.sh` y aquí.
 
-Subtítulo de la captura:
+Sin segunda línea. Texto de reserva, por si el dueño añade una captura de la página de día pintada (`-pageState windowPinkRainTide`), que es la pantalla que lo sostiene:
 
 ```text es
 Se genera aquí, como el sonido. Sin archivos.
 ```
 
-Recuento: 45 de 42. Supera el tope estimado de la maqueta, pero manda `shot-composer --list` (la segunda línea de la captura 3 mide 355 pt con 47 caracteres). Es el texto de reserva de la exploración 12 §5 ("Como el sonido: se genera aquí, sin archivos ni descargas."), acortado para caber en la columna de 376 pt. Vuelve el 19-11-2026 porque ahora lo sostiene el código: la ventana pintada de la página se genera en el iPhone en tiempo de ejecución (`PaintRasterizer`), y ninguna pieza de la app es una imagen ajena. Las bandas de Mezclas que enseña esta captura siguen siendo PNG generados en compilación por el mismo pincel: a confirmar por el dueño si prefiere la línea bajo una captura de la página pintada en lugar de bajo Mezclas.
+Recuento: 45 de 42 (manda `shot-composer --list`; la segunda línea de la captura 3 mide 355 pt con 47 caracteres). Es el texto de reserva de la exploración 12 §5, acortado para la columna de 376 pt. No va bajo esta captura: las bandas de Mezclas que enseña son PNG generados en compilación por el mismo pincel (`scripts/paint/`), y la ficha solo afirma lo que el código hace en la pantalla que enseña (C04). La ventana de la página sí se genera en el iPhone en tiempo de ejecución (`PaintRasterizer`): si el dueño quiere la línea, es con esa captura, como séptima u octava.
 
 ## Si se abre también "Spanish (Mexico)"
 

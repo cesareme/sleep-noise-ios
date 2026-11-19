@@ -122,8 +122,18 @@ final class PaintRasterizer: @unchecked Sendable {
             } catch {
                 request.finish(.failure(error))
             }
+            // Done: the rasterizer lets go of the request, so the raster
+            // lives only where it was asked for (the store), and goes when
+            // the store drops it.
+            self.forget(request)
         }
         return request
+    }
+
+    private func forget(_ request: PaintRenderRequest) {
+        lock.lock()
+        if current === request { current = nil }
+        lock.unlock()
     }
 
     /// Cancels whatever is in flight. Nothing is drawn after this until the
@@ -141,7 +151,11 @@ final class PaintRasterizer: @unchecked Sendable {
     static func draw(
         _ scene: PaintScene, scale: CGFloat, shouldContinue: @escaping () -> Bool = { true }
     ) throws -> PaintRaster {
+        #if DEBUG
+        // A rule of performance, not of safety: it is checked where it is
+        // developed and never kills the published app.
         dispatchPrecondition(condition: .notOnQueue(.main))
+        #endif
         let started = DispatchTime.now()
         guard shouldContinue() else { throw CancellationError() }
 
@@ -177,7 +191,7 @@ final class PaintRasterizer: @unchecked Sendable {
         for stroke in composition.strokes where !stroke.isCrack {
             try check()
             let target = stroke.isLive ? live : dry
-            Pigment.paint(stroke.ribbon, palette: stroke.motif.palette, minimumTint: 2, into: target.context)
+            Pigment.paint(stroke.ribbon, palette: stroke.motif.palette, minimumTint: max(2, stroke.minimumTint), into: target.context)
         }
 
         // Pass 2: the band, all four tints, feathered 26 pt over its edges.
@@ -193,7 +207,10 @@ final class PaintRasterizer: @unchecked Sendable {
             for stroke in banded {
                 try check()
                 let target = stroke.isLive ? liveBand : dryBand
-                Pigment.paint(stroke.ribbon, palette: stroke.motif.palette, minimumTint: 0, into: target.context)
+                // A muted motif (lenguaje §7: no warm pigment over the blue
+                // of sea and rain, no blue in the campfire) keeps its two
+                // dark tints inside the band as well.
+                Pigment.paint(stroke.ribbon, palette: stroke.motif.palette, minimumTint: stroke.minimumTint, into: target.context)
             }
             let clear = CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 0), solid = CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 1)
             let ramp = Double(PaintWindowGeometry.feather) / Double(bandRect.height)

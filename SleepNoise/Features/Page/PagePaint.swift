@@ -78,6 +78,27 @@ extension PaintConditions {
     }
 }
 
+/// The latch of the night fade (lenguaje §4, "after the fade it does not
+/// come back on its own"): what arms it and what opens it, apart from the
+/// deliberate ways out the page handles (leaving the night page, Night
+/// giving the page back by day).
+enum PaintLatch {
+    /// A final absence (`PaintPolicy.fadeIsFinal`) latches only when there
+    /// was paint to fade: the app opened at 22:00 without a Play, or back
+    /// in front at 21:05 after dropping its raster in the background, has
+    /// seen no fade, and the next day paints as any day.
+    static func arms(fadeIsFinal: Bool, paintExists: Bool) -> Bool {
+        fadeIsFinal && paintExists
+    }
+
+    /// Coming back to the front from the background by day is a new
+    /// visit: the latch opens. Not at night, and never while the app stays
+    /// in front (07:00 does not undo the fade).
+    static func opensOnForeground(now: Date, calendar: Calendar) -> Bool {
+        !NightWindow.contains(now, calendar: calendar)
+    }
+}
+
 /// The durations of the paint's transitions (lenguaje §3 and §4,
 /// camino-contenido.md): born in 2 s, dimmed in 1.5 s and back in 0.8 s,
 /// dried in 1.5 s and back in 0.8 s, faded in 2 s. With Reduce Motion

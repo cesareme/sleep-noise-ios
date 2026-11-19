@@ -41,6 +41,7 @@ struct MixesSheet: View {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.isLuminanceReduced) private var luminanceReduced
     @Environment(\.scenePhase) private var scenePhase
     /// The box of a section header: 18 pt at Large.
     @ScaledMetric(relativeTo: .footnote) private var headerLine: CGFloat = 18
@@ -85,17 +86,19 @@ struct MixesSheet: View {
     /// here too and the return redraws the sheet.
     private var showsPaintNow: Bool {
         _ = scenePhase
-        var increaseContrast = contrast == .increased
-        #if DEBUG
-        increaseContrast = increaseContrast || PaintArguments.forcesIncreasedContrast
-        #endif
-        return PaintPolicy.showsHousePaint(
-            now: model.currentDate,
-            nightSession: model.isNightSession,
+        // The one rule of the paint, with the setting "never" and the two
+        // switches together, as the window and Layers read it. The sheet
+        // is in front, so nothing dims it.
+        let conditions = PaintConditions(
+            model: model,
+            isLuminanceReduced: luminanceReduced,
+            contrast: contrast,
             reduceTransparency: reduceTransparency,
-            increaseContrast: increaseContrast,
-            calendar: model.currentCalendar
+            reduceMotion: reduceMotion,
+            sheetPresented: false,
+            scenePhase: .active
         )
+        return PaintPolicy.phase(conditions).exists
     }
 
     var body: some View {

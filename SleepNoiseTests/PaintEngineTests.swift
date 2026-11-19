@@ -196,13 +196,63 @@ final class PaintEngineTests: XCTestCase {
         XCTAssertEqual(geometry.height, 240)
         XCTAssertEqual(geometry.horizonY, 120)
         XCTAssertEqual(geometry.bandBottom - geometry.bandTop, TideLine.band)
-        XCTAssertEqual(geometry.bandBottom, geometry.horizonY + Grid.horizonBand / 2)
+        // The band ends 20 pt under the Horizon (the mock-up's 292 to
+        // 312): 8 pt of full tints under the reserve strip.
+        XCTAssertEqual(geometry.bandBottom, geometry.horizonY + 20)
+        XCTAssertGreaterThan(geometry.bandBottom, geometry.horizonY + PaintWindowGeometry.reserve / 2)
         XCTAssertEqual(geometry.density(atY: geometry.bandTop + 10), 1)
         XCTAssertEqual(geometry.density(atY: geometry.bandBottom + 60), 0.625, accuracy: 1e-9)
-        XCTAssertEqual(geometry.density(atY: -20), 0.8, accuracy: 1e-9)
+        // 20 pt over the window: 40 from the band, a tenth of the way to a quarter.
+        XCTAssertEqual(geometry.density(atY: -20), 0.75, accuracy: 1e-9)
         XCTAssertEqual(geometry.density(atY: geometry.bandBottom + 200), 0.25, "never under a quarter")
         XCTAssertTrue(geometry.touchesBand([Pigment.P(x: 0, y: Double(geometry.bandTop) - 4)]))
         XCTAssertFalse(geometry.touchesBand([Pigment.P(x: 0, y: Double(geometry.bandBottom) + 20)]))
+    }
+
+    /// Over the blue of the sea no warm pigment carries light (lenguaje
+    /// §7): in "Sea and wind" every stroke of the wind keeps to its two
+    /// olive tints at 70 %, in the band as well, and the raster holds no
+    /// warm pixel above the dark; the sea itself is untouched. In "Pink and
+    /// rain" the pink field is painted whole, and in "Brown and fire"
+    /// nothing is muted.
+    func testAWarmMotifOverTheSeaKeepsToItsDarkTints() async throws {
+        let seaAndWind = PaintComposition(scene(.seaAndWind))
+        let wind = seaAndWind.strokes.filter { $0.motif == .wind }
+        XCTAssertFalse(wind.isEmpty)
+        XCTAssertTrue(wind.allSatisfy { $0.minimumTint == 2 && $0.ribbon.alpha == PaintComposition.mutedAlpha })
+        XCTAssertTrue(seaAndWind.strokes.filter { $0.motif == .ocean }.allSatisfy { $0.minimumTint == 0 })
+        XCTAssertTrue(PaintComposition(scene(.pinkAndRain)).strokes.allSatisfy { $0.minimumTint == 0 })
+        XCTAssertTrue(PaintComposition(scene(.brownAndFire)).strokes.allSatisfy { $0.minimumTint == 0 })
+        XCTAssertTrue(PaintComposition.isMuted(.brown, among: [.brown, .rain]))
+        XCTAssertTrue(PaintComposition.isMuted(.rain, among: [.rain, .campfire]), "no blue in the campfire")
+        XCTAssertFalse(PaintComposition.isMuted(.pink, among: [.pink, .rain]))
+        XCTAssertFalse(PaintComposition.isMuted(.wind, among: [.wind, .brown]))
+
+        // The raster: the two layers over black, without the veil. A warm
+        // pixel is one with red over blue; none passes Y 0.05.
+        let raster = try await PaintRasterizer().request(scene(.seaAndWind), scale: 1).value
+        let width = raster.dry.width, height = raster.dry.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let context = try XCTUnwrap(CGContext(
+            data: &pixels, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+            space: Pigment.sRGB, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+        ))
+        let rect = CGRect(x: 0, y: 0, width: width, height: height)
+        context.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 1))
+        context.fill(rect)
+        context.draw(raster.dry, in: rect)
+        context.draw(raster.live, in: rect)
+        var warm = 0
+        for i in stride(from: 0, to: pixels.count, by: 4) {
+            let r = Int(pixels[i]), g = Int(pixels[i + 1]), b = Int(pixels[i + 2])
+            guard r >= g, g >= b, r > b + 8 else { continue }
+            func linear(_ v: Int) -> Double {
+                let c = Double(v) / 255
+                return c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4)
+            }
+            if 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b) > 0.05 { warm += 1 }
+        }
+        XCTAssertEqual(warm, 0, "wheat over the sea: the pair the jury forbade")
     }
 
     // MARK: The rasterizer
@@ -296,18 +346,26 @@ final class PaintEngineTests: XCTestCase {
         XCTAssertNotNil(store.lastRenderTime)
 
         // The same scene again: nothing is drawn again.
-        let before = store.raster
+        var before = store.raster
         store.apply(scene: scene(.brownAndFire), phase: .frozen, scale: 2)
         XCTAssertFalse(store.isRendering)
         XCTAssertEqual(store.phase, .frozen)
         XCTAssertTrue(store.raster?.dry === before?.dry)
 
-        // Absent: nil, not opacity 0.
+        // Absent: nil, not opacity 0, and nothing else holds the bitmaps:
+        // not the rasterizer, not a request (the test lets go of its own
+        // copy first). The memory goes with them.
+        weak let dry = store.dry
+        weak let live = store.live
+        XCTAssertNotNil(dry)
+        before = nil
         store.apply(scene: scene(.brownAndFire), phase: .absent, scale: 2)
         XCTAssertNil(store.raster)
         XCTAssertNil(store.dry)
         XCTAssertNil(store.live)
         XCTAssertFalse(store.isRendering)
+        XCTAssertNil(dry, "the dry layer is still in memory behind the dark screen")
+        XCTAssertNil(live, "the live layer is still in memory behind the dark screen")
 
         // No scene: nothing to paint.
         store.apply(scene: nil, phase: .visible, scale: 2)
@@ -543,63 +601,100 @@ final class PaintEngineTests: XCTestCase {
     /// strip), to .build/shots/window-<mix>.png at 3x, and measures the
     /// luminance the design caps: mean Y of the veiled paint outside the
     /// band at most 0.08, peak Y at most 0.28 (exploration 12 §7 fase 2).
+    /// Then the same window paused: the paint dried to 0.6 under the whole
+    /// veil, which never thins with the phase, so every zone is darker
+    /// than it is while sounding, under the rows included.
     func testTheVeiledWindowStaysUnderTheLuminanceTheDesignCaps() async throws {
         let rasterizer = PaintRasterizer()
         let shots = CatalogSource.root.appendingPathComponent(".build/shots")
         try FileManager.default.createDirectory(at: shots, withIntermediateDirectories: true)
+        struct Measure { var outside: Double; var band: Double; var below: Double; var peak: Double }
         for mix in HouseMix.allCases {
             let raster = try await rasterizer.request(scene(mix), scale: 3).value
             let g = raster.scene.geometry
             let width = raster.dry.width, height = raster.dry.height
-            var pixels = [UInt8](repeating: 0, count: width * height * 4)
-            let context = try XCTUnwrap(CGContext(
-                data: &pixels, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
-                space: Pigment.sRGB, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
-            ))
-            context.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 1))
-            context.fill(CGRect(x: 0, y: 0, width: width, height: height))
-            let rect = CGRect(x: 0, y: 0, width: width, height: height)
-            context.draw(raster.dry, in: rect)
-            context.saveGState()
-            context.setAlpha(CGFloat(PaintBreath.liveMax))
-            context.draw(raster.live, in: rect)
-            context.restoreGState()
-            // The veil the page draws (`PaintVeil`), row by row, in the
-            // flipped device space of the bitmap (row 0 at the top of the
-            // image), without the text reserves: the bare window.
-            context.scaleBy(x: 3, y: 3)
-            for row in 0..<Int(g.height) {
-                let y = CGFloat(row) + 0.5
-                let veil = PaintVeil.opacity(atY: y, geometry: g)
-                context.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 0, alpha: CGFloat(veil)))
-                context.fill(CGRect(x: 0, y: g.height - CGFloat(row) - 1, width: g.width, height: 1))
-            }
-            let image = try XCTUnwrap(context.makeImage())
-            let url = shots.appendingPathComponent("window-\(mix.rawValue).png")
-            let png = try XCTUnwrap(UIImage(cgImage: image).pngData())
-            try png.write(to: url)
 
-            func luminance(_ i: Int) -> Double {
-                func linear(_ v: UInt8) -> Double {
-                    let c = Double(v) / 255
-                    return c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4)
+            /// The two layers at their alpha, over black, under the veil
+            /// the page draws (`PaintVeil`), row by row, in the flipped
+            /// device space of the bitmap (row 0 at the top of the image),
+            /// without the text reserves: the bare window.
+            func compose(dry dryAlpha: Double, live liveAlpha: Double) throws -> (pixels: [UInt8], image: CGImage) {
+                var pixels = [UInt8](repeating: 0, count: width * height * 4)
+                let context = try XCTUnwrap(CGContext(
+                    data: &pixels, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+                    space: Pigment.sRGB, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+                ))
+                context.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 1))
+                context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+                let rect = CGRect(x: 0, y: 0, width: width, height: height)
+                context.saveGState()
+                context.setAlpha(CGFloat(dryAlpha))
+                context.draw(raster.dry, in: rect)
+                context.restoreGState()
+                context.saveGState()
+                context.setAlpha(CGFloat(liveAlpha))
+                context.draw(raster.live, in: rect)
+                context.restoreGState()
+                context.scaleBy(x: 3, y: 3)
+                for row in 0..<Int(g.height) {
+                    let y = CGFloat(row) + 0.5
+                    let veil = PaintVeil.opacity(atY: y, geometry: g)
+                    context.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 0, alpha: CGFloat(veil)))
+                    context.fill(CGRect(x: 0, y: g.height - CGFloat(row) - 1, width: g.width, height: 1))
                 }
-                return 0.2126 * linear(pixels[i]) + 0.7152 * linear(pixels[i + 1]) + 0.0722 * linear(pixels[i + 2])
+                let image = try XCTUnwrap(context.makeImage())
+                return (pixels, image)
             }
-            var outsideSum = 0.0, outsideCount = 0, peak = 0.0, bandSum = 0.0, bandCount = 0
-            for row in 0..<height {
-                let y = CGFloat(row) / 3
-                let inBand = y >= g.bandTop && y <= g.bandBottom
-                for column in 0..<width {
-                    let value = luminance((row * width + column) * 4)
-                    peak = max(peak, value)
-                    if inBand { bandSum += value; bandCount += 1 } else { outsideSum += value; outsideCount += 1 }
+
+            func measure(_ pixels: [UInt8]) -> Measure {
+                func luminance(_ i: Int) -> Double {
+                    func linear(_ v: UInt8) -> Double {
+                        let c = Double(v) / 255
+                        return c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4)
+                    }
+                    return 0.2126 * linear(pixels[i]) + 0.7152 * linear(pixels[i + 1]) + 0.0722 * linear(pixels[i + 2])
                 }
+                var outsideSum = 0.0, outsideCount = 0, peak = 0.0, bandSum = 0.0, bandCount = 0
+                var belowSum = 0.0, belowCount = 0
+                for row in 0..<height {
+                    let y = CGFloat(row) / 3
+                    let inBand = y >= g.bandTop && y <= g.bandBottom
+                    for column in 0..<width {
+                        let value = luminance((row * width + column) * 4)
+                        peak = max(peak, value)
+                        if inBand { bandSum += value; bandCount += 1 } else { outsideSum += value; outsideCount += 1 }
+                        if y > g.bandBottom + PaintWindowGeometry.feather { belowSum += value; belowCount += 1 }
+                    }
+                }
+                return Measure(
+                    outside: outsideSum / Double(outsideCount), band: bandSum / Double(bandCount),
+                    below: belowSum / Double(max(1, belowCount)), peak: peak
+                )
             }
-            let outside = outsideSum / Double(outsideCount), band = bandSum / Double(bandCount)
-            print("paint: veiled window \(mix.rawValue) · mean Y outside band \(outside) · in band \(band) · peak Y \(peak) · \(url.lastPathComponent)")
-            XCTAssertLessThanOrEqual(outside, 0.08, "\(mix.rawValue): the veiled paint outside the band lights the room")
-            XCTAssertLessThanOrEqual(peak, 0.28, "\(mix.rawValue): a pixel of the veiled paint outshines the design")
+
+            // Sounding: the live layer at its brightest.
+            let sounding = try compose(dry: 1, live: PaintBreath.liveMax)
+            let url = shots.appendingPathComponent("window-\(mix.rawValue).png")
+            let png = try XCTUnwrap(UIImage(cgImage: sounding.image).pngData())
+            try png.write(to: url)
+            let lit = measure(sounding.pixels)
+            print("paint: veiled window \(mix.rawValue) · mean Y outside band \(lit.outside) · in band \(lit.band) · peak Y \(lit.peak) · \(url.lastPathComponent)")
+            XCTAssertLessThanOrEqual(lit.outside, 0.08, "\(mix.rawValue): the veiled paint outside the band lights the room")
+            XCTAssertLessThanOrEqual(lit.peak, 0.28, "\(mix.rawValue): a pixel of the veiled paint outshines the design")
+
+            // Paused: the same picture dried to 0.6 (`PaintMotion.opacity`),
+            // the live strokes at their lowest, the veil whole. Darker in
+            // every zone, the rows' included: pausing never lights the page.
+            let dried = PaintMotion.opacity(phase: .visible, isPlaying: false)
+            XCTAssertEqual(dried, PaintBreath.driedOpacity)
+            let paused = try compose(dry: dried, live: dried * PaintBreath.liveMin)
+            let dry = measure(paused.pixels)
+            print("paint: veiled window \(mix.rawValue) paused · mean Y outside band \(dry.outside) · in band \(dry.band) · under the rows \(dry.below) · peak Y \(dry.peak)")
+            XCTAssertLessThanOrEqual(dry.outside, lit.outside * dried + 1e-6, "\(mix.rawValue): paused, the paint outside the band got lighter")
+            XCTAssertLessThanOrEqual(dry.band, lit.band * dried + 1e-6, "\(mix.rawValue): paused, the band got lighter")
+            XCTAssertLessThanOrEqual(dry.below, lit.below * dried + 1e-6, "\(mix.rawValue): paused, the paint under the rows got lighter")
+            XCTAssertLessThanOrEqual(dry.peak, lit.peak, "\(mix.rawValue): paused, a pixel outshines the sounding window")
+            XCTAssertGreaterThan(dry.band, 0, "\(mix.rawValue): paused is not absent")
         }
     }
 

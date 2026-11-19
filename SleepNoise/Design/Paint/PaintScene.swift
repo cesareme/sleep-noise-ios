@@ -26,23 +26,27 @@ struct PaintWindowGeometry: Hashable {
     /// in all four tints, feathered over `feather` points.
     static let bandMargin: CGFloat = 8
     static let feather: CGFloat = 26
+    /// The band ends this far under the Horizon (camino-lienzo.html: 292
+    /// to 312): 8 pt of full tints under the reserve strip, so the paint
+    /// goes round the Horizon and does not end at it.
+    static let bandBelowHorizon: CGFloat = 20
 
     var width: CGFloat
     var height: CGFloat
     /// The Horizon, from the top of the window.
     var horizonY: CGFloat
     /// The band of the tide, from the top of the window. On the page its
-    /// bottom edge sits at the bottom of the Horizon band.
+    /// bottom edge sits 20 pt under the Horizon, 8 pt under the reserve.
     var bandTop: CGFloat
     var bandBottom: CGFloat
 
     /// The window of the page for a screen `width` points wide: the
-    /// Horizon at the middle, the band ending 12 pt under it.
+    /// Horizon at the middle, the band ending 20 pt under it.
     init(width: CGFloat, height: CGFloat = PaintWindowGeometry.height) {
         self.width = width
         self.height = height
         horizonY = height / 2
-        bandBottom = horizonY + Grid.horizonBand / 2
+        bandBottom = horizonY + Self.bandBelowHorizon
         bandTop = bandBottom - Self.bandHeight
     }
 
@@ -169,10 +173,31 @@ struct PaintComposition {
         var isLive: Bool
         /// The one crack of the thunder: band only, never breathes.
         var isCrack: Bool
+        /// The lowest tint this stroke may carry anywhere, the band
+        /// included: 0 as a rule, 2 (the two dark tints) when the motif
+        /// is muted in this scene (`PaintComposition.isMuted`).
+        var minimumTint: Int = 0
     }
 
     /// The share of ribbons that breathe (lenguaje §3).
     static let liveShare = 0.18
+    /// The alpha of a muted motif (camino-contenido.html, "Mar y viento":
+    /// the two olive tints at 70 %).
+    static let mutedAlpha = 0.7
+
+    /// Whether a motif keeps to its two dark tints in a scene (lenguaje
+    /// §7, the pair the jury forbade): over the blue of the sea or the rain
+    /// no warm pigment carries light (wind, brown, cabin, campfire), and
+    /// next to the campfire no blue does (sea, rain, thunder, brook). Pink
+    /// is not a warm pigment here: "Pink and rain" is a house mix that
+    /// paints the rain over the whole pink field.
+    static func isMuted(_ motif: Pigment.Motif, among motifs: Set<Pigment.Motif>) -> Bool {
+        let blue: Set<Pigment.Motif> = [.ocean, .rain, .thunder, .brook]
+        let warm: Set<Pigment.Motif> = [.wind, .brown, .cabin, .campfire]
+        if warm.contains(motif), !motifs.intersection([.ocean, .rain]).isEmpty { return true }
+        if blue.contains(motif), motifs.contains(.campfire) { return true }
+        return false
+    }
     /// Strokes are born this far outside the window too, so the edge is
     /// not a line of stroke heads.
     static let margin: Double = 20
@@ -206,11 +231,15 @@ struct PaintComposition {
             if a.motif.isField != b.motif.isField { return a.motif.isField }
             return a.level < b.level
         }
+        let motifs = Set(scene.layers.map(\.motif))
         for layer in order {
             let motif = layer.motif
             let share = Double(layer.level) / total
             let n = ((W * H / motif.density) * share * 1.15).rounded()
             let maker = PaintStrokeMaker(motif: motif, geometry: g, R: &R)
+            // Muted: dark tints only and 70 % alpha; the draws of the
+            // generator are the same, so the picture keeps its seed.
+            let muted = Self.isMuted(motif, among: motifs)
             var i = 0.0
             while i < n {
                 i += 1
@@ -223,11 +252,12 @@ struct PaintComposition {
                 strokes.append(Stroke(
                     motif: motif,
                     ribbon: Pigment.Ribbon(
-                        points: made.points, width: made.width, alpha: made.alpha,
+                        points: made.points, width: made.width, alpha: muted ? Self.mutedAlpha : made.alpha,
                         tintIndex: k, taper: made.taper, isBlack: made.isBlack
                     ),
                     isLive: live,
-                    isCrack: false
+                    isCrack: false,
+                    minimumTint: muted ? 2 : 0
                 ))
             }
             if motif == .thunder {

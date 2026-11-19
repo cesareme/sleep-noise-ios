@@ -86,8 +86,12 @@ final class PaintMetricsLog {
     }
 
     private func writeFile() {
-        guard let fileURL else { return }
+        guard var fileURL else { return }
         try? dump().write(to: fileURL, atomically: true, encoding: .utf8)
+        // A diagnostic of this iPhone: it stays out of the backups.
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try? fileURL.setResourceValues(values)
     }
 }
 

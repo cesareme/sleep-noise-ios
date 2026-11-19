@@ -96,6 +96,17 @@ Reglas anti-parpadeo: ningún parámetro cambia más de un 50 % de su rango por 
 - **Texto sobre pintura: nunca.** Si una medición encuentra un glifo sobre la ventana, es un bug. El único texto cercano es el valor bajo el dedo (17 Medium), que ya lleva su pista `grafito`.
 - **Un Índice por pantalla** sigue vigente. La pintura no cuenta como acento porque no es un elemento: es el papel.
 
+**Hecho en 1.0 (D-58, 19-11-2026).** Lo que el código hace donde se aparta de §3, §4 y §5, con la fuente de verdad en cada caso:
+
+- Fundir: 2 s (`PaintMotion.fade` = `Motion.phase`), no 3; 0,25 s con Reducir movimiento. Atenuar con hoja delante o escena inactiva: 0,3 en 1,5 s y vuelta en 0,8 s. Con la app al fondo el raster se suelta a nil en seco (nadie ve un fundido) y al volver al frente nace otra vez en 2 s.
+- Pausa: la pintura se seca a 0,6 (`PaintBreath.driedOpacity`). La exploración 12 §2.4 y la maqueta `camino-lienzo.html` dicen 0,3: el valor lo fija el dueño y las tres fuentes se alinean entonces.
+- La opacidad de la fase (nacer, secar, atenuar, fundir) mueve solo las dos capas de pintura; el velo queda entero, como la maqueta (`.lienzo` bajo `.velo`): la pausa oscurece, nunca aclara.
+- Velo bajo el texto que entra en la ventana: 96 % (`PaintVeil.text`), no 90: con 90, `texto2` quedaba a 3,6:1 sobre la pluma de la banda. Bajo la línea de estado el 96 % se suelta en 20 pt (`PaintVeil.textRamp`, la pluma de la banda de la maqueta); la reserva de arriba es la caja de dos líneas de la línea de estado (anclada en los glifos, un estado de una línea dejaba un borde duro 13 pt bajo las palabras). La reserva de las filas empieza en la primera fila, no en el aire bajo el Horizonte, y la banda llega 20 pt bajo el Horizonte (`PaintWindowGeometry.bandBelowHorizon`), como la maqueta.
+- Halo: lo dibuja la propia línea (`SoundLine`, `TideLine`), negro seco de 3 pt a cada lado del grosor que tenga el trazo. Con Marea el halo y la franja de reserva de 24 pt acompañan a la línea de agua (`TideLine.Halo`, franja al 69 % sobre el velo, que compone el 80 % en el centro) y la franja fija del Horizonte no se dibuja mientras guía (`PaintVeil.stops(horizonReserve:)`); la franja pintada en el raster sí se queda.
+- Mezclas lleva las bandas pintadas de las cuatro mezclas de la casa (D-57, PNG de compilación); Ajustes y Pro siguen sin color. El ajuste "Pintura: Nunca" y los dos interruptores a la vez apagan también esas bandas (`PaintPolicy.phase` en `MixesSheet`).
+- "Tras fundir, nunca vuelve sola": el cerrojo (`PaintLatch`) se echa solo cuando había pintura que fundir; lo abren la salida deliberada de la página nocturna, el fin de Noche o Madrugada por el día, y volver al frente por el día después de haber estado al fondo (una visita nueva). Ni las 07:00 con la app delante, ni un desbloqueo de noche.
+- Pares prohibidos de §7, en el código (`PaintComposition.isMuted`): con mar o lluvia en la escena, viento, marrón, cabina y hoguera van solo con sus dos tintas oscuras al 70 %, también en la banda; con hoguera, mar, lluvia, trueno y arroyo igual. Rosa no cuenta como pigmento cálido: "Rosa y lluvia" pinta el campo rosa entero.
+
 ## 6. Accesibilidad
 
 - **Reducir movimiento.** Pintura estática. Solo opacidad global con presence (4 Hz, τ 1,5 s, como el horizonte reducido). Sin deslizamiento de Marea, sin trazos vivos. Fundidos a 250 ms.

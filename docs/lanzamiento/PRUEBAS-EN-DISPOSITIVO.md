@@ -392,19 +392,21 @@ Las cuatro mezclas de la casa llevan de día una banda pintada a la izquierda (e
 | 8 | Tamaño de texto AX3 y AX5 | La banda crece con la fila sin pisar el texto y el borde de los listones sigue duro (la pieza mide 288 pt y nunca se escala). En AX5 la hoguera queda arriba de su fila y debajo se ve el campo marrón | |
 | 9 | De día, con luz, carga "Rosa y lluvia" y pulsa Play | Antes del Play la página es negra. En unos 2 s nace una ventana pintada de 240 pt alrededor del Horizonte (lluvia en oblicuo sobre un campo rosa); nombre, estado, filas y barra siguen sobre negro y se leen igual; el Índice sigue siendo lo más luminoso y lleva un halo negro. Nada cambia de sitio | |
 | 10 | Con la mezcla sonando, sube y baja un nivel | La pintura se repinta sola al soltar (medio segundo), nunca mientras arrastras; no parpadea | |
-| 11 | Enciende la Marea | La pintura se desliza unos píxeles con la respiración, sin saltos, y vuelve a su sitio al apagarla | |
+| 11 | Enciende la Marea | La pintura se desliza unos píxeles con la respiración, sin saltos, y vuelve a su sitio al apagarla. El halo negro y la franja oscura de 24 pt acompañan a la línea de agua; donde estaba el Horizonte no queda ninguna barra negra | |
 | 12 | Mira la ventana medio minuto | El 18 % de los trazos respira con el sonido, solo en luz; nada cambia de matiz, posición ni tamaño. Con blanco o rosa solos casi no se mueve: su RMS es casi plano, como el Horizonte | |
-| 13 | Pausa | La pintura se seca (baja a 0,6 en 1,5 s) y los trazos vivos se apagan; no desaparece. Play la devuelve en menos de 1 s | |
+| 13 | Pausa | La pintura se seca (baja a 0,6 en 1,5 s) y los trazos vivos se apagan; no desaparece. Bajo las filas y en el halo sigue negro: secar oscurece, nunca aclara. Play la devuelve en menos de 1 s | |
 | 14 | Abre Capas y vuelve | Al abrir, la pintura de la página se atenúa a 0,3; en Capas cada fila lleva una regla de 4 pt en el margen izquierdo con las tintas oscuras de su textura (viva si suena, seca a cero); el nombre no se ha movido. Al cerrar, la pintura vuelve en 0,8 s | |
 | 15 | "Marrón y hoguera" y "Mar y viento" | Lenguas de fuego sobre un campo marrón; flujo de mar con hebras oliva. Ninguna se parece a un paisaje ni a una obra concreta: si algo recuerda a una, apúntalo | |
 | 16 | A oscuras, en la mesilla, la página pintada | Se lee como papel, no como pantalla: nada ilumina el cuarto. Si deslumbra, apúntalo: el velo es del 35 % en el Horizonte y del 75 % en los bordes | |
 | 17 | A las 20:59 con la página delante y sonando, espera a las 21:01 | A las 21:00 la pintura se funde en 2 s (0,25 s con Reducir movimiento) y no vuelve; tampoco al pausar y dar Play otra vez, ni a las 07:00 si la app sigue delante | |
 | 18 | Entra en Noche de día y vuelve a la página; después, la página nocturna de noche | Noche, Madrugada y la página nocturna son negras como hoy. Al salir de la página nocturna tocando el nombre, la pintura vuelve solo si es de día | |
 | 19 | Bloquea el iPhone con la página pintada delante y desbloquea | Al volver de día, la pintura nace otra vez en unos 2 s; de noche, no | |
-| 20 | Ajustes › día › Pintura › Nunca; luego De día | Con Nunca la página es negra de día y Capas no lleva reglas; con De día vuelven | |
+| 20 | Ajustes › día › Pintura › Nunca; luego De día | Con Nunca la página es negra de día, Capas no lleva reglas y Mezclas no lleva bandas; con De día vuelven | |
 | 21 | Ajustes del iPhone › Accesibilidad: Aumentar contraste; Reducir movimiento; los dos | Con contraste: sin pintura ni reglas. Con movimiento: pintura quieta, sin respiración ni Marea. Con los dos: Ajustes dice "Nunca" y la nota de debajo explica por qué; al apagar uno de los dos vuelve | |
 | 22 | Con VoiceOver, recorre la página y Capas | Ni la ventana ni las reglas se nombran; la fila de Ajustes lee "Pintura" y su valor | |
 | 23 | Tamaño de texto AX3 | La ventana mide 120 pt y las filas siguen en pantalla; el texto que entra en la ventana sigue legible | |
+| 24 | Abre la app a las 22:30 sin pulsar Play; a las 10:00 del día siguiente vuelve a ella y pulsa Play | Hay pintura: el cerrojo nocturno solo lo echa un fundido visto (paso 17), y volver al frente por el día lo abre. Lo mismo si la página se fundió a las 21:00 y el iPhone se bloqueó: a la mañana siguiente, al desbloquear de día, la pintura nace otra vez | |
+| 25 | Carga "Mar y viento" de día | Las hebras del viento van solo en las dos tintas oliva oscuras, al 70 %, también dentro de la banda: ningún trazo pajizo o trigo sobre el azul | |
 
 ### 11.1 Medida de batería con MetricKit (condición de envío, D-58)
 

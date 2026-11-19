@@ -25,6 +25,9 @@ struct SoundLine: View {
     /// timeline of its own and breathes on this one's ticks, so it shares
     /// the Horizon's pause (camino-lienzo.md).
     var pulse: PaintPulse?
+    /// Black each side of the line, dry, while the page is painted behind
+    /// it (lenguaje §5): nil over the black of Grafito.
+    var halo: CGFloat?
 
     @Environment(\.indexArbiter) private var arbiter
     @Environment(\.nightPhase) private var phase
@@ -53,7 +56,8 @@ struct SoundLine: View {
                 rms: isFrozen ? 0 : rms,
                 isSounding: isSounding,
                 ownsAccent: arbiter.owns(.horizon),
-                tick: interval
+                tick: interval,
+                halo: halo
             )
             .onChange(of: context.date) { _, date in
                 tick(at: date.timeIntervalSinceReferenceDate)
@@ -124,6 +128,9 @@ struct SoundLineMark: View {
     var ownsAccent: Bool
     /// Seconds between two readings, to glide from one to the next.
     var tick: TimeInterval = Motion.horizonInterval
+    /// Black each side of the line, the thickness of the line plus this
+    /// on both sides, while the page is painted behind it. Nil draws none.
+    var halo: CGFloat?
 
     @Environment(\.nightPhase) private var phase
     @Environment(\.displayScale) private var displayScale
@@ -152,6 +159,14 @@ struct SoundLineMark: View {
                     .opacity(isSounding ? 1 : 0)
                     .animation(Motion.stopCurve, value: isSounding)
             } else {
+                if let halo {
+                    // The dry halo of the painted page: it follows the
+                    // thickness of the line, so it is a halo and not a bar.
+                    Rectangle()
+                        .fill(.black)
+                        .frame(height: thickness + halo * 2)
+                        .animation(.linear(duration: tick), value: rms)
+                }
                 // Silence drawn: the hairline. It hands over to the sounding
                 // line as that is born, so it never shows through it.
                 Hairline()

@@ -43,7 +43,12 @@ struct PageView: View {
     /// A fade is running: when it ends the raster goes.
     @State private var paintFading = false
     @State private var paintFades = 0
-    @State private var paintGeometry = PaintWindowGeometry(width: 402)
+    /// The app went to the background: the next return to the front by
+    /// day opens the night latch.
+    @State private var paintWasInBackground = false
+    /// The geometry of the scene on show. Nil until a scene is applied:
+    /// no window is drawn before the page knows its own width.
+    @State private var paintGeometry: PaintWindowGeometry?
     /// The layers that have a row. Chosen when a mix loads and when the
     /// Layers sheet closes, never while a finger is on a row.
     @State private var rows: [SoundID]
@@ -114,15 +119,21 @@ struct PageView: View {
                         model: model,
                         guide: model.breathing,
                         pulse: paintPulse,
+                        // The line feeds the paint and carries its halo
+                        // only while there is a window behind it.
+                        isPainted: paintExists,
                         band: metrics.tideBand,
                         // With larger text the Horizon sits right under
                         // the state line: there is no band above it.
                         showsWater: !isLargeText
                     )
                     .paintAnchor(.horizon)
+                    // The reserve of the rows starts at the first row, not
+                    // at the air under the Horizon: the paint goes round
+                    // the Horizon before the 96 % of the text begins.
                     layerRows(shown, capacity: fits, canSell: canSell)
-                        .padding(.top, metrics.airUnderHorizon)
                         .paintAnchor(.rows)
+                        .padding(.top, metrics.airUnderHorizon)
                     let allLayers = allLayersValue(shown)
                     EditorialRow(
                         title: Localized.string("capas.todas"),
@@ -209,6 +220,20 @@ struct PageView: View {
             // The deliberate way out of the night page (C40): the one way
             // the paint comes back after its night fade, and only by day.
             if was, !now { paintFaded = false }
+        }
+        .onChange(of: scenePhase) { _, now in
+            // Back in front by day, after a night in the background: a new
+            // visit, and the paint may be born again (`PaintLatch`). The
+            // way back passes through inactive, so the background is
+            // remembered until the page is active again.
+            if now == .background {
+                paintWasInBackground = true
+            } else if now == .active, paintWasInBackground {
+                paintWasInBackground = false
+                if PaintLatch.opensOnForeground(now: model.currentDate, calendar: model.currentCalendar) {
+                    paintFaded = false
+                }
+            }
         }
         .onChange(of: model.isPlaying, initial: true) { _, playing in
             if playing { paintBorn = true }
@@ -326,13 +351,14 @@ struct PageView: View {
                     TrialEndedNote(words: words) {
                         purchases.dismissTrialNote()
                     }
+                    .paintAnchor(.text)
                     .padding(.top, Grid.unit * 3)
                     .transition(.opacity)
                 }
             }
-            // The text above the Horizon: where it enters the window the
-            // veil is 90 %.
-            .paintAnchor(.text)
+            // The text above the Horizon marks itself (`StatusLine`, the
+            // note of the trial): where it enters the window the veil is
+            // 96 % (`PaintVeil.text`).
         }
         .animation(Motion.contentCurve, value: trialNote)
         .padding(.horizontal, Grid.margin)
@@ -583,9 +609,13 @@ struct PageView: View {
         let reduce = paintReduceMotion
         paintPulse.isLive = paint.phase.isLive
         paintPulse.direction = paint.scene?.direction ?? 0
+        paintPulse.scale = paint.scale
         if let scene = paint.scene { paintGeometry = scene.geometry }
         guard paint.phase.exists, let scene = paint.scene else {
-            if paint.fadeIsFinal { paintFaded = true }
+            // Only a paint that was there latches: a night absence met
+            // before any paint (the app opened at 22:00 without Play) is
+            // no fade (`PaintLatch`).
+            if PaintLatch.arms(fadeIsFinal: paint.fadeIsFinal, paintExists: paintExists) { paintFaded = true }
             guard paintExists else { return }
             if paint.inBackground {
                 dropPaint()
@@ -624,24 +654,25 @@ struct PageView: View {
     @ViewBuilder
     private func paintBackground(_ anchors: PaintAnchors) -> some View {
         GeometryReader { proxy in
-            if paintExists, let horizon = anchors.horizon {
+            if paintExists, let window = paintGeometry, let horizon = anchors.horizon {
                 let band = proxy[horizon]
-                let window = paintGeometry
                 let top = band.midY - window.height / 2
+                // The opacity goes to the paint alone, inside: the veil
+                // never thins with it.
                 PaintWindow(
                     store: paintStore,
                     pulse: paintPulse,
                     geometry: window,
-                    reserves: paintReserves(anchors, in: proxy, top: top, height: window.height)
+                    reserves: paintReserves(anchors, in: proxy, top: top, height: window.height),
+                    opacity: paintOpacity
                 )
-                .opacity(paintOpacity)
                 .offset(y: top)
             }
         }
     }
 
     /// What text enters the window, from its top: the rows under the
-    /// Horizon and the state line above it.
+    /// Horizon and the lowest of the texts above it.
     private func paintReserves(
         _ anchors: PaintAnchors, in proxy: GeometryProxy, top: CGFloat, height: CGFloat
     ) -> PaintReserves {
@@ -650,9 +681,8 @@ struct PageView: View {
             let y = proxy[rows].minY - top
             if y < height { reserves.rowsTop = max(0, y) }
         }
-        if let text = anchors.text {
-            let y = proxy[text].maxY - top
-            if y > 0 { reserves.textBottom = min(height, y) }
+        if let bottom = anchors.texts.map({ proxy[$0].maxY - top }).max(), bottom > 0 {
+            reserves.textBottom = min(height, bottom)
         }
         return reserves
     }
@@ -930,6 +960,12 @@ private struct StatusLine: View {
             }
         }
         .frame(maxWidth: .infinity, minHeight: twoLines, alignment: .topLeading)
+        // The box of two lines, not the glyphs: the painted window keeps
+        // its 96 % to the bottom of the box, where its own veil begins,
+        // and eases into it over `PaintVeil.textRamp`. Anchored on the
+        // glyphs, a one-line status left the top of the window a hard
+        // edge 13 pt under the words (measured in the captures).
+        .paintAnchor(.text)
         .padding(.bottom, offers && offerIsInline ? offerHeight : 0)
         .overlay(alignment: offerIsInline ? .bottomLeading : .topLeading) {
             if offers {
@@ -1165,6 +1201,9 @@ private struct PageHorizon: View {
     @ObservedObject var guide: BreathingGuideController
     /// The paint breathes on the Horizon's ticks and slides with its water.
     let pulse: PaintPulse
+    /// A painted window sits behind the line: the line feeds the pulse
+    /// and carries the dry halo and the reserve of the paint.
+    var isPainted: Bool
     var band: CGFloat
     var showsWater: Bool
 
@@ -1197,18 +1236,22 @@ private struct PageHorizon: View {
 
     var body: some View {
         let hasCourse = self.hasCourse
+        // Without a window nothing reads the pulse: the line does not feed
+        // it, so no work of the paint ticks.
         SoundLine(isSounding: model.isPlaying, reading: { tau in
             model.outputLevel(tau: tau)
-        }, pulse: pulse)
+        }, pulse: isPainted ? pulse : nil, halo: isPainted ? PaintWindow.halo : nil)
         .opacity(hasCourse ? 0 : 1)
         .onChange(of: hasCourse, initial: true) { _, has in
-            // The paint slides with the same water, or not at all.
+            // The paint slides with the same water, or not at all, and its
+            // reserve goes where the line of water is.
             let guide = self.guide
             pulse.tide = has ? { date in
                 let now = guide.onGuideClock(date)
                 return TideBreath.level(at: now, anchor: guide.anchor, parameters: guide.lastPublished)
                     * (guide.scheduledWeight(now: now) ?? 1)
             } : nil
+            pulse.setTideGuides(has)
         }
         .overlay(alignment: .bottom) {
             if showsWater {
@@ -1218,7 +1261,13 @@ private struct PageHorizon: View {
                     band: band,
                     highWaterInset: Self.highWater - TideLine.thickness / 2,
                     lowWaterInset: Self.lowWater - TideLine.thickness / 2,
-                    ink: ink
+                    ink: ink,
+                    halo: isPainted ? TideLine.Halo(
+                        thickness: PaintWindow.halo,
+                        reserve: PaintWindowGeometry.reserve,
+                        reserveOpacity: PaintVeil.waterReserve,
+                        bleed: Grid.margin
+                    ) : nil
                 )
                 .padding(.horizontal, Grid.margin)
                 .opacity(hasCourse ? 1 : 0)
