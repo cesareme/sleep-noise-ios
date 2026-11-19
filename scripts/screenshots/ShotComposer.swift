@@ -48,7 +48,7 @@ let headlineBaseline: CGFloat = 100
 let headlineMaxLines = 2
 
 /// Step 6: SF Pro Regular 17/22, always in the box y 152-174, one line
-/// (captures 1, 3 and 7).
+/// (captures 1 and 3).
 let secondSize: CGFloat = 17
 let secondBox: ClosedRange<CGFloat> = 152...174
 

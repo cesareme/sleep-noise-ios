@@ -211,14 +211,8 @@ Lo que suena, se pinta.
 
 Recuento: 23 de 41. Titular común de la exploración 12 (§5 y §6.1; `docs/design/color/camino-contenido.md`), el mismo en los tres caminos. Pantalla: la hoja Mezclas de día, a las 20:15 del segundo día de la prueba: "Tuyas" con dos mezclas guardadas y "De la casa" con las cuatro mezclas, cada una con su banda pintada a sangre por la izquierda (`HousePaint`), y "Rosa y lluvia" sonando. La pintura es la de la app, generada por código en tiempo de compilación (`scripts/paint/`), sin imágenes ajenas; de noche y en la página nocturna la hoja no la enseña (`PaintPolicy`). Va la última porque la exploración no sustituye ninguna de las seis de C57: si el dueño prefiere que entre en los resultados de búsqueda, se cambia el orden en `scripts/screenshots.sh` y aquí.
 
-Subtítulo de la captura:
-
-```text es
-Como el sonido: se fabrica aquí, sin archivos.
-```
-
-Recuento: 46 de 42. Es el texto de reserva que fija la exploración 12 §5 ("Como el sonido: se genera aquí, sin archivos ni descargas."), con "fabrica" en lugar de "genera" como el resto de esta ficha (guía §0.3) y sin "ni descargas", que no cabía en la columna de 376 pt; supera el tope de caracteres de la maqueta, pero cabe (`shot-composer --list`).
+Sin subtítulo, como las capturas 2, 4, 5 y 6. El texto de reserva de la exploración 12 §5 ("Como el sonido: se genera aquí, sin archivos ni descargas.") se escribió para la pintura generada en el dispositivo, la ventana de la 1.1; en la 1.0 la pintura son PNG del paquete generados en compilación y la frase no la sostiene el código (C04, `propiedad-intelectual.md` §7). Vuelve con la ventana, si el dueño quiere.
 
 ## Si se abre también "Spanish (Mexico)"
 
-Todo igual salvo cuatro cambios (guía de copy §0.3): "generado" por "fabricado" en el texto promocional, "genera" por "fabrica" en la descripción y en el subtítulo de la captura 7, y "respirar" por "respiracion" en las palabras clave. En los textos de reserva el cambio es el mismo: "se genera", "genera" y "Generado". La app solo lleva una localización `es`, así que esa ficha enseñaría la misma interfaz.
+Todo igual salvo cuatro cambios (guía de copy §0.3): "generado" por "fabricado" en el texto promocional, "genera" por "fabrica" en la descripción, y "respirar" por "respiracion" en las palabras clave. En los textos de reserva el cambio es el mismo: "se genera", "genera" y "Generado". La app solo lleva una localización `es`, así que esa ficha enseñaría la misma interfaz.
