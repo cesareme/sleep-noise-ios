@@ -300,16 +300,18 @@ Lo esencial:
 
 | # | Decisión | Recomendación del estudio | Por qué |
 |---|---|---|---|
-| 1 | ¿Camino A con la ventana del horizonte (3 a 3,5 semanas), B (5 a 6) o C (8 a 10)? | **A con la ventana** | Responde a la queja donde se produce sin tocar la noche, el icono ni la venta; 22 puntos del jurado frente a 19 y 11 |
-| 2 | ¿Icono y hoja Pro siguen sin color? | **Sí** | El icono es el único de la categoría cuyo color es una línea; la hoja Pro es un objeto de 29,99 € una vez y la pintura sobre el precio es el patrón del paywall de suscripción |
-| 3 | ¿Variante mínima en 1.0 (bandas de la casa y captura, 1,5 semanas) y ventana en 1.1, o todo en 1.0? | **Variante mínima en 1.0** | La ventana merece la medida de batería y la prueba de cinco segundos antes de enviar; las bandas y la captura no arriesgan nada |
+| 1 | ¿Camino A con la ventana del horizonte (3 a 3,5 semanas), B (5 a 6) o C (8 a 10)? **Tomada el 19-11-2026: sí, A con la ventana.** | **A con la ventana** | Responde a la queja donde se produce sin tocar la noche, el icono ni la venta; 22 puntos del jurado frente a 19 y 11 |
+| 2 | ¿Icono y hoja Pro siguen sin color? **Tomada el 19-11-2026: sí, sin color.** | **Sí** | El icono es el único de la categoría cuyo color es una línea; la hoja Pro es un objeto de 29,99 € una vez y la pintura sobre el precio es el patrón del paywall de suscripción |
+| 3 | ¿Variante mínima en 1.0 (bandas de la casa y captura, 1,5 semanas) y ventana en 1.1, o todo en 1.0? **Tomada el 19-11-2026: sí, la variante mínima en 1.0 y la ventana en 1.1 tras medir batería.** | **Variante mínima en 1.0** | La ventana merece la medida de batería y la prueba de cinco segundos antes de enviar; las bandas y la captura no arriesgan nada |
 | 4 | ¿Reglas de 4 pt en Capas, o Capas sin color? | **Reglas** | Coste de un día; dan color a la pantalla que más se mira de día sin tocar el control ni mover el nombre |
 | 5 | ¿La pintura se puede apagar en Ajustes? | **Sí, "Pintura: de día / nunca"** | Hay quien quiere la página negra también de día; y es la salida si una medida de batería sale mal |
 | 6 | ¿Prueba de cinco segundos con diez personas antes de la ventana? | **Sí, en fase 0 con la captura y en fase 3 con la app** | Es la única forma de saber si la ventana se lee como "sonido" o como "fondos" |
 | 7 | ¿Experimento de la brasa nocturna en 1.1? | **Apagado por defecto, decidir con la prueba de la mesilla** | Un solo listón al 10 %; si se ve desde la almohada, se descarta |
 | 8 | ¿Encargo a un ilustrador humano en algún momento? | **No para 1.0 ni 1.1** | El código ya da el lenguaje; si se encarga, con el contrato de §8 y sin referencias concretas |
 
-Fecha sugerida para decidir: antes del 27-11-2026, junto con la hoja de prueba del icono, para que la fase 0 entre en la semana siguiente.
+Fecha sugerida para decidir: antes del 27-11-2026, junto con la hoja de prueba del icono, para que la fase 0 entre en la semana siguiente. Las decisiones 1, 2 y 3 se tomaron el 19-11-2026; las 4 a 8 siguen abiertas y no bloquean la 1.0.
+
+**Estado (19-11-2026).** En la 1.0 entra solo la variante mínima de §6.1, fases 0 y 1 de §7 en su parte estática: las bandas pintadas de las cuatro mezclas de la casa en la hoja Mezclas (PNG de 64 × 288 a 2x y 3x generados en compilación por `scripts/paint/generate.sh`, con semilla fija por mezcla y la composición en los 92 pt de arriba, para que ninguna fila la escale; `HousePaint`, `MixesSheet`) y la captura nueva de la tienda (la séptima de `scripts/screenshots.sh`, titular común "Lo que suena, se pinta."). La regla de día y noche de §3 es una sola función pura con test, `PaintPolicy.showsHousePaint`: dentro de `NightWindow`, en la página nocturna y con Reducir transparencia o Aumentar contraste no hay banda y la fila es la de siempre; si la regla cambia con la hoja abierta la banda se funde en 2 s (0,25 s con Reducir movimiento) y no vuelve sola. Las bandas no escuchan el motor ni se atenúan bajo otra hoja (el "atenuar" de §3 es de la ventana; §6.1 dice "su atenuado": a confirmar por el dueño cuál de las dos lecturas vale). La captura 7 va sin subtítulo: el texto de reserva de §5 habla de pintura generada en el dispositivo, que es la ventana. Para la 1.1 quedan la ventana pintada del Horizonte (fase 2) tras la medida de batería con MetricKit (fase 3), las reglas de 4 pt de Capas, el ajuste "Pintura: de día / nunca" y la prueba de cinco segundos. Icono y hoja Pro siguen sin color. Registro en `docs/lanzamiento/DECISIONES.md` (D-55 a D-57) y `docs/agents/ESTADO.md` ("Pigmento 1.0").
 
 ---
 

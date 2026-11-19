@@ -18,6 +18,7 @@ Tiempo: unas 3 horas repartidas, más una noche.
 | 8 | Compra: comprar, restaurar, pendiente, reembolso, En familia | 1 h | Xcode con tienda local, y sandbox |
 | 9 | Prueba de 7 noches avanzando la fecha | 30 min | Uno sin Pro, con el llavero limpio: un iPhone que nunca la haya empezado (ver el apartado 9) |
 | 10 | Actualización desde una instalación antigua | 30 min | Dos builds, lanzados desde Xcode. Los pasos 1 a 10, el 11 y el 12 piden cada uno un llavero limpio (ver el apartado 10) |
+| 11 | Las bandas pintadas de Mezclas, a la luz, a oscuras y a las 21:00 | 15 min, de 20:50 a 21:05 | Cualquiera |
 
 ## 0. Antes de empezar
 
@@ -374,7 +375,23 @@ Durante la beta, la misma idea en pequeño:
 
 No hay camino de vuelta: no instales un build antiguo encima de uno nuevo y esperes que lea sus datos.
 
-## 11. Resumen para Claude
+## 11. Las bandas pintadas de Mezclas
+
+Las cuatro mezclas de la casa llevan de día una banda pintada a la izquierda (exploración 12 §6.1, D-57). La regla es una sola: de 21:00 a 07:00, en la página nocturna y con Aumentar contraste o Reducir transparencia no hay banda (`PaintPolicy`). Nadie la ha visto en un iPhone: en el simulador se ha visto de día, a las 21:30 y con el contraste forzado.
+
+| # | Paso | Esperado | Resultado |
+|---|---|---|---|
+| 1 | De día, con luz, abre Mezclas | "De la casa": cuatro bandas a sangre por la izquierda (rosa y lluvia, mar y viento, marrón y hoguera, pared), el texto empieza a su derecha; "Tuyas" y "Ajustes" sin pintura. Las filas miden lo mismo que antes | |
+| 2 | A oscuras, en la mesilla, la misma hoja | La pintura se lee como papel, no como pantalla: nada deslumbra. Si ilumina el cuarto, apúntalo: el velo es del 12 % | |
+| 3 | Abre Mezclas a las 20:58 y espera con la hoja abierta hasta las 21:01 | A las 21:00 las bandas se funden en unos 2 s (0,25 s con Reducir movimiento) y no vuelven; el texto no se mueve | |
+| 3b | Otro día: abre Mezclas a las 20:58, sal de la app (inicio) y vuelve a las 21:05 con la hoja aún abierta | Al volver las bandas se funden igual: la vuelta al primer plano relee la regla (`scenePhase`) | |
+| 4 | Cierra y vuelve a abrir Mezclas después de las 21:00 | Las filas de la casa son las de siempre, sin banda ni hueco | |
+| 5 | Desde la página nocturna (tras volver de Noche), de día | Sin banda. Es la única comprobación de esta rama fuera del test puro: en el simulador no se puede escenificar de día | |
+| 6 | Ajustes del iPhone, Accesibilidad, Pantalla: activa Aumentar contraste; luego Reducir transparencia | Sin banda con cualquiera de los dos; con los dos apagados, de día, vuelve al abrir la hoja | |
+| 7 | Con VoiceOver, recorre "De la casa" | Lee nombre y receta como antes; la banda no se nombra | |
+| 8 | Tamaño de texto AX3 y AX5 | La banda crece con la fila sin pisar el texto y el borde de los listones sigue duro (la pieza mide 288 pt y nunca se escala). En AX5 la hoguera queda arriba de su fila y debajo se ve el campo marrón | |
+
+## 12. Resumen para Claude
 
 | Prueba | Pasó entera | Pasos que fallaron | Notas |
 |---|---|---|---|
@@ -390,5 +407,6 @@ No hay camino de vuelta: no instales un build antiguo encima de uno nuevo y espe
 | 8.B Sandbox | | | |
 | 9. Prueba de 7 noches | | | |
 | 10. Actualización | | | |
+| 11. Bandas pintadas | | | |
 
 Lo que Claude hace después: corregir cada "no" (paquete S-11), actualizar `docs/agents/ESTADO.md` quitando de "sin verificar" lo que hayas visto, y ajustar las notas de revisión si algo de lo que afirman no se cumple en el iPhone.
