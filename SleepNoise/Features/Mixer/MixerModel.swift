@@ -419,6 +419,11 @@ final class MixerModel: ObservableObject {
 
     // MARK: Pro sheet and night
 
+    /// The clock the model runs on, for a view that asks a rule of the hour
+    /// (`PaintPolicy`): the real one, or the pinned one of a staged launch.
+    /// Read it in a draw, never store it.
+    var currentDate: Date { now() }
+
     /// Whether anything may be sold right now: not inside `NightWindow` and
     /// not on the night page.
     var canSell: Bool {

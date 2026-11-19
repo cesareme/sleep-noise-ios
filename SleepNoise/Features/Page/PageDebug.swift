@@ -244,6 +244,21 @@ enum PageDebugState: String, CaseIterable {
     /// The end of Mixes: "Settings", its last row.
     case mixesEnd
 
+    // The house paint in Mixes (exploration 12 §6.1), by day and when the
+    // rule says no. The staged `mixes` already paints: these are the cases
+    // the rule turns on.
+    /// By day, without access: the four bands beside their recipes.
+    case mixesPaint
+    /// Inside the night window on the day page, at 21:30: no band, the row
+    /// as it was.
+    case mixesPaintEvening
+    /// By day with Increase Contrast: no band.
+    case mixesPaintContrast
+    /// By day at the third accessibility size: the band grows with the row.
+    case mixesPaintAX3
+    /// The same at the largest size.
+    case mixesPaintAX5
+
     // The captures of the store that no other state stages (11 §3.2).
     /// Capture 1: the house mix playing in the evening, on the second day
     /// of the trial, with the timer of the first use.
@@ -260,11 +275,15 @@ enum PageDebugState: String, CaseIterable {
     case storeTide
     /// Capture 5: Night at 3:07 with thirty-five minutes left.
     case storeNight
+    /// Capture 7: Mixes by day with the four painted bands of the house,
+    /// "Pink and rain" sounding, on the second day of the trial.
+    case storeMixes
 
     var opensMixes: Bool {
         switch self {
         case .mixes, .mixesEmpty, .mixesSave, .mixesRename, .mixesDelete, .mixesFourth, .mixesNight,
-             .mixesNightFree, .mixesEnd:
+             .mixesNightFree, .mixesEnd, .mixesPaint, .mixesPaintEvening, .mixesPaintContrast,
+             .mixesPaintAX3, .mixesPaintAX5, .storeMixes:
             return true
         default: return false
         }
@@ -315,7 +334,7 @@ enum PageDebugState: String, CaseIterable {
         let day: TimeInterval = 86_400
         switch self {
         case .trialNight1: return 0
-        case .storePlaying, .storeLayers, .storeTide: return day
+        case .storePlaying, .storeLayers, .storeTide, .storeMixes: return day
         case .trialNight3, .trialAtNight, .proTrial: return 2 * day
         case .trialNight7: return 6 * day
         case .trialLastDay: return 6 * day + 18 * 3_600
@@ -328,7 +347,8 @@ enum PageDebugState: String, CaseIterable {
     var isFreeTier: Bool {
         switch self {
         case .layersSix, .layersEnd, .tideLocked, .mixes, .mixesRename, .mixesDelete, .mixesFourth, .mixesTrimmed,
-             .mixesTrimmedLong, .mixesNightFree, .mixesEnd, .restFree, .storeFirstUse,
+             .mixesTrimmedLong, .mixesNightFree, .mixesEnd, .mixesPaint, .mixesPaintEvening, .mixesPaintContrast,
+             .mixesPaintAX3, .mixesPaintAX5, .restFree, .storeFirstUse,
              .proOffer, .proOfferPlaying, .proOfferSettings, .proOfferLayers, .proLoading, .proUnavailable, .proBuying, .proPending, .proFailed,
              .proUnconfirmed, .proRestoring, .proNothing, .proThanks,
              .settings, .settingsLoading, .settingsNight, .settingsNotHere:
@@ -439,8 +459,9 @@ enum PageArguments {
         return nil
     }
 
-    /// Mixes opens at the end of its content.
-    static var scrollsMixesToEnd: Bool { state == .mixesEnd }
+    /// Mixes opens at the end of its content: its last row, or the house
+    /// at the largest text size, where "yours" alone fills the screen.
+    static var scrollsMixesToEnd: Bool { state == .mixesEnd || state == .mixesPaintAX5 }
 
     /// The timer sheet opens with the control of its mode unfolded.
     static var opensTimerControl: Bool {
@@ -482,9 +503,22 @@ enum PageArguments {
         case "accessibility3": return .accessibility3
         case "accessibility4": return .accessibility4
         case "accessibility5": return .accessibility5
-        default: return state == .largeType ? .accessibility2 : nil
+        default:
+            switch state {
+            case .largeType: return .accessibility2
+            case .mixesPaintAX3: return .accessibility3
+            case .mixesPaintAX5: return .accessibility5
+            default: return nil
+            }
         }
     }
+}
+
+/// What a staged Mixes sheet forces on the house paint.
+enum PaintArguments {
+    /// Increase Contrast, as if the system had it on: the rule says no
+    /// band. The real switch of the simulator reaches the same code.
+    static var forcesIncreasedContrast: Bool { PageArguments.state == .mixesPaintContrast }
 }
 
 /// What a staged Mixes sheet opens over itself.
@@ -570,6 +604,11 @@ enum PageStage {
             (components.hour, components.minute) = (20, 12)
         case .storeNight:
             (components.hour, components.minute) = (2, 57)
+        case .storeMixes:
+            (components.hour, components.minute) = (20, 15)
+        case .mixesPaintEvening:
+            // Inside the night window, on the day page.
+            (components.hour, components.minute) = (21, 30)
         default:
             components.hour = state.isNight ? 2 : 12
             components.minute = state.isNight ? 14 : 0
@@ -736,12 +775,17 @@ enum PageStage {
         case .layersEnd:
             // Thunder was saved at 20 while the trial lasted; it keeps it.
             setLevels(model, [.rain: 0.45, .wind: 0.25, .thunder: 0.2, .pink: 0.3])
-        case .mixes, .mixesRename, .mixesDelete, .mixesNight, .mixesNightFree, .mixesEnd:
+        case .mixes, .mixesRename, .mixesDelete, .mixesNight, .mixesNightFree, .mixesEnd,
+             .mixesPaint, .mixesPaintEvening, .mixesPaintContrast, .mixesPaintAX3, .mixesPaintAX5:
             // The first of the person's mixes is the one that is loaded.
             if let hotel = saveMixes(model, count: 2) {
                 model.apply(hotel)
             }
             if state == .mixesNight || state == .mixesNightFree { model.beginNightSession() }
+        case .storeMixes:
+            // Two of the person's own above the house; the house mix of
+            // capture 1 is the one that sounds (`didAppear`).
+            saveMixes(model, count: 2)
         case .mixesSave:
             setLevels(model, [.rain: 0.45, .wind: 0.25, .pink: 0.3])
         case .mixesFourth:
@@ -860,6 +904,8 @@ enum PageStage {
             model.playMix(.house(.seaAndWind))
         case .mixesTrimmedLong:
             model.playMix(.house(.brownAndFire))
+        case .storeMixes:
+            model.playMix(.house(.pinkAndRain))
         case .pageSpeaker:
             if !model.isPlaying { model.play() }
             model.debugLoseOutput()
@@ -955,7 +1001,7 @@ enum PageStage {
              .nightLayers, .tide, .nightTide, .timerAsleep, .timerBlanket, .timerNight,
              .tideGuiding, .tideDescent, .tideNight,
              .mixes, .mixesSave, .mixesRename, .mixesDelete, .mixesFourth, .mixesNight, .mixesNightFree,
-             .mixesEnd:
+             .mixesEnd, .mixesPaint, .mixesPaintEvening, .mixesPaintContrast, .mixesPaintAX3, .mixesPaintAX5:
             if !model.isPlaying { model.play() }
         }
     }
