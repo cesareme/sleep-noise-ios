@@ -259,6 +259,27 @@ enum PageDebugState: String, CaseIterable {
     /// The same at the largest size.
     case mixesPaintAX5
 
+    // The painted window of the day page (exploration 12 §7 fase 2),
+    // playing a house mix with Pro, at midday unless said otherwise.
+    /// "Pink and rain" with the tide guiding: the window slides.
+    case windowPinkRainTide
+    /// "Brown and fire".
+    case windowBrownFire
+    /// "Sea and wind".
+    case windowSeaWind
+    /// Paused after playing: the paint dries, it does not go.
+    case windowPaused
+    /// At 20:59, a minute before the night window: painted.
+    case windowEvening
+    /// At 21:01: no window and no raster.
+    case windowNight
+    /// With Increase Contrast forced: no paint.
+    case windowContrast
+    /// With Reduce Motion forced: painted, the live layer still.
+    case windowReduceMotion
+    /// At the third accessibility size: a window of 120 pt.
+    case windowAX3
+
     // The captures of the store that no other state stages (11 §3.2).
     /// Capture 1: the house mix playing in the evening, on the second day
     /// of the trial, with the timer of the first use.
@@ -512,7 +533,7 @@ enum PageArguments {
         default:
             switch state {
             case .largeType: return .accessibility2
-            case .mixesPaintAX3: return .accessibility3
+            case .mixesPaintAX3, .windowAX3: return .accessibility3
             case .mixesPaintAX5: return .accessibility5
             default: return nil
             }
@@ -520,11 +541,18 @@ enum PageArguments {
     }
 }
 
-/// What a staged Mixes sheet forces on the house paint.
+/// What a staged launch forces on the paint.
 enum PaintArguments {
     /// Increase Contrast, as if the system had it on: the rule says no
-    /// band. The real switch of the simulator reaches the same code.
-    static var forcesIncreasedContrast: Bool { PageArguments.state == .mixesPaintContrast }
+    /// band and no window. The real switch of the simulator reaches the
+    /// same code.
+    static var forcesIncreasedContrast: Bool {
+        PageArguments.state == .mixesPaintContrast || PageArguments.state == .windowContrast
+    }
+
+    /// Reduce Motion, as if the system had it on: the window is painted
+    /// and its live layer stays still.
+    static var forcesReduceMotion: Bool { PageArguments.state == .windowReduceMotion }
 }
 
 /// What a staged Mixes sheet opens over itself.
@@ -615,6 +643,10 @@ enum PageStage {
         case .mixesPaintEvening:
             // Inside the night window, on the day page.
             (components.hour, components.minute) = (21, 30)
+        case .windowEvening:
+            (components.hour, components.minute) = (20, 59)
+        case .windowNight:
+            (components.hour, components.minute) = (21, 1)
         default:
             components.hour = state.isNight ? 2 : 12
             components.minute = state.isNight ? 14 : 0
@@ -705,8 +737,11 @@ enum PageStage {
              .settings, .settingsLoading, .settingsPro, .settingsFamily, .settingsNotHere,
              .nightEnter, .nightTimer, .nightDimmed, .nightFading, .nightPaused, .nightSpeaker,
              .nightLevel, .nightEnded, .nightEndedMorning, .nightError, .storePlaying, .storeNight,
-             .smallHours, .smallHoursPlain, .smallHoursWinding, .smallHoursPaused:
-            // Night shows the timer of the first use: 45 minutes.
+             .smallHours, .smallHoursPlain, .smallHoursWinding, .smallHoursPaused,
+             .windowPinkRainTide, .windowBrownFire, .windowSeaWind, .windowPaused, .windowEvening,
+             .windowNight, .windowContrast, .windowReduceMotion, .windowAX3:
+            // Night shows the timer of the first use: 45 minutes. The
+            // window states load their mix once the page is up.
             break
         case .storeFirstUse:
             // Not the house mix that capture 1 plays: two free layers at
@@ -912,6 +947,22 @@ enum PageStage {
             model.playMix(.house(.brownAndFire))
         case .storeMixes:
             model.playMix(.house(.pinkAndRain))
+        case .windowPinkRainTide:
+            model.playMix(.house(.pinkAndRain))
+            model.setBreathingEnabled(true)
+        case .windowBrownFire:
+            model.playMix(.house(.brownAndFire))
+        case .windowSeaWind:
+            model.playMix(.house(.seaAndWind))
+        case .windowEvening, .windowNight, .windowContrast, .windowReduceMotion, .windowAX3:
+            model.playMix(.house(.pinkAndRain))
+        case .windowPaused:
+            model.playMix(.house(.pinkAndRain))
+            Task { @MainActor in
+                // Once the paint is born: it dries, it does not go.
+                try? await Task.sleep(for: .seconds(3))
+                model.pause()
+            }
         case .pageSpeaker:
             if !model.isPlaying { model.play() }
             model.debugLoseOutput()

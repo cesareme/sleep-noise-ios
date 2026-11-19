@@ -564,14 +564,13 @@ final class PaintEngineTests: XCTestCase {
             context.setAlpha(CGFloat(PaintBreath.liveMax))
             context.draw(raster.live, in: rect)
             context.restoreGState()
-            // The veil, row by row, in the flipped device space of the bitmap
-            // (row 0 at the top of the image).
+            // The veil the page draws (`PaintVeil`), row by row, in the
+            // flipped device space of the bitmap (row 0 at the top of the
+            // image), without the text reserves: the bare window.
             context.scaleBy(x: 3, y: 3)
             for row in 0..<Int(g.height) {
                 let y = CGFloat(row) + 0.5
-                let distance = abs(y - g.horizonY) / (g.height / 2)
-                var veil = 0.35 + 0.40 * Double(min(1, distance))
-                if abs(y - g.horizonY) <= PaintWindowGeometry.reserve / 2 { veil = max(veil, 0.80) }
+                let veil = PaintVeil.opacity(atY: y, geometry: g)
                 context.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 0, alpha: CGFloat(veil)))
                 context.fill(CGRect(x: 0, y: g.height - CGFloat(row) - 1, width: g.width, height: 1))
             }
