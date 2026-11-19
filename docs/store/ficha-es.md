@@ -211,7 +211,13 @@ Lo que suena, se pinta.
 
 Recuento: 23 de 41. Titular común de la exploración 12 (§5 y §6.1; `docs/design/color/camino-contenido.md`), el mismo en los tres caminos. Pantalla: la hoja Mezclas de día, a las 20:15 del segundo día de la prueba: "Tuyas" con dos mezclas guardadas y "De la casa" con las cuatro mezclas, cada una con su banda pintada a sangre por la izquierda (`HousePaint`), y "Rosa y lluvia" sonando. La pintura es la de la app, generada por código en tiempo de compilación (`scripts/paint/`), sin imágenes ajenas; de noche y en la página nocturna la hoja no la enseña (`PaintPolicy`). Va la última porque la exploración no sustituye ninguna de las seis de C57: si el dueño prefiere que entre en los resultados de búsqueda, se cambia el orden en `scripts/screenshots.sh` y aquí.
 
-Sin subtítulo, como las capturas 2, 4, 5 y 6. El texto de reserva de la exploración 12 §5 ("Como el sonido: se genera aquí, sin archivos ni descargas.") se escribió para la pintura generada en el dispositivo, la ventana de la 1.1; en la 1.0 la pintura son PNG del paquete generados en compilación y la frase no la sostiene el código (C04, `propiedad-intelectual.md` §7). Vuelve con la ventana, si el dueño quiere.
+Subtítulo de la captura:
+
+```text es
+Se genera aquí, como el sonido. Sin archivos.
+```
+
+Recuento: 45 de 42. Supera el tope estimado de la maqueta, pero manda `shot-composer --list` (la segunda línea de la captura 3 mide 355 pt con 47 caracteres). Es el texto de reserva de la exploración 12 §5 ("Como el sonido: se genera aquí, sin archivos ni descargas."), acortado para caber en la columna de 376 pt. Vuelve el 19-11-2026 porque ahora lo sostiene el código: la ventana pintada de la página se genera en el iPhone en tiempo de ejecución (`PaintRasterizer`), y ninguna pieza de la app es una imagen ajena. Las bandas de Mezclas que enseña esta captura siguen siendo PNG generados en compilación por el mismo pincel: a confirmar por el dueño si prefiere la línea bajo una captura de la página pintada en lugar de bajo Mezclas.
 
 ## Si se abre también "Spanish (Mexico)"
 

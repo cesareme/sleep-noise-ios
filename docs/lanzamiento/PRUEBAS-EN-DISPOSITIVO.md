@@ -375,9 +375,9 @@ Durante la beta, la misma idea en pequeño:
 
 No hay camino de vuelta: no instales un build antiguo encima de uno nuevo y esperes que lea sus datos.
 
-## 11. Las bandas pintadas de Mezclas
+## 11. La pintura: bandas de Mezclas, ventana de la página y reglas de Capas
 
-Las cuatro mezclas de la casa llevan de día una banda pintada a la izquierda (exploración 12 §6.1, D-57). La regla es una sola: de 21:00 a 07:00, en la página nocturna y con Aumentar contraste o Reducir transparencia no hay banda (`PaintPolicy`). Nadie la ha visto en un iPhone: en el simulador se ha visto de día, a las 21:30 y con el contraste forzado.
+Las cuatro mezclas de la casa llevan de día una banda pintada a la izquierda (exploración 12 §6.1, D-57); desde D-58 la página de día lleva además una ventana pintada de 240 pt alrededor del Horizonte que respira con el sonido, y Capas una regla de 4 pt por fila. La regla es una sola (`PaintPolicy`): de 21:00 a 07:00, en la página nocturna, en Noche, en Madrugada, con la pantalla en reposo (`isLuminanceReduced`) y con Aumentar contraste o Reducir transparencia no hay pintura ninguna, y de noche no vuelve sola. Nadie la ha visto en un iPhone: en el simulador se ha visto de día, a las 20:59, a las 21:01, con el contraste y el movimiento reducido forzados, en AX3 y en inglés (`.build/shots/window-*.png`), y con toques reales (Play, Capas, el reloj cruzando las 21:00).
 
 | # | Paso | Esperado | Resultado |
 |---|---|---|---|
@@ -390,6 +390,43 @@ Las cuatro mezclas de la casa llevan de día una banda pintada a la izquierda (e
 | 6 | Ajustes del iPhone, Accesibilidad, Pantalla: activa Aumentar contraste; luego Reducir transparencia | Sin banda con cualquiera de los dos; con los dos apagados, de día, vuelve al abrir la hoja | |
 | 7 | Con VoiceOver, recorre "De la casa" | Lee nombre y receta como antes; la banda no se nombra | |
 | 8 | Tamaño de texto AX3 y AX5 | La banda crece con la fila sin pisar el texto y el borde de los listones sigue duro (la pieza mide 288 pt y nunca se escala). En AX5 la hoguera queda arriba de su fila y debajo se ve el campo marrón | |
+| 9 | De día, con luz, carga "Rosa y lluvia" y pulsa Play | Antes del Play la página es negra. En unos 2 s nace una ventana pintada de 240 pt alrededor del Horizonte (lluvia en oblicuo sobre un campo rosa); nombre, estado, filas y barra siguen sobre negro y se leen igual; el Índice sigue siendo lo más luminoso y lleva un halo negro. Nada cambia de sitio | |
+| 10 | Con la mezcla sonando, sube y baja un nivel | La pintura se repinta sola al soltar (medio segundo), nunca mientras arrastras; no parpadea | |
+| 11 | Enciende la Marea | La pintura se desliza unos píxeles con la respiración, sin saltos, y vuelve a su sitio al apagarla | |
+| 12 | Mira la ventana medio minuto | El 18 % de los trazos respira con el sonido, solo en luz; nada cambia de matiz, posición ni tamaño. Con blanco o rosa solos casi no se mueve: su RMS es casi plano, como el Horizonte | |
+| 13 | Pausa | La pintura se seca (baja a 0,6 en 1,5 s) y los trazos vivos se apagan; no desaparece. Play la devuelve en menos de 1 s | |
+| 14 | Abre Capas y vuelve | Al abrir, la pintura de la página se atenúa a 0,3; en Capas cada fila lleva una regla de 4 pt en el margen izquierdo con las tintas oscuras de su textura (viva si suena, seca a cero); el nombre no se ha movido. Al cerrar, la pintura vuelve en 0,8 s | |
+| 15 | "Marrón y hoguera" y "Mar y viento" | Lenguas de fuego sobre un campo marrón; flujo de mar con hebras oliva. Ninguna se parece a un paisaje ni a una obra concreta: si algo recuerda a una, apúntalo | |
+| 16 | A oscuras, en la mesilla, la página pintada | Se lee como papel, no como pantalla: nada ilumina el cuarto. Si deslumbra, apúntalo: el velo es del 35 % en el Horizonte y del 75 % en los bordes | |
+| 17 | A las 20:59 con la página delante y sonando, espera a las 21:01 | A las 21:00 la pintura se funde en 2 s (0,25 s con Reducir movimiento) y no vuelve; tampoco al pausar y dar Play otra vez, ni a las 07:00 si la app sigue delante | |
+| 18 | Entra en Noche de día y vuelve a la página; después, la página nocturna de noche | Noche, Madrugada y la página nocturna son negras como hoy. Al salir de la página nocturna tocando el nombre, la pintura vuelve solo si es de día | |
+| 19 | Bloquea el iPhone con la página pintada delante y desbloquea | Al volver de día, la pintura nace otra vez en unos 2 s; de noche, no | |
+| 20 | Ajustes › día › Pintura › Nunca; luego De día | Con Nunca la página es negra de día y Capas no lleva reglas; con De día vuelven | |
+| 21 | Ajustes del iPhone › Accesibilidad: Aumentar contraste; Reducir movimiento; los dos | Con contraste: sin pintura ni reglas. Con movimiento: pintura quieta, sin respiración ni Marea. Con los dos: Ajustes dice "Nunca" y la nota de debajo explica por qué; al apagar uno de los dos vuelve | |
+| 22 | Con VoiceOver, recorre la página y Capas | Ni la ventana ni las reglas se nombran; la fila de Ajustes lee "Pintura" y su valor | |
+| 23 | Tamaño de texto AX3 | La ventana mide 120 pt y las filas siguen en pantalla; el texto que entra en la ventana sigue legible | |
+
+### 11.1 Medida de batería con MetricKit (condición de envío, D-58)
+
+Ninguna cifra de batería se publica hasta tenerla. La app ya escucha MetricKit (`PaintMetricsSubscriber`): cada día iOS entrega el resumen del anterior y la app guarda la luminancia media de píxel (`MXDisplayMetric.averagePixelLuminance`) y la CPU (`MXCPUMetric`) en `Documents/paint-metrics.json` del contenedor y en las preferencias, sin red. El simulador no entrega nunca un resumen: solo vale un iPhone.
+
+| # | Paso | Esperado | Resultado |
+|---|---|---|---|
+| 1 | Una tarde, de 20:00 a 21:00, deja la página de día pintada y sonando con la pantalla encendida (brillo fijo, anota el nivel) | A las 21:00 la pintura se funde sola | Batería de ___ % a ___ % |
+| 2 | Otra tarde igual, mismo brillo, con Ajustes › Pintura › Nunca | Página negra toda la hora | Batería de ___ % a ___ % |
+| 3 | Al día siguiente de cada una, abre la app o léelo del contenedor (Xcode › Devices › descargar el contenedor › `Documents/paint-metrics.json`); en una build de depuración, `-paintMetricsDump` lo imprime al arrancar | Dos muestras con `averagePixelLuminance` y `cpuSeconds` del día pintado frente al negro | Luminancia ___ frente a ___; CPU ___ s frente a ___ s |
+
+Si la hora pintada cuesta más de un punto de batería que la negra, o la luminancia media del día pintado dobla la del negro, se sube el velo o se reduce la ventana a 180 pt antes de enviar; el ajuste "Nunca" es la salida si la medida sale mal.
+
+### 11.2 Prueba de cinco segundos (condición de envío, D-58)
+
+Diez personas, una a una, con el iPhone en la mano: la página de día pintada y sonando ("Rosa y lluvia") y, al lado o después, la misma página sin pintura (Ajustes › Pintura › Nunca). Cinco segundos cada una y una sola pregunta: "¿qué hace esta app?". Apunta la respuesta tal cual.
+
+| Persona | Con pintura | Sin pintura |
+|---|---|---|
+| 1 a 10 | | |
+
+Si más de tres dicen "fondos", "pinturas" o "cuadros" con la pintura, se sube el velo o se reduce la ventana a 180 pt antes de enviar (exploración 12 §7 fase 3).
 
 ## 12. Resumen para Claude
 
@@ -407,6 +444,8 @@ Las cuatro mezclas de la casa llevan de día una banda pintada a la izquierda (e
 | 8.B Sandbox | | | |
 | 9. Prueba de 7 noches | | | |
 | 10. Actualización | | | |
-| 11. Bandas pintadas | | | |
+| 11. Pintura: bandas, ventana y reglas | | | |
+| 11.1 Batería con MetricKit | | | Pintada ___ % · negra ___ % |
+| 11.2 Cinco segundos | | | ___ de 10 dicen "fondos" |
 
 Lo que Claude hace después: corregir cada "no" (paquete S-11), actualizar `docs/agents/ESTADO.md` quitando de "sin verificar" lo que hayas visto, y ajustar las notas de revisión si algo de lo que afirman no se cumple en el iPhone.

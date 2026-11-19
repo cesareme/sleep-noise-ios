@@ -138,7 +138,7 @@ SleepNoise/Resources        Strings, icon, Info.plist, privacy manifest, store
 SleepNoiseTests             Unit tests, including spectral checks
 scripts/verify.sh           The gate
 scripts/screenshots.sh      Seven App Store captures, English and Spanish
-scripts/paint/              Generator of the painted bands of the house mixes (build-time PNG)
+scripts/paint/              Generator of the painted bands of the house mixes (build-time PNG); the brush is the app's (SleepNoise/Design/Paint), which also paints the window of the day page on the device
 docs/ARCHITECTURE.md        Audio pipeline
 docs/PRIVACY.md             Privacy policy draft
 docs/SECURITY.md            How to report a vulnerability

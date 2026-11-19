@@ -391,11 +391,11 @@ final class CopyLintTests: XCTestCase {
                 // The canvas of the captures (11 §2.2): two lines at most.
                 XCTAssertLessThanOrEqual(headline.title.count, 41, headline.title)
             }
-            // Only the first and the third carry a second line (11 §2.2). The
-            // seventh carries none in 1.0: its reserve line of exploration
-            // 12 §5 speaks of paint generated on the device, which is 1.1.
+            // The first, the third and the seventh carry a second line (11
+            // §2.2). The seventh got its back on 19-11-2026, with the painted
+            // window of the page: the paint is generated on the device.
             XCTAssertEqual(
-                headlines.map { $0.subtitle != nil }, [true, false, true, false, false, false, false], language
+                headlines.map { $0.subtitle != nil }, [true, false, true, false, false, false, true], language
             )
         }
     }

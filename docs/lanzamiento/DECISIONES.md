@@ -13,7 +13,7 @@ Cómo leerla:
 - **Fichero que cambia.** Dónde se escribe la decisión. Los cambios de código los hace Claude por PR.
 - Para responder basta con el identificador y una palabra: "D-08: a".
 
-Recuento: 13 condiciones de envío, 3 con fecha, 7 de ficha, 17 de producto e interfaz, 8 de proceso, 6 surgidas al escribir esta guía, 3 de color (apartado 8) y un bloque de 36 confirmaciones. De ellas, tres están cerradas desde el 17-11-2026 y siguen en su fila para no perder el hilo: D-08 (condición de envío), D-32 y D-52 (producto e interfaz); las tres de color (D-55 a D-57) nacieron cerradas el 19-11-2026. Los identificadores no se renumeran: lo añadido en la corrección de esta guía lleva los números siguientes (D-51 a D-54, C-25 a C-36) y está en el apartado que le toca.
+Recuento: 13 condiciones de envío, 3 con fecha, 7 de ficha, 17 de producto e interfaz, 8 de proceso, 6 surgidas al escribir esta guía, 4 de color (apartado 8) y un bloque de 36 confirmaciones. De ellas, tres están cerradas desde el 17-11-2026 y siguen en su fila para no perder el hilo: D-08 (condición de envío), D-32 y D-52 (producto e interfaz); las cuatro de color (D-55 a D-58) nacieron cerradas el 19-11-2026 (D-58 cambia D-57 la misma tarde). Los identificadores no se renumeran: lo añadido en la corrección de esta guía lleva los números siguientes (D-51 a D-54, C-25 a C-36) y está en el apartado que le toca.
 
 ---
 
@@ -154,13 +154,14 @@ No están en los tres documentos de origen. Se anotan aquí para que no se pierd
 
 ## 8. Color: exploración 12 (19-11-2026)
 
-Las tres decisiones que pedía `docs/design/12-EXPLORACION-COLOR-2026-11-19.md` §9, respondidas el 19-11-2026. Las otras cinco de esa tabla (reglas de Capas, ajuste de pintura, prueba de cinco segundos, brasa nocturna, encargo a un ilustrador) siguen abiertas, son de 1.1 y no bloquean la 1.0.
+Las decisiones que pedía `docs/design/12-EXPLORACION-COLOR-2026-11-19.md` §9, respondidas el 19-11-2026: por la mañana las tres primeras (D-55 a D-57); por la tarde el dueño cambió la tercera ("seamos agresivos, metamos todo lo de diseño ahora") y con ella cerró las reglas de Capas, el ajuste de pintura y la prueba de cinco segundos (D-58). Quedan abiertas la brasa nocturna y el encargo a un ilustrador, de 1.1.
 
 | Id | Decisión | Recomendación | Si no decides | Fichero que cambia |
 |---|---|---|---|---|
 | D-55 | **Cerrada el 19-11-2026: sí.** **Camino de color.** A (color contenido) con la ventana pintada del Horizonte en la página de día, frente a B y C | A con la ventana *(fuente: exploración 12 §6)* | Ya no aplica | `docs/design/12-EXPLORACION-COLOR-2026-11-19.md` §9 y estado; `docs/PLAN-SIMPLE-1.0.md` §9 |
 | D-56 | **Cerrada el 19-11-2026: sí.** **Icono y hoja Pro sin color.** "La regla y la marea" sigue en negro; la hoja Pro sigue gris, sin pintura: nada de color donde se vende | Sí *(fuente: exploración 12 §9 n.º 2)* | Ya no aplica | Ninguno: `scripts/icon/` y `ProSheet` no se tocan |
-| D-57 | **Cerrada el 19-11-2026: sí.** **Variante mínima en 1.0, ventana en 1.1.** En la 1.0 entran solo las bandas pintadas de las cuatro mezclas de la casa en Mezclas y la captura nueva de la tienda (exploración 12 §6.1); la ventana del Horizonte y las reglas de Capas esperan a la 1.1, tras medir batería con MetricKit | Variante mínima en 1.0 *(fuente: exploración 12 §9 n.º 3)* | Ya no aplica | `SleepNoise/Design/HousePaint.swift`, `PaintPolicy.swift`, `MixesSheet.swift`, `scripts/paint/`, `scripts/screenshots.sh`, `docs/store/ficha-*.md` (captura 7), `docs/PLAN-SIMPLE-1.0.md` §4.3 y §9 |
+| D-57 | **Cerrada el 19-11-2026 por la mañana y superada por D-58 la misma tarde.** **Variante mínima en 1.0, ventana en 1.1.** Las bandas pintadas de las cuatro mezclas de la casa en Mezclas y la captura nueva de la tienda (exploración 12 §6.1) siguen en 1.0; la ventana y las reglas ya no esperan a la 1.1 | Variante mínima en 1.0 *(fuente: exploración 12 §9 n.º 3)* | Ya no aplica | `SleepNoise/Design/HousePaint.swift`, `PaintPolicy.swift`, `MixesSheet.swift`, `scripts/paint/`, `scripts/screenshots.sh`, `docs/store/ficha-*.md` (captura 7), `docs/PLAN-SIMPLE-1.0.md` §4.3 y §9 |
+| D-58 | **Cerrada el 19-11-2026 por la tarde: todo en 1.0.** **Camino A completo en 1.0, con la medida de batería como condición de envío.** La ventana pintada de 240 pt alrededor del Horizonte en la página de día (respira con el RMS real y la Marea; nil de noche, en Noche, en Madrugada, en la página nocturna, con `isLuminanceReduced`, con Aumentar contraste y al fondo), las reglas de 4 pt en Capas, el ajuste "Pintura: de día / nunca" (se apaga solo con Reducir movimiento más Aumentar contraste) y el andamiaje de MetricKit para medir. Ninguna cifra de batería se publica hasta medirla, y la medida de 20:00 a 21:00 y la prueba de cinco segundos (`PRUEBAS-EN-DISPOSITIVO.md` §11) son condición de envío. Icono, hoja Pro, Noche, Madrugada y página nocturna siguen sin color | Todo en 1.0 *(decisión del dueño, 19-11-2026)* | Ya no aplica | `SleepNoise/Design/Paint/`, `PaintPolicy.swift`, `PageView.swift`, `SoundLine.swift`, `LevelRule.swift`, `LayersSheet.swift`, `SettingsSheet.swift`, `PaintMetrics.swift`, `docs/design/12-EXPLORACION-COLOR-2026-11-19.md` §9, `docs/PLAN-SIMPLE-1.0.md` §4.3 y §9, `docs/lanzamiento/PRUEBAS-EN-DISPOSITIVO.md` §11, `docs/store/ficha-*.md` (captura 7) |
 
 ## Cerradas: no vuelven
 
@@ -182,7 +183,8 @@ Para que nadie las reabra por despiste.
 | D-52, Noche terminada por la mañana (17-11-2026) | De día cede sola a la página de día; de noche sigue con "Terminó a las…" y Madrugada | `MixerModel.leaveNightScreenIfOverByDay` |
 | D-55, camino de color (19-11-2026) | A, color contenido, con la ventana del Horizonte; B y C descartados | Exploración 12 §9 |
 | D-56, icono y hoja Pro (19-11-2026) | Sin color, los dos | Exploración 12 §9 |
-| D-57, qué color entra en 1.0 (19-11-2026) | Solo las bandas de la casa en Mezclas y la captura 7; la ventana, en 1.1 tras medir batería | `PaintPolicy`, `HousePaint`, `MixesSheet`; plan §4.3 y §9 |
+| D-57, qué color entra en 1.0 (19-11-2026, mañana) | Solo las bandas de la casa en Mezclas y la captura 7; superada por D-58 | `PaintPolicy`, `HousePaint`, `MixesSheet`; plan §4.3 y §9 |
+| D-58, camino A completo en 1.0 (19-11-2026, tarde) | Ventana del Horizonte, reglas de Capas, ajuste "Pintura" y MetricKit en 1.0; la medida de batería y la prueba de cinco segundos, condición de envío | `SleepNoise/Design/Paint/`, `PageView`, `LayersSheet`, `SettingsSheet`; plan §4.3 y §9; `PRUEBAS-EN-DISPOSITIVO.md` §11 |
 
 ## Fuera de 1.0, con su versión
 
@@ -206,7 +208,7 @@ Para que nadie las reabra por despiste.
 | Carta de novedades, Acceso asistido, guía de AirPods | 1.1 | Reconciliación §5 |
 | Decisión sobre pedir reseñas desde la app | 1.1, con datos | C55 |
 | Vídeo de vista previa de la ficha | 1.1 | Plan §4.3 fila 28 |
-| Ventana pintada del Horizonte en la página de día (camino A), tras medir batería con MetricKit; reglas de 4 pt en Capas (D-57); ajuste "Pintura: de día / nunca" (recomendación de la exploración 12 §9 n.º 5, aún abierta) | 1.1 | Plan §9; D-57; exploración 12 §7 fases 2 y 3 |
+| Brasa nocturna de la hoguera (un listón al 10 % bajo el Horizonte, apagada por defecto) y encargo a un ilustrador | 1.1, con la prueba de la mesilla | Exploración 12 §9 n.º 7 y 8 |
 | Página "Al acostarte", fila "Salida", "Pasar sola a Noche" como ajuste, TipKit y háptica de la Marea | 1.1: no están en la lista del plan §4.3, y lo que no aparece allí pasa a 1.1 | Plan, cabecera |
 | Reconciliar las specs 05, 07 y 09 | Con 1.1 | Plan §4.4 |
 | Apple Watch | 1.2 | Plan §9; C28 |
