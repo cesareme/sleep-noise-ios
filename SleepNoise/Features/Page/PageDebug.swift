@@ -420,6 +420,12 @@ enum PageArguments {
         value(after: "-pageState").flatMap(PageDebugState.init(rawValue:))
     }
 
+    /// `-paintMetricsDump`: the MetricKit log of the paint is printed at
+    /// launch, as JSON, so it can be read from the console of a debug run.
+    static var dumpsPaintMetrics: Bool {
+        arguments.contains("-paintMetricsDump")
+    }
+
     /// `-pageClock HH:mm`: how far the clock of a normal launch is moved,
     /// so that it starts at that hour today and runs on. Nil without the
     /// argument or when it is not an hour.
