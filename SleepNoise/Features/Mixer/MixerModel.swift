@@ -424,6 +424,10 @@ final class MixerModel: ObservableObject {
     /// Read it in a draw, never store it.
     var currentDate: Date { now() }
 
+    /// The calendar the model keeps time with, for a view that asks the
+    /// same clock a question (`PaintPolicy`): one calendar for one border.
+    var currentCalendar: Calendar { calendar }
+
     /// Whether anything may be sold right now: not inside `NightWindow` and
     /// not on the night page.
     var canSell: Bool {

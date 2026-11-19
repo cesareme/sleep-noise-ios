@@ -445,6 +445,18 @@ final class PageModelTests: XCTestCase {
         return MixerModel(purchases: purchases, defaults: defaults, now: { clock.now }, calendar: utc)
     }
 
+    /// The views that ask the paint rule a question of time read the
+    /// model's clock and calendar, not their own: one calendar for one
+    /// border.
+    func testTheModelExposesItsClockAndCalendarToTheViews() throws {
+        let clock = Clock(time(12))
+        let model = try makeModel(free: false, clock: clock)
+        XCTAssertEqual(model.currentDate, clock.now)
+        clock.now = time(21)
+        XCTAssertEqual(model.currentDate, clock.now)
+        XCTAssertEqual(model.currentCalendar, utc)
+    }
+
     // MARK: First use
 
     func testFirstUseLoadsPinkAndRainAsItIs() throws {

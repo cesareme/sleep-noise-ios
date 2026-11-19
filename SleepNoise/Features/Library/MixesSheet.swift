@@ -41,6 +41,7 @@ struct MixesSheet: View {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.scenePhase) private var scenePhase
     /// The box of a section header: 18 pt at Large.
     @ScaledMetric(relativeTo: .footnote) private var headerLine: CGFloat = 18
     @State private var naming = MixNaming()
@@ -79,8 +80,11 @@ struct MixesSheet: View {
     }
 
     /// The rule of the house paint, now. `saleClock` redraws the sheet at
-    /// 21:00, so this is read again then.
+    /// 21:00 with the app in front; coming back to the foreground after
+    /// 21:00 does not touch the model's clock, so the scene phase is read
+    /// here too and the return redraws the sheet.
     private var showsPaintNow: Bool {
+        _ = scenePhase
         var increaseContrast = contrast == .increased
         #if DEBUG
         increaseContrast = increaseContrast || PaintArguments.forcesIncreasedContrast
@@ -89,7 +93,8 @@ struct MixesSheet: View {
             now: model.currentDate,
             nightSession: model.isNightSession,
             reduceTransparency: reduceTransparency,
-            increaseContrast: increaseContrast
+            increaseContrast: increaseContrast,
+            calendar: model.currentCalendar
         )
     }
 
