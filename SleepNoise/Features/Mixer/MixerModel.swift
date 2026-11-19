@@ -125,6 +125,9 @@ final class MixerModel: ObservableObject {
     @Published private(set) var isBedtimeDimmed = false
     /// "Keep screen on" (C46). Stored.
     @Published private(set) var keepScreenOn: KeepScreenOn
+    /// "Paint: by day / never" (exploration 12 §7). Stored under
+    /// `PaintSetting.key`. What the paint goes by is `PaintSetting.effective`.
+    @Published private(set) var paintSetting: PaintSetting
     /// Small Hours is what plays, or is paused: the fixed recipe, not the
     /// mix (C05). Nothing is sold while it lasts, at any hour.
     @Published private(set) var isSmallHours = false
@@ -251,6 +254,7 @@ final class MixerModel: ObservableObject {
         let storedLevels = Self.loadLevels(defaults: defaults, key: levelsKey)
         storedTimer = Self.timerAtLaunch(defaults: defaults, hasStoredLevels: storedLevels != nil)
         keepScreenOn = defaults.string(forKey: Self.keepScreenOnKey).flatMap(KeepScreenOn.init) ?? .whileCharging
+        paintSetting = PaintSetting.stored(in: defaults)
         let isFirstUse = storedLevels == nil
         if let stored = storedLevels {
             levels = stored
@@ -1404,6 +1408,12 @@ final class MixerModel: ObservableObject {
         guard keepScreenOn != value else { return }
         keepScreenOn = value
         defaults.set(value.rawValue, forKey: Self.keepScreenOnKey)
+    }
+
+    func setPaintSetting(_ value: PaintSetting) {
+        guard paintSetting != value else { return }
+        paintSetting = value
+        defaults.set(value.rawValue, forKey: PaintSetting.key)
     }
 
     /// Whether the Night screen should hold the iPhone awake right now

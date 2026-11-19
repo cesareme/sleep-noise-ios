@@ -14,6 +14,16 @@ enum SettingsText {
         }
     }
 
+    /// The row "Paint" of Settings.
+    static let paintTitleKey = "ajustes.pintura"
+
+    static func paintKey(_ setting: PaintSetting) -> String {
+        switch setting {
+        case .byDay: return "ajustes.pintura.dia"
+        case .never: return "ajustes.pintura.nunca"
+        }
+    }
+
     /// "about sleepnoise": the name is the bundle's, never a string here.
     static func aboutHeader(
         appName: String,

@@ -4849,6 +4849,60 @@
         }
       }
     },
+    "ajustes.pintura": {
+      "comment": "Settings row: the painted window of the day page.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paint"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pintura"
+          }
+        }
+      }
+    },
+    "ajustes.pintura.dia": {
+      "comment": "Paint: by day.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "By day"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De día"
+          }
+        }
+      }
+    },
+    "ajustes.pintura.nunca": {
+      "comment": "Paint: never.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Never"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nunca"
+          }
+        }
+      }
+    },
     "ajustes.seccion.pro": {
       "comment": "Settings: section header in small caps.",
       "extractionState": "manual",
