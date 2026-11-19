@@ -10,6 +10,9 @@ struct PaintWindowGeometry: Hashable {
     /// The height of the window: 240 pt (120 at the accessibility sizes,
     /// set by the page).
     static let height: CGFloat = 240
+    /// From the first accessibility size: 120 pt, so the rows under the
+    /// Horizon keep their place on the screen (camino-lienzo.md).
+    static let accessibilityHeight: CGFloat = 120
     /// The band of the tide (`TideLine.band`): full density and all four
     /// tints inside, the two dark ones outside.
     static let bandHeight: CGFloat = 120

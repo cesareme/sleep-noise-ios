@@ -17,14 +17,21 @@ final class PaintStore {
     /// The layers on show, drawn for `raster.scene` at `raster.scale`.
     private(set) var raster: PaintRaster?
     private(set) var phase: PaintPhase = .absent
-    /// A raster is being drawn.
+    /// A raster is being drawn, or waits its turn to be.
     private(set) var isRendering = false
     /// Wall time of the last raster, for the diagnostics.
     private(set) var lastRenderTime: TimeInterval?
 
+    /// Seconds a change of scene waits, while a raster is on show, before
+    /// it is drawn: a finger dragging a level changes the scene many times
+    /// a second, and only where it settles is painted. The first raster
+    /// never waits.
+    static let settle: TimeInterval = 0.35
+
     @ObservationIgnored private let rasterizer: PaintRasterizer
     @ObservationIgnored private var pending: PaintRenderRequest?
     @ObservationIgnored private var pendingTask: Task<Void, Never>?
+    @ObservationIgnored private var wanted: (scene: PaintScene, scale: CGFloat)?
 
     init(rasterizer: PaintRasterizer = PaintRasterizer()) {
         self.rasterizer = rasterizer
@@ -46,27 +53,43 @@ final class PaintStore {
             cancelPending()
             return
         }
-        if let pending, pending.scene == scene, pending.scale == scale, !pending.isCancelled {
+        if let wanted, wanted.scene == scene, wanted.scale == scale, pendingTask != nil {
             return
         }
         cancelPending()
-        let request = rasterizer.request(scene, scale: scale)
-        pending = request
+        wanted = (scene, scale)
         isRendering = true
+        let delay = raster == nil ? 0 : Self.settle
         pendingTask = Task { [weak self] in
+            if delay > 0 {
+                try? await Task.sleep(for: .seconds(delay))
+            }
+            guard let self, !Task.isCancelled, let wanted = self.wanted,
+                  wanted.scene == scene, wanted.scale == scale else { return }
+            let request = self.rasterizer.request(scene, scale: scale)
+            self.pending = request
             let outcome: PaintRaster?
             do {
                 outcome = try await request.value
             } catch {
                 outcome = nil
             }
-            guard let self, self.pending === request else { return }
+            guard self.pending === request else { return }
             self.pending = nil
             self.pendingTask = nil
+            self.wanted = nil
             self.isRendering = false
             if let outcome, self.phase.exists {
                 self.raster = outcome
                 self.lastRenderTime = outcome.renderTime
+                #if DEBUG
+                print(String(
+                    format: "paint: raster %@ · %.0f ms · %d strokes · %.2f MB · main thread %@",
+                    outcome.scene.layers.map(\.sound.rawValue).joined(separator: "+"),
+                    outcome.renderTime * 1000, outcome.strokeCount,
+                    Double(outcome.bytes) / 1_048_576, outcome.renderedOnMainThread ? "yes" : "no"
+                ))
+                #endif
             }
         }
     }
@@ -85,7 +108,9 @@ final class PaintStore {
     private func cancelPending() {
         pending?.cancel()
         pending = nil
+        pendingTask?.cancel()
         pendingTask = nil
+        wanted = nil
         isRendering = false
     }
 }

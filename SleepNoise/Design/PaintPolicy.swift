@@ -28,8 +28,9 @@ enum PaintPolicy {
     ///
     /// Absent wins over everything: inside the night window, on the night
     /// page, in Night and Small Hours, with the screen's luminance reduced,
-    /// with Increase Contrast or Reduce Transparency, or with the setting
-    /// "never". Then dimmed: a sheet in front or the scene not active,
+    /// with Increase Contrast or Reduce Transparency, with the setting
+    /// "never", or with the app in the background (no raster lives behind
+    /// a dark screen). Then dimmed: a sheet in front or the scene not active,
     /// where nobody looks and the live layer does not move either. Then
     /// frozen: Reduce Motion keeps the paint and stills the live layer.
     /// Else visible.
@@ -41,7 +42,7 @@ enum PaintPolicy {
             increaseContrast: conditions.increaseContrast,
             calendar: conditions.calendar
         )
-        if hidden || conditions.isLuminanceReduced || conditions.setting == .never {
+        if hidden || conditions.isLuminanceReduced || conditions.setting == .never || conditions.inBackground {
             return .absent
         }
         if conditions.sheetPresented || !conditions.sceneActive {
@@ -51,6 +52,18 @@ enum PaintPolicy {
             return .frozen
         }
         return .visible
+    }
+
+    /// Whether an absence is the night's: the paint fades to black and does
+    /// not come back on its own (lenguaje §4: not at 07:00, not on unlock).
+    /// It comes back only when the page is given back by day (the way out
+    /// of the night page, Night ending by day). Any other absence (a
+    /// switch, the setting, the background) is lifted the moment its
+    /// condition is.
+    static func fadeIsFinal(_ conditions: PaintConditions) -> Bool {
+        conditions.nightPhase.isNight
+            || conditions.isLuminanceReduced
+            || NightWindow.contains(conditions.now, calendar: conditions.calendar)
     }
 }
 
@@ -93,5 +106,8 @@ struct PaintConditions: Equatable {
     var setting: PaintSetting = .byDay
     var sheetPresented = false
     var sceneActive = true
+    /// The app is in the background: nobody looks and the screen may be
+    /// dark. No raster then.
+    var inBackground = false
     var calendar: Calendar = .current
 }

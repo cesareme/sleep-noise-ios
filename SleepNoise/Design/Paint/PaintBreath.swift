@@ -15,6 +15,9 @@ enum PaintBreath {
     /// Birth in 2 s, death in 3 s: the global opacity follows presence.
     static let birth: TimeInterval = 2
     static let death: TimeInterval = 3
+    /// The live layer with Reduce Motion, when it has not been lit by the
+    /// sound yet: still, at the middle of its range. It never breathes.
+    static let stillOpacity: Double = (liveMin + liveMax) / 2
     /// A sheet in front or the app at the back.
     static let dimmedOpacity: Double = 0.3
     /// Paused: the paint dries. Pause is not night.

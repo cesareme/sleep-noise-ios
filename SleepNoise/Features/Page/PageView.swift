@@ -19,8 +19,31 @@ struct PageView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicType
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.isLuminanceReduced) private var luminanceReduced
+    @Environment(\.displayScale) private var displayScale
 
     @State private var arbiter = IndexArbiter()
+    /// The painted window behind the Horizon (exploration 12 §7 fase 2):
+    /// its raster, what its live layer draws at, and where the page is in
+    /// its birth, dimming and fade. See `applyPaint`.
+    @State private var paintStore = PaintStore()
+    @State private var paintPulse = PaintPulse()
+    /// The window is in the tree with a raster wanted. False means no view
+    /// and no raster, not a window at opacity 0.
+    @State private var paintExists = false
+    @State private var paintOpacity: Double = 0
+    /// The mix has sounded once on this page: before that, silence paints
+    /// nothing. Pause afterwards dries the paint but does not kill it.
+    @State private var paintBorn = false
+    /// Faded with the night (`PaintPolicy.fadeIsFinal`): it does not come
+    /// back on its own, only when the page is given back by day.
+    @State private var paintFaded = false
+    /// A fade is running: when it ends the raster goes.
+    @State private var paintFading = false
+    @State private var paintFades = 0
+    @State private var paintGeometry = PaintWindowGeometry(width: 402)
     /// The layers that have a row. Chosen when a mix loads and when the
     /// Layers sheet closes, never while a finger is on a row.
     @State private var rows: [SoundID]
@@ -80,6 +103,7 @@ struct PageView: View {
             let isLargeText = dynamicType.isAccessibilitySize
             // Read on every draw; `clock` only makes the draw happen.
             let canSell = clock >= 0 && model.canSell
+            let paint = pagePaint(width: geometry.size.width, isLargeText: isLargeText)
 
             ScrollView {
                 VStack(spacing: 0) {
@@ -89,13 +113,16 @@ struct PageView: View {
                     PageHorizon(
                         model: model,
                         guide: model.breathing,
+                        pulse: paintPulse,
                         band: metrics.tideBand,
                         // With larger text the Horizon sits right under
                         // the state line: there is no band above it.
                         showsWater: !isLargeText
                     )
+                    .paintAnchor(.horizon)
                     layerRows(shown, capacity: fits, canSell: canSell)
                         .padding(.top, metrics.airUnderHorizon)
+                        .paintAnchor(.rows)
                     let allLayers = allLayersValue(shown)
                     EditorialRow(
                         title: Localized.string("capas.todas"),
@@ -117,8 +144,16 @@ struct PageView: View {
                         sheet = .timer
                     }
                 }
+                // The paint sits behind everything the page draws, inside
+                // the scroll, around the Horizon.
+                .backgroundPreferenceValue(PaintAnchorKey.self) { anchors in
+                    paintBackground(anchors)
+                }
             }
             .scrollBounceBehavior(.basedOnSize)
+            .onChange(of: paint, initial: true) { _, next in
+                applyPaint(next)
+            }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 PageBar(model: model, timer: model.timer) {
                     sheet = .mixes
@@ -166,7 +201,25 @@ struct PageView: View {
                 naming.isPresented = false
             } else {
                 focusesName = true
+                // Night gave the page back: by day the paint may return.
+                if !model.isNightSession { paintFaded = false }
             }
+        }
+        .onChange(of: model.isNightSession) { was, now in
+            // The deliberate way out of the night page (C40): the one way
+            // the paint comes back after its night fade, and only by day.
+            if was, !now { paintFaded = false }
+        }
+        .onChange(of: model.isPlaying, initial: true) { _, playing in
+            if playing { paintBorn = true }
+        }
+        .task(id: paintFades) {
+            // The fade ran its course: the view and its raster go. A
+            // visible phase that arrived meanwhile has cleared the flag.
+            guard paintFades > 0, paintFading else { return }
+            try? await Task.sleep(for: .seconds(PaintMotion.fade(reduceMotion: paintReduceMotion)))
+            guard !Task.isCancelled, paintFading else { return }
+            dropPaint()
         }
         .onReceive(NotificationCenter.default.publisher(
             for: UIApplication.protectedDataWillBecomeUnavailableNotification
@@ -260,21 +313,26 @@ struct PageView: View {
                 .padding(.top, metrics.headerTop)
             name
                 .padding(.top, metrics.airUnderHeader)
-            StatusLine(
-                model: model,
-                timer: model.timer,
-                hasFullAccess: purchases.hasFullAccess,
-                note: showsSaved ? Localized.string("mezclas.guardada") : nil,
-                trialNote: trialNote
-            )
-            .padding(.top, Grid.unit * 2 + 2)
-            if let words = PageTrialNote.footnote(trialNote) {
-                TrialEndedNote(words: words) {
-                    purchases.dismissTrialNote()
+            VStack(alignment: .leading, spacing: 0) {
+                StatusLine(
+                    model: model,
+                    timer: model.timer,
+                    hasFullAccess: purchases.hasFullAccess,
+                    note: showsSaved ? Localized.string("mezclas.guardada") : nil,
+                    trialNote: trialNote
+                )
+                .padding(.top, Grid.unit * 2 + 2)
+                if let words = PageTrialNote.footnote(trialNote) {
+                    TrialEndedNote(words: words) {
+                        purchases.dismissTrialNote()
+                    }
+                    .padding(.top, Grid.unit * 3)
+                    .transition(.opacity)
                 }
-                .padding(.top, Grid.unit * 3)
-                .transition(.opacity)
             }
+            // The text above the Horizon: where it enters the window the
+            // veil is 90 %.
+            .paintAnchor(.text)
         }
         .animation(Motion.contentCurve, value: trialNote)
         .padding(.horizontal, Grid.margin)
@@ -475,6 +533,128 @@ struct PageView: View {
 
     private func chooseRows() {
         rows = PageLayers.rows(model.levels, capacity: capacity)
+    }
+
+    // MARK: Paint
+
+    /// Reduce Motion as the paint reads it: the system's, or the one a
+    /// staged capture forces.
+    private var paintReduceMotion: Bool {
+        #if DEBUG
+        return reduceMotion || PaintArguments.forcesReduceMotion
+        #else
+        return reduceMotion
+        #endif
+    }
+
+    /// What the paint should be for this draw. The rule is `PaintPolicy`;
+    /// the page adds its own two facts: silence before the first Play
+    /// paints nothing, and a night fade is not undone by the clock.
+    private func pagePaint(width: CGFloat, isLargeText: Bool) -> PagePaint {
+        let conditions = PaintConditions(
+            model: model,
+            isLuminanceReduced: luminanceReduced,
+            contrast: contrast,
+            reduceTransparency: reduceTransparency,
+            reduceMotion: reduceMotion,
+            sheetPresented: presentsSomething,
+            scenePhase: scenePhase
+        )
+        var phase = PaintPolicy.phase(conditions)
+        if !paintBorn || paintFaded { phase = .absent }
+        return PagePaint(
+            scene: PagePaint.scene(
+                model: model, hasFullAccess: purchases.hasFullAccess, width: width, isAccessibilitySize: isLargeText
+            ),
+            phase: phase,
+            scale: displayScale,
+            isPlaying: model.isPlaying,
+            fadeIsFinal: PaintPolicy.fadeIsFinal(conditions),
+            inBackground: conditions.inBackground
+        )
+    }
+
+    /// Acts on a change of what the paint should be: asks the store for
+    /// the raster, moves the opacity (born in 2 s, dimmed in 1.5 s, lifted
+    /// in 0.8 s), and on absence fades in 2 s (0.25 s with Reduce Motion)
+    /// and then drops view and raster. In the background the raster goes
+    /// at once. A night absence latches: see `paintFaded`.
+    private func applyPaint(_ paint: PagePaint) {
+        let reduce = paintReduceMotion
+        paintPulse.isLive = paint.phase.isLive
+        paintPulse.direction = paint.scene?.direction ?? 0
+        if let scene = paint.scene { paintGeometry = scene.geometry }
+        guard paint.phase.exists, let scene = paint.scene else {
+            if paint.fadeIsFinal { paintFaded = true }
+            guard paintExists else { return }
+            if paint.inBackground {
+                dropPaint()
+            } else if !paintFading {
+                paintFading = true
+                paintFades += 1
+                withAnimation(.easeInOut(duration: PaintMotion.fade(reduceMotion: reduce))) {
+                    paintOpacity = 0
+                }
+            }
+            return
+        }
+        let born = !paintExists || paintFading
+        paintFading = false
+        paintExists = true
+        paintStore.apply(scene: scene, phase: paint.phase, scale: paint.scale)
+        let target = PaintMotion.opacity(phase: paint.phase, isPlaying: paint.isPlaying)
+        guard target != paintOpacity else { return }
+        let duration = PaintMotion.duration(from: paintOpacity, to: target, born: born, reduceMotion: reduce)
+        withAnimation(.easeInOut(duration: duration)) {
+            paintOpacity = target
+        }
+    }
+
+    /// No view, no raster, nothing ticking.
+    private func dropPaint() {
+        paintFading = false
+        paintStore.drop()
+        paintPulse.reset()
+        paintExists = false
+        paintOpacity = 0
+    }
+
+    /// The window, behind the page's content, around the Horizon the page
+    /// has drawn. Nothing when the paint is absent.
+    @ViewBuilder
+    private func paintBackground(_ anchors: PaintAnchors) -> some View {
+        GeometryReader { proxy in
+            if paintExists, let horizon = anchors.horizon {
+                let band = proxy[horizon]
+                let window = paintGeometry
+                let top = band.midY - window.height / 2
+                PaintWindow(
+                    store: paintStore,
+                    pulse: paintPulse,
+                    geometry: window,
+                    reserves: paintReserves(anchors, in: proxy, top: top, height: window.height)
+                )
+                .opacity(paintOpacity)
+                .offset(y: top)
+            }
+        }
+    }
+
+    /// What text enters the window, from its top: the rows under the
+    /// Horizon and the state line above it.
+    private func paintReserves(
+        _ anchors: PaintAnchors, in proxy: GeometryProxy, top: CGFloat, height: CGFloat
+    ) -> PaintReserves {
+        var reserves = PaintReserves()
+        if let rows = anchors.rows {
+            let y = proxy[rows].minY - top
+            if y < height { reserves.rowsTop = max(0, y) }
+        }
+        if let text = anchors.text {
+            let y = proxy[text].maxY - top
+            if y > 0 { reserves.textBottom = min(height, y) }
+        }
+        return reserves
     }
 
     // MARK: Sheets
@@ -983,6 +1163,8 @@ private struct TimerRow: View {
 private struct PageHorizon: View {
     @ObservedObject var model: MixerModel
     @ObservedObject var guide: BreathingGuideController
+    /// The paint breathes on the Horizon's ticks and slides with its water.
+    let pulse: PaintPulse
     var band: CGFloat
     var showsWater: Bool
 
@@ -1006,21 +1188,33 @@ private struct PageHorizon: View {
         return arbiter.fingerIsDown ? Ink.text : Ink.index
     }
 
+    /// The height of the water at an instant, as the engine breathes it.
+    private func waterLevel(at date: Date) -> Float {
+        let now = guide.onGuideClock(date)
+        return TideBreath.level(at: now, anchor: guide.anchor, parameters: guide.lastPublished)
+            * (guide.scheduledWeight(now: now) ?? 1)
+    }
+
     var body: some View {
         let hasCourse = self.hasCourse
-        SoundLine(isSounding: model.isPlaying) { tau in
+        SoundLine(isSounding: model.isPlaying, reading: { tau in
             model.outputLevel(tau: tau)
-        }
+        }, pulse: pulse)
         .opacity(hasCourse ? 0 : 1)
+        .onChange(of: hasCourse, initial: true) { _, has in
+            // The paint slides with the same water, or not at all.
+            let guide = self.guide
+            pulse.tide = has ? { date in
+                let now = guide.onGuideClock(date)
+                return TideBreath.level(at: now, anchor: guide.anchor, parameters: guide.lastPublished)
+                    * (guide.scheduledWeight(now: now) ?? 1)
+            } : nil
+        }
         .overlay(alignment: .bottom) {
             if showsWater {
                 TideLine(
                     mode: hasCourse ? (sheetPresented ? .paused : .moving) : .off,
-                    level: { date in
-                        let now = guide.onGuideClock(date)
-                        return TideBreath.level(at: now, anchor: guide.anchor, parameters: guide.lastPublished)
-                            * (guide.scheduledWeight(now: now) ?? 1)
-                    },
+                    level: waterLevel(at:),
                     band: band,
                     highWaterInset: Self.highWater - TideLine.thickness / 2,
                     lowWaterInset: Self.lowWater - TideLine.thickness / 2,

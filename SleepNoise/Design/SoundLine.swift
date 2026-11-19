@@ -21,6 +21,10 @@ struct SoundLine: View {
     /// The engine has been asked to play. The line itself follows `reading`.
     var isSounding: Bool
     var reading: Reading
+    /// The painted window of the page, when there is one: it has no
+    /// timeline of its own and breathes on this one's ticks, so it shares
+    /// the Horizon's pause (camino-lienzo.md).
+    var pulse: PaintPulse?
 
     @Environment(\.indexArbiter) private var arbiter
     @Environment(\.nightPhase) private var phase
@@ -86,6 +90,7 @@ struct SoundLine: View {
         let next = reading(tau)
         let present = SoundLevelScale.presence(rms: next) > 0
         rms = next
+        pulse?.tick(rms: next, at: time)
         _ = spokenGate.update(SoundLevelScale.spoken(rms: next), at: time)
         if present {
             if !holdsClaim {
