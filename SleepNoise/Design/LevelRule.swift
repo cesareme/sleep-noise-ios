@@ -39,6 +39,9 @@ struct LevelRule: View {
     /// A drag began (true) or ended (false). The end comes after the last
     /// level is written.
     var onDragActive: ((Bool) -> Void)?
+    /// The painted rule of the texture in the left margin (Layers by day).
+    /// Nil: no rule, the row as it always was.
+    var paint: LevelRulePaint?
 
     @Environment(\.indexArbiter) private var arbiter
     @Environment(\.nightPhase) private var phase
@@ -155,6 +158,16 @@ struct LevelRule: View {
             )
             .accessibilityHidden(true)
         }
+        .overlay(alignment: .leading) {
+            // In the margin, the height of the touch area: the name does
+            // not move. A row that does not sound has a dry rule.
+            if let paint {
+                PaintRuleMark(motif: paint.motif, seed: paint.seed, level: isLocked || isWaiting ? 0 : level)
+                    .padding(.leading, PaintRule.leading)
+                    .opacity(paint.shows ? 1 : 0)
+                    .animation(.easeInOut(duration: paint.fade), value: paint.shows)
+            }
+        }
         .animation(isDragging ? Motion.fingerInCurve : Motion.fingerOutCurve, value: isDragging)
     }
 
@@ -239,6 +252,23 @@ struct LevelRule: View {
 
     /// Seconds the fine slider stays without a finger on it.
     static let sliderDismiss: TimeInterval = 5
+}
+
+/// The painted rule a level row may carry (camino-contenido.md, Layers by
+/// day): the motif and seed of its texture, whether it shows (a rule that
+/// faded with the night stays faded) and how long that fade takes.
+struct LevelRulePaint: Equatable {
+    var motif: Pigment.Motif
+    var seed: UInt32
+    var shows = true
+    var fade: TimeInterval = Motion.phase
+
+    init(sound: SoundID, shows: Bool = true, fade: TimeInterval = Motion.phase) {
+        motif = sound.motif
+        seed = PaintRule.seed(sound)
+        self.shows = shows
+        self.fade = fade
+    }
 }
 
 /// Everything that restarts the five seconds of the fine slider.

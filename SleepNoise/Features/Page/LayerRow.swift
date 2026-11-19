@@ -20,6 +20,8 @@ struct LayerRow: View {
     let hasFullAccess: Bool
     /// Read by the screen when it draws; the model checks again on the tap.
     let canSell: Bool
+    /// The painted rule of the texture, in Layers by day. The page passes none.
+    var paint: LevelRulePaint?
 
     @State private var capHits = 0
     @State private var showsCap = false
@@ -57,7 +59,8 @@ struct LayerRow: View {
                 } else {
                     model.endLevelGesture()
                 }
-            }
+            },
+            paint: paint
         )
         .task(id: capHits) {
             guard capHits > 0 else { return }
