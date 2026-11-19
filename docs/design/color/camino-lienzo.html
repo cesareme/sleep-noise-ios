@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SleepNoise · Camino B · Lienzo vivo</title>
+<style>
+:root{
+  --negro:#000000; --hoja:#1C1C1E; --grafito:#1E1D1B; --trazo:#2A2A2E; --trazo-hoja:#38383B;
+  --texto:#E8E4DC; --texto2:#9C9A96; --texto3:#6E6C68; --texto-noche:#A2A09A;
+  --indice:#F0C020; --indice-noche:#BA941C;
+  --velo-texto:.60; --velo-banda:.42;
+  --ui:-apple-system,BlinkMacSystemFont,"SF Pro","SF Pro Text","SF Pro Display","Helvetica Neue",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#0A0A0A;color:var(--texto);font-family:var(--ui);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+body{padding:40px 40px 80px}
+header.doc{max-width:900px;margin-bottom:28px}
+header.doc h1{font-size:28px;line-height:34px;font-weight:500;letter-spacing:-.005em}
+header.doc p{font-size:15px;line-height:22px;color:var(--texto2);margin-top:10px;max-width:760px}
+header.doc .ctl{margin-top:14px;font-size:13px;line-height:18px;color:var(--texto2);display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+header.doc label{display:inline-flex;gap:8px;align-items:center;cursor:pointer}
+header.doc input[type=range]{width:160px;accent-color:var(--texto)}
+header.doc input[type=checkbox]{accent-color:var(--texto)}
+.fila{display:flex;gap:56px;overflow-x:auto;padding:12px 8px 40px;align-items:flex-start;scroll-snap-type:x proximity}
+figure{flex:0 0 auto;width:402px;scroll-snap-align:start}
+figure .cab{height:92px;margin-bottom:22px}
+figure .cab h2{font-size:17px;line-height:22px;font-weight:600}
+figure .cab p{font-size:13px;line-height:18px;color:var(--texto2);margin-top:6px}
+
+/* ---------- iPhone 402 × 874 ---------- */
+.phone{position:relative;width:402px;height:874px;background:var(--negro);color:var(--texto);overflow:hidden;border-radius:55px;box-shadow:0 0 0 9px #161616,0 0 0 10px #262626;font-size:17px;line-height:22px}
+.lienzo{position:absolute;left:0;top:0;width:402px;height:874px;will-change:transform}
+.lienzo canvas{position:absolute;left:0;top:0;width:402px;height:874px}
+.lienzo canvas.viva{opacity:.67}
+/* tras el jurado: la pintura vive solo en la ventana de 240 pt (172 a 412) centrada en el horizonte; fuera, negro puro y texto2 conservado.
+   Velo: 75 % en los bordes de la ventana, 35 % en la banda, franja de reserva de 24 pt (280 a 304) al 80 % bajo el Índice, 90 % bajo las filas (desde 312). */
+.velo{position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(to bottom,
+    rgba(0,0,0,1) 0, rgba(0,0,0,1) 172px,
+    rgba(0,0,0,.75) 172px, rgba(0,0,0,var(--velo-banda)) 200px, rgba(0,0,0,var(--velo-banda)) 280px,
+    rgba(0,0,0,.80) 280px, rgba(0,0,0,.80) 304px,
+    rgba(0,0,0,var(--velo-banda)) 304px, rgba(0,0,0,var(--velo-banda)) 312px,
+    rgba(0,0,0,.90) 312px, rgba(0,0,0,.90) 412px,
+    rgba(0,0,0,1) 412px, rgba(0,0,0,1) 100%)}
+.phone.pausa .lienzo{opacity:.30}
+.phone.pausa .lienzo canvas.viva{opacity:.45}
+.ui{position:absolute;inset:0}
+.sbar{position:absolute;top:16px;left:0;right:0;height:22px;font-size:17px;font-weight:600}
+.sbar .t{position:absolute;left:46px;top:0}
+.sbar .r{position:absolute;right:30px;top:5px;display:flex;gap:6px;align-items:center}
+.sbar .sig{width:18px;height:11px;background:
+  linear-gradient(currentColor,currentColor) 0 100%/3px 4px no-repeat,
+  linear-gradient(currentColor,currentColor) 5px 100%/3px 6px no-repeat,
+  linear-gradient(currentColor,currentColor) 10px 100%/3px 8px no-repeat,
+  linear-gradient(currentColor,currentColor) 15px 100%/3px 11px no-repeat}
+.sbar .bat{width:25px;height:12px;border:1px solid currentColor;border-radius:3px;position:relative;opacity:.9}
+.sbar .bat::after{content:"";position:absolute;left:1px;top:1px;bottom:1px;width:16px;background:currentColor;border-radius:1px}
+.sc{position:absolute;left:20px;top:64px;font-size:13px;line-height:18px;font-weight:500;letter-spacing:.02em;font-variant-caps:small-caps}
+.nombre{position:absolute;left:20px;right:20px;top:100px;font-size:28px;line-height:34px;font-weight:500;letter-spacing:-.005em;white-space:nowrap}
+.estado{position:absolute;left:20px;top:144px;font-size:15px;line-height:20px}
+.estado2{position:absolute;left:20px;top:164px;font-size:15px;line-height:20px}
+.inhala{position:absolute;right:20px;top:144px;font-size:15px;line-height:20px}
+.hz{position:absolute;left:20px;right:20px;top:291px;height:2px;background:var(--indice);box-shadow:0 3px 0 var(--negro),0 -3px 0 var(--negro)}
+.hz.hair{top:291.75px;height:.5px;background:var(--trazo);box-shadow:none}
+.hz.noche{background:var(--texto-noche);box-shadow:none}
+.marca{position:absolute;left:20px;right:20px;height:.5px;background:var(--texto3)}
+.agua{position:absolute;left:20px;right:20px;top:242px;height:2px;background:var(--indice);box-shadow:0 3px 0 var(--negro),0 -3px 0 var(--negro)}
+.capa{position:absolute;left:20px;right:20px;height:80px}
+.capa .n{position:absolute;left:0;top:12px;font-size:17px;line-height:22px;font-weight:600;white-space:nowrap}
+.capa .n .s{font-size:15px;font-weight:400}
+.capa .v{position:absolute;right:0;top:14px;font-size:13px;line-height:18px;font-weight:500}
+.capa .lv{position:absolute;left:0;right:0;top:44px;height:1px;background:var(--texto3)}
+.capa .lv i{position:absolute;left:0;top:-.5px;height:2px;background:currentColor}
+.capa.cero .v{display:none}
+.opc{position:absolute;left:20px;right:20px}
+.opc::before{content:"";position:absolute;left:0;right:0;top:0;height:.5px;background:var(--trazo)}
+.opc .t{position:absolute;left:0;top:17px;font-size:17px;line-height:22px;font-weight:600}
+.opc .sub{position:absolute;left:0;top:41px;font-size:13px;line-height:18px;font-weight:500;letter-spacing:.02em;font-variant-caps:small-caps}
+.opc .sub2{position:absolute;left:0;top:41px;font-size:15px;line-height:20px}
+.opc .val{position:absolute;right:0;top:19px;font-size:15px;line-height:20px}
+.tg{position:absolute;right:0;top:20px;width:51px;height:31px;border-radius:16px;background:#39393D}
+.tg::after{content:"";position:absolute;left:2px;top:2px;width:27px;height:27px;border-radius:50%;background:#fff}
+.tg.on{background:var(--texto)}
+.tg.on::after{left:22px;background:#1C1C1E}
+.bar{position:absolute;left:0;right:0;bottom:0;height:83px;background:var(--negro)} /* sin material: la ventana termina en 412 y la barra va sobre negro */
+.bar::before{content:"";position:absolute;left:0;right:0;top:0;height:.5px;background:var(--trazo)}
+.bar .l,.bar .r{position:absolute;top:13.5px;font-size:17px;line-height:22px;font-weight:500}
+.bar .l{left:20px}.bar .r{right:20px}
+.disc{position:absolute;left:50%;top:2.5px;transform:translateX(-50%);width:44px;height:44px;border-radius:50%;background:var(--grafito);box-shadow:inset 0 1px 0 rgba(0,0,0,.6)}
+.disc .g{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.g.pause{width:14px;height:16px;background:linear-gradient(90deg,var(--texto) 0 5px,transparent 5px 9px,var(--texto) 9px)}
+.g.play{width:0;height:0;border-left:15px solid var(--texto);border-top:9px solid transparent;border-bottom:9px solid transparent;margin-left:2px}
+.hairline{position:absolute;left:20px;right:20px;height:.5px;background:var(--trazo)}
+
+/* noche */
+.phone.noche{color:var(--texto-noche)}
+.phone.noche .capa .n .s,.phone.noche .capa .v,.phone.noche .estado,.phone.noche .opc .val{font-weight:500}
+.phone.noche .tg.on{background:var(--texto-noche)}
+
+/* capas */
+.sheet{position:absolute;left:0;right:0;top:10px;bottom:0;background:var(--negro);border-radius:10px 10px 0 0;overflow:hidden}
+.sheet .grab{position:absolute;left:50%;top:5px;width:36px;height:5px;margin-left:-18px;border-radius:3px;background:var(--texto3)}
+.sheet h3{position:absolute;left:20px;top:30px;font-size:22px;line-height:28px;font-weight:600}
+.sheet .sec{position:absolute;left:20px;font-size:13px;line-height:18px;font-weight:500;letter-spacing:.02em;font-variant-caps:small-caps}
+
+/* captura de tienda */
+.store{background:#000}
+.store .h{position:absolute;left:32px;right:32px;top:92px;font-size:40px;line-height:46px;font-weight:500;letter-spacing:-.01em}
+.store .sub{position:absolute;left:32px;right:32px;top:196px;font-size:17px;line-height:24px;color:var(--texto2)}
+.store .mini{position:absolute;left:50%;top:300px;transform:translateX(-50%) scale(.64);transform-origin:top center}
+.store .mini .phone{box-shadow:0 0 0 9px #161616,0 0 0 10px #262626}
+</style>
+</head>
+<body>
+<header class="doc">
+  <h1>Camino B · Lienzo vivo</h1>
+  <p>La página de día lleva una pintura generada en el iPhone de la mezcla que suena, en una ventana de 240 pt alrededor del horizonte: cada capa activa aporta su motivo y su color en proporción a su nivel. La pincelada respira con el RMS real (solo en opacidad) y se desliza con la Marea; a las 21:00 o al entrar en Noche se funde a negro y no vuelve sola. Nombre, filas y barra siguen sobre negro; Índice y horizonte van encima con halo seco. Todo lo que se ve aquí se dibuja con código (canvas) al abrir la página; semilla fija por mezcla y día; nada incrustado.</p>
+  <div class="ctl">
+    <label><input type="checkbox" id="mov" checked> Movimiento simulado (RMS a 20 Hz y Marea a 6 por minuto)</label>
+    <label>Nivel maestro <input type="range" id="lvl" min="0" max="100" value="55"> <span id="lvlv">0,55</span></label>
+    <span>Pintura solo en la ventana 172–412 · velo 42 % en la banda 184–312, 80 % en la reserva del horizonte, 90 % bajo las filas · fuera, negro y texto2</span>
+  </div>
+</header>
+
+<div class="fila" id="fila"></div>
+
+<script>
+// ---------- Paleta Pigmento (lenguaje-pictorico.md §1; la misma de paleta.html) ----------
+const PAL = {
+ blanco:{n:"Blanco",s:"siseo parejo",c:["#E3E0D8","#A9B8C6","#5E6B78"]},
+ rosa:{n:"Rosa",s:"suave y equilibrado",c:["#F3D2B8","#E8A598","#C77B8A","#7A4A5E"]},
+ marron:{n:"Marrón",s:"retumbo grave",c:["#D9A66B","#B07A4A","#7A4E2E","#4A3222"]},
+ lluvia:{n:"Lluvia",s:"fina, constante",c:["#B9CDD9","#7FA7C9","#4A6B8A","#2E4A5E"]},
+ ventilador:{n:"Ventilador",s:"lejano, constante",c:["#D7DBE0","#B8BFC9","#7C8794","#4F5862"]},
+ oceano:{n:"Océano",s:"oleaje lento",c:["#CFE7E0","#3FA7B0","#1F6F8B","#0F3C56"]},
+ trueno:{n:"Trueno",s:"lejano, sin rayos cerca",c:["#C9C4E8","#8E7FB8","#6A5A8E","#3A3250"]},
+ hoguera:{n:"Hoguera",s:"brasa y chasquido",c:["#FFB15C","#F08A24","#D9442B","#5A2A14"]},
+ arroyo:{n:"Arroyo",s:"agua entre piedras",c:["#BFE3C8","#5FB08A","#2F7A5A","#1E4A3A"]},
+ viento:{n:"Viento",s:"largo, sin ráfagas",c:["#E8E0C4","#C9C2A8","#8FA07A","#5F6B55"]},
+ cabina:{n:"Cabina",s:"zumbido grave",c:["#D6CFC8","#B9A9A0","#8A7F96","#5B5566"]},
+};
+const CAMPOS = new Set(["blanco","rosa","marron","cabina","ventilador"]); // se pintan primero: son el fondo
+// pt² por listón a nivel 100 (misma densidad que paleta.html) y pesos de tinta
+const DENS = {blanco:32,rosa:70,marron:160,lluvia:55,ventilador:60,oceano:48,trueno:110,hoguera:120,arroyo:120,viento:70,cabina:220};
+const PESOS = {blanco:[1,4,6],rosa:[1,3,5,5],marron:[1,3,5,4],lluvia:[1,3,5,6],ventilador:[1,3,5,6],oceano:[1,3,6,5],trueno:[0,1,4,9],hoguera:[2,3,3,1],arroyo:[1,3,5,3],viento:[1,4,5,3],cabina:[1,3,6,4]};
+
+// ---------- utilidades ----------
+function rng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;}}
+function noise2(R){const g=[];for(let i=0;i<64*64;i++)g.push(R());const f=t=>t*t*(3-2*t);
+  return(x,y)=>{const xi=Math.floor(x)&63,yi=Math.floor(y)&63,xf=x-Math.floor(x),yf=y-Math.floor(y);
+    const a=g[yi*64+xi],b=g[yi*64+((xi+1)&63)],c=g[((yi+1)&63)*64+xi],d=g[((yi+1)&63)*64+((xi+1)&63)];
+    const u=f(xf),v=f(yf);return (a*(1-u)+b*u)*(1-v)+(c*(1-u)+d*u)*v;}}
+function hex2rgb(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]}
+function rgba(h,a){const[r,g,b]=hex2rgb(h);return`rgba(${r},${g},${b},${a})`}
+function mix(h1,h2,t){const a=hex2rgb(h1),b=hex2rgb(h2);return`rgb(${a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(",")})`}
+function pick(R,wts){let s=0;const tot=wts.reduce((a,b)=>a+b,0),r=R()*tot;for(let i=0;i<wts.length;i++){s+=wts[i];if(r<s)return i;}return wts.length-1;}
+function hash(str){let h=2166136261;for(const ch of str){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
+
+// Listón: curva central + perfil en huso + empaste por gradiente de parada doble, perpendicular al trazo
+function ribbon(ctx,pts,w,light,base,alpha,taper){
+  if(pts.length<2)return;
+  const L=[],Rr=[];
+  for(let i=0;i<pts.length;i++){
+    const p=pts[i],q=pts[Math.min(i+1,pts.length-1)],o=pts[Math.max(i-1,0)];
+    let dx=q.x-o.x,dy=q.y-o.y;const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;
+    const t=i/(pts.length-1),prof=taper?(1-0.78*t):0.35+0.65*Math.sin(Math.PI*Math.min(1,t*1.25))*(1-0.25*t);
+    const hw=w*prof*0.5;L.push({x:p.x-dy*hw,y:p.y+dx*hw});Rr.push({x:p.x+dy*hw,y:p.y-dx*hw});
+  }
+  const a=pts[0],b=pts[pts.length-1];const nx=-(b.y-a.y),ny=b.x-a.x,nl=Math.hypot(nx,ny)||1;
+  const m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+  const g=ctx.createLinearGradient(m.x-nx/nl*w/2,m.y-ny/nl*w/2,m.x+nx/nl*w/2,m.y+ny/nl*w/2);
+  g.addColorStop(0,rgba(light,alpha));g.addColorStop(0.38,rgba(light,alpha));g.addColorStop(0.38,rgba(base,alpha));
+  g.addColorStop(0.88,rgba(base,alpha));g.addColorStop(0.88,`rgba(0,0,0,${alpha*0.35})`);g.addColorStop(1,`rgba(0,0,0,${alpha*0.35})`);
+  ctx.beginPath();ctx.moveTo(L[0].x,L[0].y);for(const p of L)ctx.lineTo(p.x,p.y);for(let i=Rr.length-1;i>=0;i--)ctx.lineTo(Rr[i].x,Rr[i].y);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+}
+function grain(ctx,W,H,R,alpha){for(let i=0;i<W*H/40;i++){ctx.fillStyle=`rgba(${R()>.5?255:0},${R()>.5?255:0},${R()>.5?255:0},${alpha})`;ctx.fillRect(R()*W,R()*H,1,1);}}
+function strokeNoise(x,y,ang,len,steps,R,dev){const pts=[{x,y}];let a=ang;for(let i=1;i<=steps;i++){a+=(R()-.5)*dev;x+=Math.cos(a)*len/steps;y+=Math.sin(a)*len/steps;pts.push({x,y});}return pts;}
+function strokeFlow(x,y,len,steps,field,scale,drift){const pts=[{x,y}];let prev=null;for(let i=1;i<=steps;i++){const e=0.5;
+  const dzdx=(field(x/scale+e/scale,y/scale)-field(x/scale-e/scale,y/scale))/(2*e),dzdy=(field(x/scale,y/scale+e/scale)-field(x/scale,y/scale-e/scale))/(2*e);
+  let a=Math.atan2(-dzdx,dzdy);a=Math.atan2(Math.sin(a)*0.55,Math.cos(a)*0.55+1.0)+drift;if(prev!==null){let d=a-prev;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;a=prev+Math.max(-0.3,Math.min(0.3,d));}prev=a;
+  x+=Math.cos(a)*len/steps;y+=Math.sin(a)*len/steps;pts.push({x,y});}return pts;}
+
+// ---------- generadores de un listón por motivo (devuelven puntos, grosor y alfa) ----------
+// band = {top,bottom}: la hoguera nace bajo la banda y sube hacia ella; el trueno pone su grieta en la banda
+function makeGen(key,R,W,H,band){
+  const f=noise2(R),g=noise2(R);const F=(x,y)=>f(x,y)+.5*g(x*2,y*2);
+  const cx=W*1.25,cy=H*.95;
+  return {
+    blanco:()=>({pts:strokeNoise(R()*W,R()*H,R()*6.28,6+R()*4,3,R,.4),w:3+R(),a:.85}),
+    rosa:()=>({pts:strokeNoise(R()*W,R()*H,(R()-.5)*.7,10+R()*8,4,R,.5),w:4+R()*2,a:.9}),
+    marron:()=>({pts:strokeNoise(R()*W-10,R()*H,(R()-.5)*.5,22+R()*18,6,R,.3),w:7+R()*3,a:.9}),
+    lluvia:()=>({pts:strokeNoise(R()*(W+40)-20,R()*(H+40)-20,72*Math.PI/180+(R()-.5)*.2,18+R()*16,6,R,.25),w:2+R(),a:.85}),
+    ventilador:()=>{const r=60+R()*(W*1.4),a0=Math.PI*.95+R()*Math.PI*.55,da=(24+R()*24)/r;const pts=[];for(let s=0;s<=8;s++){const a=a0+da*s/8+(R()-.5)*.015;pts.push({x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r});}return{pts,w:3+R()*2,a:.85}},
+    oceano:()=>({pts:strokeFlow(R()*W,R()*H,18+R()*18,8,F,70,0.12),w:5+R()*3,a:.9}),
+    trueno:()=>({pts:strokeNoise(R()*W-10,R()*H,(R()-.5)*.3,16+R()*14,5,R,.3),w:5+R()*2,a:.9}),
+    // hoguera (jurado): lenguas anchas en la base (8 a 14 pt) que se estrechan arriba, nacen bajo la banda y suben hacia ella;
+    // llama clara solo en un núcleo central del 40 % del ancho, rojo brasa en los bordes, madera quemada fuera; un 30 % de lenguas negras
+    hoguera:()=>{const x0=R()*W,y0=band.top+40+R()*(band.bottom-band.top+120),d=Math.abs(x0-W/2)/(W*.5);
+      const len=(30+R()*60)*(d<.4?1:.7);const black=R()<.30;
+      const k=d<.4?(R()<.55?1:0):d<.7?(R()<.6?2:1):(R()<.7?3:2);
+      return{pts:strokeNoise(x0,y0,-Math.PI/2+(R()-.5)*.5,len,8,R,.45),w:black?6+R()*6:8+R()*6,a:.92,k,black,taper:true}},
+    arroyo:()=>{const y0=R()*H,x0=R()*W-40,len=40+R()*50,ph=R()*6.28,amp=3+R()*5;const pts=[];for(let s=0;s<=10;s++)pts.push({x:x0+len*s/10,y:y0+Math.sin(ph+s*1.9)*amp});return{pts,w:3+R()*2,a:.9}},
+    viento:()=>({pts:strokeNoise(R()*W-60,R()*H,(R()-.5)*.35,60+R()*80,10,R,.12),w:1.5+R(),a:.8}),
+    cabina:()=>({pts:strokeNoise(R()*W-80,R()*H,0,80+R()*120,8,R,.05),w:6+R()*6,a:.85}),
+  }[key];
+}
+
+// ---------- la pintura de una mezcla ----------
+// layers: [{key, level 0-100}] ; opts: {seed, band:{top,bottom}|null, darkOnly, liveShare}
+// Dibuja dos capas: seca (82 % de los listones) y viva (18 %, los que respiran con el RMS).
+// Regla de tintas: fuera de la banda solo las dos tintas oscuras de cada paleta (k ≥ 2);
+// dentro de la banda, las cuatro, recortadas a la banda con clip.
+// Tras el jurado: la pintura existe solo en la ventana WIN (240 pt centrada en el horizonte); densidad 100 % en la banda,
+// cayendo al 25 % a 120 pt de ella; fuera de la banda el fondo es negro (la tinta base al 55 % solo dentro de la banda).
+const WIN={top:172,bottom:412};
+function paintMix(seca,viva,layers,opts){
+  const W=402,H=874,dpr=2;
+  const ctxs=[seca,viva].map(cv=>{cv.width=W*dpr;cv.height=H*dpr;const c=cv.getContext("2d");c.scale(dpr,dpr);return c;});
+  const R=rng(opts.seed);
+  const active=layers.filter(l=>l.level>0);
+  const total=active.reduce((a,l)=>a+l.level,0)||1;
+  const dom=active.slice().sort((a,b)=>b.level-a.level)[0];
+  const domc=PAL[dom.key].c;
+  const win=opts.band?WIN:{top:0,bottom:H};
+  ctxs.forEach(c=>{c.save();c.beginPath();c.rect(0,win.top,W,win.bottom-win.top);c.clip();});
+  // fondo: la tinta más oscura de la capa dominante, mezclada con negro, solo en la banda y desvaneciéndose hacia los bordes de la ventana
+  if(opts.band){const g=ctxs[0].createLinearGradient(0,win.top,0,win.bottom);g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(.5,rgba(domc[domc.length-1],.55));g.addColorStop(1,"rgba(0,0,0,0)");ctxs[0].fillStyle=g;}
+  else ctxs[0].fillStyle=mix(domc[domc.length-1],"#000000",.45);
+  ctxs[0].fillRect(0,win.top,W,win.bottom-win.top);grain(ctxs[0],W,H,R,.06);
+  const keepAt=y=>{if(!opts.band)return 1;const b=opts.band,d=y<b.top?b.top-y:y>b.bottom?y-b.bottom:0;return Math.max(.25,1-.75*d/120);};
+  // orden: campos primero (fondo), luego camas (figura); dentro, por nivel ascendente
+  const order=active.slice().sort((a,b)=>(CAMPOS.has(a.key)?0:1)-(CAMPOS.has(b.key)?0:1)||a.level-b.level);
+  const band=opts.band;
+  const strokes=[];
+  for(const l of order){
+    const share=l.level/total;
+    const n=Math.round((W*H/DENS[l.key])*share*1.15);
+    const gen=makeGen(l.key,R,W,H,band||{top:184,bottom:312});
+    const c=PAL[l.key].c,wts=PESOS[l.key];
+    for(let i=0;i<n;i++){
+      const s=gen();
+      let k=s.k!==undefined?s.k:pick(R,wts);
+      const y=s.pts[0].y;if(y<win.top-20||y>win.bottom+20)continue;if(R()>keepAt(y))continue;
+      strokes.push({key:l.key,pts:s.pts,w:s.w,a:s.a,k,c,black:!!s.black,taper:!!s.taper,live:!s.black&&R()<(opts.liveShare??.18)});
+    }
+    if(l.key==="trueno"&&band){ // una sola grieta, fija por semilla, en la banda
+      let x=W*.35+R()*W*.3,y=band.top-6;const pts=[{x,y}];for(let s=0;s<5;s++){x+=(R()-.5)*34;y+=(band.bottom-band.top)*.22+R()*8;pts.push({x,y});}
+      strokes.push({key:"trueno",pts,w:3.5,a:.95,k:1,c:PAL.trueno.c,live:false,grieta:true});
+    }
+  }
+  const kmin=c=>Math.min(2,c.length-1);
+  const touches=(pts)=>band&&pts.some(p=>p.y>=band.top-8&&p.y<=band.bottom+8);
+  // pasada 1: toda la página, solo tintas oscuras
+  for(const s of strokes){
+    if(s.grieta)continue;
+    if(s.black){ribbon(ctxs[0],s.pts,s.w,"#000000","#000000",.85,true);continue;}
+    const km=kmin(s.c),k=Math.max(km,s.k),light=s.c[Math.max(km,k-1)],base=s.c[k];
+    ribbon(ctxs[s.live?1:0],s.pts,s.w,light,base,s.a,s.taper);
+  }
+  // pasada 2: la banda, con las cuatro tintas, recortada
+  if(band&&!opts.darkOnly){
+    // se pinta en un lienzo aparte y se enmascara con una pluma de 20 pt arriba y abajo (destination-in)
+    const offs=[0,1].map(()=>{const cv=document.createElement("canvas");cv.width=W*dpr;cv.height=H*dpr;const c=cv.getContext("2d");c.scale(dpr,dpr);return {cv,c};});
+    for(const s of strokes){
+      if(!touches(s.pts))continue;
+      if(s.black){ribbon(offs[0].c,s.pts,s.w,"#000000","#000000",.85,true);continue;}
+      const light=s.c[Math.max(0,s.k-1)],base=s.c[s.k];
+      ribbon(offs[s.live?1:0].c,s.pts,s.w,light,base,s.a,s.taper);
+    }
+    for(let i=0;i<2;i++){const c=offs[i].c;c.globalCompositeOperation="destination-in";
+      const m=c.createLinearGradient(0,band.top-14,0,band.bottom+14);
+      m.addColorStop(0,"rgba(0,0,0,0)");m.addColorStop(26/(band.bottom-band.top+28),"rgba(0,0,0,1)");m.addColorStop(1-26/(band.bottom-band.top+28),"rgba(0,0,0,1)");m.addColorStop(1,"rgba(0,0,0,0)");
+      c.fillStyle=m;c.fillRect(0,band.top-14,W,band.bottom-band.top+28);c.globalCompositeOperation="source-over";
+      ctxs[i].drawImage(offs[i].cv,0,0,W,H);}
+  }
+  // franja de reserva de 24 pt centrada en el horizonte: sin tintas de luz (se repinta con las dos tintas oscuras del motivo dominante al 40 %)
+  if(opts.band){const y=(opts.band.top+opts.band.bottom)/2+44;ctxs[0].fillStyle=rgba(domc[domc.length-1],.4);ctxs[0].fillRect(0,y-12,W,24);}
+  ctxs.forEach(c=>c.restore());
+  return strokes.length;
+}
+
+// ---------- pantallas ----------
+const DAY=2026*1000+323; // semilla por (mezcla, día del año)
+const MIX = {
+  rosaLluvia:{name:"Rosa y lluvia",layers:[{key:"rosa",level:50},{key:"lluvia",level:30}],seed:hash("Rosa y lluvia")^DAY},
+  marronHoguera:{name:"Marrón y hoguera",layers:[{key:"marron",level:40},{key:"hoguera",level:62}],seed:hash("Marrón y hoguera")^DAY},
+};
+const BAND={top:184,bottom:312};
+
+function sbar(t){return `<div class="sbar"><span class="t">${t}</span><span class="r"><i class="sig"></i><i class="bat"></i></span></div>`;}
+function capaRow(top,key,level,sub){const p=PAL[key];return `<div class="capa ${level?"":"cero"}" style="top:${top}px"><div class="n">${p.n} <span class="s">· ${sub||p.s}</span></div><div class="v">${level}</div><div class="lv"><i style="width:${level}%"></i></div></div>`;}
+function barra(playing){return `<div class="bar"><span class="l">Mezclas</span><div class="disc"><i class="g ${playing?"pause":"play"}"></i></div><span class="r">Noche</span></div>`;}
+
+function pageUI(o){
+  const rows=o.mix.layers.map((l,i)=>capaRow(320+i*80,l.key,l.level)).join("");
+  const hz=o.tide?`<div class="marca" style="top:184px"></div><div class="marca" style="top:304px"></div><div class="agua"></div>`
+          :`<div class="hz ${o.paused?"hair":""} ${o.night?"noche":""}"></div>`;
+  const marea=o.tide?`<div class="sub">guiando · 6 por minuto</div>`:``;
+  return `${sbar(o.time)}
+  <div class="sc">prueba · quedan 5 noches</div>
+  <div class="nombre">${o.mix.name}</div>
+  <div class="estado">${o.status}</div>
+  ${o.tide?`<div class="inhala">inhala</div>`:``}
+  ${hz}${rows}
+  <div class="opc" style="top:574px;height:88px"><div class="t">Todas las capas</div></div>
+  <div class="opc" style="top:662px;height:72px"><div class="t">Marea respiratoria</div>${marea}<div class="tg ${o.tide?"on":""}"></div></div>
+  <div class="opc" style="top:734px;height:57px"><div class="t">Temporizador</div><div class="val">Hasta dormirme · 45 min</div></div>
+  ${barra(!o.paused)}`;
+}
+function capasUI(o){
+  const col=["blanco","rosa","marron"],cam=["lluvia","ventilador","oceano","trueno","hoguera"];
+  const lv=k=>(o.mix.layers.find(l=>l.key===k)||{level:0}).level;
+  let h=`${sbar(o.time)}<div class="sheet"><div class="grab"></div><h3>Capas</h3><div class="hairline" style="top:68px"></div><div class="sec" style="top:100px">colores</div>`;
+  col.forEach((k,i)=>h+=capaRow(124+i*80,k,lv(k)));
+  h+=`<div class="sec" style="top:396px">camas</div>`;
+  cam.forEach((k,i)=>h+=capaRow(420+i*80,k,lv(k)));
+  h+=barra(true)+`</div>`;
+  return h;
+}
+function phone(cls,inner,withCanvas){
+  return `<div class="phone ${cls}">${withCanvas?`<div class="lienzo"><canvas class="seca"></canvas><canvas class="viva"></canvas></div><div class="velo"></div>`:""}<div class="ui">${inner}</div></div>`;
+}
+
+const SCREENS=[
+ {id:"dia-rosa",title:"1 · Día, sonando · Rosa y lluvia, con Marea",
+  intent:"El campo rosa es el fondo (nivel 50) y la lluvia cae encima en oblicuo (nivel 30), solo en la ventana de 240 pt alrededor del horizonte: densidad plena en la banda y al 25 % a 120 pt de ella. Nombre, filas y barra sobre negro puro; texto2 se conserva. La línea de agua es el horizonte y la ventana se desliza ±6 pt con la respiración.",
+  cls:"",mix:MIX.rosaLluvia,ui:o=>pageUI({...o,time:"18:14",status:"Sonando · se funde a las 19:42",tide:true}),canvas:true,band:BAND,live:true,tide:true,dir:72},
+ {id:"dia-hoguera",title:"2 · Día, sonando · Marrón y hoguera",
+  intent:"Lenguas anchas en la base que se estrechan al subir, con negro entre ellas y un núcleo de llama clara en el centro; rojo brasa en los bordes y madera quemada fuera. La reserva de 24 pt bajo el Índice no lleva tintas de luz y el halo seco es de 3 pt. El 18 % de los trazos respira con el RMS maestro, solo en opacidad.",
+  cls:"",mix:MIX.marronHoguera,ui:o=>pageUI({...o,time:"18:20",status:"Sonando · se funde a las 19:48"}),canvas:true,band:BAND,live:true},
+ {id:"pausa",title:"3 · Día, en pausa · la pintura se seca al 30 %",
+  intent:"Sin sonido no hay color: el horizonte vuelve a hairline y la pintura baja a opacidad 0,30 en 1,5 s, sin moverse. No se funde a negro: pausa no es noche. Lo mismo hace una hoja encima (atenuar, vuelve en 800 ms); fundir a negro sin vuelta es solo de Noche, las 21:00 y luminancia reducida.",
+  cls:"pausa",mix:MIX.marronHoguera,ui:o=>pageUI({...o,time:"18:31",status:"En pausa",paused:true}),canvas:true,band:BAND,live:false},
+ {id:"noche",title:"4 · Página nocturna · negro, como hoy",
+  intent:"Al entrar en Noche, al caer las 21:00 o al volver de Noche la pintura se funde a negro en 3 s (250 ms con Reducir movimiento) y no vuelve sola. Una tinta, texto-noche; horizonte 2 pt sin color; nada ilumina el cuarto.",
+  cls:"noche",mix:MIX.rosaLluvia,ui:o=>pageUI({...o,time:"2:14",status:"Sonando · se funde a las 3:42",night:true}),canvas:false},
+ {id:"capas",title:"5 · Capas de día · sin pintura",
+  intent:"Texto sobre pintura, nunca (lenguaje §5): la hoja Capas es toda texto, así que vuelve al negro de Grafito. La pintura de la página queda detrás, atenuada al 30 % (hoja encima: atenuar, no fundir) y vuelve en 800 ms al cerrar. Si el dueño quiere color aquí, el injerto es la regla vertical de 4 pt del camino A.",
+  cls:"capas",mix:MIX.rosaLluvia,ui:o=>capasUI({...o,time:"18:15"}),canvas:false},
+ {id:"tienda",title:"6 · Captura de tienda (1 de 6)",
+  intent:"Fondo negro, titular común a los tres caminos, la página real sonando. Sin nombrar estilos ni autores, sin contar texturas: se describe lo que se ve. Es la única superficie donde la pintura se usa para contar la app.",
+  store:true},
+];
+
+function build(){
+  const fila=document.getElementById("fila");
+  for(const s of SCREENS){
+    const fig=document.createElement("figure");
+    let body;
+    if(s.store){
+      const inner=`<div class="h">Lo que suena, se pinta.</div><div class="sub">Una pintura distinta cada día, generada en tu iPhone con el sonido. Sin imágenes, sin red. De noche, nada.</div>
+        <div class="mini">${phone("",pageUI({mix:MIX.rosaLluvia,time:"18:14",status:"Sonando · se funde a las 19:42",tide:true}),true)}</div>`;
+      body=`<div class="phone store" data-id="${s.id}">${inner}</div>`;
+    }else{
+      body=phone(s.cls,s.ui({mix:s.mix}),s.canvas).replace('class="phone',`data-id="${s.id}" class="phone`);
+    }
+    fig.innerHTML=`<div class="cab"><h2>${s.title}</h2><p>${s.intent}</p></div>${body}`;
+    fila.appendChild(fig);
+  }
+  // pintar
+  const t0=performance.now();let n=0;
+  for(const s of SCREENS){
+    const root=document.querySelector(`[data-id="${s.id}"]`);
+    const cfg=s.store?{mix:MIX.rosaLluvia,band:BAND,live:true,darkOnly:false}:s;
+    if(!s.store&&!s.canvas)continue;
+    root.querySelectorAll(".lienzo").forEach(l=>{
+      n+=paintMix(l.querySelector(".seca"),l.querySelector(".viva"),cfg.mix.layers,{seed:cfg.mix.seed,band:cfg.band,darkOnly:!!cfg.darkOnly});
+    });
+  }
+  console.log(`listones: ${n} en ${(performance.now()-t0).toFixed(0)} ms`);
+}
+build();
+
+// ---------- movimiento simulado: RMS → opacidad de la capa viva; Marea → deslizamiento del lienzo ----------
+const mov=document.getElementById("mov"),lvl=document.getElementById("lvl"),lvlv=document.getElementById("lvlv");
+if(matchMedia("(prefers-reduced-motion: reduce)").matches)mov.checked=false;
+let smooth=.55;
+function breath(t){const ph=(t%10)/10;return ph<.4?(1-Math.cos(Math.PI*ph/.4))/2:(1+Math.cos(Math.PI*(ph-.4)/.6))/2;}
+setInterval(()=>{
+  const t=performance.now()/1000;
+  const target=lvl.value/100;lvlv.textContent=target.toFixed(2).replace(".",",");
+  // RMS simulado: nivel maestro más un vaivén lento; suavizado τ 500 ms a 20 Hz
+  const rms=mov.checked?Math.max(0,Math.min(1,target+.14*Math.sin(t/1.7)+.06*Math.sin(t/.41))):target;
+  smooth+=(rms-smooth)*(1-Math.exp(-0.05/0.5));
+  const op=(.45+.4*smooth).toFixed(3);
+  for(const s of SCREENS){
+    if(s.store&&!mov.checked)continue;
+    const live=s.store?true:s.live;if(!live)continue;
+    document.querySelectorAll(`[data-id="${s.id}"] .lienzo`).forEach(l=>{
+      l.querySelector(".viva").style.opacity=op;
+      const tide=s.store?true:s.tide;
+      if(tide&&mov.checked){const b=breath(t),d=(72*Math.PI/180),k=(b-.5)*12;l.style.transform=`translate(${(Math.cos(d)*k).toFixed(2)}px,${(Math.sin(d)*k).toFixed(2)}px)`;
+        const agua=l.parentElement.querySelector(".agua");if(agua)agua.style.top=(292-100*b).toFixed(1)+"px";}
+      else l.style.transform="";
+    });
+  }
+},50);
+</script>
+</body>
+</html>

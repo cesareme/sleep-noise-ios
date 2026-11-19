@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SleepNoise · Camino C · Pintura plena</title>
+<style>
+:root{--negro:#000;--hoja:#1C1C1E;--grafito:#1E1D1B;--trazo:#2A2A2E;--trazo-hoja:#38383B;--texto:#E8E4DC;--texto2:#9C9A96;--texto3:#6E6C68;--texto-noche:#A2A09A;--indice:#F0C020;--indice-noche:#BA941C;
+ --velo-texto:.78;--velo-abierto:.2} /* sin segundo acento (jurado): el único color de interfaz es el Índice, y solo mientras suena */
+html,body{margin:0;background:#0A0A0B;color:var(--texto);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+header{padding:32px 32px 8px;max-width:980px}
+h1{font-size:28px;font-weight:600;margin:0 0 6px;letter-spacing:-.01em}
+.lead{color:var(--texto2);font-size:15px;line-height:1.45;margin:0}
+.fila{display:flex;gap:44px;overflow-x:auto;padding:24px 32px 48px;align-items:flex-start;scroll-snap-type:x proximity}
+figure{margin:0;flex:0 0 402px;scroll-snap-align:start}
+figcaption{margin-top:14px;font-size:14px;line-height:1.4;color:var(--texto2);max-width:402px}
+figcaption b{display:block;color:var(--texto);font-size:16px;font-weight:600;margin-bottom:2px}
+.iphone{position:relative;width:402px;height:874px;background:var(--negro);border-radius:56px;border:1px solid #3A3A3C;overflow:hidden;isolation:isolate;font-size:17px;line-height:22px;color:var(--texto)}
+.iphone *{box-sizing:border-box}
+.isla{position:absolute;left:138px;top:11px;width:126px;height:37px;border-radius:19px;background:#000;z-index:9}
+.hora{position:absolute;left:50px;top:18px;font-size:17px;font-weight:600;letter-spacing:-.01em;z-index:9;color:inherit}
+.bateria{position:absolute;right:46px;top:23px;width:25px;height:12px;border:1px solid currentColor;border-radius:4px;opacity:.9;z-index:9}
+.bateria i{position:absolute;left:2px;top:2px;bottom:2px;width:14px;background:currentColor;border-radius:1px}
+canvas.pintura{position:absolute;left:0;top:0;z-index:0;display:block}
+.velo{position:absolute;inset:0;z-index:1;pointer-events:none}
+.ui{position:absolute;inset:0;z-index:2}
+.t{position:absolute;left:20px;right:20px}
+.c{text-align:center}
+.p1{font-size:56px;line-height:64px;font-weight:400;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.p2{font-size:28px;line-height:34px;font-weight:500;letter-spacing:-.01em}
+.p3{font-size:22px;line-height:28px;font-weight:600}
+.p5{font-size:17px;line-height:22px;font-weight:600}
+.p6{font-size:17px;line-height:22px;font-weight:400}
+.p7{font-size:15px;line-height:20px;font-weight:400;color:var(--texto2)}
+.p8{font-size:13px;line-height:18px;font-weight:400;color:var(--texto2)}
+.p9{font-size:13px;line-height:18px;font-weight:500;font-variant-numeric:tabular-nums;color:var(--texto2)}
+.vers{font-size:13px;line-height:18px;font-weight:500;font-variant-caps:small-caps;letter-spacing:.03em;color:var(--texto2)}
+.ind{position:absolute;left:183px;top:8px;width:36px;height:5px;border-radius:3px;background:var(--texto3)}
+/* Mezclas (tras jurado): banda de 64 pt a sangre por la izquierda, solo en las mezclas de la casa (tomada del camino A) */
+.banda{position:absolute;left:0;width:402px;overflow:hidden}
+.banda canvas{position:absolute;left:0;top:0}
+.banda .velo{left:0;width:64px;background:rgba(0,0,0,.12)}
+.banda .hl{position:absolute;left:84px;right:20px;bottom:0;height:.5px;background:var(--trazo)}
+.hoja{position:absolute;left:0;top:48px;width:402px;height:826px;border-radius:10px 10px 0 0;overflow:hidden;background:var(--hoja)}
+.hoja .cab{position:absolute;left:0;top:0;width:402px;height:110px;overflow:hidden}
+.hoja .cab .velo{background:linear-gradient(to bottom,rgba(0,0,0,.3),rgba(0,0,0,.1) 50%,rgba(28,28,30,.9))}
+.tienda .titular{font-size:34px;line-height:40px;font-weight:600;letter-spacing:-.015em}
+.mini{position:absolute;left:70px;top:252px;width:262px;height:570px;border-radius:38px;border:1.5px solid #5A5A5E;overflow:hidden;background:#000;z-index:3}
+.mini .iphone{transform:scale(.652);transform-origin:0 0;border:0;border-radius:0}
+</style></head><body>
+<header>
+<h1>Camino C · Pintura plena</h1>
+<p class="lead">La pintura es protagonista de día: página y Capas llevan su pieza a sangre; Mezclas lleva la banda de 64 pt de la casa; el Temporizador conserva la hoja gris con una cabecera pintada de 110 pt; la hoja Pro no lleva pintura. Tipografía y tokens de Grafito intactos, sin segundo acento: el único color de interfaz es el Índice. La noche sigue siendo negra. Siete iPhones de 402 × 874 pt; las pinturas se dibujan con canvas al abrir la página, con semilla fija y el lenguaje Pigmento (listones con ruido, empaste por gradiente de parada doble, campos de flujo). Nada incrustado de internet.</p>
+</header>
+<div class="fila" id="fila"></div>
+
+<script>
+// ---------- paleta Pigmento (lenguaje-pictorico.md §1; no se inventa otra) ----------
+const PAL = {
+ blanco:{c:[["#E3E0D8"],["#A9B8C6"],["#5E6B78"]]},
+ rosa:{c:[["#F3D2B8"],["#E8A598"],["#C77B8A"],["#7A4A5E"]]},
+ marron:{c:[["#D9A66B"],["#B07A4A"],["#7A4E2E"],["#4A3222"]]},
+ lluvia:{c:[["#B9CDD9"],["#7FA7C9"],["#4A6B8A"],["#2E4A5E"]]},
+ ventilador:{c:[["#D7DBE0"],["#B8BFC9"],["#7C8794"],["#4F5862"]]},
+ oceano:{c:[["#CFE7E0"],["#3FA7B0"],["#1F6F8B"],["#0F3C56"]]},
+ hoguera:{c:[["#FFB15C"],["#F08A24"],["#D9442B"],["#5A2A14"]]},
+};
+// ---------- utilidades del lenguaje (portadas de paleta.html) ----------
+function rng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;}}
+function noise2(R){const g=[];for(let i=0;i<64*64;i++)g.push(R());const f=t=>t*t*(3-2*t);
+  return(x,y)=>{const xi=Math.floor(x)&63,yi=Math.floor(y)&63,xf=x-Math.floor(x),yf=y-Math.floor(y);
+    const a=g[yi*64+xi],b=g[yi*64+((xi+1)&63)],c=g[((yi+1)&63)*64+xi],d=g[((yi+1)&63)*64+((xi+1)&63)];
+    const u=f(xf),v=f(yf);return (a*(1-u)+b*u)*(1-v)+(c*(1-u)+d*u)*v;}}
+function hex2rgb(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]}
+function rgba(h,a){const[r,g,b]=hex2rgb(h);return`rgba(${r},${g},${b},${a})`}
+function mix(h1,h2,t){const a=hex2rgb(h1),b=hex2rgb(h2);return`rgb(${a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(",")})`}
+function ribbon(ctx,pts,w,light,base,alpha,taper){
+  if(pts.length<2)return;
+  const L=[],Rr=[];
+  for(let i=0;i<pts.length;i++){
+    const p=pts[i],q=pts[Math.min(i+1,pts.length-1)],o=pts[Math.max(i-1,0)];
+    let dx=q.x-o.x,dy=q.y-o.y;const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;
+    const t=i/(pts.length-1),prof=taper?(1-0.78*t):0.35+0.65*Math.sin(Math.PI*Math.min(1,t*1.25))*(1-0.25*t);
+    const hw=w*prof*0.5;L.push({x:p.x-dy*hw,y:p.y+dx*hw});Rr.push({x:p.x+dy*hw,y:p.y-dx*hw});
+  }
+  const a=pts[0],b=pts[pts.length-1];const nx=-(b.y-a.y),ny=b.x-a.x,nl=Math.hypot(nx,ny)||1;
+  const m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+  const g=ctx.createLinearGradient(m.x-nx/nl*w/2,m.y-ny/nl*w/2,m.x+nx/nl*w/2,m.y+ny/nl*w/2);
+  g.addColorStop(0,rgba(light,alpha));g.addColorStop(0.38,rgba(light,alpha));g.addColorStop(0.38,rgba(base,alpha));
+  g.addColorStop(0.88,rgba(base,alpha));g.addColorStop(0.88,`rgba(0,0,0,${alpha*0.35})`);g.addColorStop(1,`rgba(0,0,0,${alpha*0.35})`);
+  ctx.beginPath();ctx.moveTo(L[0].x,L[0].y);for(const p of L)ctx.lineTo(p.x,p.y);for(let i=Rr.length-1;i>=0;i--)ctx.lineTo(Rr[i].x,Rr[i].y);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+}
+function grain(ctx,W,H,R,alpha){for(let i=0;i<W*H/40;i++){ctx.fillStyle=`rgba(${R()>.5?255:0},${R()>.5?255:0},${R()>.5?255:0},${alpha})`;ctx.fillRect(R()*W,R()*H,1,1);}}
+function strokeNoise(x,y,ang,len,steps,R,dev){const pts=[{x,y}];let a=ang;for(let i=1;i<=steps;i++){a+=(R()-.5)*dev;x+=Math.cos(a)*len/steps;y+=Math.sin(a)*len/steps;pts.push({x,y});}return pts;}
+function strokeFlow(x,y,len,steps,field,scale,drift){const pts=[{x,y}];let prev=null;for(let i=1;i<=steps;i++){const e=0.5;
+  const dzdx=(field(x/scale+e/scale,y/scale)-field(x/scale-e/scale,y/scale))/(2*e),dzdy=(field(x/scale,y/scale+e/scale)-field(x/scale,y/scale-e/scale))/(2*e);
+  let a=Math.atan2(-dzdx,dzdy);a=Math.atan2(Math.sin(a)*0.55,Math.cos(a)*0.55+1.0)+drift;if(prev!==null){let d=a-prev;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;a=prev+Math.max(-0.3,Math.min(0.3,d));}prev=a;
+  x+=Math.cos(a)*len/steps;y+=Math.sin(a)*len/steps;pts.push({x,y});}return pts;}
+function pick(R,c,wts){let s=0;const r=R()*wts.reduce((a,b)=>a+b,0);for(let i=0;i<c.length;i++){s+=wts[i];if(r<s)return i;}return c.length-1;}
+
+// ---------- escenas a sangre (un motivo por textura; abstracto, sin paisaje) ----------
+function campoMarron(ctx,W,H,R,dens){const cm=PAL.marron.c;for(let i=0;i<W*H/dens;i++){const p=strokeNoise(R()*(W+20)-10,R()*H,(R()-.5)*.5,22+R()*18,6,R,.3);const k=pick(R,cm,[1,3,5,4]);ribbon(ctx,p,7+R()*3,cm[Math.max(0,k-1)][0],cm[k][0],.9);}}
+// lenguas que suben (jurado): densidad W*H/90, base de 8 a 14 pt que se estrecha arriba, un 30 % de negro entre lenguas,
+// llama clara solo en un núcleo central del 40 % del ancho, rojo brasa en los bordes, madera quemada fuera; media docena de brasas de 2 a 3 pt.
+// foco: altura relativa del centro de calor (las lenguas nacen por debajo y suben hacia él)
+function lenguasHoguera(ctx,W,H,R,dens,foco){const ch=PAL.hoguera.c;const n=W*H/(dens||90),cx=W/2;
+  for(let i=0;i<n;i++){const x0=R()*W,y0=H*(foco+0.02)+R()*H*Math.min(0.55,0.98-foco),d=Math.abs(x0-cx)/(W*.5);
+    const len=(28+R()*52)*(d<.4?1:.7),p=strokeNoise(x0,y0,-Math.PI/2+(R()-.5)*.5,len,7,R,.45);
+    if(R()<.30){ribbon(ctx,p,6+R()*6,"#000000","#000000",.85,true);continue;}
+    const k=d<.4?(R()<.55?1:0):d<.7?(R()<.6?2:1):(R()<.7?3:2);
+    ribbon(ctx,p,8+R()*6,ch[Math.max(0,k-1)][0],ch[k][0],.92,true);}
+  for(let i=0;i<6;i++){const x=cx+(R()-.5)*W*.5,y=H*(foco-.3)+R()*H*.4;ctx.fillStyle=rgba(ch[R()<.5?0:1][0],.9);ctx.fillRect(x,Math.max(4,y),2+R(),2+R());}}
+function trazosLluvia(ctx,W,H,R,dens){const c=PAL.lluvia.c,ang=72*Math.PI/180;for(let i=0;i<W*H/dens;i++){const p=strokeNoise(R()*(W+60)-30,R()*(H+60)-30,ang+(R()-.5)*.2,18+R()*16,6,R,.25);const k=pick(R,c,[1,3,5,6]);ribbon(ctx,p,2+R(),c[Math.max(0,k-1)][0],c[k][0],.85);}}
+function dabsRosa(ctx,W,H,R,dens){const c=PAL.rosa.c;for(let i=0;i<W*H/dens;i++){const p=strokeNoise(R()*W,R()*H,(R()-.5)*.7,10+R()*8,4,R,.5);const k=pick(R,c,[1,3,5,5]);ribbon(ctx,p,4+R()*2,c[Math.max(0,k-1)][0],c[k][0],.9);}}
+function flujoOceano(ctx,W,H,R,dens){const c=PAL.oceano.c;const f=noise2(R),g=noise2(R);const F=(x,y)=>f(x,y)+.5*g(x*2,y*2);for(let i=0;i<W*H/dens;i++){const p=strokeFlow(R()*W,R()*H,18+R()*18,8,F,70,0.12);const k=pick(R,c,[1,3,6,5]);ribbon(ctx,p,5+R()*3,c[Math.max(0,k-1)][0],c[k][0],.9);}}
+function arcosVentilador(ctx,W,H,R,dens){const c=PAL.ventilador.c;const cx=W*1.25,cy=H*1.6;for(let i=0;i<W*H/dens;i++){const r=40+R()*(W*1.3),a0=Math.PI+R()*Math.PI*.6,da=(24+R()*24)/r;const pts=[];for(let s=0;s<=8;s++){const a=a0+da*s/8+(R()-.5)*.015;pts.push({x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r});}const k=pick(R,c,[1,3,5,6]);ribbon(ctx,pts,3+R()*2,c[Math.max(0,k-1)][0],c[k][0],.85);}}
+function base(ctx,W,H,R,hex){ctx.fillStyle=mix(hex,"#000000",.42);ctx.fillRect(0,0,W,H);grain(ctx,W,H,R,.06);}
+const ESCENA = {
+ brasa(ctx,W,H,R){base(ctx,W,H,R,PAL.marron.c[3][0]);campoMarron(ctx,W,H,R,150);lenguasHoguera(ctx,W,H,R,150,0.40);},
+ brasaBanda(ctx,W,H,R){base(ctx,W,H,R,PAL.marron.c[3][0]);campoMarron(ctx,W,H,R,120);lenguasHoguera(ctx,W,H,R,70,0.30);},
+ lluviaFina(ctx,W,H,R){base(ctx,W,H,R,PAL.lluvia.c[3][0]);dabsRosa(ctx,W,H,R,260);trazosLluvia(ctx,W,H,R,52);},
+ hotel(ctx,W,H,R){base(ctx,W,H,R,PAL.marron.c[3][0]);campoMarron(ctx,W,H,R,170);trazosLluvia(ctx,W,H,R,60);},
+ camaRosa(ctx,W,H,R){base(ctx,W,H,R,PAL.rosa.c[3][0]);dabsRosa(ctx,W,H,R,70);},
+ // Mar lento: ningún pigmento cálido sobre el océano (jurado, lenguaje §7); el marrón de la receta se oye, no se pinta
+ marLento(ctx,W,H,R){base(ctx,W,H,R,PAL.oceano.c[3][0]);flujoOceano(ctx,W,H,R,46);},
+ ventiladorLluvia(ctx,W,H,R){base(ctx,W,H,R,PAL.ventilador.c[3][0]);arcosVentilador(ctx,W,H,R,70);trazosLluvia(ctx,W,H,R,110);},
+};
+function pintar(cv){const W=+cv.dataset.w,H=+cv.dataset.h,seed=+cv.dataset.seed,fn=ESCENA[cv.dataset.escena];const dpr=2;
+  cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+"px";cv.style.height=H+"px";const ctx=cv.getContext("2d");ctx.scale(dpr,dpr);fn(ctx,W,H,rng(seed));}
+function lienzo(escena,seed,W,H,extra){return `<canvas class="pintura" data-escena="${escena}" data-seed="${seed}" data-w="${W}" data-h="${H}" style="${extra||''}"></canvas>`}
+
+// ---------- piezas de interfaz (tokens y pasos tipográficos de 03) ----------
+const T=(y,txt,cls,st)=>`<div class="t ${cls||''}" style="top:${y}px;${st||''}">${txt}</div>`;
+const vers=(y,txt,st)=>T(y,txt,'vers',st);
+const hair=(y,c,g)=>`<div style="position:absolute;left:20px;right:20px;top:${y}px;height:${g||.5}px;background:${c||'var(--trazo)'}"></div>`;
+const horizonte=(y,c,g,halo)=>`<div style="position:absolute;left:0;right:0;top:${y-g/2}px;height:${g}px;background:${c};${halo?'box-shadow:0 3px 0 #000,0 -3px 0 #000;':''}"></div>`;
+function capa(y,nombre,sub,valor,nivel,o={}){const t=o.tinta||'var(--texto)',t2=o.tinta2||'var(--texto2)';let h='';
+  if(o.dedo)h+=`<div style="position:absolute;left:0;right:0;top:${y+6}px;height:44px;background:var(--grafito)"></div>`;
+  h+=`<div class="t" style="top:${y+10}px;height:22px"><span class="p5" style="color:${t}">${nombre}</span><span class="p7" style="color:${t2}"> · ${sub}</span><span class="p9" style="position:absolute;right:0;top:2px;color:${o.valColor||t2};${o.dedo?'font-size:17px;font-weight:500;top:0;color:'+t:''}">${valor}</span></div>`;
+  h+=`<div style="position:absolute;left:20px;right:20px;top:${y+44}px;height:.5px;background:var(--texto3)"></div>`;
+  if(nivel>0)h+=`<div style="position:absolute;left:20px;width:${362*nivel/100}px;top:${y+44-(o.dedo?1.25:.5)}px;height:${o.dedo?3:1.5}px;background:${o.dedo?(o.indice||'var(--indice)'):(o.nivelColor||t)}"></div>`;
+  return h;}
+const filaS=(y,label,right,o={})=>`<div class="t" style="top:${y+17}px"><span class="p5" style="color:${o.tinta||'var(--texto)'}">${label}</span>${right?`<span class="p7" style="position:absolute;right:0;top:1px;color:${o.tinta2||'var(--texto2)'}">${right}</span>`:''}</div>`;
+const fila72=(y,label,sub,right,o={})=>`<div class="t" style="top:${y+14}px"><span class="p5" style="color:${o.tinta||'var(--texto)'}">${label}</span>${right?`<span class="p7" style="position:absolute;right:0;top:1px;color:${o.tinta2||'var(--texto2)'}">${right}</span>`:''}</div>`+T(y+36,sub,'p7');
+const toggle=(y,on,tint)=>`<div style="position:absolute;right:20px;top:${y+12}px;width:51px;height:31px;border-radius:16px;background:${on?tint:'#39393D'}"><div style="position:absolute;top:2px;${on?'right:2px':'left:2px'};width:27px;height:27px;border-radius:50%;background:#fff"></div></div>`;
+function barra(y,o={}){const t=o.tinta||'var(--texto)';const glifo=o.play?`<polygon points="27,20 27,44 47,32" fill="${t}"/>`:`<rect x="23" y="21" width="6" height="22" fill="${t}"/><rect x="35" y="21" width="6" height="22" fill="${t}"/>`;
+  return `<div class="t" style="top:${y+29}px;font-size:17px;font-weight:500;color:${t}">${o.izq===false?'':'Mezclas'}<span style="position:absolute;right:0">Noche</span></div>`+
+  `<svg style="position:absolute;left:169px;top:${y+8}px" width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="var(--grafito)"/><circle cx="32" cy="32" r="31.5" fill="none" stroke="rgba(0,0,0,.6)" stroke-width="1"/>${glifo}</svg>`;}
+const velo=(stops)=>`<div class="velo" style="background:linear-gradient(to bottom,${stops})"></div>`;
+const vt=v=>`rgba(0,0,0,${v})`;
+
+// ---------- pantallas ----------
+function marco(hora,inner,o={}){return `<div class="iphone ${o.cls||''}" style="color:${o.tinta||'var(--texto)'}">${inner}<div class="isla"></div>${hora?`<div class="hora">${hora}</div><div class="bateria"><i></i></div>`:''}</div>`}
+
+function paginaDia(seed){
+  const ui=vers(64,'prueba · quedan 5 noches')+T(100,'Marrón y hoguera','p2')+T(144,'Sonando · se funde a las 20:30','p7')
+   +horizonte(292,'var(--indice)',2.5,true)
+   +capa(472,'Hoguera','chisporroteo cercano','62',62)+capa(552,'Marrón','retumbo grave','40',40)
+   +hair(632)+filaS(632,'Todas las capas')+hair(688)+filaS(688,'Marea respiratoria')+toggle(688,false)+hair(744)+filaS(744,'Temporizador','Hasta dormirme · 45 min')
+   +barra(800);
+  // franja de reserva de 24 pt centrada en el horizonte (280 a 304) con velo del 80 %
+  return marco('18:52',lienzo('brasa',seed,402,874)+velo(`${vt(.8)} 0,${vt(.8)} 136px,${vt(.2)} 186px,${vt(.2)} 280px,${vt(.8)} 280px,${vt(.8)} 304px,${vt(.2)} 304px,${vt(.2)} 440px,${vt(.78)} 476px,${vt(.78)} 100%`)+`<div class="ui">${ui}</div>`);}
+
+function paginaNocturna(){const t='var(--texto-noche)';
+  const ui=vers(64,'prueba · quedan 5 noches',`color:${t}`)+T(100,'Marrón y hoguera','p2',`color:${t}`)+T(144,'Sonando · se funde a las 0:42','p7',`color:${t};font-weight:500`)
+   +horizonte(292,t,2,false)
+   +capa(472,'Hoguera','chisporroteo cercano','62',62,{tinta:t,tinta2:t})+capa(552,'Marrón','retumbo grave','40',40,{tinta:t,tinta2:t})
+   +hair(632)+filaS(632,'Todas las capas',null,{tinta:t})+hair(688)+filaS(688,'Marea respiratoria',null,{tinta:t})+toggle(688,false)+hair(744)+filaS(744,'Temporizador','Hasta dormirme · 45 min',{tinta:t,tinta2:t})
+   +barra(800,{tinta:t});
+  return marco('23:40',`<div class="ui">${ui}</div>`,{tinta:t});}
+
+function capas(){
+  const ui=`<div class="ind"></div>`+T(72,'Capas','p3')+T(102,'Lluvia fina · sonando','p7')+hair(136)
+   +vers(232,'colores')+capa(254,'Blanco','siseo parejo','',0)+capa(334,'Rosa','suave y equilibrado','20',20,{dedo:true})+capa(414,'Marrón','retumbo grave','',0)
+   +vers(508,'camas')+capa(530,'Lluvia','fina, constante','55',55)+capa(610,'Ventilador','lejano, constante','',0)+capa(690,'Océano','oleaje lento','',0)
+   +T(774,'Como el sonido: se genera aquí, sin archivos ni descargas.','p7')+barra(800);
+  return marco('18:53',lienzo('lluviaFina',7001,402,874)+velo(`${vt(.74)} 0,${vt(.74)} 120px,${vt(.18)} 150px,${vt(.18)} 212px,${vt(.78)} 240px,${vt(.78)} 100%`)+`<div class="ui">${ui}</div>`);}
+
+// fila de mezcla: 72 pt (o 92 con nota); si es de la casa, banda de 64 pt a sangre por la izquierda y texto a x 84; si es tuya, sin pintura y texto a x 20
+function banda(y,escena,seed,nombre,receta,estado,alta){const h=alta?92:72,x=escena?84:20;
+  return `<div class="banda" style="top:${y}px;height:${h}px">${escena?lienzo(escena,seed,64,h)+`<div class="velo"></div>`:''}<div class="ui">`+
+   `<div class="t" style="left:${x}px;top:14px"><span class="p5">${nombre}</span>${estado?`<span class="vers" style="margin-left:10px">${estado}</span>`:''}</div><div class="t p7" style="left:${x}px;top:38px">${receta}</div><div class="hl" style="left:${x}px"></div></div></div>`;}
+function mezclas(){
+  const ui=T(58,'‹','p6','font-size:28px;line-height:28px;color:var(--texto2);font-weight:400')+T(100,'Mezclas','p3')+hair(136)
+   +vers(152,'tuyas')+banda(176,null,0,'Marrón y hoguera','hoguera 62 · marrón 40 · 45 min','sonando')+banda(248,null,0,'Hotel','lluvia 45 · marrón 30 · 60 min')
+   +vers(352,'de la casa')+banda(376,'lluviaFina',8103,'Lluvia fina','lluvia 55 · rosa 20')+banda(448,'camaRosa',8104,'Cama rosa','rosa 60')+banda(520,'marLento',8105,'Mar lento','océano 50 · marrón 15 · Marea 15 min<br>· océano y Marea son Pro',null,true)+banda(612,'brasaBanda',8101,'Marrón y hoguera','marrón 40 · hoguera 35<br>· hoguera es Pro',null,true)
+   +filaS(736,'Ajustes',null,{tinta:'var(--texto2)'})+barra(800,{izq:false});
+  return marco('18:54',`<div class="ui">${ui}</div>`);}
+
+function temporizador(){
+  const ui=T(96,'38 min','p1')+T(168,'Se funde a las 20:30','p7')
+   +hair(212,'var(--trazo-hoja)')+T(233,'+15 min','p6 c')+hair(276,'var(--trazo-hoja)')
+   +fila72(300,'Hasta dormirme','se funde en los últimos 10 min','45 min &nbsp;✓',{tinta2:'var(--texto)'})+fila72(372,'Escudo nocturno','toda la noche · baja un poco cada hora','hasta las 07:00')+fila72(444,'Siesta','se funde en los últimos 2 min','20 min')
+   +filaS(516,'Apagado',null,{tinta:'var(--texto2)'})+hair(572,'var(--trazo-hoja)')+filaS(572,'Duración','45 min')+hair(628,'var(--trazo-hoja)')+T(648,'El sonido se funde; tu alarma no se toca.','p8');
+  // hoja gris de 03 (una .sheet no ve el lienzo de debajo); como mucho una cabecera de 110 pt rasterizada una vez
+  return marco('18:56',`<div class="hoja"><div class="cab">${lienzo('brasa',9001,402,110)}<div class="velo"></div></div></div><div class="ind" style="top:56px;z-index:3"></div><div class="ui" style="top:110px">${ui}</div>`);}
+
+function pro(){
+  const ui=`<div class="ind" style="top:56px"></div>`+vers(96,'sleepnoise pro')+T(118,'29,99 €','p1')+T(186,'Prueba · quedan 5 noches con todo.','p7')+T(218,'Siete noches con todo. Después, un solo pago.','p2')
+   +hair(300,'var(--trazo-hoja)')+vers(314,'con pro')+T(336,'Ventilador y océano','p5')+T(368,'Marea respiratoria','p5')+T(400,'Temporizador sin límite y Escudo','p5')+T(432,'Mezclas sin límite','p5')+T(464,'En familia','p5')
+   +hair(512,'var(--trazo-hoja)')+vers(526,'gratis siempre')+T(548,'Blanco, rosa, marrón, lluvia, viento, el temporizador y tres mezclas.','p6','color:var(--texto2)')
+   +hair(640,'var(--indice)',1.5)+T(661,'Comprar · 29,99 €','p5 c')+hair(704,'var(--indice)',1.5)+T(720,'Restaurar compra','p6 c','color:var(--texto2)')+T(760,'Sin suscripción. Sin cuenta. Nada sale de tu iPhone.','p8 c');
+  // sin pintura: nada de color donde se vende (jurado); la hoja gris de 03 tal cual
+  return marco('18:58',`<div class="hoja"></div><div class="ui">${ui}</div>`);}
+
+function tienda(){
+  const ui=T(72,'Lo que suena, se pinta.','titular')+T(130,'Sonido generado sin red y una pintura de pincelada viva, nueva cada día. De noche, nada.','p6','color:var(--texto)');
+  return `<div class="iphone tienda" style="border-radius:0;border:0">${lienzo('brasa',9901,402,874)}${velo(`${vt(.62)} 0,${vt(.62)} 230px,${vt(.08)} 330px,${vt(.08)} 100%`)}<div class="ui">${ui}</div><div class="mini">${paginaDia(1211)}</div></div>`;}
+
+// ---------- montaje ----------
+const PANTALLAS=[
+ {h:paginaDia(1211),t:'1 · Página de día, sonando (18:52)',i:'La pintura de la mezcla ocupa toda la página; el Índice sigue siendo lo único con color en la interfaz y lo más luminoso, con una franja de reserva de 24 pt al 80 % y halo seco de 3 pt. Estado y nivel en texto y texto2: sin segundo acento. Lenguas anchas en la base con negro entre ellas y núcleo de llama clara en el centro.'},
+ {h:capas(),t:'2 · Capas (Lluvia fina)',i:'La hoja ya no es negra: es la lluvia de la mezcla, con los dabs rosa de la segunda capa. Las seis filas van sobre velo del 78 %; solo asoma una ventana sobre las secciones. Rosa bajo el dedo lleva el Índice; la nota del pie usa el texto de reserva de la ficha.'},
+ {h:mezclas(),t:'3 · Mezclas',i:'Tras el jurado, Mezclas toma del camino A la banda de 64 pt a sangre por la izquierda, solo en las mezclas de la casa; lo tuyo va sin pintura. Se evita la galería de bandas de 88 pt, que es el patrón del catálogo de las apps de suscripción.'},
+ {h:temporizador(),t:'4 · Temporizador (hoja, sonando)',i:'La hoja gris de 03 se conserva (una hoja de SwiftUI no ve el lienzo de debajo): como mucho una cabecera de 110 pt rasterizada una vez. Cifra, +15 min y lista con los mismos tokens de Grafito.'},
+ {h:pro(),t:'5 · Hoja Pro (18:58, en prueba)',i:'Sin pintura: nada de color donde se vende. La hoja gris de 03 con precio primero, lista y Comprar entre hairlines índice. Esta hoja no existe entre las 21:00 y las 07:00.'},
+ {h:paginaNocturna(),t:'6 · Página nocturna (23:40)',i:'A las 21:00 toda pintura se ha fundido a negro y no vuelve sola: una tinta, horizonte a 2 pt, nada ilumina el cuarto. Noche y Madrugada, igual de negras.'},
+ {h:tienda(),t:'7 · Captura de tienda',i:'Titular común a los tres caminos; el subtítulo no cuenta texturas ni nombra estilos, pintores ni obras. La pieza se enseña sin velo porque la tienda es de día.'},
+];
+document.getElementById('fila').innerHTML=PANTALLAS.map(p=>`<figure>${p.h}<figcaption><b>${p.t}</b>${p.i}</figcaption></figure>`).join('');
+document.querySelectorAll('canvas.pintura').forEach(pintar);
+</script>
+</body></html>

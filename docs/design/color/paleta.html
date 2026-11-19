@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SleepNoise · Pigmento · paleta</title>
+<style>
+:root{--negro:#000;--hoja:#1C1C1E;--texto:#E8E4DC;--texto2:#9C9A96;--texto3:#6E6C68;--indice:#F0C020;--trazo:#2A2A2E}
+html,body{margin:0;background:var(--negro);color:var(--texto);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+main{max-width:980px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:28px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em}
+p.lead{color:var(--texto2);font-size:15px;line-height:1.45;margin:0 0 28px;max-width:720px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:28px 20px}
+.card{display:flex;flex-direction:column;gap:10px}
+canvas{display:block;width:200px;height:200px;border-radius:2px}
+.name{font-size:17px;font-weight:500;display:flex;justify-content:space-between;align-items:baseline}
+.name small{color:var(--texto3);font-size:12px;font-weight:400}
+.chips{display:flex;gap:6px}
+.chip{flex:1;height:30px;border-radius:2px;position:relative}
+.chip span{position:absolute;left:0;right:0;top:34px;font-size:10px;color:var(--texto3);text-align:center;font-variant-numeric:tabular-nums}
+.chips{margin-bottom:18px}
+h2{font-size:22px;font-weight:600;margin:48px 0 8px}
+.phone{width:402px;max-width:100%;background:var(--negro);border:.5px solid var(--trazo);border-radius:24px;overflow:hidden;position:relative;height:420px}
+.phone .top{position:absolute;left:24px;top:40px}
+.phone .top b{display:block;font-size:28px;font-weight:600;letter-spacing:-.01em}
+.phone .top i{font-style:normal;color:var(--texto2);font-size:15px}
+.phone canvas{position:absolute;left:0;top:112px;width:402px;height:240px;max-width:100%;border-radius:0}
+.phone .veil{position:absolute;left:0;top:112px;width:100%;height:240px;background:linear-gradient(to bottom,rgba(0,0,0,.75),rgba(0,0,0,.35) 50%,rgba(0,0,0,.75))}
+.phone .hz{position:absolute;left:0;width:100%;top:232px;height:2.5px;background:var(--indice);box-shadow:0 3px 0 #000,0 -3px 0 #000}
+.phone .rows{position:absolute;left:24px;right:24px;bottom:40px;font-size:17px;font-weight:500;line-height:44px;color:var(--texto)}
+.phone .rows em{font-style:normal;float:right;color:var(--texto2);font-variant-numeric:tabular-nums}
+.note{color:var(--texto2);font-size:14px;line-height:1.45;max-width:720px}
+</style></head><body><main>
+<h1>Pigmento</h1>
+<p class="lead">Once muestras de 200 × 200 pt, dibujadas con código al abrir la página: listones con ruido, empaste por gradiente de parada doble, campos de flujo. Semilla fija para que cada recarga pinte lo mismo. Bajo cada muestra, las tintas con su contraste sobre negro. Sin imágenes.</p>
+<div class="grid" id="grid"></div>
+
+<h2>Jerarquía: ventana, velo, horizonte</h2>
+<p class="note">La pintura vive en una banda de 240 pt alrededor del horizonte, bajo un velo negro (35 % en el centro, 75 % en los bordes). Nombre y filas van sobre negro puro. El Índice es lo más luminoso de la pantalla y lleva un halo negro seco de 3 pt.</p>
+<div class="phone" style="margin-top:16px">
+  <div class="top"><b>Marrón y hoguera</b><i>sonando · se funde a las 23:45</i></div>
+  <canvas id="demo" width="804" height="480"></canvas>
+  <div class="veil"></div><div class="hz"></div>
+  <div class="rows"><div>Hoguera <em>62</em></div><div>Marrón <em>40</em></div></div>
+</div>
+
+<script>
+const PAL = {
+ blanco:{n:"Blanco",t:"campo fino",c:[["#E3E0D8",15.9],["#A9B8C6",10.4],["#5E6B78",3.9]]},
+ rosa:{n:"Rosa",t:"campo medio",c:[["#F3D2B8",14.7],["#E8A598",10.3],["#C77B8A",6.6],["#7A4A5E",3.0]]},
+ marron:{n:"Marrón",t:"campo grueso",c:[["#D9A66B",9.6],["#B07A4A",5.7],["#7A4E2E",3.0],["#4A3222",1.8]]},
+ lluvia:{n:"Lluvia",t:"oblicua",c:[["#B9CDD9",12.8],["#7FA7C9",8.3],["#4A6B8A",3.8],["#2E4A5E",2.3]]},
+ ventilador:{n:"Ventilador",t:"arcos",c:[["#D7DBE0",15.1],["#B8BFC9",11.3],["#7C8794",5.8],["#4F5862",2.9]]},
+ oceano:{n:"Océano",t:"flujo",c:[["#CFE7E0",16.2],["#3FA7B0",7.4],["#1F6F8B",3.7],["#0F3C56",1.8]]},
+ trueno:{n:"Trueno",t:"grieta fija",c:[["#C9C4E8",12.5],["#8E7FB8",5.9],["#6A5A8E",3.5],["#3A3250",1.8]]},
+ hoguera:{n:"Hoguera",t:"lenguas",c:[["#FFB15C",11.7],["#F08A24",8.4],["#D9442B",4.8],["#5A2A14",1.8]]},
+ arroyo:{n:"Arroyo",t:"cintas",c:[["#BFE3C8",15.0],["#5FB08A",8.1],["#2F7A5A",4.1],["#1E4A3A",2.1]]},
+ viento:{n:"Viento",t:"hebras",c:[["#E8E0C4",15.9],["#C9C2A8",11.8],["#8FA07A",7.5],["#5F6B55",3.7]]},
+ cabina:{n:"Cabina",t:"bandas",c:[["#D6CFC8",13.6],["#B9A9A0",9.3],["#8A7F96",5.6],["#5B5566",2.9]]},
+};
+// ---------- utilidades: PRNG determinista, ruido de valor, campo de flujo ----------
+function rng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;}}
+function noise2(R){const g=[];for(let i=0;i<64*64;i++)g.push(R());const f=t=>t*t*(3-2*t);
+  return(x,y)=>{const xi=Math.floor(x)&63,yi=Math.floor(y)&63,xf=x-Math.floor(x),yf=y-Math.floor(y);
+    const a=g[yi*64+xi],b=g[yi*64+((xi+1)&63)],c=g[((yi+1)&63)*64+xi],d=g[((yi+1)&63)*64+((xi+1)&63)];
+    const u=f(xf),v=f(yf);return (a*(1-u)+b*u)*(1-v)+(c*(1-u)+d*u)*v;}}
+function hex2rgb(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]}
+function rgba(h,a){const[r,g,b]=hex2rgb(h);return`rgba(${r},${g},${b},${a})`}
+function mix(h1,h2,t){const a=hex2rgb(h1),b=hex2rgb(h2);return`rgb(${a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(",")})`}
+// Listón: curva central con ruido + perfil en huso + empaste (gradiente de parada doble, perpendicular al trazo)
+function ribbon(ctx,pts,w,light,base,alpha){
+  if(pts.length<2)return;
+  const L=[],Rr=[];
+  for(let i=0;i<pts.length;i++){
+    const p=pts[i],q=pts[Math.min(i+1,pts.length-1)],o=pts[Math.max(i-1,0)];
+    let dx=q.x-o.x,dy=q.y-o.y;const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;
+    const t=i/(pts.length-1),prof=0.35+0.65*Math.sin(Math.PI*Math.min(1,t*1.25))*(1-0.25*t);
+    const hw=w*prof*0.5;L.push({x:p.x-dy*hw,y:p.y+dx*hw});Rr.push({x:p.x+dy*hw,y:p.y-dx*hw});
+  }
+  const a=pts[0],b=pts[pts.length-1];const nx=-(b.y-a.y),ny=b.x-a.x,nl=Math.hypot(nx,ny)||1;
+  const m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+  const g=ctx.createLinearGradient(m.x-nx/nl*w/2,m.y-ny/nl*w/2,m.x+nx/nl*w/2,m.y+ny/nl*w/2);
+  g.addColorStop(0,rgba(light,alpha));g.addColorStop(0.38,rgba(light,alpha));g.addColorStop(0.38,rgba(base,alpha));
+  g.addColorStop(0.88,rgba(base,alpha));g.addColorStop(0.88,`rgba(0,0,0,${alpha*0.35})`);g.addColorStop(1,`rgba(0,0,0,${alpha*0.35})`);
+  ctx.beginPath();ctx.moveTo(L[0].x,L[0].y);for(const p of L)ctx.lineTo(p.x,p.y);for(let i=Rr.length-1;i>=0;i--)ctx.lineTo(Rr[i].x,Rr[i].y);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+}
+function grain(ctx,W,H,R,alpha){for(let i=0;i<W*H/40;i++){ctx.fillStyle=`rgba(${R()>.5?255:0},${R()>.5?255:0},${R()>.5?255:0},${alpha})`;ctx.fillRect(R()*W,R()*H,1,1);}}
+// trazo por ruido 1D: dirección base + desvío
+function strokeNoise(x,y,ang,len,steps,R,dev){const pts=[{x,y}];let a=ang;for(let i=1;i<=steps;i++){a+=(R()-.5)*dev;x+=Math.cos(a)*len/steps;y+=Math.sin(a)*len/steps;pts.push({x,y});}return pts;}
+// trazo por campo de flujo: rotacional de un ruido 2D (sin cerrar espirales: curvatura acotada)
+function strokeFlow(x,y,len,steps,field,scale,drift){const pts=[{x,y}];let prev=null;for(let i=1;i<=steps;i++){const e=0.5;
+  const dzdx=(field(x/scale+e/scale,y/scale)-field(x/scale-e/scale,y/scale))/(2*e),dzdy=(field(x/scale,y/scale+e/scale)-field(x/scale,y/scale-e/scale))/(2*e);
+  let a=Math.atan2(-dzdx,dzdy);a=Math.atan2(Math.sin(a)*0.55,Math.cos(a)*0.55+1.0)+drift;if(prev!==null){let d=a-prev;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;a=prev+Math.max(-0.3,Math.min(0.3,d));}prev=a;
+  x+=Math.cos(a)*len/steps;y+=Math.sin(a)*len/steps;pts.push({x,y});}return pts;}
+function pick(R,c,wts){let s=0;const r=R()*wts.reduce((a,b)=>a+b,0);for(let i=0;i<c.length;i++){s+=wts[i];if(r<s)return i;}return c.length-1;}
+
+const MOTIF = {
+ blanco(ctx,W,H,R,c){for(let i=0;i<W*H/32;i++){const p=strokeNoise(R()*W,R()*H,R()*6.28,6+R()*4,3,R,.4);const k=pick(R,c,[1,4,6]);ribbon(ctx,p,3+R(),c[Math.max(0,k-1)][0],c[k][0],.85);}},
+ rosa(ctx,W,H,R,c){for(let i=0;i<W*H/70;i++){const p=strokeNoise(R()*W,R()*H,(R()-.5)*.7,10+R()*8,4,R,.5);const k=pick(R,c,[1,3,5,5]);ribbon(ctx,p,4+R()*2,c[Math.max(0,k-1)][0],c[k][0],.9);}},
+ marron(ctx,W,H,R,c){for(let i=0;i<W*H/160;i++){const p=strokeNoise(R()*W-10,R()*H,(R()-.5)*.5,22+R()*18,6,R,.3);const k=pick(R,c,[1,3,5,4]);ribbon(ctx,p,7+R()*3,c[Math.max(0,k-1)][0],c[k][0],.9);}},
+ lluvia(ctx,W,H,R,c){const ang=72*Math.PI/180;for(let i=0;i<W*H/55;i++){const p=strokeNoise(R()*(W+40)-20,R()*(H+40)-20,ang+(R()-.5)*.2,18+R()*16,6,R,.25);const k=pick(R,c,[1,3,5,6]);ribbon(ctx,p,2+R(),c[Math.max(0,k-1)][0],c[k][0],.85);}},
+ ventilador(ctx,W,H,R,c){const cx=W*1.25,cy=H*1.2;for(let i=0;i<W*H/60;i++){const r=40+R()*(W*1.3),a0=Math.PI+R()*Math.PI*.6,da=(24+R()*24)/r;const pts=[];for(let s=0;s<=8;s++){const a=a0+da*s/8+(R()-.5)*.015;pts.push({x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r});}const k=pick(R,c,[1,3,5,6]);ribbon(ctx,pts,3+R()*2,c[Math.max(0,k-1)][0],c[k][0],.85);}},
+ oceano(ctx,W,H,R,c){const f=noise2(R),g=noise2(R);const F=(x,y)=>f(x,y)+.5*g(x*2,y*2);for(let i=0;i<W*H/48;i++){const p=strokeFlow(R()*W,R()*H,18+R()*18,8,F,70,0.12);const k=pick(R,c,[1,3,6,5]);ribbon(ctx,p,5+R()*3,c[Math.max(0,k-1)][0],c[k][0],.9);}},
+ trueno(ctx,W,H,R,c){for(let i=0;i<W*H/110;i++){const p=strokeNoise(R()*W-10,R()*H,(R()-.5)*.3,16+R()*14,5,R,.3);const k=pick(R,c,[0,1,4,9]);ribbon(ctx,p,5+R()*2,c[Math.max(0,k-1)][0],c[k][0],.9);}
+   // una sola grieta, fija por semilla, cinco quiebros
+   let x=W*.35+R()*W*.3,y=-4;const pts=[{x,y}];for(let s=0;s<5;s++){x+=(R()-.5)*34;y+=H*.22+R()*10;pts.push({x,y});}
+   ribbon(ctx,pts,3.5,c[0][0],c[1][0],.95);},
+ hoguera(ctx,W,H,R,c){ctx.fillStyle=rgba(c[3][0],.6);ctx.fillRect(0,0,W,H);
+   for(let i=0;i<W*H/55;i++){const y0=H*.45+R()*H*.6,x0=W*.15+R()*W*.7;const len=20+R()*36*(1-(y0/H)*.4);const p=strokeNoise(x0,y0,-Math.PI/2+(R()-.5)*.6,len,7,R,.5);
+     const hot=1-(y0/H);const k=pick(R,c,[hot*3,3,3,1]);ribbon(ctx,p,3+R()*6*(1-hot*.4),c[Math.max(0,k-1)][0],c[k][0],.9);}},
+ arroyo(ctx,W,H,R,c){ctx.fillStyle=rgba(c[3][0],.7);ctx.fillRect(0,0,W,H);for(let i=0;i<W*H/120;i++){const y0=R()*H,x0=R()*W-40,len=40+R()*50,ph=R()*6.28,amp=3+R()*5;const pts=[];for(let s=0;s<=10;s++){pts.push({x:x0+len*s/10,y:y0+Math.sin(ph+s*1.9)*amp});}const k=pick(R,c,[1,3,5,3]);ribbon(ctx,pts,3+R()*2,c[Math.max(0,k-1)][0],c[k][0],.9);}},
+ viento(ctx,W,H,R,c){ctx.fillStyle=rgba(c[3][0],.55);ctx.fillRect(0,0,W,H);for(let i=0;i<W*H/70;i++){const p=strokeNoise(R()*W-60,R()*H,(R()-.5)*.35,60+R()*80,10,R,.12);const k=pick(R,c,[1,4,5,3]);ribbon(ctx,p,1.5+R(),c[Math.max(0,k-1)][0],c[k][0],.8);}},
+ cabina(ctx,W,H,R,c){ctx.fillStyle=rgba(c[3][0],.8);ctx.fillRect(0,0,W,H);for(let i=0;i<W*H/220;i++){const p=strokeNoise(R()*W-80,R()*H,0,80+R()*120,8,R,.05);const k=pick(R,c,[1,3,6,4]);ribbon(ctx,p,6+R()*6,c[Math.max(0,k-1)][0],c[k][0],.85);}grain(ctx,W,H,R,.12);},
+};
+function paint(canvas,key,seed,W,H){const ctx=canvas.getContext("2d");const dpr=2;canvas.width=W*dpr;canvas.height=H*dpr;ctx.scale(dpr,dpr);
+  const R=rng(seed),c=PAL[key].c;ctx.fillStyle=mix(c[c.length-1][0],"#000000",.45);ctx.fillRect(0,0,W,H);grain(ctx,W,H,R,.06);MOTIF[key](ctx,W,H,R,c);}
+const grid=document.getElementById("grid");let i=0;
+for(const key in PAL){const p=PAL[key];const card=document.createElement("div");card.className="card";
+  const cv=document.createElement("canvas");card.appendChild(cv);
+  card.insertAdjacentHTML("beforeend",`<div class="name">${p.n}<small>${p.t}</small></div><div class="chips">${p.c.map(([h,k])=>`<div class="chip" style="background:${h}"><span>${h}<br>${k.toFixed(1)}:1</span></div>`).join("")}</div>`);
+  grid.appendChild(card);paint(cv,key,1119+i*97,200,200);i++;}
+// demo de jerarquía: hoguera sobre marrón, ventana 402 × 240
+(function(){const cv=document.getElementById("demo"),ctx=cv.getContext("2d");ctx.scale(2,2);const R=rng(4242);
+  ctx.fillStyle=mix(PAL.marron.c[3][0],"#000",.45);ctx.fillRect(0,0,402,240);
+  for(let k=0;k<700;k++){const p=strokeNoise(R()*402-10,R()*240,(R()-.5)*.5,22+R()*18,6,R,.3);const j=pick(R,PAL.marron.c,[1,3,5,4]);ribbon(ctx,p,7+R()*3,PAL.marron.c[Math.max(0,j-1)][0],PAL.marron.c[j][0],.9);}
+  for(let k=0;k<900;k++){const y0=60+R()*200,x0=R()*402,hot=1-(y0/240);const p=strokeNoise(x0,y0,-Math.PI/2+(R()-.5)*.6,20+R()*36,7,R,.5);const j=pick(R,PAL.hoguera.c,[hot*3,3,3,1]);ribbon(ctx,p,3+R()*6,PAL.hoguera.c[Math.max(0,j-1)][0],PAL.hoguera.c[j][0],.9);}
+})();
+</script>
+</main></body></html>
