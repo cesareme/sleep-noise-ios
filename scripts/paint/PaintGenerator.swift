@@ -112,12 +112,18 @@ func fail(_ message: String) -> Never {
 final class Canvas {
     let width: Double
     let height: Double
+    /// The height the composition is placed in: the whole canvas, or the
+    /// top part of a band that is painted taller than the row it is judged
+    /// in. Motifs that fill a field ignore it; the tongues of the campfire,
+    /// which rise from the lower half, are placed and counted within it.
+    let focus: Double
     let scale: Double
     let context: CGContext
 
-    init(width: Double, height: Double, scale: Double) {
+    init(width: Double, height: Double, scale: Double, focus: Double? = nil) {
         self.width = width
         self.height = height
+        self.focus = focus ?? height
         self.scale = scale
         let w = Int((width * scale).rounded()), h = Int((height * scale).rounded())
         guard let context = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
@@ -263,7 +269,7 @@ func times(_ n: Double, _ body: () -> Void) {
 /// of the width, ember red at the edges, burnt wood outside; 30 % of the
 /// tongues are black; half a dozen embers above.
 func tongues(_ cv: Canvas, _ R: inout LCG, _ c: [Tint], density: Double) {
-    let W = cv.width, H = cv.height, cx = W / 2
+    let W = cv.width, H = cv.focus, cx = W / 2
     times(W * H / density) {
         let x0 = R.next() * W, y0 = H * 0.5 + R.next() * H * 0.55
         let d = abs(x0 - cx) / (W * 0.5)
@@ -462,8 +468,8 @@ let housePieces: [HousePiece] = [
 /// A piece as the mock-up paints it: the base tint pulled 45 % towards black,
 /// a 6 % grain, then the composition. Same seed, same drawing at any size;
 /// only the number of strokes follows the area.
-func paint(_ piece: HousePiece, width: Double, height: Double, scale: Double) -> CGImage {
-    let cv = Canvas(width: width, height: height, scale: scale)
+func paint(_ piece: HousePiece, width: Double, height: Double, scale: Double, focus: Double? = nil) -> CGImage {
+    let cv = Canvas(width: width, height: height, scale: scale, focus: focus)
     var R = LCG(seed: piece.seed)
     cv.fill(piece.base[piece.base.count - 1].towardsBlack(0.45))
     grain(cv, &R, 0.06)
@@ -484,11 +490,15 @@ func writePNG(_ image: CGImage, to url: URL) {
 /// The band of the Mixes sheet: 64 pt wide, bled off the left edge. The house
 /// rows measure 72 pt at the Large text size (one line of recipe, measured in
 /// the code, `Grid.rowSubtitle`, and in a capture of the sheet in both
-/// languages), 80 from xL and 92 with a recipe of two lines. The band is
-/// painted 92 pt tall so every row up to the accessibility sizes shows it
-/// unscaled, clipped from the top; only larger text scales it.
+/// languages), 80 from xL, 92 with a recipe of two lines and about 260 at
+/// the largest accessibility size. The band is painted 288 pt tall so every
+/// row shows it at 1:1, clipped from the top, and the edge of a ribbon is
+/// never scaled soft. The composition is placed in the top 92 pt
+/// (`bandFocus`, the band of the mock-up): the field goes on below it, the
+/// tongues of the campfire do not move down with the extra height.
 let bandWidth = 64.0
-let bandHeight = 92.0
+let bandHeight = 288.0
+let bandFocus = 92.0
 let rowHeight = 72.0
 let bandScales = [2.0, 3.0]
 let assetFolder = "SleepNoise/Resources/Assets.xcassets/Paint"
@@ -541,7 +551,7 @@ func writeAssets(root: URL) {
         try! imagesetJSON(id: piece.id).write(to: set.appendingPathComponent("Contents.json"), atomically: true, encoding: .utf8)
         for scale in bandScales {
             let url = set.appendingPathComponent("HouseMix-\(piece.id)@\(Int(scale))x.png")
-            writePNG(paint(piece, width: bandWidth, height: bandHeight, scale: scale), to: url)
+            writePNG(paint(piece, width: bandWidth, height: bandHeight, scale: scale, focus: bandFocus), to: url)
             let bytes = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int) ?? 0
             total += bytes
             print("paint: \(assetFolder)/HouseMix-\(piece.id).imageset/\(url.lastPathComponent) · \(Int(bandWidth * scale))x\(Int(bandHeight * scale)) px · \(bytes) bytes")
@@ -571,9 +581,9 @@ func writeStore(root: URL) {
 
 /// Proofs at real size (3x): the four bands on the sheet colour `hoja` and on
 /// black under the 12 % veil of the Mixes row, with the gap of a 20 pt margin
-/// between them, and the same at 2x. Two rows: the whole band, and the band
-/// clipped to the 72 pt row the sheet shows at Large. Nothing else, so the
-/// paint is judged alone.
+/// between them, and the same at 2x. Two rows: the whole band (288 pt), and
+/// the band clipped to the 72 pt row the sheet shows at Large. Nothing else,
+/// so the paint is judged alone.
 func writeProofs(root: URL) {
     let shots = root.appendingPathComponent(".build/shots")
     struct Ground { let name: String; let tint: Tint; let veil: Double }
@@ -593,7 +603,7 @@ func writeProofs(root: URL) {
             ctx.fill(CGRect(x: 0, y: 0, width: width, height: height))
             for (index, piece) in housePieces.enumerated() {
                 let x = margin + Double(index) * (bandWidth + gap)
-                let band = paint(piece, width: bandWidth, height: bandHeight, scale: scale)
+                let band = paint(piece, width: bandWidth, height: bandHeight, scale: scale, focus: bandFocus)
                 // CGContext draws with the origin at the bottom: the clipped row
                 // keeps the top of the band, as the sheet does.
                 let whole = CGRect(x: x, y: height - margin - bandHeight, width: bandWidth, height: bandHeight)

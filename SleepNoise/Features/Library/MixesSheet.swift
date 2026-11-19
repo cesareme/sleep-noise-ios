@@ -483,13 +483,18 @@ private struct MixRow: View {
         paint == nil ? Grid.margin : HousePaint.textLeading
     }
 
-    /// The painted band, as tall as the row and clipped from the top.
+    /// The painted band: a clear column the height of the row, with the
+    /// piece hung from its top and clipped to it. The piece is taller than
+    /// any row (`HousePaint.bandSize`), so it is drawn at 1:1 and the row
+    /// shows its top; `.fill` only covers a row taller than the piece.
     private func band(_ mix: HouseMix) -> some View {
-        Image(HousePaint.bandName(mix))
-            .resizable()
-            .aspectRatio(contentMode: .fill)
+        Color.clear
             .frame(width: HousePaint.bandSize.width)
-            .frame(maxHeight: .infinity, alignment: .top)
+            .overlay(alignment: .top) {
+                Image(HousePaint.bandName(mix))
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            }
             .clipped()
             .overlay(Color.black.opacity(HousePaint.veil))
             .opacity(paintShows ? 1 : 0)

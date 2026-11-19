@@ -11,9 +11,12 @@ import Foundation
 /// Whether a band shows at all is `PaintPolicy`.
 enum HousePaint {
     /// The band of a house row in Mixes: 64 pt wide, bled off the left
-    /// edge, as tall as a row whose recipe takes two lines at the Large
-    /// text size. A shorter row clips it; larger text scales it.
-    static let bandSize = CGSize(width: 64, height: 92)
+    /// edge, and taller than any row, the largest accessibility size
+    /// included (about 260 pt). Every row shows the top of it at 1:1,
+    /// clipped at the row's height: the edge of a ribbon is never scaled
+    /// soft. The composition sits in the top 92 pt, the band of the
+    /// mock-up; below it the field goes on.
+    static let bandSize = CGSize(width: 64, height: 288)
 
     /// The black veil over the band, so the paint stays paper under the
     /// text beside it.
