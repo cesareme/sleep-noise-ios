@@ -90,9 +90,11 @@ The sea breathes six times a minute.
 At three in the morning, nothing.
 
 What’s not here.
+
+What plays gets painted.
 ```
 
-Recuento: 756 de 4000. Los cuatro primeros párrafos son los de la guía; los seis últimos son los titulares de las capturas, en orden, porque VoiceOver no lee las capturas (documento 11 §2.10). "Breathing tide" solo se escribe aquí, en prosa de ficha (C15).
+Recuento: 782 de 4000. Los cuatro primeros párrafos son los de la guía; los siete últimos son los titulares de las capturas, en orden, porque VoiceOver no lee las capturas (documento 11 §2.10); el séptimo es el de la captura nueva de la exploración 12 (19-11-2026). "Breathing tide" solo se escribe aquí, en prosa de ficha (C15).
 
 Dos enmiendas propuestas, que no se aplican sin el sí del dueño porque el texto por defecto es el de la guía, letra a letra.
 
@@ -102,7 +104,7 @@ Primera frase de reserva, por el mismo motivo que la del texto promocional (sust
 SleepNoise makes the sound on your iPhone, as it plays, with no audio files and no loops:
 ```
 
-Recuento: 89. Con ella la descripción pasa de 756 a 770.
+Recuento: 89. Con ella la descripción pasa de 782 a 796.
 
 Tercer párrafo, para la directriz 2.3.2. La descripción presenta la Marea y las capturas 3 y 4 enseñan funciones de Pro sin decir que lo son; hoy solo se deduce de la lista de lo gratis. Enmienda propuesta, también en la guía §5e.15:
 
@@ -110,7 +112,7 @@ Tercer párrafo, para la directriz 2.3.2. La descripción presenta la Marea y la
 Seven nights with everything, no card. After that, Pro, which adds the other textures, the Tide and unlimited mixes, is one payment; white, pink, brown, rain, wind, the whole timer and three mixes stay free.
 ```
 
-Recuento: 207. Con ella la descripción pasa de 756 a 818; con las dos enmiendas, a 832.
+Recuento: 207. Con ella la descripción pasa de 782 a 844; con las dos enmiendas, a 858.
 
 ## Novedades de la 1.0
 
@@ -125,7 +127,7 @@ Recuento: 396 de 4000. App Store Connect no pide este campo en la primera versi�
 
 ## Capturas
 
-Seis, en este orden, solo iPhone y solo fondo negro (C57). Sin vídeo de vista previa en 1.0. Las genera `scripts/screenshots.sh` (S-08), que lee de este fichero el titular (el primer bloque de cada captura) y su segunda línea (el bloque que sigue a "Subtítulo de la captura:"). Cada nota "Pantalla:" dice lo que sale en la captura generada (`scripts/screenshots/README.md`), no lo que dibujaba la maqueta.
+Siete, en este orden, solo iPhone: las seis de C57 sobre fondo negro y, la última, la de Mezclas de día con las bandas pintadas de la casa (exploración 12 §6.1, aprobada el 19-11-2026; su lienzo sigue siendo negro y el color es el de la pantalla). Sin vídeo de vista previa en 1.0. Las genera `scripts/screenshots.sh` (S-08), que lee de este fichero el titular (el primer bloque de cada captura) y su segunda línea (el bloque que sigue a "Subtítulo de la captura:"). Cada nota "Pantalla:" dice lo que sale en la captura generada (`scripts/screenshots/README.md`), no lo que dibujaba la maqueta.
 
 ### Captura 1 · la página sonando
 
@@ -210,4 +212,20 @@ Lista que se ve en la captura (es la de la página, no un campo de la tienda):
 ```text en
 No subscription · No account · No tracking · No ads · No score · No streak · No tutorial
 ```
+
+### Captura 7 · Mezclas de día, con las bandas de la casa
+
+```text en
+What plays gets painted.
+```
+
+Recuento: 24 de 41. Versión inglesa del titular común de la exploración 12 ("Lo que suena, se pinta."; §5 y §6.1), que la exploración solo escribe en español: a confirmar por el dueño. Pantalla: la hoja Mixes de día, a las 20:15 del segundo día de la prueba: "Yours" con dos mezclas guardadas y "From the house" con las cuatro mezclas, cada una con su banda pintada a sangre por la izquierda (`HousePaint`), y "Pink and rain" sonando. La pintura es la de la app, generada por código en tiempo de compilación (`scripts/paint/`), sin imágenes ajenas; de noche y en la página nocturna la hoja no la enseña (`PaintPolicy`). Va la última porque la exploración no sustituye ninguna de las seis de C57.
+
+Subtítulo de la captura:
+
+```text en
+Like the sound: made here, with no files.
+```
+
+Recuento: 41 de 42. Traducción del texto de reserva de la exploración 12 §5 ("Como el sonido: se genera aquí, sin archivos ni descargas."), sin "ni descargas" para caber en la columna de 376 pt, como en español.
 

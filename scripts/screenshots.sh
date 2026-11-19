@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# The six captures of the App Store, in Spanish and in English.
+# The seven captures of the App Store, in Spanish and in English.
 #
 #   scripts/screenshots.sh              builds, captures and composes both languages
 #   scripts/screenshots.sh --no-build   reuses the app already built in SN_DERIVED
@@ -18,8 +18,9 @@
 #
 # What it does: generates the project, creates a simulator of its own, builds
 # the Debug app for it, installs it, pins the status bar (9:41, full battery,
-# no carrier) and, for each language, launches each of the six screens of the
-# store (C57, document 11 §2.3 to §2.8) in its staged state (`-pageState`, see
+# no carrier) and, for each language, launches each of the seven screens of
+# the store (C57, document 11 §2.3 to §2.8; the seventh, Mixes by day with the
+# painted bands of the house, is exploration 12 §6.1) in its staged state (`-pageState`, see
 # PageDebug.swift), takes the screen and lays it on the canvas of document 11
 # §2.2 with its headline, which is read from docs/store/ficha-<language>.md.
 #
@@ -68,6 +69,7 @@ SHOTS=(
     "04-tide:storeTide"
     "05-night:storeNight"
     "06-not-here:settingsNotHere"
+    "07-mixes:storeMixes"
 )
 
 BUILD=1

@@ -80,9 +80,11 @@ El mar respira a seis por minuto.
 A las tres de la mañana, nada.
 
 Lo que no hay.
+
+Lo que suena, se pinta.
 ```
 
-Recuento: 787 de 4000. Los cuatro primeros párrafos son los de la guía; los seis últimos son los titulares de las capturas, en orden, porque VoiceOver no lee las capturas (documento 11 §2.10). Un cambio respecto a la guía: "acompasa el mar" en lugar de la palabra que la lista de palabras vetadas (§0.5) reserva a la línea de uso del océano.
+Recuento: 812 de 4000. Los cuatro primeros párrafos son los de la guía; los siete últimos son los titulares de las capturas, en orden, porque VoiceOver no lee las capturas (documento 11 §2.10); el séptimo es el de la captura nueva de la exploración 12 (19-11-2026). Un cambio respecto a la guía: "acompasa el mar" en lugar de la palabra que la lista de palabras vetadas (§0.5) reserva a la línea de uso del océano.
 
 Dos enmiendas propuestas, que no se aplican sin el sí del dueño porque el texto por defecto es el de la guía, letra a letra.
 
@@ -92,7 +94,7 @@ Primera frase de reserva, por el mismo motivo que la del texto promocional (sust
 SleepNoise fabrica el sonido en tu iPhone, mientras suena, sin archivos de audio ni bucles:
 ```
 
-Recuento: 91. Con ella la descripción pasa de 787 a 797.
+Recuento: 91. Con ella la descripción pasa de 812 a 822.
 
 Tercer párrafo, para la directriz 2.3.2. La descripción presenta la Marea y las capturas 3 y 4 enseñan funciones de Pro sin decir que lo son; hoy solo se deduce de la lista de lo gratis. Enmienda propuesta, también en la guía §5e.15:
 
@@ -100,7 +102,7 @@ Tercer párrafo, para la directriz 2.3.2. La descripción presenta la Marea y la
 Siete noches con todo, sin tarjeta. Después, Pro, que añade las demás texturas, la Marea y mezclas sin límite, es un solo pago; blanco, rosa, marrón, lluvia, viento, todo el temporizador y tres mezclas siguen gratis.
 ```
 
-Recuento: 216. Con ella la descripción pasa de 787 a 849; con las dos enmiendas, a 859.
+Recuento: 216. Con ella la descripción pasa de 812 a 874; con las dos enmiendas, a 884.
 
 ## Novedades de la 1.0
 
@@ -115,7 +117,7 @@ Recuento: 406 de 4000. App Store Connect no pide este campo en la primera versi�
 
 ## Capturas
 
-Seis, en este orden, solo iPhone y solo fondo negro (C57). Sin vídeo de vista previa en 1.0. Las genera `scripts/screenshots.sh` (S-08), que lee de este fichero el titular (el primer bloque de cada captura) y su segunda línea (el bloque que sigue a "Subtítulo de la captura:"). Cada nota "Pantalla:" dice lo que sale en la captura generada (`scripts/screenshots/README.md`), no lo que dibujaba la maqueta.
+Siete, en este orden, solo iPhone: las seis de C57 sobre fondo negro y, la última, la de Mezclas de día con las bandas pintadas de la casa (exploración 12 §6.1, aprobada el 19-11-2026; su lienzo sigue siendo negro y el color es el de la pantalla). Sin vídeo de vista previa en 1.0. Las genera `scripts/screenshots.sh` (S-08), que lee de este fichero el titular (el primer bloque de cada captura) y su segunda línea (el bloque que sigue a "Subtítulo de la captura:"). Cada nota "Pantalla:" dice lo que sale en la captura generada (`scripts/screenshots/README.md`), no lo que dibujaba la maqueta.
 
 ### Captura 1 · la página sonando
 
@@ -201,6 +203,22 @@ Lista que se ve en la captura (es la de la página, no un campo de la tienda):
 Sin suscripción · Sin cuenta · Sin rastreo · Sin anuncios · Sin puntuación · Sin racha · Sin tutorial
 ```
 
+### Captura 7 · Mezclas de día, con las bandas de la casa
+
+```text es
+Lo que suena, se pinta.
+```
+
+Recuento: 23 de 41. Titular común de la exploración 12 (§5 y §6.1; `docs/design/color/camino-contenido.md`), el mismo en los tres caminos. Pantalla: la hoja Mezclas de día, a las 20:15 del segundo día de la prueba: "Tuyas" con dos mezclas guardadas y "De la casa" con las cuatro mezclas, cada una con su banda pintada a sangre por la izquierda (`HousePaint`), y "Rosa y lluvia" sonando. La pintura es la de la app, generada por código en tiempo de compilación (`scripts/paint/`), sin imágenes ajenas; de noche y en la página nocturna la hoja no la enseña (`PaintPolicy`). Va la última porque la exploración no sustituye ninguna de las seis de C57: si el dueño prefiere que entre en los resultados de búsqueda, se cambia el orden en `scripts/screenshots.sh` y aquí.
+
+Subtítulo de la captura:
+
+```text es
+Como el sonido: se fabrica aquí, sin archivos.
+```
+
+Recuento: 46 de 42. Es el texto de reserva que fija la exploración 12 §5 ("Como el sonido: se genera aquí, sin archivos ni descargas."), con "fabrica" en lugar de "genera" como el resto de esta ficha (guía §0.3) y sin "ni descargas", que no cabía en la columna de 376 pt; supera el tope de caracteres de la maqueta, pero cabe (`shot-composer --list`).
+
 ## Si se abre también "Spanish (Mexico)"
 
-Todo igual salvo tres cambios (guía de copy §0.3): "generado" por "fabricado" en el texto promocional, "genera" por "fabrica" en la descripción, y "respirar" por "respiracion" en las palabras clave. En los textos de reserva el cambio es el mismo: "se genera", "genera" y "Generado". La app solo lleva una localización `es`, así que esa ficha enseñaría la misma interfaz.
+Todo igual salvo cuatro cambios (guía de copy §0.3): "generado" por "fabricado" en el texto promocional, "genera" por "fabrica" en la descripción y en el subtítulo de la captura 7, y "respirar" por "respiracion" en las palabras clave. En los textos de reserva el cambio es el mismo: "se genera", "genera" y "Generado". La app solo lleva una localización `es`, así que esa ficha enseñaría la misma interfaz.

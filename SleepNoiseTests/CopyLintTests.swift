@@ -374,14 +374,14 @@ final class CopyLintTests: XCTestCase {
         )
     }
 
-    /// The headlines of the six store captures (docs/store) go through the
-    /// same lint as the app: they are composed over the screens by
+    /// The headlines of the seven store captures (docs/store) go through
+    /// the same lint as the app: they are composed over the screens by
     /// scripts/screenshots.sh.
     func testTheStoreHeadlinesPassTheLint() throws {
         for language in CatalogSource.languages {
             let url = CatalogSource.root.appendingPathComponent("docs/store/ficha-\(language).md")
             let headlines = StoreHeadlines.read(try String(contentsOf: url, encoding: .utf8))
-            XCTAssertEqual(headlines.count, 6, language)
+            XCTAssertEqual(headlines.count, 7, language)
             for (index, headline) in headlines.enumerated() {
                 for text in [headline.title, headline.subtitle].compactMap({ $0 }) {
                     let place = "ficha-\(language).md, capture \(index + 1)"
@@ -391,8 +391,11 @@ final class CopyLintTests: XCTestCase {
                 // The canvas of the captures (11 §2.2): two lines at most.
                 XCTAssertLessThanOrEqual(headline.title.count, 41, headline.title)
             }
-            // Only the first and the third carry a second line (11 §2.2).
-            XCTAssertEqual(headlines.map { $0.subtitle != nil }, [true, false, true, false, false, false], language)
+            // Only the first, the third and the seventh carry a second line
+            // (11 §2.2; exploration 12 §5 for the seventh).
+            XCTAssertEqual(
+                headlines.map { $0.subtitle != nil }, [true, false, true, false, false, false, true], language
+            )
         }
     }
 

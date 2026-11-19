@@ -17,7 +17,7 @@ final class StoreShotTests: XCTestCase {
     func testEveryStateTheScriptLaunchesExists() throws {
         let shots = try shots()
         XCTAssertEqual(shots.map(\.name), [
-            "01-page-playing", "02-first-use", "03-layers", "04-tide", "05-night", "06-not-here",
+            "01-page-playing", "02-first-use", "03-layers", "04-tide", "05-night", "06-not-here", "07-mixes",
         ])
         for shot in shots {
             XCTAssertNotNil(PageDebugState(rawValue: shot.state), "\(shot.name): -pageState \(shot.state)")
@@ -28,7 +28,7 @@ final class StoreShotTests: XCTestCase {
     /// and the Night of the store is a night.
     @MainActor
     func testTheStoreHoursSitOnTheRightSideOfTheNightWindow() {
-        for state in [PageDebugState.storePlaying, .storeLayers, .storeTide] {
+        for state in [PageDebugState.storePlaying, .storeLayers, .storeTide, .storeMixes] {
             XCTAssertFalse(NightWindow.contains(PageStage.clock(for: state)), "\(state)")
         }
         XCTAssertTrue(NightWindow.contains(PageStage.clock(for: .storeNight)))
@@ -39,7 +39,7 @@ final class StoreShotTests: XCTestCase {
     /// second day of the trial, never a purchase; the first use is the
     /// free level, without a trial.
     func testTheStoreStatesAreATrialAndANewInstall() {
-        for state in [PageDebugState.storePlaying, .storeLayers, .storeTide] {
+        for state in [PageDebugState.storePlaying, .storeLayers, .storeTide, .storeMixes] {
             XCTAssertEqual(state.trialConsumed, 86_400, "\(state)")
             XCTAssertTrue(state.isFreeTier, "\(state)")
         }
