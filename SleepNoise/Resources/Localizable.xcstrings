@@ -4903,6 +4903,60 @@
         }
       }
     },
+    "ajustes.pintura.nota": {
+      "comment": "Settings: note under the row Paint.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generated on this iPhone, no images. By day only; it turns itself off with Reduce Motion and Increase Contrast both on."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generada en este iPhone, sin imágenes. Solo de día; se apaga sola con Reducir movimiento y Aumentar contraste a la vez."
+          }
+        }
+      }
+    },
+    "ajustes.pintura.nota.apagada": {
+      "comment": "Settings: note under the row Paint while both accessibility switches keep it off.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off while Reduce Motion and Increase Contrast are both on."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apagada mientras Reducir movimiento y Aumentar contraste estén activos a la vez."
+          }
+        }
+      }
+    },
+    "ajustes.seccion.dia": {
+      "comment": "Settings: section header in small caps, the paint of the day page.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "day"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "día"
+          }
+        }
+      }
+    },
     "ajustes.seccion.pro": {
       "comment": "Settings: section header in small caps.",
       "extractionState": "manual",

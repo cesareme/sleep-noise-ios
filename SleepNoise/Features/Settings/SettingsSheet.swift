@@ -20,6 +20,8 @@ struct SettingsSheet: View {
     @Environment(\.nightPhase) private var phase
     @Environment(\.openURL) private var openURL
     @Environment(\.dynamicTypeSize) private var dynamicType
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorSchemeContrast) private var contrast
     @ScaledMetric(relativeTo: .footnote) private var headerLine: CGFloat = 18
     @State private var path: [SettingsPage]
     /// "Restore purchase" is part of this visit, from the moment the sheet
@@ -72,6 +74,10 @@ struct SettingsSheet: View {
                         header(Localized.string("ajustes.seccion.noche"))
                             .padding(.top, Grid.inner)
                         keepScreenOnRow
+                        header(Localized.string(SettingsText.paintSectionKey))
+                            .padding(.top, Grid.group)
+                        paintRow
+                        paintNote
                         header(Localized.string("ajustes.seccion.pro"))
                             .padding(.top, Grid.group)
                         proRow(canSell: canSell)
@@ -180,6 +186,61 @@ struct SettingsSheet: View {
             }
         }
         .accessibilityIdentifier("settings.keepScreenOn")
+    }
+
+    /// Increase Contrast as the paint reads it: the system's, or the one a
+    /// staged capture forces.
+    private var paintContrast: Bool {
+        #if DEBUG
+        return contrast == .increased || PaintArguments.forcesIncreasedContrast
+        #else
+        return contrast == .increased
+        #endif
+    }
+
+    private var paintMotion: Bool {
+        #if DEBUG
+        return reduceMotion || PaintArguments.forcesReduceMotion
+        #else
+        return reduceMotion
+        #endif
+    }
+
+    /// "Paint" (exploration 12 §7 fase 2): by day, or never. The value is
+    /// what the paint goes by; the choice stays the person's.
+    private var paintRow: some View {
+        MenuRow(
+            title: Localized.string(SettingsText.paintTitleKey),
+            value: Localized.string(SettingsText.paintValueKey(
+                stored: model.paintSetting, reduceMotion: paintMotion, increaseContrast: paintContrast
+            )),
+            valueStep: .secondary
+        ) {
+            Picker(selection: Binding(
+                get: { model.paintSetting },
+                set: { model.setPaintSetting($0) }
+            )) {
+                ForEach(PaintSetting.allCases, id: \.self) { option in
+                    Text(verbatim: Localized.string(SettingsText.paintKey(option))).tag(option)
+                }
+            } label: {
+                Text("ajustes.pintura")
+            }
+        }
+        .accessibilityIdentifier("settings.paint")
+    }
+
+    /// What the paint is, or why it is off on its own.
+    private var paintNote: some View {
+        Text(verbatim: Localized.string(SettingsText.paintNote(
+            stored: model.paintSetting, reduceMotion: paintMotion, increaseContrast: paintContrast
+        )))
+        .step(.note)
+        .foregroundStyle(Ink.secondary(phase))
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(.horizontal, Grid.margin)
+        .padding(.top, Grid.unit * 2)
+        .accessibilityIdentifier("settings.paint.note")
     }
 
     private func proRow(canSell: Bool) -> some View {
