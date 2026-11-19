@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SleepNoise · Camino A · Color contenido</title>
+<style>
+:root{
+  --negro:#000000;--hoja:#1C1C1E;--grafito:#1E1D1B;--trazo:#2A2A2E;--trazo-hoja:#38383B;
+  --texto:#E8E4DC;--texto2:#9C9A96;--texto3:#6E6C68;--texto-noche:#A2A09A;
+  --indice:#F0C020;--indice-noche:#BA941C;
+  --ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#0A0A0A;color:var(--texto);font-family:var(--ui);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+body{padding:40px 48px 72px}
+header.doc{max-width:900px;margin-bottom:36px}
+header.doc h1{font-size:28px;line-height:34px;font-weight:500;letter-spacing:-.005em}
+header.doc p{font-size:15px;line-height:22px;color:var(--texto2);margin-top:10px}
+header.doc .sc{font-size:13px;line-height:18px;font-weight:500;color:var(--texto2);margin-top:12px;font-variant:all-small-caps;letter-spacing:.02em}
+.row{display:flex;gap:64px;overflow-x:auto;padding:12px 4px 32px;align-items:flex-start}
+figure{margin:0;flex:none;width:402px}
+figure.narrow{width:260px}
+figcaption{margin-top:16px;font-size:13px;line-height:18px;color:var(--texto2)}
+figcaption b{display:block;color:var(--texto);font-weight:600;font-size:15px;line-height:20px;margin-bottom:4px}
+
+/* escala tipográfica (03 §3.4) */
+.t1s{font-size:56px;line-height:64px;font-weight:400;letter-spacing:-.01em}
+.t2{font-size:28px;line-height:34px;font-weight:500}
+.t3{font-size:22px;line-height:28px;font-weight:600}
+.t5{font-size:17px;line-height:22px;font-weight:600}
+.t6{font-size:17px;line-height:22px;font-weight:400}
+.t7{font-size:15px;line-height:20px;font-weight:400;color:var(--txt2)}
+.t8{font-size:13px;line-height:18px;font-weight:400;color:var(--txt2)}
+.t9{font-size:13px;line-height:18px;font-weight:500;color:var(--txt2)}
+.sc{font-variant:all-small-caps;letter-spacing:.02em}
+.c2{color:var(--txt2)} .c3{color:var(--txt3)}
+
+/* iPhone 402 × 874 */
+.phone{position:relative;width:402px;height:874px;background:var(--bg);color:var(--txt);overflow:hidden;border-radius:56px;box-shadow:0 0 0 9px #161616,0 0 0 10px #262626;font-size:17px;line-height:22px;
+  --txt:var(--texto);--txt2:var(--texto2);--txt3:var(--texto3);--bg:var(--negro);--hl:var(--trazo);--acc:var(--indice);--disc:var(--grafito)}
+.phone.noche{--txt:var(--texto-noche);--txt2:var(--texto-noche);--acc:var(--indice-noche)}
+.phone.noche .t6,.phone.noche .t7,.phone.noche .t8{font-weight:500}
+.phone.noche .t3{font-weight:500}
+.island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:126px;height:37px;background:#000;border-radius:20px;z-index:5}
+.status{position:absolute;top:16px;left:0;right:0;height:22px;font-size:17px;font-weight:600;color:var(--txt);z-index:4}
+.status .t{position:absolute;left:48px;top:0}
+.status .r{position:absolute;right:32px;top:4px;display:flex;gap:7px;align-items:center}
+.sig{display:block;width:18px;height:12px;background:
+  linear-gradient(currentColor,currentColor) 0 100%/3px 4px no-repeat,
+  linear-gradient(currentColor,currentColor) 5px 100%/3px 6px no-repeat,
+  linear-gradient(currentColor,currentColor) 10px 100%/3px 9px no-repeat,
+  linear-gradient(currentColor,currentColor) 15px 100%/3px 12px no-repeat}
+.bat{display:block;width:27px;height:13px;border:1px solid color-mix(in srgb,currentColor 40%,transparent);border-radius:4px;position:relative}
+.bat::before{content:"";position:absolute;inset:1px;background:currentColor;border-radius:2px}
+.home{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:139px;height:5px;border-radius:3px;background:var(--txt);opacity:.9;z-index:6}
+.pad{padding:0 20px}
+.hair{height:.5px;background:var(--hl)}
+
+/* cabecera de la página */
+.hdr{height:18px;margin-top:64px}
+.name{height:34px;margin-top:18px}
+.st{height:20px;margin-top:10px;display:flex;justify-content:space-between;align-items:baseline}
+.l2{height:20px}
+.note{height:60px;margin-top:12px}
+.sp32{height:32px}.sp80{height:80px}
+
+/* filas editoriales */
+.r56,.r72,.r92{position:relative;display:flex;justify-content:space-between;align-items:center}
+.r56{height:56px}
+.r72{height:72px;align-items:flex-start;padding-top:12px}
+.r92{height:92px;align-items:flex-start;padding-top:12px}
+.r72 .t7,.r92 .t7{margin-top:2px}
+.r56::after,.r72::after,.r92::after{content:"";position:absolute;left:0;right:0;bottom:0;height:.5px;background:var(--hl)}
+.ht::after{top:0;bottom:auto}
+.right{display:flex;align-items:center;gap:8px}
+
+/* fila-control */
+.layer{position:relative;height:80px}
+.layer .n{position:absolute;left:0;top:12px;font-size:17px;line-height:22px;font-weight:600;color:var(--txt);white-space:nowrap}
+.layer .n .s{font-size:15px;font-weight:400;color:var(--txt2)}
+.layer .v{position:absolute;right:0;top:14px;font-size:13px;line-height:18px;font-weight:500;color:var(--txt2)}
+.layer .lv{position:absolute;left:0;right:0;top:44px;height:1px;background:var(--txt3)}
+.layer .lv i{position:absolute;left:0;top:-.5px;height:2px;background:var(--txt)}
+.layer.pro .n{color:var(--txt2)}
+/* camino A (tras jurado): regla vertical pintada de 4 pt en el margen izquierdo, a la altura de la fila; dos tintas; el nombre no se mueve */
+.layer .sw{position:absolute;left:-12px;top:12px;width:4px;height:56px;display:block}
+.layer.seca .sw{opacity:.42}
+/* ventana de 240 pt de la página de día (injerto de B): detrás del contenido, centrada en el horizonte (y 292) */
+.win{position:absolute;left:0;top:172px;width:402px;height:240px;z-index:0}
+.win canvas{display:block;width:402px;height:240px}
+.win .veil{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.75) 0,rgba(0,0,0,.35) 90px,rgba(0,0,0,.8) 108px,rgba(0,0,0,.8) 132px,rgba(0,0,0,.9) 136px,rgba(0,0,0,.9) 100%)}
+.phone .pad{position:relative;z-index:1}
+.phone .hz.on i{box-shadow:0 3px 0 #000,0 -3px 0 #000}
+
+/* Horizonte: línea en 292 (874 × ⅓) */
+.hz{position:relative;height:24px;margin-top:24px}
+.hz i{position:absolute;left:0;right:0;top:11.75px;height:.5px;background:var(--hl)}
+.hz.on i{top:11px;height:2px;background:var(--acc);opacity:.85}
+
+.tg{width:51px;height:31px;border-radius:15.5px;background:rgba(120,120,128,.32);position:relative;flex:none;margin-top:-4.5px}
+.tg::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.3)}
+
+/* barra y Disco */
+.bar{position:absolute;left:0;right:0;bottom:0;height:83px;background:var(--bg);z-index:3}
+.bar::before{content:"";position:absolute;left:0;right:0;top:0;height:.5px;background:var(--hl)}
+.bar .l,.bar .r{position:absolute;top:13.5px;font-size:17px;line-height:22px;font-weight:500;color:var(--txt)}
+.bar .l{left:20px}.bar .r{right:20px}
+.bar .disc{position:absolute;left:50%;top:2.5px;transform:translateX(-50%)}
+.disc{width:44px;height:44px;border-radius:50%;background:var(--disc);box-shadow:inset 0 1px 1px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;color:var(--txt)}
+svg.g{display:block;fill:currentColor}
+
+/* hojas */
+.behind{position:absolute;inset:0;opacity:.35}
+.sheet{position:absolute;left:0;right:0;top:54px;bottom:0;background:var(--hoja);border-radius:38px 38px 0 0;--hl:var(--trazo-hoja);--bg:var(--hoja);overflow:hidden}
+.sheet.negro{background:var(--negro);--hl:var(--trazo);--bg:var(--negro)}
+.sheet .grab{width:36px;height:5px;border-radius:3px;background:#5A5A5E;margin:5px auto 0}
+.sheet h2{font-size:22px;line-height:28px;font-weight:600;padding:14px 20px 0}
+.cab{height:28px;padding-top:5px}
+.rl{height:36px;display:flex;align-items:center}
+.act{height:64px;display:flex;align-items:center;justify-content:center;font-size:17px;line-height:22px;font-weight:600;color:var(--txt);position:relative}
+.act::before,.act::after{content:"";position:absolute;left:0;right:0;height:.5px;background:var(--hl)}
+.act::before{top:0}.act::after{bottom:0}
+.act.buy::before,.act.buy::after{height:1.5px;background:var(--acc)}
+.act2{height:44px;display:flex;align-items:center;justify-content:center;font-size:17px;line-height:22px;color:var(--txt2)}
+.back{height:22px;margin-top:64px;color:var(--txt2);font-size:17px;line-height:22px}
+.title{height:28px;margin-top:8px}
+
+/* camino A: banda pintada a sangre por la izquierda en las mezclas de la casa */
+.mixrow{position:relative;display:flex}
+.mixrow .band{position:relative;flex:none;width:64px;margin-left:-20px;overflow:hidden}
+.mixrow .band canvas{display:block;width:64px;height:100%}
+.mixrow .band .veil{position:absolute;inset:0;background:rgba(0,0,0,.12)}
+.mixrow .band.off{background:var(--negro)}
+.mixrow .body{flex:1;margin-left:20px}
+.mixrow .r72,.mixrow .r92{flex:1;margin-left:20px}
+.mixrow .r72::after,.mixrow .r92::after{left:0}
+
+/* pieza de la hoja Pro */
+.piece{position:relative;height:120px;margin-top:12px;overflow:hidden}
+.piece canvas{display:block;width:402px;height:120px}
+.piece .veil{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.22),rgba(0,0,0,.10) 50%,rgba(0,0,0,.30))}
+
+/* captura de tienda */
+.store{position:relative;width:402px;height:874px;background:#000;overflow:hidden;border:.5px solid var(--trazo)}
+.store .txt{position:absolute;left:28px;right:28px;top:64px}
+.store .h{font-size:30px;line-height:36px;font-weight:500;letter-spacing:-.005em}
+.store .s{margin-top:10px;font-size:16px;line-height:22px;color:var(--texto2)}
+.store .dev{position:absolute;left:50%;top:232px;transform:translateX(-50%) scale(.78);transform-origin:top center}
+
+/* icono */
+.icons{display:flex;gap:28px;align-items:flex-end}
+.icon{position:relative;overflow:hidden;background:#000;border-radius:22.5%}
+.icon canvas,.icon svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.icon .veil{position:absolute;inset:0;background:rgba(0,0,0,.42)}
+</style></head><body>
+<header class="doc">
+  <h1>Camino A · Color contenido</h1>
+  <p>La pintura es contenido, no interfaz: aparece solo en sitios contados y la página principal y la Noche siguen siendo Grafito puro. Una pieza por mezcla de la casa (banda a sangre por la izquierda en Mezclas), una pastilla por textura en Capas, una pieza arriba de la hoja Pro de día, el icono y las capturas de la tienda. Toda pintura se dibuja con código al abrir esta página: listones con ruido, empaste por gradiente de parada doble, grano. Paleta y pincelada de <i>Pigmento</i> (lenguaje-pictorico.md). Nada incrustado.</p>
+  <div class="sc">exploración · 19 de noviembre de 2026 · 402 × 874 · tamaño Large · español · sin red</div>
+</header>
+<div class="row" id="row"></div>
+
+<script>
+// ---------- Pigmento: paleta y pincelada (copiadas de paleta.html, sin cambios de tinta) ----------
+const PAL = {
+ blanco:{n:"Blanco",c:[["#E3E0D8",15.9],["#A9B8C6",10.4],["#5E6B78",3.9]]},
+ rosa:{n:"Rosa",c:[["#F3D2B8",14.7],["#E8A598",10.3],["#C77B8A",6.6],["#7A4A5E",3.0]]},
+ marron:{n:"Marrón",c:[["#D9A66B",9.6],["#B07A4A",5.7],["#7A4E2E",3.0],["#4A3222",1.8]]},
+ lluvia:{n:"Lluvia",c:[["#B9CDD9",12.8],["#7FA7C9",8.3],["#4A6B8A",3.8],["#2E4A5E",2.3]]},
+ ventilador:{n:"Ventilador",c:[["#D7DBE0",15.1],["#B8BFC9",11.3],["#7C8794",5.8],["#4F5862",2.9]]},
+ oceano:{n:"Océano",c:[["#CFE7E0",16.2],["#3FA7B0",7.4],["#1F6F8B",3.7],["#0F3C56",1.8]]},
+ trueno:{n:"Trueno",c:[["#C9C4E8",12.5],["#8E7FB8",5.9],["#6A5A8E",3.5],["#3A3250",1.8]]},
+ hoguera:{n:"Hoguera",c:[["#FFB15C",11.7],["#F08A24",8.4],["#D9442B",4.8],["#5A2A14",1.8]]},
+ arroyo:{n:"Arroyo",c:[["#BFE3C8",15.0],["#5FB08A",8.1],["#2F7A5A",4.1],["#1E4A3A",2.1]]},
+ viento:{n:"Viento",c:[["#E8E0C4",15.9],["#C9C2A8",11.8],["#8FA07A",7.5],["#5F6B55",3.7]]},
+ cabina:{n:"Cabina",c:[["#D6CFC8",13.6],["#B9A9A0",9.3],["#8A7F96",5.6],["#5B5566",2.9]]},
+};
+function rng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;}}
+function noise2(R){const g=[];for(let i=0;i<64*64;i++)g.push(R());const f=t=>t*t*(3-2*t);
+  return(x,y)=>{const xi=Math.floor(x)&63,yi=Math.floor(y)&63,xf=x-Math.floor(x),yf=y-Math.floor(y);
+    const a=g[yi*64+xi],b=g[yi*64+((xi+1)&63)],c=g[((yi+1)&63)*64+xi],d=g[((yi+1)&63)*64+((xi+1)&63)];
+    const u=f(xf),v=f(yf);return (a*(1-u)+b*u)*(1-v)+(c*(1-u)+d*u)*v;}}
+function hex2rgb(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]}
+function rgba(h,a){const[r,g,b]=hex2rgb(h);return`rgba(${r},${g},${b},${a})`}
+function mix(h1,h2,t){const a=hex2rgb(h1),b=hex2rgb(h2);return`rgb(${a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(",")})`}
+function ribbon(ctx,pts,w,light,base,alpha,taper){
+  if(pts.length<2)return;const L=[],Rr=[];
+  for(let i=0;i<pts.length;i++){const p=pts[i],q=pts[Math.min(i+1,pts.length-1)],o=pts[Math.max(i-1,0)];
+    let dx=q.x-o.x,dy=q.y-o.y;const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;
+    const t=i/(pts.length-1),prof=taper?(1-0.78*t):0.35+0.65*Math.sin(Math.PI*Math.min(1,t*1.25))*(1-0.25*t);
+    const hw=w*prof*0.5;L.push({x:p.x-dy*hw,y:p.y+dx*hw});Rr.push({x:p.x+dy*hw,y:p.y-dx*hw});}
+  const a=pts[0],b=pts[pts.length-1];const nx=-(b.y-a.y),ny=b.x-a.x,nl=Math.hypot(nx,ny)||1;const m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+  const g=ctx.createLinearGradient(m.x-nx/nl*w/2,m.y-ny/nl*w/2,m.x+nx/nl*w/2,m.y+ny/nl*w/2);
+  g.addColorStop(0,rgba(light,alpha));g.addColorStop(0.38,rgba(light,alpha));g.addColorStop(0.38,rgba(base,alpha));
+  g.addColorStop(0.88,rgba(base,alpha));g.addColorStop(0.88,`rgba(0,0,0,${alpha*0.35})`);g.addColorStop(1,`rgba(0,0,0,${alpha*0.35})`);
+  ctx.beginPath();ctx.moveTo(L[0].x,L[0].y);for(const p of L)ctx.lineTo(p.x,p.y);for(let i=Rr.length-1;i>=0;i--)ctx.lineTo(Rr[i].x,Rr[i].y);ctx.closePath();ctx.fillStyle=g;ctx.fill();}
+function grain(ctx,W,H,R,alpha){for(let i=0;i<W*H/40;i++){ctx.fillStyle=`rgba(${R()>.5?255:0},${R()>.5?255:0},${R()>.5?255:0},${alpha})`;ctx.fillRect(R()*W,R()*H,1,1);}}
+function strokeNoise(x,y,ang,len,steps,R,dev){const pts=[{x,y}];let a=ang;for(let i=1;i<=steps;i++){a+=(R()-.5)*dev;x+=Math.cos(a)*len/steps;y+=Math.sin(a)*len/steps;pts.push({x,y});}return pts;}
+function strokeFlow(x,y,len,steps,field,scale,drift){const pts=[{x,y}];let prev=null;for(let i=1;i<=steps;i++){const e=0.5;
+  const dzdx=(field(x/scale+e/scale,y/scale)-field(x/scale-e/scale,y/scale))/(2*e),dzdy=(field(x/scale,y/scale+e/scale)-field(x/scale,y/scale-e/scale))/(2*e);
+  let a=Math.atan2(-dzdx,dzdy);a=Math.atan2(Math.sin(a)*0.55,Math.cos(a)*0.55+1.0)+drift;if(prev!==null){let d=a-prev;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;a=prev+Math.max(-0.3,Math.min(0.3,d));}prev=a;
+  x+=Math.cos(a)*len/steps;y+=Math.sin(a)*len/steps;pts.push({x,y});}return pts;}
+function pick(R,c,wts){let s=0;const r=R()*wts.reduce((a,b)=>a+b,0);for(let i=0;i<c.length;i++){s+=wts[i];if(r<s)return i;}return c.length-1;}
+// Lenguas de hoguera (jurado): densidad W*H/90, base de 8 a 14 pt que se estrecha arriba, un 30 % de negro entre lenguas,
+// llama clara solo en un núcleo central del 40 % del ancho, rojo brasa en los bordes, madera quemada fuera; media docena de brasas de 2 a 3 pt.
+function lenguas(ctx,W,H,R,c,dens){const cx=W/2,n=W*H/(dens||90);
+  for(let i=0;i<n;i++){const x0=R()*W,y0=H*.5+R()*H*.55,d=Math.abs(x0-cx)/(W*.5);
+    const len=(26+R()*44)*(d<.4?1:.7),p=strokeNoise(x0,y0,-Math.PI/2+(R()-.5)*.5,len,7,R,.45);
+    if(R()<.30){ribbon(ctx,p,6+R()*6,"#000000","#000000",.85,true);continue;}
+    const k=d<.4?(R()<.55?1:0):d<.7?(R()<.6?2:1):(R()<.7?3:2);
+    ribbon(ctx,p,8+R()*6,c[Math.max(0,k-1)][0],c[k][0],.92,true);}
+  for(let i=0;i<6;i++){const x=cx+(R()-.5)*W*.5,y=H*.08+R()*H*.42;ctx.fillStyle=rgba(c[R()<.5?0:1][0],.9);ctx.fillRect(x,y,2+R(),2+R());}}
+const MOTIF = {
+ blanco(ctx,W,H,R,c){for(let i=0;i<W*H/32;i++){const p=strokeNoise(R()*W,R()*H,R()*6.28,6+R()*4,3,R,.4);const k=pick(R,c,[1,4,6]);ribbon(ctx,p,3+R(),c[Math.max(0,k-1)][0],c[k][0],.85);}},
+ rosa(ctx,W,H,R,c){for(let i=0;i<W*H/70;i++){const p=strokeNoise(R()*W,R()*H,(R()-.5)*.7,10+R()*8,4,R,.5);const k=pick(R,c,[1,3,5,5]);ribbon(ctx,p,4+R()*2,c[Math.max(0,k-1)][0],c[k][0],.9);}},
+ marron(ctx,W,H,R,c){for(let i=0;i<W*H/160;i++){const p=strokeNoise(R()*W-10,R()*H,(R()-.5)*.5,22+R()*18,6,R,.3);const k=pick(R,c,[1,3,5,4]);ribbon(ctx,p,7+R()*3,c[Math.max(0,k-1)][0],c[k][0],.9);}},
+ lluvia(ctx,W,H,R,c){const ang=72*Math.PI/180;for(let i=0;i<W*H/55;i++){const p=strokeNoise(R()*(W+40)-20,R()*(H+40)-20,ang+(R()-.5)*.2,18+R()*16,6,R,.25);const k=pick(R,c,[1,3,5,6]);ribbon(ctx,p,2+R(),c[Math.max(0,k-1)][0],c[k][0],.85);}},
+ ventilador(ctx,W,H,R,c){const cx=W*1.25,cy=H*1.2;for(let i=0;i<W*H/60;i++){const r=40+R()*(W*1.3),a0=Math.PI+R()*Math.PI*.6,da=(24+R()*24)/r;const pts=[];for(let s=0;s<=8;s++){const a=a0+da*s/8+(R()-.5)*.015;pts.push({x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r});}const k=pick(R,c,[1,3,5,6]);ribbon(ctx,pts,3+R()*2,c[Math.max(0,k-1)][0],c[k][0],.85);}},
+ oceano(ctx,W,H,R,c){const f=noise2(R),g=noise2(R);const F=(x,y)=>f(x,y)+.5*g(x*2,y*2);for(let i=0;i<W*H/48;i++){const p=strokeFlow(R()*W,R()*H,18+R()*18,8,F,70,0.12);const k=pick(R,c,[1,3,6,5]);ribbon(ctx,p,5+R()*3,c[Math.max(0,k-1)][0],c[k][0],.9);}},
+ trueno(ctx,W,H,R,c){for(let i=0;i<W*H/110;i++){const p=strokeNoise(R()*W-10,R()*H,(R()-.5)*.3,16+R()*14,5,R,.3);const k=pick(R,c,[0,1,4,9]);ribbon(ctx,p,5+R()*2,c[Math.max(0,k-1)][0],c[k][0],.9);}
+   let x=W*.35+R()*W*.3,y=-4;const pts=[{x,y}];for(let s=0;s<5;s++){x+=(R()-.5)*34;y+=H*.22+R()*10;pts.push({x,y});}ribbon(ctx,pts,3.5,c[0][0],c[1][0],.95);},
+ hoguera(ctx,W,H,R,c){ctx.fillStyle=rgba(c[3][0],.5);ctx.fillRect(0,0,W,H);lenguas(ctx,W,H,R,c,90);},
+ arroyo(ctx,W,H,R,c){ctx.fillStyle=rgba(c[3][0],.7);ctx.fillRect(0,0,W,H);for(let i=0;i<W*H/120;i++){const y0=R()*H,x0=R()*W-40,len=40+R()*50,ph=R()*6.28,amp=3+R()*5;const pts=[];for(let s=0;s<=10;s++){pts.push({x:x0+len*s/10,y:y0+Math.sin(ph+s*1.9)*amp});}const k=pick(R,c,[1,3,5,3]);ribbon(ctx,pts,3+R()*2,c[Math.max(0,k-1)][0],c[k][0],.9);}},
+ viento(ctx,W,H,R,c){ctx.fillStyle=rgba(c[3][0],.55);ctx.fillRect(0,0,W,H);for(let i=0;i<W*H/70;i++){const p=strokeNoise(R()*W-60,R()*H,(R()-.5)*.35,60+R()*80,10,R,.12);const k=pick(R,c,[1,4,5,3]);ribbon(ctx,p,1.5+R(),c[Math.max(0,k-1)][0],c[k][0],.8);}},
+ cabina(ctx,W,H,R,c){ctx.fillStyle=rgba(c[3][0],.8);ctx.fillRect(0,0,W,H);for(let i=0;i<W*H/220;i++){const p=strokeNoise(R()*W-80,R()*H,0,80+R()*120,8,R,.05);const k=pick(R,c,[1,3,6,4]);ribbon(ctx,p,6+R()*6,c[Math.max(0,k-1)][0],c[k][0],.85);}grain(ctx,W,H,R,.12);},
+};
+// Mezclas de la casa (lenguaje §1): heredan por capa dominante
+const COMP = {
+ rosaLluvia(ctx,W,H,R){MOTIF.rosa(ctx,W,H,R,PAL.rosa.c);const c=PAL.lluvia.c,ang=72*Math.PI/180;for(let i=0;i<W*H/90;i++){const p=strokeNoise(R()*(W+40)-20,R()*(H+40)-20,ang+(R()-.5)*.2,18+R()*16,6,R,.25);const k=pick(R,c,[1,3,5,4]);ribbon(ctx,p,2+R(),c[Math.max(0,k-1)][0],c[k][0],.8);}},
+ // Mar y viento: ningún pigmento cálido sobre el océano; solo las dos tintas oliva oscuras del viento al 70 % (jurado, lenguaje §7)
+ marViento(ctx,W,H,R){MOTIF.oceano(ctx,W,H,R,PAL.oceano.c);const c=PAL.viento.c;for(let i=0;i<W*H/240;i++){const p=strokeNoise(R()*W-60,R()*H,(R()-.5)*.3,60+R()*80,10,R,.12);ribbon(ctx,p,1.5+R(),c[2][0],c[3][0],.7);}},
+ marronHoguera(ctx,W,H,R){MOTIF.marron(ctx,W,H,R,PAL.marron.c);lenguas(ctx,W,H,R,PAL.hoguera.c,110);},
+ pared(ctx,W,H,R){MOTIF.marron(ctx,W,H,R,PAL.marron.c);},
+};
+const BASE={rosaLluvia:"rosa",marViento:"oceano",marronHoguera:"marron",pared:"marron"};
+function paintAll(){
+  document.querySelectorAll("canvas[data-paint]").forEach(cv=>{
+    const key=cv.dataset.paint,seed=+cv.dataset.seed,W=+cv.dataset.w,H=+cv.dataset.h,dpr=2;
+    cv.width=W*dpr;cv.height=H*dpr;const ctx=cv.getContext("2d");ctx.scale(dpr,dpr);const R=rng(seed);
+    const base=PAL[BASE[key]||key].c;
+    if(cv.dataset.rule){ // regla vertical de 4 pt en Capas: solo las dos tintas oscuras
+      ctx.fillStyle=base[base.length-1][0];ctx.fillRect(0,0,W,H);for(let i=0;i<9;i++){ctx.fillStyle=rgba(base[base.length-2][0],.9);ctx.fillRect(0,R()*H,W,2+R()*5);}return;}
+    if(cv.dataset.window){ // ventana de 240 pt de la página de día (lenguaje §5): densidad 100 % en la banda del horizonte, 25 % a 120 pt; fuera, negro
+      const mid=H/2,band=64;const off=document.createElement("canvas");off.width=W*dpr;off.height=H*dpr;const oc=off.getContext("2d");oc.scale(dpr,dpr);
+      const g=oc.createLinearGradient(0,0,0,H);g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(.5,rgba(base[base.length-1][0],.55));g.addColorStop(1,"rgba(0,0,0,0)");oc.fillStyle=g;oc.fillRect(0,0,W,H);
+      if(COMP[key])COMP[key](oc,W,H,R);else MOTIF[key](oc,W,H,R,PAL[key].c);
+      // máscara de densidad: estocástica por franjas de 4 pt
+      for(let y=0;y<H;y+=4){const d=Math.max(0,Math.abs(y+2-mid)-band),keep=Math.max(.25,1-.75*d/(mid-band));if(R()<keep)ctx.drawImage(off,0,y*dpr,W*dpr,4*dpr,0,y,W,4);}
+      return;}
+    ctx.fillStyle=mix(base[base.length-1][0],"#000000",.45);ctx.fillRect(0,0,W,H);grain(ctx,W,H,R,.06);
+    if(COMP[key])COMP[key](ctx,W,H,R);else MOTIF[key](ctx,W,H,R,PAL[key].c);
+  });
+}
+// ---------- piezas de interfaz ----------
+const status=t=>`<div class="island"></div><div class="status"><span class="t">${t}</span><span class="r"><i class="sig"></i><i class="bat"></i></span></div>`;
+const bar=(l,playing)=>`<div class="bar"><span class="l">${l}</span><div class="disc">${playing?'<svg class="g" width="22" height="22" viewBox="0 0 22 22"><rect x="4" y="3" width="5" height="16"/><rect x="13" y="3" width="5" height="16"/></svg>':'<svg class="g" width="22" height="22" viewBox="0 0 22 22"><path d="M5 2 L19 11 L5 20 Z"/></svg>'}</div><span class="r">Noche</span></div><div class="home"></div>`;
+const layer=(n,s,v,o={})=>`<div class="layer${o.pig?' pig':''}${o.seca?' seca':''}${o.pro?' pro':''}">${o.pig?`<canvas class="sw" data-paint="${o.pig}" data-rule="1" data-seed="${o.seed}" data-w="4" data-h="56"></canvas>`:''}<div class="n">${n} <span class="s">· ${s}</span></div>${v!=null?`<div class="v${o.pro?' sc':''}">${v}</div>`:''}<div class="lv">${v!=null&&!o.pro?`<i style="width:${v}%"></i>`:''}</div></div>`;
+// 1 · Mezclas (día / noche)
+function mezclas(noche){
+  const house=(key,seed,name,recipe,tall)=>`<div class="mixrow"><div class="band${noche?' off':''}">${noche?'':`<canvas data-paint="${key}" data-seed="${seed}" data-w="64" data-h="${tall?92:72}"></canvas><div class="veil"></div>`}</div><div class="${tall?'r92':'r72'}"><div><div class="t5">${name}</div><div class="t7">${recipe}</div></div></div></div>`;
+  return `<div class="phone${noche?' noche':''}">${status(noche?'23:18':'18:42')}
+  <div class="pad"><div class="back">‹ Esta noche</div><div class="t3 title">Mezclas</div><div class="hair" style="margin-top:8px"></div>
+    <div class="t9 sc cab">tuyas</div>
+    <div class="r72"><div><div class="t5">Hotel</div><div class="t7">lluvia 45 · marrón 30 · 60 min</div></div><div class="t9 sc">sonando</div></div>
+    <div class="r92"><div><div class="t5">Ventilador y lluvia</div><div class="t7">lluvia 50 · ventilador 30 · marrón 20 · 60 min<br>· ventilador es Pro</div></div></div>
+    <div class="t9 sc cab" style="margin-top:32px">de la casa</div>
+    ${house('rosaLluvia',2101,'Rosa y lluvia','rosa 60 · lluvia 30')}
+    ${house('marViento',2102,'Mar y viento','océano 50 · viento 20 · Marea 15 min<br>· océano y Marea son Pro',true)}
+    ${house('marronHoguera',2103,'Marrón y hoguera','marrón 40 · hoguera 35<br>· hoguera es Pro',true)}
+    ${house('pared',2104,'Pared','marrón 55')}
+    <div class="sp32"></div><div class="r56 c2 t6">Ajustes</div>
+  </div>${bar('',true)}</div>`;
+}
+// 2 · Capas (día)
+function capas(){
+  const L=[['colores',[['blanco','Blanco','siseo parejo',null,3001],['rosa','Rosa','suave y equilibrado',50,3002],['marron','Marrón','retumbo grave',null,3003]]],
+           ['camas',[['lluvia','Lluvia','fina, constante',30,3004],['ventilador','Ventilador','lejano, constante',null,3005],['oceano','Océano','oleaje lento',null,3006],['trueno','Trueno','lejano, sin rayos cerca',null,3007],['hoguera','Hoguera','leña que cruje',null,3008],['arroyo','Arroyo','agua que corre',null,3009],['viento','Viento','entre hierba alta',null,3010],['cabina','Cabina','zumbido de avión',null,3011]]]];
+  return `<div class="phone">${status('18:43')}<div class="behind"><div class="pad"><div class="t9 sc hdr">prueba · quedan 5 noches</div><div class="t2 name">Esta noche</div></div></div>
+  <div class="sheet negro"><div class="grab"></div><h2>Capas</h2><div class="pad"><div class="hair" style="margin-top:8px"></div>
+  ${L.map(([sec,rows],i)=>`<div class="t9 sc cab"${i?' style="margin-top:32px"':''}>${sec}</div>${rows.map(([k,n,s,v,seed])=>layer(n,s,v,{pig:k,seed,seca:v==null})).join('')}`).join('')}
+  </div>${bar('Mezclas',true)}</div></div>`;
+}
+// 3 · Hoja Pro (día)
+function pro(){
+  return `<div class="phone">${status('18:44')}<div class="behind"><div class="pad"><div class="t9 sc hdr">prueba · quedan 5 noches</div><div class="t2 name">Esta noche</div></div></div>
+  <div class="sheet"><div class="grab"></div>
+    <div class="piece"><canvas data-paint="hoguera" data-seed="4101" data-w="402" data-h="120"></canvas><div class="veil"></div></div>
+    <div class="pad">
+      <div class="t9 sc" style="margin-top:16px">sleepnoise pro</div>
+      <div class="t1s" style="margin-top:4px">29,99 €</div>
+      <div class="t8" style="margin-top:4px">Prueba · quedan 5 noches con todo.</div>
+      <div class="t2" style="margin-top:8px">Un solo pago. Para siempre, en todos tus iPhone.</div>
+      <div class="hair" style="margin-top:14px"></div>
+      <div class="t9 sc cab">con pro</div>
+      <div class="rl t5">Hoguera, océano y las demás camas</div><div class="rl t5">Marea respiratoria</div><div class="rl t5">Temporizador sin límite y Escudo</div><div class="rl t5">Mezclas sin límite</div><div class="rl t5">En familia</div>
+      <div class="hair" style="margin-top:8px"></div>
+      <div class="t9 sc cab">gratis siempre</div>
+      <div class="t6 c2">Blanco, rosa, marrón, lluvia, viento, el temporizador y tres mezclas.</div>
+      <div class="act buy" style="margin-top:16px">Comprar · 29,99 €</div>
+      <div class="act2">Restaurar compra</div>
+      <div class="t8" style="text-align:center">Sin suscripción. Sin cuenta. Nada sale de tu iPhone.</div>
+    </div></div><div class="home"></div></div>`;
+}
+// 4 · Página principal de día: ventana de 240 pt alrededor del horizonte (injerto de B pedido por el jurado)
+function principal(){
+  return `<div class="phone">${status('18:42')}<div class="win"><canvas data-paint="rosaLluvia" data-window="1" data-seed="6101" data-w="402" data-h="240"></canvas><div class="veil"></div></div><div class="pad">
+    <div class="t9 sc hdr">prueba · quedan 5 noches</div><div class="t2 name">Esta noche</div>
+    <div class="st t7">Sonando · se funde a las 19:27</div><div class="l2"></div><div class="note"></div>
+    <div class="hz on"><i></i></div>
+    ${layer('Lluvia','fina, constante',30)}${layer('Rosa','suave y equilibrado',50)}
+    <div class="sp80"></div><div class="r56 ht t5">Todas las capas</div><div class="sp32"></div>
+    <div class="r72 ht"><div class="t5">Marea respiratoria</div><div class="tg"></div></div>
+    <div class="r56 ht"><span class="t5">Temporizador</span><span class="t7">Hasta dormirme · 45 min</span></div>
+  </div>${bar('Mezclas',true)}</div>`;
+}
+// 6 · Captura de tienda
+function store(){
+  return `<div class="store"><div class="txt"><div class="h">Lo que suena, se pinta.</div><div class="s">Como el sonido: se genera aquí, sin archivos ni descargas. Sin red. De noche, nada.</div></div><div class="dev">${mezclas(false)}</div></div>`;
+}
+// 7 · Icono
+function icon(){
+  const rule=`<svg viewBox="0 0 1024 1024"><path d="M192 608 H832" stroke="#E8E4DC" stroke-width="112" fill="none"/><path d="M384 608 C 440 440, 500 352, 576 352 C 660 352, 740 480, 832 608" stroke="#F0C020" stroke-width="112" fill="none" stroke-linejoin="round"/></svg>`;
+  return `<div class="icons">
+    <div class="icon" style="width:180px;height:180px;background:#000">${rule}</div>
+    <div class="icon" style="width:60px;height:60px;background:#000">${rule}</div>
+    <div class="icon" style="width:29px;height:29px;background:#000">${rule}</div>
+  </div>`;
+}
+const F=(html,cap,cls='')=>`<figure class="${cls}">${html}<figcaption>${cap}</figcaption></figure>`;
+document.getElementById("row").innerHTML=[
+  F(mezclas(false),`<b>1 · Mezclas, de día</b>La casa pinta; lo tuyo es tuyo. Cada mezcla de la casa lleva una banda de 64 pt a sangre por la izquierda con su pieza (rosa y lluvia, mar y viento, marrón y hoguera, pared), velo del 12 %; el texto nunca pisa la pintura. Las mezclas propias y "Ajustes" siguen en Grafito.`),
+  F(capas(),`<b>2 · Capas, de día</b>Una regla vertical pintada de 4 pt en el margen izquierdo, a la altura de cada fila, con las dos tintas oscuras de la textura (el jurado descartó las pastillas de 32 pt: no se leían). Viva al 100 % si la capa suena; seca al 42 % si está a cero. El nombre no se mueve y la fila sigue siendo el control.`),
+  F(pro(),`<b>3 · Hoja Pro, de día (en revisión)</b>Una pieza de 120 pt arriba, bajo el indicador: la textura Pro del día (hoy hoguera), con velo suave. El jurado prefiere la hoja gris sin pintura (nada de color donde se vende); se deja aquí para que el dueño compare. Entre las 21:00 y las 07:00 esta hoja no se abre.`),
+  F(principal(),`<b>4 · Página principal, de día</b>Injerto del camino B pedido por el jurado: una ventana de 240 pt alrededor del horizonte (y 292) con la pintura de la mezcla, densidad plena en la banda del horizonte y al 25 % a 120 pt, reserva de 24 pt con velo del 80 % bajo el Índice (halo seco de 3 pt) y velo del 90 % bajo las filas. Nombre, filas y barra siguen sobre negro; texto2 se conserva.`),
+  F(mezclas(true),`<b>5 · Mezclas, de noche (sin pintura)</b>La misma pantalla a partir de las 21:00 o en la página nocturna: una tinta texto-noche, pesos Medium, las bandas en negro. Nada se mueve de sitio: el hueco de la banda se queda y se lee como margen. Ni color ni venta.`),
+  F(store(),`<b>6 · Captura de tienda</b>La única captura nueva: Mezclas de día con las cuatro bandas. Titular común a los tres caminos ("Lo que suena, se pinta."), subtítulo con el texto de reserva de la ficha; sin estilos, autores, cuentas de texturas ni promesas que el código no sostenga. El resto de capturas de C57 siguen en negro.`),
+  F(icon(),`<b>7 · Icono (sin cambios)</b>"La regla y la marea" de 03 #27 se mantiene en negro, sin fondo pintado: el jurado lo descartó (11 §2.1: fondo plano, sin segundo color; el único icono de la categoría cuyo color es una línea). El color de tienda va en las capturas. A 180, 60 y 29 pt.`,'narrow'),
+].join('');
+paintAll();
+</script>
+</body></html>
