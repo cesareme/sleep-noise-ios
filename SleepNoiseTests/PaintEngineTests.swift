@@ -536,6 +536,74 @@ final class PaintEngineTests: XCTestCase {
         XCTAssertEqual(PaintMetricsLog.key, "sleepnoise.paint.metrics.v1")
     }
 
+    // MARK: Proofs
+
+    /// Writes the four windows of the house, veiled as the page will veil
+    /// them (35 % at the Horizon, 75 % at the edges, 80 % on the reserve
+    /// strip), to .build/shots/window-<mix>.png at 3x, and measures the
+    /// luminance the design caps: mean Y of the veiled paint outside the
+    /// band at most 0.08, peak Y at most 0.28 (exploration 12 §7 fase 2).
+    func testTheVeiledWindowStaysUnderTheLuminanceTheDesignCaps() async throws {
+        let rasterizer = PaintRasterizer()
+        let shots = CatalogSource.root.appendingPathComponent(".build/shots")
+        try FileManager.default.createDirectory(at: shots, withIntermediateDirectories: true)
+        for mix in HouseMix.allCases {
+            let raster = try await rasterizer.request(scene(mix), scale: 3).value
+            let g = raster.scene.geometry
+            let width = raster.dry.width, height = raster.dry.height
+            var pixels = [UInt8](repeating: 0, count: width * height * 4)
+            let context = try XCTUnwrap(CGContext(
+                data: &pixels, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+                space: Pigment.sRGB, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+            ))
+            context.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 1))
+            context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+            let rect = CGRect(x: 0, y: 0, width: width, height: height)
+            context.draw(raster.dry, in: rect)
+            context.saveGState()
+            context.setAlpha(CGFloat(PaintBreath.liveMax))
+            context.draw(raster.live, in: rect)
+            context.restoreGState()
+            // The veil, row by row, in the flipped device space of the bitmap
+            // (row 0 at the top of the image).
+            context.scaleBy(x: 3, y: 3)
+            for row in 0..<Int(g.height) {
+                let y = CGFloat(row) + 0.5
+                let distance = abs(y - g.horizonY) / (g.height / 2)
+                var veil = 0.35 + 0.40 * Double(min(1, distance))
+                if abs(y - g.horizonY) <= PaintWindowGeometry.reserve / 2 { veil = max(veil, 0.80) }
+                context.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 0, alpha: CGFloat(veil)))
+                context.fill(CGRect(x: 0, y: g.height - CGFloat(row) - 1, width: g.width, height: 1))
+            }
+            let image = try XCTUnwrap(context.makeImage())
+            let url = shots.appendingPathComponent("window-\(mix.rawValue).png")
+            let png = try XCTUnwrap(UIImage(cgImage: image).pngData())
+            try png.write(to: url)
+
+            func luminance(_ i: Int) -> Double {
+                func linear(_ v: UInt8) -> Double {
+                    let c = Double(v) / 255
+                    return c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4)
+                }
+                return 0.2126 * linear(pixels[i]) + 0.7152 * linear(pixels[i + 1]) + 0.0722 * linear(pixels[i + 2])
+            }
+            var outsideSum = 0.0, outsideCount = 0, peak = 0.0, bandSum = 0.0, bandCount = 0
+            for row in 0..<height {
+                let y = CGFloat(row) / 3
+                let inBand = y >= g.bandTop && y <= g.bandBottom
+                for column in 0..<width {
+                    let value = luminance((row * width + column) * 4)
+                    peak = max(peak, value)
+                    if inBand { bandSum += value; bandCount += 1 } else { outsideSum += value; outsideCount += 1 }
+                }
+            }
+            let outside = outsideSum / Double(outsideCount), band = bandSum / Double(bandCount)
+            print("paint: veiled window \(mix.rawValue) · mean Y outside band \(outside) · in band \(band) · peak Y \(peak) · \(url.lastPathComponent)")
+            XCTAssertLessThanOrEqual(outside, 0.08, "\(mix.rawValue): the veiled paint outside the band lights the room")
+            XCTAssertLessThanOrEqual(peak, 0.28, "\(mix.rawValue): a pixel of the veiled paint outshines the design")
+        }
+    }
+
     // MARK: Helpers
 
     private final class Counter: @unchecked Sendable {
